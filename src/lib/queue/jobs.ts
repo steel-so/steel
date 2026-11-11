@@ -63,6 +63,10 @@ export const QueueName = {
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
   DocumentsAi: 'documents-ai',
+  // documents backend (ADR 0063): daily expiry of sent documents
+  DocumentsExpiry: 'documents-expiry',
+  DocumentsAnalytics: 'documents-analytics',
+  DocumentsLegacyImport: 'documents-legacy-import',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1262,4 +1266,53 @@ export type DocumentsAiJob =
 
 export type DocumentsAiJobPayload = {
   [DocumentsAiJob.Import]: { importId: string; title?: string }
+}
+
+/**
+ * documents backend (ADR 0063): daily tick that expires sent/viewed
+ * documents past their validity (`DocumentExpiryService.expireDue`).
+ */
+export const DocumentsExpiryJob = {
+  RunTick: 'run-tick',
+} as const
+
+export type DocumentsExpiryJob =
+  (typeof DocumentsExpiryJob)[keyof typeof DocumentsExpiryJob]
+
+export type DocumentsExpiryJobPayload = {
+  [DocumentsExpiryJob.RunTick]: Record<string, never>
+}
+
+/**
+ * documents analytics (ADR 0063): every minute, the reading buffer of the
+ * public document links goes from Redis to Postgres.
+ */
+export const DocumentsAnalyticsJob = {
+  Flush: 'flush',
+} as const
+
+export type DocumentsAnalyticsJob =
+  (typeof DocumentsAnalyticsJob)[keyof typeof DocumentsAnalyticsJob]
+
+export type DocumentsAnalyticsJobPayload = {
+  [DocumentsAnalyticsJob.Flush]: Record<string, never>
+}
+
+/**
+ * Migration of the legacy CRM proposals into documents (ADR 0063). `run` is
+ * enqueued once on worker boot (fixed job id) and fans out one
+ * `import-workspace` per workspace with legacy templates or proposals.
+ * Idempotent by `legacyTemplateId`/`legacyProposalId`.
+ */
+export const DocumentsLegacyImportJob = {
+  Run: 'run',
+  ImportWorkspace: 'import-workspace',
+} as const
+
+export type DocumentsLegacyImportJob =
+  (typeof DocumentsLegacyImportJob)[keyof typeof DocumentsLegacyImportJob]
+
+export type DocumentsLegacyImportJobPayload = {
+  [DocumentsLegacyImportJob.Run]: Record<string, never>
+  [DocumentsLegacyImportJob.ImportWorkspace]: { workspaceId: string }
 }

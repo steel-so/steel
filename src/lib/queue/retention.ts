@@ -245,3 +245,13 @@ export const CrmNewsletterAbTickCron = '2-59/5 * * * *' as const
 export const DocumentsPdfPruneCron = '45 3 * * *' as const
 /** documents-pdf: a PDF export is kept (and reused) for 7 days. */
 export const DocumentExportRetentionMs = 7 * DAY_MS
+
+/**
+ * documents backend (ADR 0063): daily expiry of sent documents, right after
+ * midnight (São Paulo) when the last day of validity ends, after the legacy
+ * proposal expiry (00:05).
+ */
+export const DocumentsExpiryCron = '10 0 * * *' as const
+
+/** documents analytics: flush of the reading buffer, every minute. */
+export const DocumentsAnalyticsFlushCron = '* * * * *' as const

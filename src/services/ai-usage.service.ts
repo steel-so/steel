@@ -319,6 +319,14 @@ export const AiUsageService = {
     feature: AiUsageFeature,
     userId?: string | null,
     preferredModelKeys: (string | null | undefined)[] = [],
+    options: {
+      /**
+       * Wait for the first answer chunk before failing over, instead of the
+       * task class default — for background jobs that send long inputs
+       * (the AI import of a 60-page PDF thinks for minutes).
+       */
+      timeoutMs?: number
+    } = {},
   ): Promise<Result<PreparedAiCall>> {
     const resolved = await AiUsageService.resolveModel(
       workspaceId,
@@ -399,7 +407,7 @@ export const AiUsageService = {
           classify: (text: string) => classifyInjection(workspaceId, text),
         }),
       ...(fallbacks.length > 0 && { breaker: getAiCircuitBreaker() }),
-      timeoutMs: AI_TASK_TIMEOUT_MS[taskClass],
+      timeoutMs: options.timeoutMs ?? AI_TASK_TIMEOUT_MS[taskClass],
       onModelChange: (next) => {
         call.model = next
       },

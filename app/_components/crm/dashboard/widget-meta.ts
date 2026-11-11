@@ -415,7 +415,8 @@ export const SALES_KIND_META: SalesKindMeta[] = [
   {
     kind: 'proposals',
     label: 'Propostas',
-    description: 'Aguardando resposta e vencendo nesta semana.',
+    description:
+      'Propostas de CRM > Documentos aguardando resposta e vencendo nesta semana.',
     size: { w: 4, h: 4 },
     uses: { limit: 4 },
   },

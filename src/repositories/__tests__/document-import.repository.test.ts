@@ -84,6 +84,33 @@ describe('DocumentImportRepository', () => {
     })
   })
 
+  describe('countActive()', () => {
+    it("should count the user's queued and running imports", async () => {
+      const { workspace, user } = await setup()
+      const other = await seedUser()
+      await seedDocumentImport(workspace.id, user.id)
+      await seedDocumentImport(workspace.id, user.id, { status: 'RUNNING' })
+      await seedDocumentImport(workspace.id, user.id, { status: 'READY' })
+      await seedDocumentImport(workspace.id, other.id)
+
+      const count = await DocumentImportRepository.countActive(
+        workspace.id,
+        user.id,
+      )
+      expect(expectOk(count)).toBe(2)
+    })
+
+    it('should return DATABASE_ERROR when the query fails', async () => {
+      vi.spyOn(prisma.documentImport, 'count').mockRejectedValueOnce(
+        new Error('boom'),
+      )
+      expectErr(
+        await DocumentImportRepository.countActive('x', 'y'),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
   describe('findForRun()', () => {
     it('should load by id only, or null', async () => {
       const { workspace, user } = await setup()

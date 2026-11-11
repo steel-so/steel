@@ -6,6 +6,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import { latestDocumentImport } from '@/src/hooks/use-document-imports'
 import type { DocumentImportDTO } from '@/types/document'
 import type { DocumentImportContextDTO } from '@/types/document-import'
 import {
@@ -281,6 +282,33 @@ describe('DocumentImportDialog', () => {
     expect(progress).toHaveTextContent('Entendendo a estrutura')
   })
 
+  it('should tell where the document goes when closed mid-build', async () => {
+    const running = importDto({
+      status: 'RUNNING',
+      progress: { step: 'structure', message: 'Entendendo', pct: 30 },
+    })
+    const { onOpenChange } = setup({ frames: [running], latest: running })
+    await screen.findByTestId('site-ai-cost')
+    pickFile(pdfFile())
+    fireEvent.click(screen.getByTestId('document-import-submit'))
+    await screen.findByTestId('document-import-progress')
+    await waitFor(() =>
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        '30',
+      ),
+    )
+
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    })
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+    expect(notify.info).toHaveBeenCalledWith(
+      expect.stringContaining('continua montando'),
+    )
+  })
+
   it('should explain when the AI is unavailable', async () => {
     setup({
       ctx: context({
@@ -331,5 +359,20 @@ describe('document import helpers', () => {
     expect(fileProblem(empty, 100)).toBe('O arquivo está vazio.')
     expect(fileProblem(large, 100)).toMatch(/o limite é/)
     expect(fileProblem(new File(['x'], 'a.pdf'), 100)).toBeNull()
+  })
+})
+
+describe('latestDocumentImport()', () => {
+  const at = (pct: number) =>
+    importDto({ status: 'RUNNING', progress: { step: 'sections', pct } })
+
+  it('should keep the most advanced snapshot', () => {
+    expect(latestDocumentImport(undefined, at(10)).progress.pct).toBe(10)
+    expect(latestDocumentImport(at(60), at(30)).progress.pct).toBe(60)
+    expect(latestDocumentImport(at(30), at(60)).progress.pct).toBe(60)
+    expect(latestDocumentImport(READY, at(90)).status).toBe('READY')
+    expect(latestDocumentImport(at(90), READY).status).toBe('READY')
+    const other = { ...at(5), id: 'imp2' }
+    expect(latestDocumentImport(at(90), other).id).toBe('imp2')
   })
 })

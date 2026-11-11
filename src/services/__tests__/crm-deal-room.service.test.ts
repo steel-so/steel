@@ -2,6 +2,7 @@ import type { Role } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeCrmOpportunity } from '@/src/__tests__/factories/crm-opportunity.factory'
 import { createFakeCrmProposal } from '@/src/__tests__/factories/crm-proposal.factory'
+import { createFakeDocument } from '@/src/__tests__/factories/document-migration.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import {
   createFakeDealRoom,
@@ -23,6 +24,9 @@ vi.mock('@/src/repositories/crm-proposal.repository')
 vi.mock('@/src/repositories/user.repository')
 vi.mock('../crm-notifications')
 vi.mock('@/lib/axiom/audit')
+vi.mock('../document-crm.service', () => ({
+  DocumentCrmService: { findInWorkspace: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { CrmDealRoomRepository } from '@/src/repositories/crm-deal-room.repository'
@@ -33,6 +37,7 @@ import { UserRepository } from '@/src/repositories/user.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmDealRoomService as Service } from '../crm-deal-room.service'
 import { notifyCrmDealRoomMessage } from '../crm-notifications'
+import { DocumentCrmService } from '../document-crm.service'
 
 const members = vi.mocked(MembershipRepository)
 const access = vi.mocked(WorkspaceModuleAccessRepository)
@@ -40,6 +45,7 @@ const rooms = vi.mocked(CrmDealRoomRepository)
 const deals = vi.mocked(CrmOpportunityRepository)
 const proposals = vi.mocked(CrmProposalRepository)
 const users = vi.mocked(UserRepository)
+const documents = vi.mocked(DocumentCrmService)
 
 const asRole = (role: Role) =>
   members.findByUserAndWorkspace.mockResolvedValue(
@@ -142,6 +148,42 @@ describe('upsert', () => {
       await Service.upsert('u', 'ws', 'o1', { proposalId: 'p1' }),
       'CRM_DEAL_ROOM_INVALID',
     )
+  })
+
+  it('accepts a document of the same deal and refuses others', async () => {
+    documents.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', opportunityId: 'o1' })),
+    )
+    expectOk(await Service.upsert('u', 'ws', 'o1', { documentId: 'd1' }))
+    expect(documents.findInWorkspace).toHaveBeenCalledWith('ws', 'd1')
+    expect(rooms.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { documentId: 'd1' } }),
+    )
+
+    documents.findInWorkspace.mockResolvedValue(
+      ok(createFakeDocument({ id: 'd1', opportunityId: 'other' })),
+    )
+    expectErr(
+      await Service.upsert('u', 'ws', 'o1', { documentId: 'd1' }),
+      'CRM_DEAL_ROOM_INVALID',
+    )
+
+    documents.findInWorkspace.mockResolvedValue(ok(null))
+    expectErr(
+      await Service.upsert('u', 'ws', 'o1', { documentId: 'd1' }),
+      'CRM_DEAL_ROOM_INVALID',
+    )
+
+    documents.findInWorkspace.mockResolvedValue(err(databaseError('x')))
+    expectErr(
+      await Service.upsert('u', 'ws', 'o1', { documentId: 'd1' }),
+      'DATABASE_ERROR',
+    )
+  })
+
+  it('unlinks the document with null without a lookup', async () => {
+    expectOk(await Service.upsert('u', 'ws', 'o1', { documentId: null }))
+    expect(documents.findInWorkspace).not.toHaveBeenCalled()
   })
 
   it('tells a missing proposal from a failing lookup', async () => {
@@ -264,6 +306,38 @@ describe('getPublic', () => {
     const draft = expectOk(await Service.getPublic('tok'))
     expect(draft.proposal).toBeNull()
     expect(draft.companyName).toBeNull()
+  })
+
+  it('links the sent document of the room, which wins over the proposal', async () => {
+    const sent = createFakeDocument({
+      id: 'd1',
+      title: 'Proposta 2027',
+      status: 'VIEWED',
+      publicToken: 'pub1',
+    })
+    rooms.findPublicByToken.mockResolvedValue(
+      ok({
+        ...publicRow,
+        documentId: 'd1',
+        proposal: { id: 'p1', name: 'Antiga', shareToken: 'share1', status: 'SENT' },
+      }),
+    )
+    documents.findInWorkspace.mockResolvedValue(ok(sent))
+    const dto = expectOk(await Service.getPublic('tok'))
+    expect(dto.proposal).toEqual({ name: 'Proposta 2027', sharePath: '/d/pub1' })
+    expect(documents.findInWorkspace).toHaveBeenCalledWith('ws', 'd1')
+
+    for (const doc of [
+      createFakeDocument({ status: 'DRAFT' }),
+      createFakeDocument({ status: 'SENT', linkEnabled: false }),
+      null,
+    ]) {
+      documents.findInWorkspace.mockResolvedValue(ok(doc))
+      expect(expectOk(await Service.getPublic('tok')).proposal).toBeNull()
+    }
+
+    documents.findInWorkspace.mockResolvedValue(err(databaseError('x')))
+    expectErr(await Service.getPublic('tok'), 'DATABASE_ERROR')
   })
 
   it('fails closed', async () => {

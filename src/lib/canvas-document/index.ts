@@ -5,10 +5,15 @@
  */
 
 export {
+  buildDocumentCatalog,
   createDocumentCatalog,
   createEmptyDocumentContent,
+  DOCUMENT_CATEGORIES,
+  describeDocumentError,
+  documentCatalog,
   validateDocumentContent,
 } from './catalog'
+export { fieldValueError, formatFieldValue } from './components/views'
 export * from './constants'
 export type {
   DocumentActionResult,
@@ -22,6 +27,15 @@ export type {
 } from './context'
 export { type DocumentFieldInfo, documentFields } from './fields'
 export {
+  DEFAULT_DOCUMENT_TIME_ZONE,
+  formatBRL,
+  formatDocumentDate,
+  isValidEmail,
+  maskCnpj,
+  maskCpf,
+  maskPhone,
+} from './format'
+export {
   type DocumentOutline,
   type DocumentOutlineBlock,
   DocumentOutlineBlockSchema,
@@ -32,6 +46,11 @@ export {
   type OutlineToDocumentResult,
   outlineToDocument,
 } from './outline'
+export {
+  DOCUMENT_SECTION_PRESETS,
+  type DocumentSectionPreset,
+  sectionFragment,
+} from './presets'
 export {
   DOCUMENT_PRICING_TYPE,
   type DocumentPricingTotals,
@@ -45,5 +64,28 @@ export {
   DOCUMENT_STARTERS,
   type DocumentStarterMeta,
   getDocumentStarter,
+  getDocumentStarterOutline,
 } from './starters'
-export { DocumentView, type DocumentViewProps } from './view'
+export {
+  type DocumentCssOptions,
+  type DocumentLayoutSettings,
+  documentCss,
+  documentRootClass,
+} from './styles'
+export {
+  DOCUMENT_COLOR_IDS,
+  DOCUMENT_FONTS,
+  type DocumentTheme,
+  defaultDocumentTheme,
+  documentColorTokens,
+  documentPageBox,
+  documentViewportWidths,
+  parseDocumentTheme,
+} from './theme'
+export {
+  documentVariableSamples,
+  documentVariablesUsed,
+  substituteVariables,
+  variableTag,
+} from './variables'
+export { DocumentStyles, DocumentView, type DocumentViewProps } from './view'

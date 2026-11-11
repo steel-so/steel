@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeCrmDocumentSummaryDTO } from '@/src/__tests__/factories/document-migration.factory'
 import {
   crmCreateDashboardTool,
   crmCreateFormTool,
-  crmCreateProposalTemplateTool,
+  crmCreateProposalTool,
+  crmListProposalDocumentsTool,
 } from '@/src/lib/ai/tools/crm/builders'
 import {
   crmGetForecastTool,
@@ -32,9 +34,9 @@ import {
   CrmPipelineStageService,
 } from '@/src/services/crm-pipeline.service'
 import { CrmProposalService } from '@/src/services/crm-proposal.service'
-import { CrmProposalTemplateService } from '@/src/services/crm-proposal-template.service'
 import { CrmSocialTrendingService } from '@/src/services/crm-social-trending.service'
 import { CrmTaskService } from '@/src/services/crm-task.service'
+import { DocumentCrmService } from '@/src/services/document-crm.service'
 import type { CrmProposalDTO } from '@/types/crm-proposal'
 import {
   company,
@@ -102,8 +104,12 @@ vi.mock('@/src/services/crm-dashboard.service', () => ({
 vi.mock('@/src/services/crm-form.service', () => ({
   CrmFormService: { create: vi.fn() },
 }))
-vi.mock('@/src/services/crm-proposal-template.service', () => ({
-  CrmProposalTemplateService: { create: vi.fn() },
+vi.mock('@/src/services/document-crm.service', () => ({
+  DocumentCrmService: {
+    createProposal: vi.fn(),
+    createForOpportunity: vi.fn(),
+    listProposals: vi.fn(),
+  },
 }))
 
 type Page = { total: number; items: Array<Record<string, unknown>> }
@@ -739,28 +745,98 @@ describe('builder tools (ported)', () => {
     )
   })
 
-  it('creates a proposal template with ordered sections', async () => {
-    const args = {
-      name: 'Padrão',
-      sections: [
-        { type: 'SIGNATURE', order: 2 },
-        { type: 'COVER', order: 0 },
-        { type: 'SCOPE', order: 1, enabled: false },
-      ],
-    }
-    const preview = expectOk(
-      await previewOf(crmCreateProposalTemplateTool, args),
+  it('creates a proposal document from an opportunity or standalone', async () => {
+    const fromDeal = { title: 'Proposta Acme', opportunityId: 'opp_1' }
+    const preview = expectOk(await previewOf(crmCreateProposalTool, fromDeal))
+    expect(preview.summary).toBe(
+      'Com os itens da oportunidade na tabela de preços.',
     )
     expect(preview.fields).toContainEqual({
-      label: 'Seções',
-      after: 'Capa, Escopo dos serviços (oculta), Assinatura',
+      label: 'Oportunidade',
+      after: 'opp_1',
     })
-    vi.mocked(CrmProposalTemplateService.create).mockResolvedValue(
-      ok({ id: 'tpl_1', name: 'Padrão' } as never),
+    vi.mocked(DocumentCrmService.createForOpportunity).mockResolvedValue(
+      ok(createFakeCrmDocumentSummaryDTO({ id: 'doc_1', title: 'Proposta Acme' })),
     )
-    const out = expectOk(await run(crmCreateProposalTemplateTool, args))
-    expect(out.target?.href).toBe('/acme/crm/proposal-templates/tpl_1')
-    vi.mocked(CrmProposalTemplateService.create).mockResolvedValue(err(dbErr))
-    expectErr(await run(crmCreateProposalTemplateTool, args), 'DATABASE_ERROR')
+    const out = expectOk(await run(crmCreateProposalTool, fromDeal))
+    expect(out.target?.href).toBe('/acme/crm/documents/doc_1')
+    expect(DocumentCrmService.createForOpportunity).toHaveBeenCalledWith(
+      ME,
+      WS,
+      'opp_1',
+      { title: 'Proposta Acme', templateId: undefined },
+    )
+
+    const standalone = { title: 'Avulsa', companyId: 'company_1' }
+    const quiet = expectOk(await previewOf(crmCreateProposalTool, standalone))
+    expect(quiet.summary).toBe('Em rascunho, para editar no app.')
+    vi.mocked(DocumentCrmService.createProposal).mockResolvedValue(
+      ok(createFakeCrmDocumentSummaryDTO({ id: 'doc_2', title: 'Avulsa' })),
+    )
+    expectOk(await run(crmCreateProposalTool, standalone))
+    expect(DocumentCrmService.createProposal).toHaveBeenCalledWith(ME, WS, {
+      title: 'Avulsa',
+      companyId: 'company_1',
+      personId: undefined,
+      leadId: undefined,
+      templateId: undefined,
+    })
+
+    vi.mocked(DocumentCrmService.createProposal).mockResolvedValue(err(dbErr))
+    expectErr(await run(crmCreateProposalTool, standalone), 'DATABASE_ERROR')
+    expectErr(crmCreateProposalTool.parse({ title: '' }), 'VALIDATION_ERROR')
+  })
+
+  it('lists proposal documents with filters and links', async () => {
+    const docs = [
+      createFakeCrmDocumentSummaryDTO({
+        id: 'doc_1',
+        title: 'Proposta Acme',
+        status: 'SENT',
+        companyId: 'company_1',
+      }),
+      createFakeCrmDocumentSummaryDTO({
+        id: 'doc_2',
+        title: 'Proposta Beta',
+        companyId: 'company_2',
+      }),
+    ]
+    vi.mocked(DocumentCrmService.listProposals).mockResolvedValue(ok(docs))
+
+    const all = expectOk(await run(crmListProposalDocumentsTool, {}))
+    const page = all.data as Page
+    expect(page.total).toBe(2)
+    expect(page.items[0]).toMatchObject({
+      id: 'doc_1',
+      statusLabel: 'Enviado',
+      href: '/acme/crm/documents/doc_1',
+    })
+    expect(DocumentCrmService.listProposals).toHaveBeenCalledWith(ME, WS, {
+      status: undefined,
+      opportunityId: undefined,
+      leadId: undefined,
+      isTemplate: false,
+    })
+
+    const acme = expectOk(
+      await run(crmListProposalDocumentsTool, {
+        query: 'acme',
+        companyId: 'company_1',
+        templates: true,
+        status: 'SENT',
+      }),
+    )
+    expect((acme.data as Page).items.map((i) => i.id)).toEqual(['doc_1'])
+    expect(DocumentCrmService.listProposals).toHaveBeenLastCalledWith(ME, WS, {
+      status: 'SENT',
+      opportunityId: undefined,
+      leadId: undefined,
+      isTemplate: true,
+    })
+
+    vi.mocked(DocumentCrmService.listProposals).mockResolvedValue(
+      err(forbiddenErr),
+    )
+    expectErr(await run(crmListProposalDocumentsTool, {}), 'FORBIDDEN')
   })
 })

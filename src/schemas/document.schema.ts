@@ -309,3 +309,21 @@ export type CreateDocumentImportInput = z.infer<
 /** PDFs and DOCX up to 20 MB, up to 60 pages. */
 export const DOCUMENT_IMPORT_MAX_BYTES = 20 * 1024 * 1024
 export const DOCUMENT_IMPORT_MAX_PAGES = 60
+
+// ── documents backend: additions to the contract ──────────────────────────
+
+/** `POST .../documents/[documentId]/duplicate`: copy, or save as template. */
+export const DuplicateDocumentSchema = z.object({
+  asTemplate: z.boolean().optional(),
+  title: z.string().trim().min(1).max(200).optional(),
+})
+export type DuplicateDocumentInput = z.infer<typeof DuplicateDocumentSchema>
+
+/** `POST .../documents/[documentId]/recipients`: more readers of the version. */
+export const AddDocumentRecipientsSchema = z.object({
+  recipients: z.array(DocumentRecipientInputSchema).min(1).max(50),
+  message: z.string().trim().max(2000).optional(),
+})
+export type AddDocumentRecipientsInput = z.infer<
+  typeof AddDocumentRecipientsSchema
+>

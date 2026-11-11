@@ -382,7 +382,8 @@ export function createFakeCrmLeadProposalPresentation(
   return {
     id: createId(),
     leadId: createId(),
-    proposalId: createId(),
+    proposalId: null,
+    documentId: createId(),
     presentedAt: now,
     format: 'ONLINE',
     amount: new Prisma.Decimal(1500),
@@ -396,7 +397,7 @@ export function createFakeCrmLeadProposalPresentation(
 
 export async function seedCrmLeadProposalPresentation(
   leadId: string,
-  proposalId: string,
+  documentId: string,
   createdById: string,
   overrides?: Partial<
     Pick<
@@ -412,7 +413,7 @@ export async function seedCrmLeadProposalPresentation(
   return prisma.crmLeadProposalPresentation.create({
     data: {
       leadId,
-      proposalId,
+      documentId,
       createdById,
       presentedAt: new Date(),
       format: 'ONLINE',

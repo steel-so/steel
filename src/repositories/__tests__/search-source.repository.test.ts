@@ -9,6 +9,7 @@ import {
 } from '@/src/__tests__/factories/crm-pipeline.factory'
 import { seedCrmProposal } from '@/src/__tests__/factories/crm-proposal.factory'
 import { seedCrmTask } from '@/src/__tests__/factories/crm-task.factory'
+import { seedDocument } from '@/src/__tests__/factories/document-migration.factory'
 import { seedMembership } from '@/src/__tests__/factories/membership.factory'
 import { seedSdConfigItem } from '@/src/__tests__/factories/sd-config-item.factory'
 import { seedSdContact } from '@/src/__tests__/factories/sd-contact.factory'
@@ -192,6 +193,30 @@ describe('SearchSourceRepository', () => {
         await SearchIndexService.refresh('crm-lead', ws.id, [live.lead.id]),
       ),
     ).toEqual({ indexed: 0, removed: 1 })
+  })
+
+  it('should load live documents and drop proposals already migrated', async () => {
+    const [ws, user] = await Promise.all([seedWorkspace(), seedUser()])
+    const company = await seedCrmCompany(ws.id, user.id)
+    const pending = await seedCrmProposal(ws.id, user.id)
+    const migrated = await seedCrmProposal(ws.id, user.id)
+    const doc = await seedDocument(ws.id, user.id, {
+      legacyProposalId: migrated.id,
+      companyId: company.id,
+    })
+    await seedDocument(ws.id, user.id, { deletedAt: GONE })
+
+    const R = SearchSourceRepository
+    const proposals = expectOk(await R.crmProposals(ws.id, { take: 50 }))
+    expect(proposals.map((p) => p.id)).toEqual([pending.id])
+    const byId = expectOk(
+      await R.crmProposals(ws.id, { ids: [migrated.id], take: 1 }),
+    )
+    expect(byId).toEqual([])
+
+    const docs = expectOk(await R.crmDocuments(ws.id, { take: 50 }))
+    expect(docs.map((d) => d.id)).toEqual([doc.id])
+    expect(docs[0]?.company?.name).toBe(company.name)
   })
 
   it('should page workspace ids', async () => {

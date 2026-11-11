@@ -26,6 +26,7 @@ vi.mock('@/src/services/feature-flag.service')
 vi.mock('@/src/services/platform-ai-settings.service')
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/lib/storage/s3', () => ({
+  deleteObject: vi.fn(async () => undefined),
   ensureBucket: vi.fn(async () => undefined),
   putObject: vi.fn(async () => undefined),
   getObject: vi.fn(async () => Buffer.from('%PDF-1.4 conteúdo')),
@@ -61,7 +62,7 @@ import {
 } from '@/src/lib/document-ai/extract'
 import { publishDocumentImport } from '@/src/lib/document-ai/realtime'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
-import { getObject, putObject } from '@/src/lib/storage/s3'
+import { deleteObject, getObject, putObject } from '@/src/lib/storage/s3'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -86,6 +87,7 @@ const publish = vi.mocked(publishDocumentImport)
 const queue = vi.mocked(getDocumentsAiQueue)
 const download = vi.mocked(getObject)
 const upload = vi.mocked(putObject)
+const remove = vi.mocked(deleteObject)
 
 const WS = 'ws1'
 const ACTOR = 'u1'
@@ -265,6 +267,7 @@ beforeEach(() => {
     return ok({ ...row, ...(data as unknown as Partial<DocumentImport>) })
   })
   imports.findForRun.mockResolvedValue(ok(stored()))
+  imports.countActive.mockResolvedValue(ok(0))
   imports.findById.mockResolvedValue(ok(stored()))
   imports.complete.mockImplementation(async (id, document, result) =>
     ok({
@@ -543,6 +546,23 @@ describe('DocumentImportService.create()', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it('should cap the imports a user runs at once', async () => {
+    imports.countActive.mockResolvedValueOnce(ok(3))
+    const error = expectErr(
+      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      'CONFLICT',
+    )
+    expect(error.message).toMatch(/3 documentos sendo montados/)
+    expect(imports.countActive).toHaveBeenCalledWith(WS, ACTOR)
+
+    imports.countActive.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(
+      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      'DATABASE_ERROR',
+    )
+    expect(upload).not.toHaveBeenCalled()
+  })
+
   it('should answer STORAGE_ERROR when MinIO fails', async () => {
     upload.mockRejectedValueOnce(new Error('minio down'))
     expectErr(
@@ -596,6 +616,43 @@ describe('DocumentImportService.get()', () => {
 
     asRole('ADMIN')
     expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+  })
+
+  it('should close an import the worker lost', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(
+      ok(stored({ status: 'RUNNING', createdAt: old })),
+    )
+
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+
+    expect(dto.status).toBe('FAILED')
+    expect(dto.error).toMatch(/demorou demais/)
+    expect(imports.update).toHaveBeenCalledWith(
+      'imp1',
+      expect.objectContaining({ status: 'FAILED' }),
+    )
+  })
+
+  it('should report a lost import even when saving fails', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(ok(stored({ createdAt: old })))
+    imports.update.mockResolvedValueOnce(err(databaseError('x')))
+
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+
+    expect(dto.status).toBe('FAILED')
+    expect(dto.progress.step).toBe('failed')
+  })
+
+  it('should leave a recent or finished import alone', async () => {
+    const old = new Date(Date.now() - 31 * 60 * 1000)
+    imports.findById.mockResolvedValue(
+      ok(stored({ status: 'READY', createdAt: old })),
+    )
+    const dto = expectOk(await DocumentImportService.get(ACTOR, WS, 'imp1'))
+    expect(dto.status).toBe('READY')
+    expect(imports.update).not.toHaveBeenCalled()
   })
 
   it('should propagate not found and authorization errors', async () => {
@@ -688,6 +745,18 @@ describe('DocumentImportService.run()', () => {
     )
   })
 
+  it('should delete the uploaded file once the document exists', async () => {
+    expectOk(await DocumentImportService.run('imp1'))
+    expect(remove).toHaveBeenCalledWith({
+      bucket: 'documents',
+      key: `${WS}/imports/imp1/proposta.pdf`,
+    })
+
+    remove.mockRejectedValueOnce(new Error('minio down'))
+    const result = expectOk(await DocumentImportService.run('imp1'))
+    expect(result.status).toBe('ready')
+  })
+
   it("should keep the user's kind and use the model's title", async () => {
     imports.findForRun.mockResolvedValue(ok(stored({ kind: 'CONTRACT' })))
 
@@ -722,6 +791,7 @@ describe('DocumentImportService.run()', () => {
     expectOk(await DocumentImportService.run('imp1'))
 
     expect(download).not.toHaveBeenCalled()
+    expect(remove).not.toHaveBeenCalled()
     expect(requests[0].system).toMatch(/write a complete business document/)
     expect(requests[0].messages[0].content).toEqual(
       expect.stringContaining('Proposta de PABX em nuvem para clínica'),

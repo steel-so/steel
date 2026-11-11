@@ -39,6 +39,7 @@ describe('knowledge index hooks', () => {
     expect(knowledgeSourceOfSearchEntity('sd-kb-article')).toBe('sd-kb-article')
     expect(knowledgeSourceOfSearchEntity('sd-ticket')).toBe('sd-ticket')
     expect(knowledgeSourceOfSearchEntity('crm-proposal')).toBe('crm-proposal')
+    expect(knowledgeSourceOfSearchEntity('crm-document')).toBe('crm-document')
     expect(knowledgeSourceOfSearchEntity('crm-lead')).toBeNull()
   })
 

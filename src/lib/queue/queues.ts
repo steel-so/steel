@@ -55,10 +55,16 @@ import {
   type DataExportJobPayload,
   type DataRetentionJob,
   type DataRetentionJobPayload,
+  type DocumentsExpiryJob,
+  type DocumentsExpiryJobPayload,
+  type DocumentsAnalyticsJob,
+  type DocumentsAnalyticsJobPayload,
   type DocumentsPdfJob,
   type DocumentsPdfJobPayload,
   type DocumentsAiJob,
   type DocumentsAiJobPayload,
+  type DocumentsLegacyImportJob,
+  type DocumentsLegacyImportJobPayload,
   type NotificationsJob,
   type NotificationsJobPayload,
   type PhoneCallAiJob,
@@ -1428,6 +1434,9 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
   [QueueName.DocumentsPdf]: getDocumentsPdfQueue,
   [QueueName.DocumentsAi]: getDocumentsAiQueue,
+  [QueueName.DocumentsExpiry]: getDocumentsExpiryQueue,
+  [QueueName.DocumentsAnalytics]: getDocumentsAnalyticsQueue,
+  [QueueName.DocumentsLegacyImport]: getDocumentsLegacyImportQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1646,5 +1655,75 @@ export function getDocumentsAiQueue(): Queue<
     DocumentsAiJobPayload[DocumentsAiJob],
     unknown,
     DocumentsAiJob
+  >
+}
+
+let documentsExpiryQueue: Queue | null = null
+
+/** documents backend (ADR 0063): daily expiry of sent documents. */
+export function getDocumentsExpiryQueue(): Queue<
+  DocumentsExpiryJobPayload[DocumentsExpiryJob],
+  unknown,
+  DocumentsExpiryJob
+> {
+  if (!documentsExpiryQueue) {
+    documentsExpiryQueue = new Queue(QueueName.DocumentsExpiry, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return documentsExpiryQueue as Queue<
+    DocumentsExpiryJobPayload[DocumentsExpiryJob],
+    unknown,
+    DocumentsExpiryJob
+  >
+}
+
+let documentsAnalyticsQueue: Queue | null = null
+
+/**
+ * Reading analytics flush of the documents (ADR 0063). One attempt and no
+ * backoff: the next minute retries anyway, and the batch waits in Redis.
+ */
+export function getDocumentsAnalyticsQueue(): Queue<
+  DocumentsAnalyticsJobPayload[DocumentsAnalyticsJob],
+  unknown,
+  DocumentsAnalyticsJob
+> {
+  if (!documentsAnalyticsQueue) {
+    documentsAnalyticsQueue = new Queue(QueueName.DocumentsAnalytics, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        ...defaultJobOptions,
+        attempts: 1,
+        removeOnComplete: { age: 60 * 60, count: 100 },
+      },
+    })
+  }
+  return documentsAnalyticsQueue as Queue<
+    DocumentsAnalyticsJobPayload[DocumentsAnalyticsJob],
+    unknown,
+    DocumentsAnalyticsJob
+  >
+}
+
+let documentsLegacyImportQueue: Queue | null = null
+
+/** Legacy proposals → documents (ADR 0063): boot run + one job per workspace. */
+export function getDocumentsLegacyImportQueue(): Queue<
+  DocumentsLegacyImportJobPayload[DocumentsLegacyImportJob],
+  unknown,
+  DocumentsLegacyImportJob
+> {
+  if (!documentsLegacyImportQueue) {
+    documentsLegacyImportQueue = new Queue(QueueName.DocumentsLegacyImport, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return documentsLegacyImportQueue as Queue<
+    DocumentsLegacyImportJobPayload[DocumentsLegacyImportJob],
+    unknown,
+    DocumentsLegacyImportJob
   >
 }

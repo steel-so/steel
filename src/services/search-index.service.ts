@@ -7,6 +7,7 @@ import {
 } from '@/src/lib/search/search-entities'
 import {
   toCrmCompanySearchDocument,
+  toCrmDocumentSearchDocument,
   toCrmLeadSearchDocument,
   toCrmOpportunitySearchDocument,
   toCrmPersonSearchDocument,
@@ -102,6 +103,10 @@ const LOADERS: Record<SearchEntityType, Loader> = {
   'crm-proposal': simple(
     (ws, o) => SearchSourceRepository.crmProposals(ws, o),
     toCrmProposalSearchDocument,
+  ),
+  'crm-document': simple(
+    (ws, o) => SearchSourceRepository.crmDocuments(ws, o),
+    toCrmDocumentSearchDocument,
   ),
   'zap-conversation': simple(
     (ws, o) => SearchSourceRepository.zapConversations(ws, o),

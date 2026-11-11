@@ -368,7 +368,14 @@ describe('<CrmLeadsBoard /> stage panel', () => {
   it('PROPOSAL: closes as won only after a presentation, with required fields', async () => {
     const fetchSpy = mockFetch([
       leadsRoute([lead({ stage: 'PROPOSAL' })]),
-      { match: /\/leads\/l1\/proposal$/, data: { id: 'pr1' } },
+      {
+        match: /\/leads\/l1\/proposal$/,
+        data: {
+          id: 'pr1',
+          title: 'Proposta Lima',
+          path: '/crm/documents/pr1',
+        },
+      },
       { match: '/proposal/pr1/presentations', data: [{ id: 'pp1' }] },
       { method: 'POST', match: '/leads/l1/close-won', data: {} },
     ])
@@ -378,6 +385,10 @@ describe('<CrmLeadsBoard /> stage panel', () => {
     expect(
       await screen.findByText('1 apresentação(ões) registrada(s).'),
     ).toBeTruthy()
+    expect(screen.getByText('Proposta Lima')).toBeTruthy()
+    expect(
+      screen.getByText('Editar proposta').closest('a')?.getAttribute('href'),
+    ).toContain('/crm/documents/pr1/edit')
     const closeWon = screen.getByText(
       'Confirmar contrato assinado — Ganho',
     ) as HTMLButtonElement

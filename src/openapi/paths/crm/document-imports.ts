@@ -102,6 +102,10 @@ export const crmDocumentImportRoutes: RouteConfig[] = [
         code: 'AI_PROVIDER_UNAVAILABLE',
         when: 'Nenhum modelo habilitado com provedor configurado',
       },
+      {
+        code: 'CONFLICT',
+        when: 'O usuário já tem 3 importações na fila ou em andamento',
+      },
       'STORAGE_ERROR',
       {
         code: 'DOCUMENT_IMPORT_FAILED',

@@ -204,6 +204,37 @@ export type CrmProposalSearchRow = Prisma.CrmProposalGetPayload<{
   select: typeof crmProposalSelect
 }>
 
+const crmDocumentSelect = {
+  id: true,
+  title: true,
+  kind: true,
+  status: true,
+  isTemplate: true,
+  ownerId: true,
+  updatedAt: true,
+  company: { select: { name: true } },
+  person: { select: { name: true } },
+  lead: { select: { name: true } },
+  opportunity: { select: { name: true } },
+} satisfies Prisma.DocumentSelect
+export type CrmDocumentSearchRow = Prisma.DocumentGetPayload<{
+  select: typeof crmDocumentSelect
+}>
+
+/**
+ * Legacy proposals already migrated to documents (ADR 0063): their
+ * document is indexed instead, so the proposal leaves the index.
+ */
+async function migratedProposalIds(workspaceId: string): Promise<string[]> {
+  const rows = await prisma.document.findMany({
+    where: { workspaceId, legacyProposalId: { not: null } },
+    select: { legacyProposalId: true },
+  })
+  return rows.flatMap((row) =>
+    row.legacyProposalId ? [row.legacyProposalId] : [],
+  )
+}
+
 const zapContactSelect = {
   id: true,
   name: true,
@@ -393,10 +424,26 @@ export const SearchSourceRepository = {
   },
 
   crmProposals(workspaceId: string, opts: SearchSourceOptions) {
-    return load('crm proposals', () =>
-      prisma.crmProposal.findMany({
-        where: { workspaceId, deletedAt: null, id: idFilter(opts) },
+    return load('crm proposals', async () => {
+      const migrated = await migratedProposalIds(workspaceId)
+      return prisma.crmProposal.findMany({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          AND: [{ id: idFilter(opts) }, { id: { notIn: migrated } }],
+        },
         select: crmProposalSelect,
+        orderBy: { id: 'asc' },
+        take: opts.take,
+      })
+    })
+  },
+
+  crmDocuments(workspaceId: string, opts: SearchSourceOptions) {
+    return load('crm documents', () =>
+      prisma.document.findMany({
+        where: { workspaceId, deletedAt: null, id: idFilter(opts) },
+        select: crmDocumentSelect,
         orderBy: { id: 'asc' },
         take: opts.take,
       }),

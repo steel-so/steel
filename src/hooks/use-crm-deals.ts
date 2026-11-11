@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  CreateOpportunityProposalDTO,
   UpdateCrmDealsSettingsDTO,
   UpsertCrmDealRoomInput,
 } from '@/src/schemas/crm-deals.schema'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmContractDTO,
   CrmContractStatusDTO,
@@ -16,6 +18,7 @@ import type {
   CrmUpsellDTO,
   DealRoomMessageDTO,
 } from '@/types/crm-deals'
+import type { DocumentListItemDTO } from '@/types/document'
 import { apiFetch, apiFetchJson } from './_fetch'
 
 /**
@@ -33,6 +36,8 @@ export const crmDealsKeys = {
     ['crm-deals', ws, 'room', opportunityId] as const,
   messages: (ws: string, opportunityId: string) =>
     ['crm-deals', ws, 'room-messages', opportunityId] as const,
+  roomDocuments: (ws: string, opportunityId: string) =>
+    ['crm-deals', ws, 'room-documents', opportunityId] as const,
   contracts: (ws: string) => ['crm-deals', ws, 'contracts'] as const,
   upsell: (ws: string, companyId: string) =>
     ['crm-deals', ws, 'upsell', companyId] as const,
@@ -168,6 +173,52 @@ export function useDealRoom(workspaceId: string, opportunityId: string) {
       ),
     enabled: Boolean(workspaceId) && Boolean(opportunityId),
     refetchInterval: 20_000,
+  })
+}
+
+/** Documents of the deal the room can show (CRM > Documentos, ADR 0063). */
+export function useDealRoomDocuments(
+  workspaceId: string,
+  opportunityId: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: crmDealsKeys.roomDocuments(workspaceId, opportunityId),
+    queryFn: async () => {
+      const params = new URLSearchParams({ opportunityId, pageSize: '50' })
+      const page = await apiFetch<{ items: DocumentListItemDTO[] }>(
+        `${base(workspaceId)}/documents?${params}`,
+        undefined,
+        'Erro ao buscar os documentos da oportunidade',
+      )
+      return page.items
+    },
+    enabled: enabled && Boolean(workspaceId) && Boolean(opportunityId),
+  })
+}
+
+/**
+ * "Gerar proposta" of a deal (or of a renewal deal): creates the PROPOSAL
+ * document and resolves to it, so the caller can open the editor.
+ */
+export function useCreateOpportunityProposal(workspaceId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      opportunityId,
+      ...input
+    }: CreateOpportunityProposalDTO & { opportunityId: string }) =>
+      apiFetchJson<CrmDocumentSummaryDTO>(
+        `${base(workspaceId)}/opportunities/${opportunityId}/proposal`,
+        'POST',
+        input,
+        'Erro ao gerar a proposta',
+      ),
+    onSuccess: (_doc, { opportunityId }) => {
+      queryClient.invalidateQueries({
+        queryKey: crmDealsKeys.roomDocuments(workspaceId, opportunityId),
+      })
+    },
   })
 }
 

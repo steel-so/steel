@@ -480,6 +480,16 @@ export function DocumentImportDialog({
       ? Boolean(file) && !problem
       : prompt.trim().length > 0 && prompt.length <= PROMPT_MAX)
 
+  /** Closing mid-build does not cancel it: say where the result goes. */
+  function close(next: boolean) {
+    if (!next && importId && dto && !isDocumentImportFinished(dto)) {
+      notify.info(
+        'A IA continua montando o documento. Ele aparece na lista de documentos quando ficar pronto.',
+      )
+    }
+    onOpenChange(next)
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!canSubmit) return
@@ -515,7 +525,7 @@ export function DocumentImportDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={close}>
       <DialogContent
         className='max-h-[90vh] overflow-y-auto sm:max-w-lg'
         data-testid='document-import-dialog'

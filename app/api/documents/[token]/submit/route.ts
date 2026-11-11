@@ -1,0 +1,42 @@
+import type { NextRequest } from 'next/server'
+import { withAxiom } from '@/lib/axiom/server'
+import { guardDocumentPublicRequest } from '@/src/lib/documents/public-request'
+import { SubmitDocumentFieldsSchema } from '@/src/schemas/document.schema'
+import { DocumentPublicService } from '@/src/services/document-public.service'
+import { readJsonBody } from '@/utils/http-request'
+import {
+  handleError,
+  standardError,
+  successResponse,
+} from '@/utils/http-response'
+
+type Params = { params: Promise<{ token: string }> }
+
+/** Fields sent without accepting (documents that only collect data). */
+export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
+  const guard = await guardDocumentPublicRequest(request)
+  if (!guard.ok) return handleError(guard.error)
+
+  const [{ token }, json] = await Promise.all([
+    ctx.params,
+    readJsonBody(request),
+  ])
+  if (!json.ok) return handleError(json.error)
+  const parsed = SubmitDocumentFieldsSchema.safeParse(json.value)
+  if (!parsed.success) {
+    return standardError(
+      'VALIDATION_ERROR',
+      'Dados inválidos',
+      parsed.error.issues,
+    )
+  }
+
+  const result = await DocumentPublicService.submit(
+    token,
+    guard.value,
+    parsed.data,
+  )
+  if (!result.ok) return handleError(result.error)
+
+  return successResponse(result.value)
+})

@@ -46,6 +46,7 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/pabx/calls/webhook': 'PABX webhook secret',
   '/api/pabx/voice-agent': 'voice agent shared secret',
   '/api/crm/proposals': 'proposal link token',
+  '/api/documents': 'document link token (rate limited by IP)',
   '/api/crm/forms': 'public form id + rate limit',
   '/api/crm/integrations': 'integration key',
   '/api/crm/apollo/webhook': 'webhook secret',

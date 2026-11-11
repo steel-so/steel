@@ -88,6 +88,11 @@ export type NotificationKindDTO =
   | 'AGENT_SIMULATION_FINISHED'
   | 'CRM_CNPJ_ENRICHMENT_FINISHED'
   | 'CRM_DUPLICATES_FOUND'
+  // documents backend (ADR 0063)
+  | 'CRM_DOCUMENT_ACCEPTED'
+  | 'CRM_DOCUMENT_DECLINED'
+  | 'CRM_DOCUMENT_EXPIRED'
+  | 'CRM_DOCUMENT_VIEWED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

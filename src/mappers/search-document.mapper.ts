@@ -15,6 +15,7 @@ import {
 } from '@/src/lib/servicedesk/ticket-code'
 import type {
   CrmCompanySearchRow,
+  CrmDocumentSearchRow,
   CrmLeadSearchRow,
   CrmOpportunitySearchRow,
   CrmPersonSearchRow,
@@ -30,6 +31,10 @@ import type {
   ZapContactSearchRow,
   ZapConversationSearchRow,
 } from '@/src/repositories/search-source.repository'
+import {
+  DOCUMENT_KIND_LABELS,
+  DOCUMENT_STATUS_LABELS,
+} from '@/src/schemas/document.schema'
 import type { SearchResultDTO } from '@/types/search'
 import { toWhiteboardScene, whiteboardSceneText } from './whiteboard.mapper'
 
@@ -406,6 +411,34 @@ export function toCrmProposalSearchDocument(
     codes: [],
     userIds: userIdsOf([row.responsibleId]),
     path: `/crm/proposals/${row.id}`,
+    updatedAt: row.updatedAt,
+  }
+}
+
+/** CRM > Documentos (ADR 0063): documents and templates of any kind. */
+export function toCrmDocumentSearchDocument(
+  workspaceId: string,
+  row: CrmDocumentSearchRow,
+): SearchDocumentInput {
+  return {
+    workspaceId,
+    entityType: 'crm-document',
+    entityId: row.id,
+    module: 'CRM',
+    audience: 'PUBLIC',
+    title: row.title,
+    subtitle: joinParts([
+      DOCUMENT_KIND_LABELS[row.kind],
+      row.isTemplate ? 'Modelo' : DOCUMENT_STATUS_LABELS[row.status],
+      row.company?.name ?? row.lead?.name,
+      row.person?.name,
+      row.opportunity?.name,
+    ]),
+    body: null,
+    keywords: '',
+    codes: [],
+    userIds: userIdsOf([row.ownerId]),
+    path: `/crm/documents/${row.id}`,
     updatedAt: row.updatedAt,
   }
 }

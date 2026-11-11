@@ -42,7 +42,10 @@ import { processDataExport } from '../src/lib/queue/processors/data-export'
 import { processDataRetention } from '../src/lib/queue/processors/data-retention'
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
 import { processDocumentsAi } from '../src/lib/queue/processors/documents-ai'
+import { processDocumentsExpiry } from '../src/lib/queue/processors/documents-expiry'
+import { processDocumentsAnalytics } from '../src/lib/queue/processors/documents-analytics'
 import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
+import { processDocumentsLegacyImport } from '../src/lib/queue/processors/documents-legacy-import'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
 import { processQaReview } from '../src/lib/queue/processors/qa-review'
@@ -78,6 +81,7 @@ import { processWorkspaceExport } from '../src/lib/queue/processors/workspace-ex
 import { processWorkspaceIntegrations } from '../src/lib/queue/processors/workspace-integrations'
 import '../src/lib/zod-locale'
 import {
+  enqueueDocumentsLegacyImport,
   scheduleAiIndexJobs,
   scheduleAiProactiveJobs,
   scheduleAiUsageWeeklyEmailJobs,
@@ -89,13 +93,14 @@ import {
   scheduleCrmHealthJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
-  scheduleCrmProposalExpiryJobs,
   scheduleCrmScheduledSendJobs,
   scheduleCrmSocialPostsTickJobs,
   scheduleCrmTaskRemindersJobs,
   scheduleCrmWorkflowScheduleJobs,
   scheduleDatabaseBackupJobs,
   scheduleDataRetentionJobs,
+  scheduleDocumentsExpiryJobs,
+  scheduleDocumentsAnalyticsJobs,
   scheduleNotificationsJobs,
   scheduleSearchReindexJobs,
   scheduleSendingDomainsJobs,
@@ -120,6 +125,7 @@ import {
   scheduleWhatsappConversationLifecycleJobs,
   scheduleWorkspaceExportJobs,
   scheduleWorkspaceIntegrationsJobs,
+  unscheduleCrmProposalExpiryJobs,
 } from '../src/lib/queue/scheduler'
 import { closeWorkerResources } from '../src/lib/queue/worker-shutdown'
 import { startVoiceAgentServer } from './voice-agent-server'
@@ -365,6 +371,17 @@ async function main(): Promise<void> {
       concurrency: 1,
     }),
   )
+  workers.push(
+    registerWorker(QueueName.DocumentsExpiry, processDocumentsExpiry),
+    registerWorker(QueueName.DocumentsAnalytics, processDocumentsAnalytics),
+  )
+  // Concurrency 1 (default): one workspace migrates at a time.
+  workers.push(
+    registerWorker(
+      QueueName.DocumentsLegacyImport,
+      processDocumentsLegacyImport,
+    ),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -376,7 +393,7 @@ async function main(): Promise<void> {
   await scheduleCrmScheduledSendJobs()
   await scheduleCrmWorkflowScheduleJobs()
   await scheduleCrmCompetitorSyncJobs()
-  await scheduleCrmProposalExpiryJobs()
+  await unscheduleCrmProposalExpiryJobs()
   await scheduleCrmSocialPostsTickJobs()
   await scheduleWhatsappBroadcastJobs()
   await scheduleWhatsappConversationLifecycleJobs()
@@ -414,6 +431,9 @@ async function main(): Promise<void> {
   await scheduleCrmNewsletterJobs()
   await scheduleCrmNewsletterAutomationJobs()
   await scheduleDocumentsPdfJobs()
+  await scheduleDocumentsExpiryJobs()
+  await scheduleDocumentsAnalyticsJobs()
+  await enqueueDocumentsLegacyImport()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

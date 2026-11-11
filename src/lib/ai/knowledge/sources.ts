@@ -19,6 +19,7 @@ export const KNOWLEDGE_SOURCE_TYPES = [
   'zap-knowledge-doc',
   'crm-note',
   'crm-proposal',
+  'crm-document',
 ] as const
 
 export type KnowledgeSourceType = (typeof KNOWLEDGE_SOURCE_TYPES)[number]
@@ -79,6 +80,12 @@ export const KNOWLEDGE_SOURCES: Record<
     resource: 'documents',
     gate: null,
     label: 'Proposta',
+  },
+  'crm-document': {
+    module: 'CRM',
+    resource: 'documents',
+    gate: null,
+    label: 'Documento do CRM',
   },
 }
 

@@ -623,6 +623,32 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'mail',
     color: 'rose',
   },
+  // documents backend (ADR 0063)
+  CRM_DOCUMENT_ACCEPTED: {
+    module: 'CRM',
+    label: 'Documento aceito',
+    icon: 'contract',
+    color: 'emerald',
+  },
+  CRM_DOCUMENT_DECLINED: {
+    module: 'CRM',
+    label: 'Documento recusado',
+    icon: 'contract',
+    color: 'rose',
+  },
+  CRM_DOCUMENT_EXPIRED: {
+    module: 'CRM',
+    label: 'Documento expirado',
+    icon: 'contract',
+    color: 'amber',
+  },
+  // documents analytics: "<Nome> abriu <documento> agora".
+  CRM_DOCUMENT_VIEWED: {
+    module: 'CRM',
+    label: 'Documento aberto',
+    icon: 'proposal',
+    color: 'sky',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [

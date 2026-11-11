@@ -44,8 +44,14 @@ import { type CanvasStore, createCanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   createDocumentCatalog,
+  DOCUMENT_SECTION_PRESETS,
+  DocumentStyles,
+  documentColorTokens,
+  documentViewportWidths,
+  parseDocumentTheme,
   validateDocumentContent,
 } from '@/src/lib/canvas-document'
+import { documentVariablesTab } from '@/src/lib/canvas-document/variables-tab'
 import {
   DEFAULT_DOCUMENT_SETTINGS,
   type DocumentSettingsDTO,
@@ -64,11 +70,10 @@ import {
   SAMPLE_VARIABLES,
 } from './document-preview-dialog'
 import { DocumentSettingsPanel } from './document-settings-panel'
-import {
-  EDITOR_FONTS,
-  editorColorTokens,
-  editorViewportWidths,
-} from './editor-theme'
+import { EDITOR_FONTS } from './editor-theme'
+
+/** "Variáveis" tab of the catalog (merge tags into the selected text). */
+const EXTRA_TABS = [documentVariablesTab()]
 
 /** Row changes (settings, theme, title…) are saved this long after the
  * last one. */
@@ -200,16 +205,22 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         variant='ghost'
         onClick={() => setPreview(store.getState().doc)}
         data-testid='document-preview-open'
+        aria-label='Pré-visualizar'
+        title='Pré-visualizar'
       >
         <SteelIcon icon={ViewIcon} data-icon='inline-start' />
-        Pré-visualizar
+        <span className='hidden xl:inline'>Pré-visualizar</span>
       </Button>
-      <DocumentExportButton
-        workspaceId={workspaceId}
-        documentId={document.id}
-        hasVersion={sent}
-        variant='ghost'
-      />
+      {/* Pending edits are saved as the export starts: the worker renders
+          the stored draft a moment later. */}
+      <span className='contents' onClickCapture={() => void save()}>
+        <DocumentExportButton
+          workspaceId={workspaceId}
+          documentId={document.id}
+          hasVersion={sent}
+          variant='ghost'
+        />
+      </span>
       <Button
         size='sm'
         className='ml-1'
@@ -503,10 +514,17 @@ function DocumentCanvasEditor({
   )
 
   const viewportWidths = useMemo(
-    () => editorViewportWidths(settings),
+    () => documentViewportWidths(settings),
     [settings],
   )
-  const colorTokens = useMemo(() => editorColorTokens(theme), [theme])
+  const colorTokens = useMemo(
+    () => documentColorTokens(parseDocumentTheme(theme)),
+    [theme],
+  )
+  const frameHead = useMemo(
+    () => <DocumentStyles theme={theme} settings={settings} mode='editor' />,
+    [theme, settings],
+  )
 
   return (
     <DocumentEditorProvider value={value}>
@@ -517,6 +535,9 @@ function DocumentCanvasEditor({
         viewportWidths={viewportWidths}
         colorTokens={colorTokens}
         fonts={EDITOR_FONTS}
+        frameHead={frameHead}
+        presets={DOCUMENT_SECTION_PRESETS}
+        extraTabs={EXTRA_TABS}
         title={<DocumentEditorTitle />}
         actions={({ store: canvasStore }) => (
           <DocumentEditorActions store={canvasStore} />

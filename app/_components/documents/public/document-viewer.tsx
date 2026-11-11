@@ -23,7 +23,11 @@ import type { DocumentPublicDTO } from '@/types/document'
 import { formatDocumentDate } from '../documents-tone'
 import { DocumentToc } from './document-toc'
 import { IdentificationGate } from './identification-gate'
-import { type PublicReader, usePublicDocumentRuntime } from './public-runtime'
+import {
+  navigateTo,
+  type PublicReader,
+  usePublicDocumentRuntime,
+} from './public-runtime'
 
 /**
  * Client side of the public link `/d/<token>` (owned by the documents UI
@@ -271,8 +275,13 @@ export function DocumentViewer({ data }: DocumentViewerProps) {
         token={data.token}
         title={data.document.title}
         brandName={data.brand.name}
-        onIdentified={(next) => {
+        onIdentified={(next, url) => {
           storeReader(data.token, next)
+          // The personal link tracks this reader (and skips the gate).
+          if (url) {
+            navigateTo(url)
+            return
+          }
           setReader(next)
         }}
       />

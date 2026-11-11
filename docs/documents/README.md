@@ -90,6 +90,35 @@ SENT/VIEWED ──validade──▶ EXPIRED      qualquer ──arquivar──�
 
 LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
 
+### Detalhes da implementação
+
+- **Sessão**: um `sessionKey` por aba (sessionStorage; recarregar continua a
+  sessão, 30 min sem sinal abre outra) e um `visitorId` duradouro
+  (localStorage, ou só em memória quando o navegador bloqueia). O primeiro
+  sinal de cada sessão cria a `DocumentSession`; sinais repetidos com o mesmo
+  `sessionKey` não duplicam nada.
+- **Visualizado**: a primeira sessão marca `firstViewedAt`/`lastViewedAt` do
+  documento e do destinatário e passa `SENT → VIEWED` (documento) e
+  `PENDING → VIEWED` (destinatário) em SQL direto, sem mexer em
+  `documents.updated_at` — o autosave do editor usa esse campo para detectar
+  conflito.
+- **Encaminhado**: `FORWARDED` quando um link pessoal é aberto por um
+  navegador novo depois de outro já ter lido (uma vez por navegador).
+- **Aviso "abriu agora"**: notificação `CRM_DOCUMENT_VIEWED` para o dono e
+  e-mail quando `settings.notifyOnView`; no máximo um aviso a cada 30 min por
+  leitor (Redis).
+- **Buffer**: os sinais só somam contadores num hash do Redis
+  (`doc:analytics:buffer`). O worker renomeia o hash para
+  `doc:analytics:flushing`, grava tudo numa transação e só então apaga — uma
+  falha deixa o lote para a próxima rodada, sem contar duas vezes.
+- **Eventos**: cliques em links, downloads de anexos e play de vídeo viram
+  `DocumentEvent` (até 60 por sessão por hora). O IP é guardado como HMAC
+  com o segredo do servidor e o referrer só como domínio.
+- **Painel**: `GET .../documents/<id>/analytics?days=7|30|90|all`, com as
+  seções da versão atual (seções que saíram aparecem como "Seção removida")
+  e dias no fuso de Brasília. Num modelo, soma os documentos criados a partir
+  dele. Os números chegam com até 1 minuto de atraso.
+
 ## PDF
 
 - O dono exporta o documento (rascunho ou versão enviada); o destinatário
@@ -122,6 +151,7 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   validado por Zod e montado com os presets, nunca HTML livre. Linhas como
   "Nome: ____" viram campos; valores e nomes, variáveis sugeridas.
 - Usa o provedor e a cota de IA do CRM; o progresso aparece ao vivo.
+- Detalhes do fluxo, regras e falhas: [ia.md](ia.md).
 
 ## Migração das propostas
 
@@ -133,3 +163,108 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   ficam nas tabelas antigas, só para consulta.
 - A migração é idempotente e roda no worker.
 - `/crm/proposals`, `/crm/proposal-templates` e `/p/<token>` redirecionam.
+
+## Catálogo `document` — para quem integra
+
+Arquivos em `src/lib/canvas-document/`:
+
+| Arquivo | O quê |
+|---|---|
+| `catalog.tsx` | `createDocumentCatalog(ctx)`, `buildDocumentCatalog(ctx, getDocument)`, `validateDocumentContent` (envelope + árvore + regras + props, mensagem em pt-BR) |
+| `components/` | `layout.tsx` (raiz, seção, caixa, colunas, divisor, espaço, quebra), `content.tsx` (textos, mídia, destaques, sumário, contato), `functional.tsx` (aceite, preços, pagamento, anexos, validade, reunião, campos), `views.tsx` (peças sem hooks), `live.tsx` (`'use client'`: o que lê o `DocumentRuntime`) |
+| `theme.ts` | Tema (paleta `token:<id>`, fontes, tamanhos, espaçamentos, cantos, largura, margem da página); `parseDocumentTheme` completa e corrige; sem `secondary`/`highlight`, ambos derivam da cor principal |
+| `styles.ts` | `documentCss(theme, { mode, settings })`: variáveis do tema, regras dos elementos (classes `d-*`), folha paginada e CSS de impressão com `@page`. Tudo dentro de `.d-root` |
+| `variables.ts` / `variables-tab.tsx` | Variáveis `{{chave}}` e a aba "Variáveis" do editor (`documentVariablesTab()`) |
+| `view.tsx` / `render.tsx` | `DocumentView` (link público, com a própria folha de estilo), `DocumentStyles` (`frameHead` do editor) e `renderDocumentHtml` (PDF) |
+| `outline.ts` / `starters.ts` / `presets.ts` | Plano → documento, os 8 modelos da galeria e as seções prontas |
+
+Regras:
+
+- **Modos**: `editor` mostra exemplos (variáveis destacadas, campos e aceite
+  como prévia); `public` usa os elementos vivos; `print` é estático (sem
+  campos), com as respostas do destinatário quando o contexto as traz
+  (`fieldValues`, `selection`, `acceptedByName`, `acceptedAt`).
+- **Sem `react-dom/server`**: o Next recusa esse import em módulos que podem
+  virar Server Component ou rota. `renderDocumentHtml` usa um serializador
+  próprio (`html.ts`) e os componentes de impressão não usam hooks — roda no
+  worker, numa rota ou num teste.
+- **Variáveis**: chave conhecida sem valor vira vazio no link e no PDF;
+  chave desconhecida fica como foi escrita.
+- **Aceite e pagamento** são únicos por documento. O pagamento só aparece
+  com `paymentEnabled`; no editor, um aviso explica quando ele liga.
+- **Layout paginado**: no editor e no link a folha mostra onde cada página
+  termina; as quebras reais vêm de "Quebra de página", de "Começar em nova
+  página" na seção e do próprio motor de impressão. A primeira seção do tipo
+  Capa sai sem margem no PDF.
+- **Fontes**: as mesmas famílias dos sites (a CSP do app só serve fontes do
+  próprio domínio). O PDF carrega a Geist do Google Fonts.
+## Backend (regras de negócio)
+
+- **Permissão**: módulo CRM + recurso `documents` (como as propostas):
+  membro cria, edita e envia; só OWNER/ADMIN excluem. Mudar a validade de um
+  documento `EXPIRED` o reabre e é só para OWNER/ADMIN, com data futura.
+- **Autosave** (`PUT .../content`): o conteúdo passa pelo catálogo; com
+  `baseUpdatedAt` antigo responde `409 DOCUMENT_SAVE_CONFLICT`. Enviar ou
+  editar também muda o `updatedAt`, então o editor usa o valor devolvido como
+  próxima base.
+- **Envio**: e-mail (`components/emails/document-shared.tsx`), WhatsApp por
+  um número conectado na Comunicação (Z-API primeiro; Meta só entrega texto
+  dentro da janela de 24 h) ou só o link. Sem número, telefone inválido ou
+  recusa do WhatsApp, o destinatário fica como `LINK` e `deliveries` avisa
+  quem enviou.
+- **Link genérico × pessoal**: `linkEnabled` desliga só o link genérico; o
+  link pessoal acaba quando o destinatário é removido. Na identificação do
+  link genérico, o leitor ganha um link pessoal (APPROVER) para que leituras e
+  respostas fiquem no nome dele.
+- **Leitura**: a página marca a primeira leitura (SENT → VIEWED) no servidor,
+  ignorando prévias de link (WhatsApp, Slack, robôs). O evento `OPENED` e o
+  aviso "abriu agora" são do analytics.
+- **Respostas**: aceite e recusa só com o documento aberto, dentro da validade
+  e na versão atual; campos validados como os campos personalizados do CRM
+  (CPF, CNPJ, e-mail, telefone, data); o total usa a seleção do leitor e vira
+  o `totalValue` do documento. O envio de campos é um por destinatário.
+- **Depois do aceite/recusa**: notificação no Steel e e-mail ao dono, evento
+  de Steel Agents (`crm.document.accepted` / `crm.document.declined`) e, numa
+  proposta com oportunidade, a oportunidade vai para a primeira etapa ganha
+  com uma anotação.
+- **Validade**: vale até o fim do dia (America/Sao_Paulo; ainda não há fuso
+  por workspace). O worker `documents-expiry` roda às 00:10, marca
+  `EXPIRED`, avisa o dono no Steel e, se o aviso por e-mail das propostas
+  estiver ligado nas configurações do CRM, por e-mail.
+
+- A migração é idempotente e roda no worker: `documents-legacy-import`
+  entra uma vez a cada boot (job id fixo), abre um job por workspace e migra
+  os modelos e depois as propostas, em lotes. O que falhar fica para o
+  próximo boot.
+- `/crm/proposals` vai para `/crm/documents?kind=PROPOSAL`,
+  `/crm/proposal-templates[/id]` para a aba Modelos, `/crm/proposals/<id>`
+  para o documento migrado e `/p/<token>` para `/d/<token>` (mesmo token).
+  Se o worker ainda não chegou na proposta, ela é convertida na hora.
+- Conversão (`src/lib/canvas-document/convert-proposal.ts`): capa → seção
+  `cover`; apresentação, necessidade, solução, escopo e termos → títulos,
+  textos, listas e imagens; produtos e valores → tabela de preços (o desconto
+  absoluto vira o mesmo percentual em cada linha); condições comerciais →
+  tabela (ou textos, se longas); assinatura → bloco de aceite. Sem seção de
+  assinatura, a proposta ganha um bloco de aceite no fim (a página antiga
+  sempre deixava aceitar). Seções desligadas ficam de fora.
+- Visualizações viram sessões de leitura (sem tempo por seção), o aceite vira
+  uma resposta `ACCEPT` na versão 1 e cada assinatura antiga vira um evento
+  `ACCEPTED` com `legacySignature: true`.
+- Continuam lendo as tabelas antigas: as rotas públicas
+  `/api/crm/proposals/<token>/**` (links antigos), as rotas autenticadas
+  `/api/workspaces/<id>/crm/proposals/**` e `proposal-templates/**`, e a
+  ferramenta `crm_list_proposals` do Steel AI/MCP.
+
+## Propostas a partir do CRM
+
+- **Funil de leads**: "Criar e avançar para Proposta" cria um documento
+  `PROPOSAL` ligado ao lead; as apresentações apontam para o documento.
+- **Oportunidade e renovação**: "Gerar proposta"
+  (`POST /api/workspaces/<id>/crm/opportunities/<id>/proposal`) cria a
+  proposta com a empresa, o contato e os itens da oportunidade na tabela de
+  preços.
+- **Sala de negociação**: mostra um documento da oportunidade
+  (`documentId`), só depois do envio.
+- **Steel AI**: `crm_create_proposal` e `crm_list_proposal_documents`.
+- O job `crm-proposal-expiry` foi desligado; `documents-expiry` cuida da
+  validade.

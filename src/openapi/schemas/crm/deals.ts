@@ -139,7 +139,14 @@ export const CrmDealRoomDTO = dto(
     publicPath: z.string().meta({ example: '/sala/abc123' }),
     title: z.string().nullable(),
     welcomeMessage: z.string().nullable(),
-    proposalId: z.string().nullable(),
+    proposalId: z
+      .string()
+      .nullable()
+      .meta({ description: 'Proposta antiga (antes do ADR 0063).' }),
+    documentId: z
+      .string()
+      .nullable()
+      .meta({ description: 'Documento exibido na sala (ganha da proposta).' }),
     materials: z.array(DealRoomMaterial),
     actions: z.array(DealRoomAction),
     visitors: z.array(

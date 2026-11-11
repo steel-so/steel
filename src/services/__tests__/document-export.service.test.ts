@@ -42,7 +42,7 @@ vi.mock('@/src/services/authz', () => ({
   assertModuleMember: mocks.assertModuleMember,
   assertModuleEnabled: mocks.assertModuleEnabled,
 }))
-vi.mock('@/src/lib/document-export/backend-adapter', () => ({
+vi.mock('@/src/services/document-access', () => ({
   resolveDocumentToken: mocks.resolveDocumentToken,
 }))
 vi.mock('@/src/lib/queue/documents-pdf', () => ({

@@ -14,15 +14,15 @@ export const crmPage: ProductPage = {
   template: 'object',
   label: 'CRM',
   meta: {
-    title: 'CRM com leads, funis e propostas | Steel',
+    title: 'CRM com leads, funis e documentos | Steel',
     description:
-      'Leads com pontuação e roteamento, funis e oportunidades, propostas com aceite online, previsão de vendas, metas, campanhas e workflows num só CRM.',
+      'Leads pontuados e roteados, funis, propostas e documentos com aceite online e leitura rastreada, previsão, metas, campanhas e workflows num só CRM.',
   },
   hero: {
     eyebrow: 'CRM',
     title: 'Do primeiro contato à proposta aceita, sem trocar de ferramenta',
     subtitle:
-      'Leads que chegam pontuados e com dono, funis com probabilidade por etapa e propostas que o cliente aceita por link. A venda inteira num registro só.',
+      'Leads que chegam pontuados e com dono, funis com probabilidade por etapa e propostas que o cliente lê e aceita por link, com o tempo de leitura de cada seção. A venda inteira num registro só.',
     window: {
       title: 'CRM',
       nav: [
@@ -30,7 +30,7 @@ export const crmPage: ProductPage = {
         'Oportunidades',
         'Pessoas',
         'Empresas',
-        'Propostas',
+        'Documentos',
         'Previsão',
       ],
       active: 1,
@@ -126,17 +126,17 @@ export const crmPage: ProductPage = {
         },
       },
       {
-        title: 'Propostas com aceite online',
+        title: 'Propostas e documentos com aceite online',
         description:
-          'Monte a proposta a partir de um modelo, com produtos do catálogo. O cliente abre por link, e a visualização e o aceite voltam para o CRM.',
+          'Monte propostas, contratos e orçamentos arrastando blocos, a partir de um modelo, de um PDF ou de um pedido à IA, com a tabela de preços da oportunidade. O cliente abre por link, e o tempo de leitura por seção, o aceite e o PDF voltam para o CRM.',
         visual: {
           kind: 'list',
-          title: 'Propostas',
+          title: 'Documentos',
           items: [
-            { label: 'Rede Sol Farmácias', meta: 'Vista', tone: 'info' },
-            { label: 'Hotel Mirante', meta: 'Aceita', tone: 'success' },
-            { label: 'Grupo Atlas', meta: 'Enviada', tone: 'neutral' },
-            { label: 'Padaria Real', meta: 'Expirada', tone: 'danger' },
+            { label: 'Rede Sol Farmácias', meta: 'Visualizado', tone: 'info' },
+            { label: 'Hotel Mirante', meta: 'Aceito', tone: 'success' },
+            { label: 'Grupo Atlas', meta: 'Enviado', tone: 'neutral' },
+            { label: 'Padaria Real', meta: 'Expirado', tone: 'danger' },
           ],
         },
       },

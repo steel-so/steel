@@ -24,6 +24,7 @@ export const SEARCH_ENTITY_TYPES = [
   'crm-company',
   'crm-task',
   'crm-proposal',
+  'crm-document',
   'zap-conversation',
   'zap-contact',
   'member',
@@ -114,6 +115,12 @@ export const SEARCH_ENTITIES: Record<SearchEntityType, SearchEntityMeta> = {
     resource: 'documents',
     group: 'Propostas',
     label: 'Proposta',
+  },
+  'crm-document': {
+    module: 'CRM',
+    resource: 'documents',
+    group: 'Documentos',
+    label: 'Documento',
   },
   'zap-conversation': {
     module: 'COMMUNICATION',

@@ -1,4 +1,4 @@
-import type { z } from 'zod'
+import { z } from 'zod'
 import { ok } from '@/src/lib/result'
 import { CreateCrmDashboardSchema } from '@/src/schemas/crm-dashboard.schema'
 import {
@@ -8,15 +8,31 @@ import {
   FORM_FIELD_TYPES,
   TARGET_ATTRIBUTES,
 } from '@/src/schemas/crm-form.schema'
-import { CrmProposalSectionTypeEnum } from '@/src/schemas/crm-proposal.schema'
-import { CreateCrmProposalTemplateSchema } from '@/src/schemas/crm-proposal-template.schema'
+import {
+  DOCUMENT_STATUS_LABELS,
+  DOCUMENT_STATUSES,
+} from '@/src/schemas/document.schema'
 import { CrmDashboardService } from '@/src/services/crm-dashboard.service'
 import { CrmFormService } from '@/src/services/crm-form.service'
-import { CrmProposalTemplateService } from '@/src/services/crm-proposal-template.service'
+import { DocumentCrmService } from '@/src/services/document-crm.service'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type { SteelAiTool } from '../types'
-import { afterFields, crmBase, crmPath, zodParser } from './shared'
+import {
+  afterFields,
+  crmBase,
+  crmPath,
+  matchesQuery,
+  pageParameters,
+  pageSchema,
+  paginate,
+  zodParser,
+} from './shared'
 
-/* Ports of the old CRM assistant's "create" tools (dashboard, form, template). */
+/*
+ * Ports of the old CRM assistant's "create" tools (dashboard, form) and the
+ * proposal tools of CRM > Documentos (ADR 0063): a proposal is a document of
+ * kind PROPOSAL.
+ */
 
 export const crmCreateDashboardTool: SteelAiTool<
   z.output<typeof CreateCrmDashboardSchema>
@@ -174,90 +190,181 @@ export const crmCreateFormTool: SteelAiTool<
   },
 }
 
-const SECTION_LABELS: Record<
-  z.infer<typeof CrmProposalSectionTypeEnum>,
-  string
-> = {
-  COVER: 'Capa',
-  COMPANY_PRESENTATION: 'Apresentação da empresa',
-  CLIENT_NEEDS: 'Necessidade do cliente',
-  SOLUTION: 'Solução da proposta',
-  SCOPE: 'Escopo dos serviços',
-  PRODUCTS_PRICING: 'Produtos e valores',
-  COMMERCIAL_TERMS: 'Condições comerciais',
-  TERMS_CONDITIONS: 'Termos e condições',
-  SIGNATURE: 'Assinatura',
+const CreateProposalArgs = z.object({
+  title: z.string().trim().min(1).max(200),
+  opportunityId: z.string().min(1).optional(),
+  companyId: z.string().min(1).optional(),
+  personId: z.string().min(1).optional(),
+  leadId: z.string().min(1).optional(),
+  templateId: z.string().min(1).optional(),
+})
+
+function documentHref(base: string | null, id: string): string | undefined {
+  return crmPath(base, `documents/${id}`)
 }
 
-export const crmCreateProposalTemplateTool: SteelAiTool<
-  z.output<typeof CreateCrmProposalTemplateSchema>
+export const crmCreateProposalTool: SteelAiTool<
+  z.output<typeof CreateProposalArgs>
 > = {
-  name: 'crm_create_proposal_template',
-  label: 'Criando modelo de proposta',
+  name: 'crm_create_proposal',
+  label: 'Criando proposta',
   module: 'CRM',
   kind: 'CREATE',
   annotations: { destructiveHint: false },
   description:
-    'Cria um modelo (template) de proposta comercial com o esqueleto de seções, na ordem desejada; o conteúdo de cada seção é editado depois no app do Steel, na tela do modelo.',
+    'Cria uma proposta comercial em CRM > Documentos (documento do tipo PROPOSAL, em rascunho). Com `opportunityId`, vincula a oportunidade, a empresa e o contato dela e já traz os itens da oportunidade na tabela de preços; com `templateId`, parte de um modelo de documento. O conteúdo é editado depois no app do Steel (o `href` devolvido).',
   parameters: {
     type: 'object',
     properties: {
-      name: { type: 'string' },
-      description: { type: 'string' },
-      sections: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            type: {
-              type: 'string',
-              enum: CrmProposalSectionTypeEnum.options,
-            },
-            order: { type: 'integer', minimum: 0 },
-            enabled: { type: 'boolean' },
-          },
-          required: ['type', 'order'],
-        },
+      title: { type: 'string', description: 'Título da proposta.' },
+      opportunityId: {
+        type: 'string',
+        description: 'Oportunidade (id) da proposta.',
+      },
+      companyId: { type: 'string', description: 'Empresa (id).' },
+      personId: { type: 'string', description: 'Pessoa de contato (id).' },
+      leadId: { type: 'string', description: 'Lead (id).' },
+      templateId: {
+        type: 'string',
+        description: 'Modelo de documento (id) para começar.',
       },
     },
-    required: ['name', 'sections'],
+    required: ['title'],
     additionalProperties: false,
   },
   permission: { resource: 'documents', action: 'CREATE' },
-  parse: zodParser(CreateCrmProposalTemplateSchema),
+  parse: zodParser(CreateProposalArgs),
   async preview(_ctx, args) {
-    const sections = [...args.sections]
-      .sort((a, b) => a.order - b.order)
-      .map((s) => `${SECTION_LABELS[s.type]}${s.enabled ? '' : ' (oculta)'}`)
     return ok({
-      title: `Criar o modelo de proposta “${args.name}”`,
-      summary: `${sections.length} seção(ões).`,
+      title: `Criar a proposta “${args.title}”`,
+      summary: args.opportunityId
+        ? 'Com os itens da oportunidade na tabela de preços.'
+        : 'Em rascunho, para editar no app.',
       fields: afterFields([
-        ['Nome', args.name],
-        ['Descrição', args.description],
-        ['Seções', sections],
+        ['Título', args.title],
+        ['Oportunidade', args.opportunityId],
+        ['Empresa', args.companyId],
+        ['Pessoa', args.personId],
+        ['Lead', args.leadId],
+        ['Modelo', args.templateId],
       ]),
-      target: { type: 'crm_proposal_template', label: args.name },
+      target: { type: 'crm_document', label: args.title },
     })
   },
   async execute(ctx, args) {
-    const template = await CrmProposalTemplateService.create(
-      ctx.actorId,
-      ctx.workspaceId,
-      args,
-    )
-    if (!template.ok) return template
+    const created = args.opportunityId
+      ? await DocumentCrmService.createForOpportunity(
+          ctx.actorId,
+          ctx.workspaceId,
+          args.opportunityId,
+          { title: args.title, templateId: args.templateId },
+        )
+      : await DocumentCrmService.createProposal(ctx.actorId, ctx.workspaceId, {
+          title: args.title,
+          companyId: args.companyId,
+          personId: args.personId,
+          leadId: args.leadId,
+          templateId: args.templateId,
+        })
+    if (!created.ok) return created
     const base = await crmBase(ctx)
-    const href = crmPath(base, `proposal-templates/${template.value.id}`)
+    const href = documentHref(base, created.value.id)
     return ok({
-      data: { id: template.value.id, name: template.value.name, href },
-      summary: `Modelo de proposta “${template.value.name}” criado`,
+      data: { id: created.value.id, title: created.value.title, href },
+      summary: `Proposta “${created.value.title}” criada`,
       target: {
-        type: 'crm_proposal_template',
-        id: template.value.id,
-        label: template.value.name,
+        type: 'crm_document',
+        id: created.value.id,
+        label: created.value.title,
         href,
       },
+    })
+  },
+}
+
+const ListProposalDocumentsArgs = z.object({
+  query: z.string().trim().min(1).max(200).optional(),
+  status: z.enum(DOCUMENT_STATUSES).optional(),
+  opportunityId: z.string().min(1).optional(),
+  leadId: z.string().min(1).optional(),
+  companyId: z.string().min(1).optional(),
+  templates: z.boolean().optional(),
+  ...pageSchema,
+})
+
+function compactDocument(doc: CrmDocumentSummaryDTO, base: string | null) {
+  return {
+    id: doc.id,
+    title: doc.title,
+    status: doc.status,
+    statusLabel: DOCUMENT_STATUS_LABELS[doc.status],
+    isTemplate: doc.isTemplate,
+    totalValue: doc.totalValue,
+    validUntil: doc.validUntil,
+    sentAt: doc.sentAt,
+    acceptedAt: doc.acceptedAt,
+    acceptedByName: doc.acceptedByName,
+    opportunityId: doc.opportunityId,
+    leadId: doc.leadId,
+    companyId: doc.companyId,
+    personId: doc.personId,
+    ownerId: doc.ownerId,
+    href: documentHref(base, doc.id),
+  }
+}
+
+export const crmListProposalDocumentsTool: SteelAiTool<
+  z.output<typeof ListProposalDocumentsArgs>
+> = {
+  name: 'crm_list_proposal_documents',
+  label: 'Consultando propostas em Documentos',
+  module: 'CRM',
+  kind: 'READ',
+  description:
+    'Lista as propostas de CRM > Documentos (documentos do tipo PROPOSAL), das mais recentes para as mais antigas — título, status (DRAFT, SENT, VIEWED, ACCEPTED, DECLINED, EXPIRED, ARCHIVED), total, validade, aceite e vínculos, com link. `templates: true` lista os modelos de proposta.',
+  parameters: {
+    type: 'object',
+    properties: {
+      query: { type: 'string', description: 'Parte do título.' },
+      status: { type: 'string', enum: [...DOCUMENT_STATUSES] },
+      opportunityId: {
+        type: 'string',
+        description: 'Só as da oportunidade (id).',
+      },
+      leadId: { type: 'string', description: 'Só as do lead (id).' },
+      companyId: { type: 'string', description: 'Só as da empresa (id).' },
+      templates: {
+        type: 'boolean',
+        description: 'Lista os modelos de proposta em vez das propostas.',
+      },
+      ...pageParameters,
+    },
+    additionalProperties: false,
+  },
+  permission: { resource: 'documents', action: 'VIEW' },
+  parse: zodParser(ListProposalDocumentsArgs),
+  async execute(ctx, args) {
+    const docs = await DocumentCrmService.listProposals(
+      ctx.actorId,
+      ctx.workspaceId,
+      {
+        status: args.status,
+        opportunityId: args.opportunityId,
+        leadId: args.leadId,
+        isTemplate: args.templates === true,
+      },
+    )
+    if (!docs.ok) return docs
+    const filtered = docs.value.filter(
+      (doc) =>
+        matchesQuery(args.query, [doc.title]) &&
+        (!args.companyId || doc.companyId === args.companyId),
+    )
+    const base = await crmBase(ctx)
+    const page = paginate(filtered, args, (doc) => compactDocument(doc, base))
+    return ok({
+      data: page,
+      summary: `${page.total} proposta(s) encontrada(s)`,
     })
   },
 }
@@ -265,5 +372,6 @@ export const crmCreateProposalTemplateTool: SteelAiTool<
 export const CRM_BUILDER_TOOLS = [
   crmCreateDashboardTool,
   crmCreateFormTool,
-  crmCreateProposalTemplateTool,
+  crmCreateProposalTool,
+  crmListProposalDocumentsTool,
 ]
