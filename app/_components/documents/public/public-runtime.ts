@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { requestPublicDocumentPdf } from '@/src/hooks/use-document-exports'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   type DocumentActionResult,
@@ -24,10 +25,6 @@ const STALE_MESSAGE =
   'O documento foi atualizado enquanto você lia. Recarregue a página para ver a versão nova.'
 const NETWORK_MESSAGE = 'Sem conexão. Verifique a internet e tente de novo.'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** PDF polling: every 2 s, up to 2 minutes. */
-export const PDF_POLL_MS = 2000
-export const PDF_POLL_TRIES = 60
 
 /** Where the link starts: decided, expired by date, or open. */
 export function initialRuntimeStatus(
@@ -101,61 +98,6 @@ async function post(
     })
     if (res.ok) return { ok: true }
     return { ok: false, message: await readMessage(res, fallback) }
-  } catch {
-    return { ok: false, message: NETWORK_MESSAGE }
-  }
-}
-
-function fileName(res: Response, title: string): string {
-  const header = res.headers.get('content-disposition') ?? ''
-  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header)
-  if (match?.[1]) {
-    try {
-      return decodeURIComponent(match[1])
-    } catch {
-      return match[1]
-    }
-  }
-  const safe = title.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'documento'
-  return `${safe}.pdf`
-}
-
-const wait = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms))
-
-/** Asks for the PDF, waits while it renders (202) and saves the file. */
-export async function downloadDocumentPdf(
-  token: string,
-  title: string,
-): Promise<DocumentActionResult> {
-  try {
-    for (let attempt = 0; attempt < PDF_POLL_TRIES; attempt++) {
-      const res = await fetch(publicDocumentUrl(token, '/pdf'))
-      if (res.status === 202) {
-        await wait(PDF_POLL_MS)
-        continue
-      }
-      if (!res.ok) {
-        return {
-          ok: false,
-          message: await readMessage(res, 'Não foi possível gerar o PDF.'),
-        }
-      }
-      const blob = await res.blob()
-      const href = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = href
-      link.download = fileName(res, title)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      setTimeout(() => URL.revokeObjectURL(href), 10_000)
-      return { ok: true }
-    }
-    return {
-      ok: false,
-      message: 'O PDF está demorando mais que o normal. Tente de novo.',
-    }
   } catch {
     return { ok: false, message: NETWORK_MESSAGE }
   }
@@ -270,7 +212,7 @@ export function usePublicDocumentRuntime({
           'Não foi possível enviar as respostas.',
         )
       },
-      downloadPdf: () => downloadDocumentPdf(token, data.document.title),
+      downloadPdf: () => requestPublicDocumentPdf(token),
     }
   }, [
     data,
