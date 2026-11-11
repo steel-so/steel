@@ -75,6 +75,25 @@ export const DocumentImportRepository = {
     }
   },
 
+  /** Imports of a user still queued or running in the workspace. */
+  async countActive(
+    workspaceId: string,
+    createdById: string,
+  ): Promise<Result<number>> {
+    try {
+      const count = await prisma.documentImport.count({
+        where: {
+          workspaceId,
+          createdById,
+          status: { in: ['PENDING', 'RUNNING'] },
+        },
+      })
+      return ok(count)
+    } catch (error) {
+      return err(dbError('Failed to count active document imports', error))
+    }
+  },
+
   /** For the worker, which only has the id. */
   async findForRun(id: string): Promise<Result<DocumentImport | null>> {
     try {

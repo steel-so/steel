@@ -3,7 +3,7 @@ import { createId } from '@paralleldrive/cuid2'
 import type { DocumentImport, DocumentKind } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
-import { storageError } from '@/src/errors'
+import { conflict, storageError } from '@/src/errors'
 import {
   documentImportFailed,
   documentImportNotFound,
@@ -59,7 +59,12 @@ import { outlineCall } from '@/src/lib/document-ai/run'
 import { DocumentsAiJob } from '@/src/lib/queue/jobs'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
-import { ensureBucket, getObject, putObject } from '@/src/lib/storage/s3'
+import {
+  deleteObject,
+  ensureBucket,
+  getObject,
+  putObject,
+} from '@/src/lib/storage/s3'
 import { toDocumentImportDTO } from '@/src/mappers/document-import.mapper'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
@@ -93,6 +98,8 @@ const PROGRESS_INTERVAL_MS = 2_500
 /** Characters the answer usually has per page (moves the progress bar). */
 const CHARS_PER_PAGE = 2_500
 const PROMPT_EXPECTED_CHARS = 14_000
+/** Imports one user may have queued or running at once (cost guard). */
+export const MAX_ACTIVE_IMPORTS = 3
 
 export interface DocumentImportFile {
   buffer: Buffer
@@ -121,6 +128,10 @@ function authorize(actorId: string, workspaceId: string) {
   })
 }
 
+/** The model reads up to 60 pages before it writes: wait that long for
+ * the first chunk before failing over to another model. */
+const FIRST_CHUNK_TIMEOUT_MS = 10 * 60 * 1000
+
 /** Plan feature + model + quota (the same gate as the site generator). */
 async function prepareCall(
   actorId: string,
@@ -128,7 +139,9 @@ async function prepareCall(
 ): Promise<Result<PreparedAiCall>> {
   const feature = await assertFeature(workspaceId, 'crm.aiAssistant')
   if (!feature.ok) return feature
-  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId, [], {
+    timeoutMs: FIRST_CHUNK_TIMEOUT_MS,
+  })
 }
 
 interface CheckedFile {
@@ -320,6 +333,25 @@ async function buildModelInput(
   })
 }
 
+/**
+ * The uploaded file is only the model's input: once the document exists it
+ * is deleted (less personal data kept, LGPD). Best effort — the workspace
+ * purge still covers a leftover.
+ */
+async function dropSourceFile(row: DocumentImport): Promise<void> {
+  if (!row.fileKey) return
+  try {
+    await deleteObject({ bucket: DOCUMENT_FILES_BUCKET, key: row.fileKey })
+  } catch (cause) {
+    logger.warn('documents.import.source_delete_failed', {
+      component: COMPONENT,
+      workspaceId: row.workspaceId,
+      importId: row.id,
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+  }
+}
+
 /** Records every provider call and keeps the running cost. */
 function usageMeter(call: PreparedAiCall, row: DocumentImport) {
   let costUsd = 0
@@ -356,6 +388,39 @@ function assemble(
   const checked = validateDocumentContent(built.content)
   if (!checked.ok) return err(checked.error)
   return ok({ content: checked.value, theme: built.theme })
+}
+
+/** An unfinished import older than this is considered lost. */
+export const DOCUMENT_IMPORT_STALE_MS = 30 * 60 * 1000
+const STALE_MESSAGE =
+  'A montagem demorou demais e foi interrompida. Tente de novo.'
+
+function isStale(row: DocumentImport, now = Date.now()): boolean {
+  if (row.status === 'READY' || row.status === 'FAILED') return false
+  return now - row.createdAt.getTime() > DOCUMENT_IMPORT_STALE_MS
+}
+
+async function closeStale(row: DocumentImport): Promise<DocumentImport> {
+  const closed = await DocumentImportRepository.update(row.id, {
+    status: 'FAILED',
+    error: STALE_MESSAGE,
+    progress: failedProgress(STALE_MESSAGE),
+    finishedAt: new Date(),
+  })
+  logger.warn('documents.import.stale', {
+    component: COMPONENT,
+    workspaceId: row.workspaceId,
+    importId: row.id,
+    status: row.status,
+  })
+  return closed.ok
+    ? closed.value
+    : {
+        ...row,
+        status: 'FAILED',
+        error: STALE_MESSAGE,
+        progress: failedProgress(STALE_MESSAGE),
+      }
 }
 
 export const DocumentImportService = {
@@ -424,6 +489,19 @@ export const DocumentImportService = {
       const result = await checkFile(input.mode, file)
       if (!result.ok) return result
       checked = result.value
+    }
+
+    const active = await DocumentImportRepository.countActive(
+      workspaceId,
+      actorId,
+    )
+    if (!active.ok) return active
+    if (active.value >= MAX_ACTIVE_IMPORTS) {
+      return err(
+        conflict(
+          `Você já tem ${MAX_ACTIVE_IMPORTS} documentos sendo montados. Espere um terminar para começar outro.`,
+        ),
+      )
     }
 
     const call = await prepareCall(actorId, workspaceId)
@@ -534,6 +612,11 @@ export const DocumentImportService = {
     if (!row.ok) return row
     if (row.value.createdById !== actorId && !membership.value.isPrivileged) {
       return err(documentImportNotFound())
+    }
+    if (isStale(row.value)) {
+      // The worker died mid-build (deploy, OOM): close it so the dialog
+      // stops waiting. A late worker skips a FAILED import.
+      return ok(toDocumentImportDTO(await closeStale(row.value)))
     }
     return ok(toDocumentImportDTO(row.value))
   },
@@ -683,6 +766,7 @@ export const DocumentImportService = {
     }
 
     await publishDocumentImport(toDocumentImportDTO(completed.value.import))
+    await dropSourceFile(row)
     auditMutation({
       entity: 'document_import',
       action: 'update',

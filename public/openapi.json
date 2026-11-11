@@ -12558,7 +12558,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_9"
+            "$ref": "#/components/responses/409_CONFLICT_10"
           }
         },
         "security": [
@@ -36450,6 +36450,9 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CONFLICT_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_IMPORT_UNSUPPORTED"
@@ -64243,7 +64246,7 @@
             "$ref": "#/components/responses/404_CRM_PROPOSAL_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_8"
+            "$ref": "#/components/responses/409_CONFLICT_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
@@ -75887,7 +75890,7 @@
             "$ref": "#/components/responses/404_SITE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_7"
+            "$ref": "#/components/responses/409_CONFLICT_8"
           },
           "422": {
             "$ref": "#/components/responses/422_SITE_DOCUMENT_INVALID"
@@ -183199,7 +183202,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "summary": "CONFLICT — O usuário já tem 3 importações na fila ou em andamento",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -183213,6 +183216,28 @@
         }
       },
       "409_CONFLICT_8": {
+        "description": "Conflito com o estado atual: `CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CONFLICT": {
+                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CONFLICT_9": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -183235,7 +183260,7 @@
           }
         }
       },
-      "409_CONFLICT_9": {
+      "409_CONFLICT_10": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {

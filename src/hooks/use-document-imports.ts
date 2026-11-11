@@ -73,6 +73,21 @@ export function isDocumentImportFinished(
   return dto?.status === 'READY' || dto?.status === 'FAILED'
 }
 
+/**
+ * The stream and the polling race: a poll that left before a stream frame
+ * may land after it. Keeps the most advanced of the two snapshots.
+ */
+export function latestDocumentImport(
+  current: DocumentImportDTO | undefined,
+  incoming: DocumentImportDTO,
+): DocumentImportDTO {
+  if (!current || current.id !== incoming.id) return incoming
+  if (isDocumentImportFinished(current)) return current
+  if (isDocumentImportFinished(incoming)) return incoming
+  const before = current.progress.pct ?? 0
+  return (incoming.progress.pct ?? 0) < before ? current : incoming
+}
+
 /** Quota, model and estimates; refetched after every import. */
 export function useDocumentImportContext(workspaceId: string, enabled = true) {
   return useQuery<DocumentImportContextDTO>({
@@ -113,7 +128,11 @@ export function useDocumentImport(
   const queryClient = useQueryClient()
   const query = useQuery<DocumentImportDTO>({
     queryKey: documentImportKeys.detail(workspaceId, importId ?? ''),
-    queryFn: () => documentImportsApi(workspaceId).get(importId ?? ''),
+    queryFn: async ({ queryKey }) => {
+      const fetched = await documentImportsApi(workspaceId).get(importId ?? '')
+      const cached = queryClient.getQueryData<DocumentImportDTO>(queryKey)
+      return latestDocumentImport(cached, fetched)
+    },
     enabled: Boolean(importId),
     refetchInterval: (current) =>
       isDocumentImportFinished(current.state.data) ? false : POLL_MS,
@@ -132,7 +151,10 @@ export function useDocumentImport(
       await readSteelAiStream(res.body, (event) => {
         // The parser stamps the SSE event name as `type`; the DTO has none.
         const { type: _event, ...dto } = event as unknown as StreamFrame
-        if (dto.id === importId) queryClient.setQueryData(key, dto)
+        if (dto.id !== importId) return
+        queryClient.setQueryData<DocumentImportDTO>(key, (cached) =>
+          latestDocumentImport(cached, dto),
+        )
       })
     }
     // A dropped stream is not an error: the query keeps polling.
