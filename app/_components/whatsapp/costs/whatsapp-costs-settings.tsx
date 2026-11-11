@@ -328,9 +328,10 @@ function BudgetAndFees({
         <CardTitle>Orçamento e mensalidades</CardTitle>
         <CardDescription>
           O orçamento só avisa os administradores ao chegar a 80% e a 100% do
-          mês; nenhum envio é bloqueado. A mensalidade é o valor fixo pago pela
-          linha (por exemplo, a instância da Z-API) e entra no custo por
-          mensagem.
+          mês; nenhum envio é bloqueado. Para travar o gasto de um número, use
+          o limite de gasto dele em Gasto real por número. A mensalidade é o
+          valor fixo pago pela linha (por exemplo, a instância da Z-API) e
+          entra no custo por mensagem.
         </CardDescription>
       </CardHeader>
       <CardContent>

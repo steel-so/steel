@@ -19,6 +19,7 @@ import { realtimeRoutes } from './whatsapp/realtime'
 import { schedulingRoutes } from './whatsapp/scheduling'
 import { settingsRoutes } from './whatsapp/settings'
 import { slaRoutes } from './whatsapp/sla'
+import { spendCapRoutes } from './whatsapp/spend-caps'
 import { surveyRoutes } from './whatsapp/surveys'
 import { teamRoutes } from './whatsapp/teams'
 import { templateRoutes } from './whatsapp/templates'
@@ -58,6 +59,8 @@ const routes: RouteConfig[] = [
   ...widgetRoutes,
   ...metaChannelRoutes,
   ...schedulingRoutes,
+  // zap-spend-cap (ADR 0064)
+  ...spendCapRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

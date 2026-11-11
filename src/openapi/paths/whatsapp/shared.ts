@@ -77,6 +77,11 @@ export const SEND_ERRORS: ErrorEntry[] = [
     code: 'WHATSAPP_OUTSIDE_BUSINESS_HOURS',
     when: 'Fora do horário de atendimento configurado (a mensagem diz quando abre)',
   },
+  // zap-spend-cap (ADR 0064)
+  {
+    code: 'WHATSAPP_SPEND_CAP_REACHED',
+    when: 'Só templates (pagos) da Meta: o número atingiu o limite de gasto mensal no modo bloquear',
+  },
 ]
 
 export const SEND_NOTE =
