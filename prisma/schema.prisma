@@ -246,6 +246,10 @@ model User {
   @@index([deletionScheduledAt])
   @@map("users")
   sdSoftwareLicensesCreated SdSoftwareLicense[] @relation("SdSoftwareLicenseCreatedBy")
+  documentsOwned    Document[]       @relation("DocumentOwner")
+  documentsCreated  Document[]       @relation("DocumentCreatedBy")
+  documentsUpdated  Document[]       @relation("DocumentUpdatedBy")
+  documentImports   DocumentImport[] @relation("DocumentImportCreatedBy")
 }
 
 enum ConsentDocument {
@@ -675,6 +679,9 @@ model Workspace {
   @@map("workspaces")
   sdSoftwareLicenses SdSoftwareLicense[]
   sdWfmSettings SdWfmSettings?
+  /// documents: CRM > Documentos (ADR 0063).
+  documents         Document[]
+  documentImports   DocumentImport[]
 }
 
 enum WorkspaceStatus {
@@ -2507,6 +2514,7 @@ model CrmCompany {
   @@index([deletedAt])
   @@index([workspaceId, position])
   @@map("crm_companies")
+  documents Document[]
 }
 
 /// Pessoa/contato do CRM, escopada por workspace e opcionalmente ligada a uma CrmCompany.
@@ -2549,6 +2557,7 @@ model CrmPerson {
   @@index([deletedAt])
   @@index([workspaceId, position])
   @@map("crm_people")
+  documents Document[]
 }
 
 enum CrmBillingType {
@@ -2703,6 +2712,7 @@ model CrmOpportunity {
   @@index([workspaceId, position])
   @@index([workspaceId, wonAt])
   @@map("crm_opportunities")
+  documents Document[]
 }
 
 /// Item de uma oportunidade. Faz snapshot do produto (nome/preço) no momento da inclusão.
@@ -2867,6 +2877,7 @@ model CrmLead {
   @@index([deletedAt])
   @@index([workspaceId, position])
   @@map("crm_leads")
+  documents Document[]
 }
 
 /// Tentativa (ou contato efetivo) registrada nas etapas 01/02 do painel de
@@ -13310,4 +13321,403 @@ model WhatsAppBoletoCharge {
   @@index([workspaceId, conversationId, createdAt])
   @@index([opportunityId])
   @@map("whatsapp_boleto_charges")
+}
+
+// documents: CRM > Documentos — document builder on Steel Canvas (ADR 0063,
+// docs/documents/README.md). A proposal is a document of kind PROPOSAL.
+
+enum DocumentKind {
+  PROPOSAL
+  CONTRACT
+  QUOTE
+  PRESENTATION
+  TERMS
+  REPORT
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  ARCHIVED
+}
+
+enum DocumentSource {
+  BLANK
+  TEMPLATE
+  DUPLICATE
+  PDF_IMPORT
+  AI_PROMPT
+  LEGACY_PROPOSAL
+}
+
+enum DocumentRecipientRole {
+  /// Reads the document; can fill fields but not accept.
+  VIEWER
+  /// Reads and can accept or decline.
+  APPROVER
+}
+
+enum DocumentRecipientStatus {
+  PENDING
+  VIEWED
+  ACCEPTED
+  DECLINED
+}
+
+enum DocumentDeliveryChannel {
+  LINK
+  EMAIL
+  WHATSAPP
+}
+
+enum DocumentResponseAction {
+  ACCEPT
+  DECLINE
+  SUBMIT
+}
+
+enum DocumentEventType {
+  CREATED
+  SENT
+  OPENED
+  FORWARDED
+  LINK_CLICKED
+  VIDEO_PLAYED
+  ATTACHMENT_DOWNLOADED
+  PDF_DOWNLOADED
+  FIELDS_SUBMITTED
+  ACCEPTED
+  DECLINED
+  PAYMENT_STARTED
+  PAID
+  EXPIRED
+  REOPENED
+}
+
+enum DocumentJobStatus {
+  PENDING
+  RUNNING
+  READY
+  FAILED
+}
+
+enum DocumentImportMode {
+  PDF
+  DOCX
+  PROMPT
+}
+
+/// A document built on the `document` catalog of Steel Canvas. Templates are
+/// documents with `isTemplate = true`. `content` is the editable canvas
+/// document; what recipients see is the immutable `currentVersion` frozen on
+/// send. `publicToken` serves the generic link `/d/<token>`.
+model Document {
+  id               String          @id @default(cuid())
+  workspaceId      String          @map("workspace_id")
+  kind             DocumentKind    @default(OTHER)
+  status           DocumentStatus  @default(DRAFT)
+  title            String
+  description      String?
+  isTemplate       Boolean         @default(false) @map("is_template")
+  /// Template this document was created from (also the template aggregate key).
+  templateId       String?         @map("template_id")
+  source           DocumentSource  @default(BLANK)
+  /// Canvas document (catalog `document`), validated by the catalog.
+  content          Json
+  /// Theme of the `document` catalog (palette, typography, spacing).
+  theme            Json            @default("{}")
+  /// `DocumentSettingsSchema` (layout, page size, download, identification).
+  settings         Json            @default("{}")
+  currentVersionId String?         @unique @map("current_version_id")
+  publicToken      String          @unique @map("public_token")
+  linkEnabled      Boolean         @default(true) @map("link_enabled")
+  /// Valid until the end of this day (America/Sao_Paulo); null = no expiry.
+  validUntil       DateTime?       @map("valid_until")
+  /// Total of the pricing tables of the current version (BRL), for the CRM.
+  totalValue       Decimal?        @map("total_value") @db.Decimal(14, 2)
+  sentAt           DateTime?       @map("sent_at")
+  firstViewedAt    DateTime?       @map("first_viewed_at")
+  lastViewedAt     DateTime?       @map("last_viewed_at")
+  acceptedAt       DateTime?       @map("accepted_at")
+  acceptedByName   String?         @map("accepted_by_name")
+  acceptedByEmail  String?         @map("accepted_by_email")
+  declinedAt       DateTime?       @map("declined_at")
+  declineReason    String?         @map("decline_reason")
+  expiredAt        DateTime?       @map("expired_at")
+  paidAt           DateTime?       @map("paid_at")
+  companyId        String?         @map("company_id")
+  personId         String?         @map("person_id")
+  opportunityId    String?         @map("opportunity_id")
+  leadId           String?         @map("lead_id")
+  ownerId          String          @map("owner_id")
+  createdById      String          @map("created_by_id")
+  updatedById      String?         @map("updated_by_id")
+  /// CRM proposal this document was migrated from (idempotent migration).
+  legacyProposalId String?         @unique @map("legacy_proposal_id")
+  /// Legacy proposal template this template was migrated from.
+  legacyTemplateId String?         @unique @map("legacy_template_id")
+  position         Int             @default(0)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  deletedAt        DateTime?       @map("deleted_at")
+
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  template       Document?           @relation("DocumentFromTemplate", fields: [templateId], references: [id], onDelete: SetNull)
+  fromTemplate   Document[]          @relation("DocumentFromTemplate")
+  currentVersion DocumentVersion?    @relation("DocumentCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  company        CrmCompany?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  person         CrmPerson?          @relation(fields: [personId], references: [id], onDelete: SetNull)
+  opportunity    CrmOpportunity?     @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  lead           CrmLead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  owner          User                @relation("DocumentOwner", fields: [ownerId], references: [id])
+  createdBy      User                @relation("DocumentCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?               @relation("DocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  versions       DocumentVersion[]   @relation("DocumentVersions")
+  recipients     DocumentRecipient[]
+  responses      DocumentResponse[]
+  sessions       DocumentSession[]
+  sectionStats   DocumentSectionStat[]
+  events         DocumentEvent[]
+  exports        DocumentExport[]
+  imports        DocumentImport[]
+
+  @@index([workspaceId, isTemplate, deletedAt])
+  @@index([workspaceId, kind])
+  @@index([workspaceId, status])
+  @@index([status, validUntil])
+  @@index([templateId])
+  @@index([opportunityId])
+  @@index([companyId])
+  @@index([personId])
+  @@index([leadId])
+  @@map("documents")
+}
+
+/// Immutable snapshot frozen when a document is sent (or re-sent after an
+/// edit). Responses point at the version they answered; `sha256` is the hash
+/// of the canonical JSON of content + theme + settings.
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String   @map("document_id")
+  workspaceId String   @map("workspace_id")
+  number      Int
+  content     Json
+  theme       Json     @default("{}")
+  settings    Json     @default("{}")
+  sha256      String
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  document  Document           @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  currentOf Document?          @relation("DocumentCurrentVersion")
+  responses DocumentResponse[]
+  sessions  DocumentSession[]
+  exports   DocumentExport[]
+
+  @@unique([documentId, number])
+  @@index([workspaceId])
+  @@map("document_versions")
+}
+
+/// A person the document was sent to. `token` serves a personal link
+/// `/d/<token>`, so views and answers are attributed to them.
+model DocumentRecipient {
+  id            String                   @id @default(cuid())
+  documentId    String                   @map("document_id")
+  workspaceId   String                   @map("workspace_id")
+  name          String
+  email         String?
+  phone         String?
+  personId      String?                  @map("person_id")
+  role          DocumentRecipientRole    @default(APPROVER)
+  status        DocumentRecipientStatus  @default(PENDING)
+  channel       DocumentDeliveryChannel  @default(LINK)
+  token         String                   @unique
+  sentAt        DateTime?                @map("sent_at")
+  firstViewedAt DateTime?                @map("first_viewed_at")
+  lastViewedAt  DateTime?                @map("last_viewed_at")
+  respondedAt   DateTime?                @map("responded_at")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+
+  document  Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  responses DocumentResponse[]
+  sessions  DocumentSession[]
+  events    DocumentEvent[]
+
+  @@index([documentId])
+  @@index([workspaceId])
+  @@map("document_recipients")
+}
+
+/// Accept, decline or a submission of the document's fields, captured with
+/// evidence (version hash, hashed IP, user agent). LGPD: IP is never stored raw.
+model DocumentResponse {
+  id            String                 @id @default(cuid())
+  documentId    String                 @map("document_id")
+  workspaceId   String                 @map("workspace_id")
+  versionId     String                 @map("version_id")
+  recipientId   String?                @map("recipient_id")
+  action        DocumentResponseAction
+  name          String?
+  email         String?
+  /// Field values keyed by the field node id.
+  fields        Json                   @default("{}")
+  /// Pricing selection keyed by item id: { selected, quantity }.
+  selection     Json                   @default("{}")
+  totalValue    Decimal?               @map("total_value") @db.Decimal(14, 2)
+  reason        String?
+  versionSha256 String                 @map("version_sha256")
+  ipHash        String                 @map("ip_hash")
+  userAgent     String?                @map("user_agent")
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  document  Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version   DocumentVersion    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  recipient DocumentRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, createdAt])
+  @@index([workspaceId])
+  @@map("document_responses")
+}
+
+/// One reading session of the public link (one browser tab visit). Filled by
+/// the analytics flush from the Redis buffer; `activeMs` counts only time with
+/// the tab visible and the reader not idle.
+model DocumentSession {
+  id          String    @id @default(cuid())
+  documentId  String    @map("document_id")
+  workspaceId String    @map("workspace_id")
+  versionId   String?   @map("version_id")
+  recipientId String?   @map("recipient_id")
+  /// Client-generated session id, unique per document.
+  sessionKey  String    @map("session_key")
+  /// Long-lived anonymous visitor id (cookie), to count revisits/forwards.
+  visitorId   String    @map("visitor_id")
+  ipHash      String    @map("ip_hash")
+  userAgent   String?   @map("user_agent")
+  /// desktop | tablet | mobile
+  device      String?
+  referrer    String?
+  startedAt   DateTime  @map("started_at")
+  lastSeenAt  DateTime  @map("last_seen_at")
+  activeMs    Int       @default(0) @map("active_ms")
+  maxScrollPct Int       @default(0) @map("max_scroll_pct")
+  reachedEnd  Boolean   @default(false) @map("reached_end")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  document     Document              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version      DocumentVersion?      @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  recipient    DocumentRecipient?    @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+  sectionStats DocumentSectionStat[]
+  events       DocumentEvent[]
+
+  @@unique([documentId, sessionKey])
+  @@index([documentId, startedAt])
+  @@index([workspaceId])
+  @@map("document_sessions")
+}
+
+/// Active reading time of one section (a `doc-section` node) in one session.
+model DocumentSectionStat {
+  id          String   @id @default(cuid())
+  sessionId   String   @map("session_id")
+  documentId  String   @map("document_id")
+  /// Canvas node id of the `doc-section`.
+  sectionId   String   @map("section_id")
+  activeMs    Int      @default(0) @map("active_ms")
+  /// Times the section entered the viewport.
+  views       Int      @default(0)
+  firstSeenAt DateTime @map("first_seen_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  session  DocumentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, sectionId])
+  @@index([documentId, sectionId])
+  @@map("document_section_stats")
+}
+
+/// Timeline of a document (sent, opened, clicked, accepted, paid...).
+model DocumentEvent {
+  id          String            @id @default(cuid())
+  documentId  String            @map("document_id")
+  workspaceId String            @map("workspace_id")
+  type        DocumentEventType
+  sessionId   String?           @map("session_id")
+  recipientId String?           @map("recipient_id")
+  actorId     String?           @map("actor_id")
+  data        Json              @default("{}")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  document  Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  session   DocumentSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  recipient DocumentRecipient? @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, createdAt])
+  @@index([workspaceId, type, createdAt])
+  @@map("document_events")
+}
+
+/// A PDF export rendered by the worker (headless Chromium) into MinIO.
+model DocumentExport {
+  id            String            @id @default(cuid())
+  documentId    String            @map("document_id")
+  workspaceId   String            @map("workspace_id")
+  /// null = the editable draft (owner preview); otherwise a frozen version.
+  versionId     String?           @map("version_id")
+  status        DocumentJobStatus @default(PENDING)
+  storageKey    String?           @map("storage_key")
+  sizeBytes     Int?              @map("size_bytes")
+  pageCount     Int?              @map("page_count")
+  error         String?
+  requestedById String?           @map("requested_by_id")
+  recipientId   String?           @map("recipient_id")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  finishedAt    DateTime?         @map("finished_at")
+  expiresAt     DateTime?         @map("expires_at")
+
+  document Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version  DocumentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+
+  @@index([documentId, createdAt])
+  @@index([status, expiresAt])
+  @@map("document_exports")
+}
+
+/// AI build of a document from an uploaded PDF/DOCX or from a prompt.
+model DocumentImport {
+  id          String             @id @default(cuid())
+  workspaceId String             @map("workspace_id")
+  documentId  String?            @map("document_id")
+  mode        DocumentImportMode
+  status      DocumentJobStatus  @default(PENDING)
+  kind        DocumentKind       @default(OTHER)
+  fileKey     String?            @map("file_key")
+  fileName    String?            @map("file_name")
+  fileSize    Int?               @map("file_size")
+  pageCount   Int?               @map("page_count")
+  prompt      String?
+  /// Progress shown to the user: { step, message, pct }.
+  progress    Json               @default("{}")
+  model       String?
+  costUsd     Decimal?           @map("cost_usd") @db.Decimal(10, 6)
+  error       String?
+  createdById String             @map("created_by_id")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  finishedAt  DateTime?          @map("finished_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  document  Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  createdBy User      @relation("DocumentImportCreatedBy", fields: [createdById], references: [id])
+
+  @@index([workspaceId, createdAt])
+  @@map("document_imports")
 }
