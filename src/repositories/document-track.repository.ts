@@ -244,8 +244,8 @@ export const DocumentTrackRepository = {
       const writes = [
         prisma.$executeRaw`
           UPDATE documents SET
-            first_viewed_at = COALESCE(first_viewed_at, ${at}),
-            last_viewed_at = GREATEST(COALESCE(last_viewed_at, ${at}), ${at}),
+            first_viewed_at = COALESCE(first_viewed_at, ${at}::timestamp),
+            last_viewed_at = GREATEST(last_viewed_at, ${at}::timestamp),
             status = CASE WHEN status = 'SENT'
               THEN 'VIEWED'::"DocumentStatus" ELSE status END
           WHERE id = ${documentId}`,
@@ -253,8 +253,8 @@ export const DocumentTrackRepository = {
       if (recipientId) {
         writes.push(prisma.$executeRaw`
           UPDATE document_recipients SET
-            first_viewed_at = COALESCE(first_viewed_at, ${at}),
-            last_viewed_at = GREATEST(COALESCE(last_viewed_at, ${at}), ${at}),
+            first_viewed_at = COALESCE(first_viewed_at, ${at}::timestamp),
+            last_viewed_at = GREATEST(last_viewed_at, ${at}::timestamp),
             status = CASE WHEN status = 'PENDING'
               THEN 'VIEWED'::"DocumentRecipientStatus" ELSE status END
           WHERE id = ${recipientId}`)
@@ -339,11 +339,14 @@ export const DocumentTrackRepository = {
         ...sessions.map(
           (s) => prisma.$executeRaw`
             UPDATE document_sessions SET
-              active_ms = active_ms + ${s.activeMs},
-              max_scroll_pct = GREATEST(max_scroll_pct, ${s.maxScrollPct}),
-              reached_end = reached_end OR ${s.reachedEnd},
-              last_seen_at = GREATEST(last_seen_at, ${s.lastSeenAt ?? now}),
-              updated_at = ${now}
+              active_ms = active_ms + ${s.activeMs}::int,
+              max_scroll_pct = GREATEST(max_scroll_pct, ${s.maxScrollPct}::int),
+              reached_end = reached_end OR ${s.reachedEnd}::boolean,
+              last_seen_at = GREATEST(
+                last_seen_at,
+                ${s.lastSeenAt ?? now}::timestamp
+              ),
+              updated_at = ${now}::timestamp
             WHERE id = ${s.sessionId}`,
         ),
         ...sections.map((s) =>
