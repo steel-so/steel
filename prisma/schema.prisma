@@ -2964,7 +2964,12 @@ model CrmLeadMeeting {
 model CrmLeadProposalPresentation {
   id                String                @id @default(cuid())
   leadId            String                @map("lead_id")
-  proposalId        String                @map("proposal_id")
+  /// Legacy proposal; presentations of migrated proposals point at the
+  /// document instead (documents-legacy-import backfills `documentId`).
+  proposalId        String?               @map("proposal_id")
+  /// Document (kind PROPOSAL) presented (ADR 0063). No FK: documents are
+  /// soft-deleted and the service checks the link.
+  documentId        String?               @map("document_id")
   presentedAt       DateTime              @map("presented_at")
   format            CrmLeadProposalFormat
   amount            Decimal               @db.Decimal(14, 2)
@@ -2974,11 +2979,12 @@ model CrmLeadProposalPresentation {
   createdAt         DateTime              @default(now()) @map("created_at")
 
   lead      CrmLead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  proposal  CrmProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
-  createdBy User        @relation("CrmLeadProposalPresentationCreatedBy", fields: [createdById], references: [id])
+  proposal  CrmProposal? @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  createdBy User         @relation("CrmLeadProposalPresentationCreatedBy", fields: [createdById], references: [id])
 
   @@index([leadId, presentedAt])
   @@index([proposalId])
+  @@index([documentId])
   @@map("crm_lead_proposal_presentations")
 }
 
@@ -12589,8 +12595,11 @@ model CrmDealRoom {
   enabled        Boolean  @default(true)
   title          String?
   welcomeMessage String?  @map("welcome_message")
-  /// Proposal shown in the room.
+  /// Legacy proposal shown in the room (before ADR 0063).
   proposalId     String?  @map("proposal_id")
+  /// Document shown in the room (ADR 0063); wins over `proposalId`. No FK:
+  /// documents are soft-deleted and the service checks the link.
+  documentId     String?  @map("document_id")
   createdById    String   @map("created_by_id")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -12605,6 +12614,7 @@ model CrmDealRoom {
   messages    CrmDealRoomMessage[]
 
   @@index([workspaceId])
+  @@index([documentId])
   @@map("crm_deal_rooms")
 }
 
