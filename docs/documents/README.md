@@ -133,3 +133,37 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   ficam nas tabelas antigas, só para consulta.
 - A migração é idempotente e roda no worker.
 - `/crm/proposals`, `/crm/proposal-templates` e `/p/<token>` redirecionam.
+
+## Backend (regras de negócio)
+
+- **Permissão**: módulo CRM + recurso `documents` (como as propostas):
+  membro cria, edita e envia; só OWNER/ADMIN excluem. Mudar a validade de um
+  documento `EXPIRED` o reabre e é só para OWNER/ADMIN, com data futura.
+- **Autosave** (`PUT .../content`): o conteúdo passa pelo catálogo; com
+  `baseUpdatedAt` antigo responde `409 DOCUMENT_SAVE_CONFLICT`. Enviar ou
+  editar também muda o `updatedAt`, então o editor usa o valor devolvido como
+  próxima base.
+- **Envio**: e-mail (`components/emails/document-shared.tsx`), WhatsApp por
+  um número conectado na Comunicação (Z-API primeiro; Meta só entrega texto
+  dentro da janela de 24 h) ou só o link. Sem número, telefone inválido ou
+  recusa do WhatsApp, o destinatário fica como `LINK` e `deliveries` avisa
+  quem enviou.
+- **Link genérico × pessoal**: `linkEnabled` desliga só o link genérico; o
+  link pessoal acaba quando o destinatário é removido. Na identificação do
+  link genérico, o leitor ganha um link pessoal (APPROVER) para que leituras e
+  respostas fiquem no nome dele.
+- **Leitura**: a página marca a primeira leitura (SENT → VIEWED) no servidor,
+  ignorando prévias de link (WhatsApp, Slack, robôs). O evento `OPENED` e o
+  aviso "abriu agora" são do analytics.
+- **Respostas**: aceite e recusa só com o documento aberto, dentro da validade
+  e na versão atual; campos validados como os campos personalizados do CRM
+  (CPF, CNPJ, e-mail, telefone, data); o total usa a seleção do leitor e vira
+  o `totalValue` do documento. O envio de campos é um por destinatário.
+- **Depois do aceite/recusa**: notificação no Steel e e-mail ao dono, evento
+  de Steel Agents (`crm.document.accepted` / `crm.document.declined`) e, numa
+  proposta com oportunidade, a oportunidade vai para a primeira etapa ganha
+  com uma anotação.
+- **Validade**: vale até o fim do dia (America/Sao_Paulo; ainda não há fuso
+  por workspace). O worker `documents-expiry` roda às 00:10, marca
+  `EXPIRED`, avisa o dono no Steel e, se o aviso por e-mail das propostas
+  estiver ligado nas configurações do CRM, por e-mail.
