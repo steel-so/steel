@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createContext, createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { CanvasDocument, CanvasNode } from '@/src/lib/canvas/types'
@@ -518,5 +518,29 @@ describe('renderToHtml', () => {
     expect(out).toBe('<p>Oi Ana</p><style>a>b{color:red}</style>')
     const css = styleToCss({ opacity: 0, padding: 0, width: 10 })
     expect(css).toBe('opacity:0;padding:0;width:10px')
+  })
+})
+
+describe('renderToHtml edge cases', () => {
+  it('renders fragments and context providers through', () => {
+    const Context = createContext('a')
+    const tree = createElement(
+      Context.Provider,
+      { value: 'b' },
+      createElement(Fragment, null, createElement('br'), 'ok'),
+    )
+    expect(renderToHtml(tree)).toBe('<br>ok')
+  })
+
+  it('ignores functions, symbols and empty values', () => {
+    const out = renderToHtml(
+      createElement('input', {
+        readOnly: true,
+        disabled: false,
+        value: undefined,
+        'aria-hidden': 'true',
+      }),
+    )
+    expect(out).toBe('<input readonly aria-hidden="true">')
   })
 })

@@ -4,6 +4,7 @@ import {
   buildDocumentCatalog,
   createDocumentCatalog,
   createEmptyDocumentContent,
+  describeDocumentError,
   DOCUMENT_SECTION_PRESETS,
   DOCUMENT_STARTERS,
   DOCUMENT_TYPES,
@@ -343,5 +344,38 @@ describe('helpers', () => {
     expect(videoSource('https://cdn.x.dev/a.mp4').kind).toBe('file')
     expect(videoSource('javascript:alert(1)').kind).toBe('none')
     expect(videoSource('').kind).toBe('none')
+  })
+})
+
+describe('describeDocumentError', () => {
+  it('explains every engine error in pt-BR', () => {
+    const cases = [
+      describeDocumentError({ code: 'UNKNOWN_TYPE', type: 'x' }),
+      describeDocumentError({ code: 'INVALID_PROPS', id: 'n', issues: ['a'] }),
+      describeDocumentError({
+        code: 'NOT_ACCEPTED',
+        parentType: 'columns',
+        childType: 'text',
+      }),
+      describeDocumentError({ code: 'MAX_CHILDREN', parentType: 'p', max: 4 }),
+      describeDocumentError({ code: 'MIN_CHILDREN', parentType: 'p', min: 1 }),
+      describeDocumentError({ code: 'UNIQUE', type: 'accept' }),
+      describeDocumentError({ code: 'NODE_NOT_FOUND', id: 'n' }),
+      describeDocumentError({ code: 'CYCLE', id: 'n' }),
+      describeDocumentError({ code: 'INVALID_DOCUMENT', reason: 'r' }),
+      describeDocumentError({ code: 'LOCKED', id: 'n' }),
+    ]
+    expect(cases).toEqual([
+      'elemento desconhecido (x)',
+      'propriedades inválidas em n: a',
+      'text não pode ficar dentro de columns',
+      'p aceita no máximo 4 itens',
+      'p precisa de pelo menos 1 item',
+      'só pode haver um elemento accept',
+      'elemento n não encontrado',
+      'o elemento n aparece duas vezes',
+      'r',
+      'LOCKED',
+    ])
   })
 })
