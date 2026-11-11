@@ -217,6 +217,11 @@ export const TAG_GROUPS = [
         description:
           'Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público.',
       },
+      {
+        name: 'CRM · Documentos',
+        description:
+          'Construtor de documentos (ADR 0063): documentos e modelos no Steel Canvas, autosave, envio com versão congelada, destinatários, linha do tempo e respostas. A proposta é um tipo de documento.',
+      },
     ],
   },
   {
@@ -517,6 +522,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Newsletter',
         description:
           'Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso.',
+      },
+      {
+        name: 'CRM público · Documentos',
+        description:
+          'Link público de um documento (`/d/<token>`): leitura, identificação do leitor, aceite, recusa e envio de campos. Sem sessão: o token do link é o acesso.',
       },
     ],
   },
