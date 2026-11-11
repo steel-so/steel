@@ -181,6 +181,10 @@
       "description": "Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público."
     },
     {
+      "name": "CRM · Leitura de documentos",
+      "description": "Analytics de leitura de CRM > Documentos: tempo por seção, alcance, leitores, revisitas, encaminhamentos e dispositivos (no modelo, a soma dos documentos criados a partir dele)."
+    },
+    {
       "name": "Comunicação · Conversas",
       "description": "Conversas e mensagens do WhatsApp, atribuição e fechamento."
     },
@@ -421,6 +425,10 @@
       "description": "Inscrição pública na newsletter, confirmação dupla, central de preferências e descadastro de um clique (RFC 8058). Sem sessão: o link assinado é o acesso."
     },
     {
+      "name": "CRM público · Leitura de documentos",
+      "description": "Sinal de leitura do link público de um documento `/d/<token>` (sem sessão; o token do link é o acesso, limite por IP com hash)."
+    },
+    {
       "name": "Status",
       "description": "Página de status pública e coleta de health checks dos componentes."
     },
@@ -529,7 +537,8 @@
         "CRM · Newsletter · Segmentos",
         "CRM · Newsletter · Engajamento",
         "CRM · Newsletter · Automação",
-        "CRM · Documentos · PDF"
+        "CRM · Documentos · PDF",
+        "CRM · Leitura de documentos"
       ]
     },
     {
@@ -604,7 +613,8 @@
         "CRM público · Sites",
         "CRM público · Modo TV",
         "CRM público · Sala de negociação",
-        "CRM público · Newsletter"
+        "CRM público · Newsletter",
+        "CRM público · Leitura de documentos"
       ]
     },
     {
@@ -1580,7 +1590,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_23"
+            "$ref": "#/components/responses/400_BAD_REQUEST_24"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -7946,7 +7956,7 @@
             "$ref": "#/components/responses/404_DOCUMENT_EXPORT_NOT_FOUND"
           },
           "410": {
-            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -7959,6 +7969,193 @@
           },
           "502": {
             "$ref": "#/components/responses/502_DOCUMENT_EXPORT_FAILED"
+          }
+        },
+        "security": []
+      }
+    },
+    "/documents/{token}/track": {
+      "post": {
+        "tags": ["CRM público · Leitura de documentos"],
+        "summary": "Registrar leitura do documento",
+        "operationId": "postDocumentsByTokenTrack",
+        "description": "Sinal do rastreador do link público `/d/<token>` (a cada ~15 s e ao sair, via `navigator.sendBeacon`, por isso o corpo pode chegar como `text/plain`). O primeiro sinal da sessão grava o evento `OPENED` e avisa o dono; os demais só somam tempo, rolagem e seções. O IP é guardado apenas como hash e o referrer só como domínio.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "description": "Token do destinatário (link pessoal) ou `publicToken` do documento.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionKey": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 64
+                  },
+                  "visitorId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 64
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "activeMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120000
+                  },
+                  "sections": {
+                    "default": {},
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 120000
+                    }
+                  },
+                  "entered": {
+                    "default": [],
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 64
+                    }
+                  },
+                  "scrollPct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "reachedEnd": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "first": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "device": {
+                    "type": "string",
+                    "enum": ["desktop", "tablet", "mobile"]
+                  },
+                  "referrer": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "events": {
+                    "default": [],
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["link_clicked", "video_played", "attachment_downloaded"]
+                        },
+                        "target": {
+                          "type": "string",
+                          "maxLength": 2000
+                        },
+                        "sectionId": {
+                          "type": "string",
+                          "maxLength": 64
+                        }
+                      },
+                      "required": ["type"]
+                    }
+                  }
+                },
+                "required": ["sessionKey", "visitorId", "activeMs", "scrollPct"]
+              },
+              "example": {
+                "sessionKey": "aba-exemplo-0001",
+                "visitorId": "navegador-exemplo-0001",
+                "activeMs": 14000,
+                "sections": {
+                  "sec-intro": 9000,
+                  "sec-precos": 5000
+                },
+                "entered": ["sec-precos"],
+                "scrollPct": 42,
+                "reachedEnd": false,
+                "first": false,
+                "device": "mobile",
+                "events": [
+                  {
+                    "type": "link_clicked",
+                    "target": "https://cliente.com.br",
+                    "sectionId": "sec-intro"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sinal registrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400_BAD_REQUEST_13"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_MODULE_DISABLED_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "410": {
+            "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": []
@@ -23125,7 +23322,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_19"
+            "$ref": "#/components/responses/400_BAD_REQUEST_20"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -36370,6 +36567,82 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/documents/{documentId}/analytics": {
+      "get": {
+        "tags": ["CRM · Leitura de documentos"],
+        "summary": "Analytics de leitura do documento",
+        "operationId": "getWorkspacesByIdCrmDocumentsByDocumentIdAnalytics",
+        "description": "Tempo total e médio, leitores únicos, % que chegou ao fim, revisitas, encaminhamentos, tempo e alcance por seção da versão atual, dispositivos, leitores e a série diária (dias no fuso America/Sao_Paulo). Num **modelo**, soma os documentos criados a partir dele. Os números chegam com até 1 minuto de atraso (buffer de leitura).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "description": "ID do documento ou do modelo.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "all",
+              "type": "string",
+              "enum": ["7", "30", "90", "all"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics de leitura.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentAnalytics"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/documents/{documentId}/exports": {
       "post": {
         "tags": ["CRM · Documentos · PDF"],
@@ -44081,7 +44354,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_16"
+            "$ref": "#/components/responses/400_BAD_REQUEST_17"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -57199,7 +57472,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_22"
+            "$ref": "#/components/responses/400_BAD_REQUEST_23"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -77549,7 +77822,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_20"
+            "$ref": "#/components/responses/400_BAD_REQUEST_21"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -77747,7 +78020,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_13"
+            "$ref": "#/components/responses/400_BAD_REQUEST_14"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -77839,7 +78112,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_15"
+            "$ref": "#/components/responses/400_BAD_REQUEST_16"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -84386,7 +84659,8 @@
                             "AI_ACTION_EXPIRING",
                             "WEBHOOK_ENDPOINT_DISABLED",
                             "CRM_SENDING_DOMAIN_VERIFIED",
-                            "CRM_SENDING_DOMAIN_FAILED"
+                            "CRM_SENDING_DOMAIN_FAILED",
+                            "CRM_DOCUMENT_VIEWED"
                           ]
                         },
                         "inApp": {
@@ -124502,7 +124776,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_18"
+            "$ref": "#/components/responses/400_BAD_REQUEST_19"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -131084,7 +131358,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_14"
+            "$ref": "#/components/responses/400_BAD_REQUEST_15"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -141001,7 +141275,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_21"
+            "$ref": "#/components/responses/400_BAD_REQUEST_22"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -147899,7 +148173,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400_BAD_REQUEST_17"
+            "$ref": "#/components/responses/400_BAD_REQUEST_18"
           },
           "401": {
             "$ref": "#/components/responses/401_UNAUTHORIZED"
@@ -160148,6 +160422,28 @@
             },
             "examples": {
               "BAD_REQUEST": {
+                "summary": "BAD_REQUEST — Corpo acima de 64 KB",
+                "value": {
+                  "success": false,
+                  "statusCode": 400,
+                  "error": {
+                    "code": "BAD_REQUEST"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "400_BAD_REQUEST_14": {
+        "description": "Requisição inválida: `BAD_REQUEST`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "BAD_REQUEST": {
                 "summary": "BAD_REQUEST — Corpo não é multipart",
                 "value": {
                   "success": false,
@@ -160195,7 +160491,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_14": {
+      "400_BAD_REQUEST_15": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160218,7 +160514,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_15": {
+      "400_BAD_REQUEST_16": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160241,7 +160537,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_16": {
+      "400_BAD_REQUEST_17": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160275,7 +160571,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_17": {
+      "400_BAD_REQUEST_18": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160320,7 +160616,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_18": {
+      "400_BAD_REQUEST_19": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160342,7 +160638,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_19": {
+      "400_BAD_REQUEST_20": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160364,7 +160660,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_20": {
+      "400_BAD_REQUEST_21": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160398,7 +160694,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_21": {
+      "400_BAD_REQUEST_22": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160421,7 +160717,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_22": {
+      "400_BAD_REQUEST_23": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -160444,7 +160740,7 @@
           }
         }
       },
-      "400_BAD_REQUEST_23": {
+      "400_BAD_REQUEST_24": {
         "description": "Requisição inválida: `BAD_REQUEST`",
         "content": {
           "application/json": {
@@ -187274,6 +187570,29 @@
         }
       },
       "410_DOCUMENT_LINK_UNAVAILABLE": {
+        "description": "Expirado: `DOCUMENT_LINK_UNAVAILABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_LINK_UNAVAILABLE": {
+                "summary": "DOCUMENT_LINK_UNAVAILABLE — Nunca enviado, link desligado, arquivado ou excluído",
+                "value": {
+                  "success": false,
+                  "statusCode": 410,
+                  "message": "Este link não está mais disponível",
+                  "error": {
+                    "code": "DOCUMENT_LINK_UNAVAILABLE"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "410_DOCUMENT_LINK_UNAVAILABLE_2": {
         "description": "Expirado: `DOCUMENT_LINK_UNAVAILABLE`",
         "content": {
           "application/json": {
@@ -226356,6 +226675,224 @@
         },
         "required": ["visitorId", "name"]
       },
+      "DocumentAnalytics": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Sessões de leitura."
+              },
+              "uniqueVisitors": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "totalActiveMs": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Tempo ativo somado (aba visível, leitor ativo)."
+              },
+              "avgActiveMs": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Tempo ativo médio por sessão."
+              },
+              "avgScrollPct": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "completionRate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Fração 0..1 das sessões que chegaram ao fim."
+              },
+              "revisits": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Sessões além da primeira de cada visitante."
+              },
+              "forwards": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Visitantes novos no link pessoal de um destinatário."
+              }
+            },
+            "required": [
+              "sessions",
+              "uniqueVisitors",
+              "totalActiveMs",
+              "avgActiveMs",
+              "avgScrollPct",
+              "completionRate",
+              "revisits",
+              "forwards"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Id do nó `section` no canvas."
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Investimento"
+                },
+                "index": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "totalActiveMs": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "avgActiveMs": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Tempo médio de quem viu a seção."
+                },
+                "readers": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Sessões que viram a seção."
+                },
+                "reachRate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "readers / sessões: onde os leitores param."
+                }
+              },
+              "required": ["id", "name", "index", "totalActiveMs", "avgActiveMs", "readers", "reachRate"]
+            }
+          },
+          "devices": {
+            "type": "object",
+            "properties": {
+              "desktop": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "tablet": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "mobile": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unknown": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["desktop", "tablet", "mobile", "unknown"]
+          },
+          "readers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "recipientId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Nome do destinatário; `null` = visitante anônimo."
+                },
+                "visitorId": {
+                  "type": "string"
+                },
+                "sessions": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "activeMs": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "device": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "lastSeenAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": ["recipientId", "name", "visitorId", "sessions", "activeMs", "device", "lastSeenAt"]
+            }
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "example": "2026-11-11"
+                },
+                "sessions": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "activeMs": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["date", "sessions", "activeMs"]
+            }
+          }
+        },
+        "required": ["totals", "sections", "devices", "readers", "daily"]
+      },
       "DocumentExport": {
         "type": "object",
         "properties": {
@@ -227714,7 +228251,8 @@
                     "AGENT_VERSION_GATE_FINISHED",
                     "AGENT_SIMULATION_FINISHED",
                     "CRM_CNPJ_ENRICHMENT_FINISHED",
-                    "CRM_DUPLICATES_FOUND"
+                    "CRM_DUPLICATES_FOUND",
+                    "CRM_DOCUMENT_VIEWED"
                   ]
                 },
                 "title": {
