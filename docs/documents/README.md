@@ -122,6 +122,7 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   validado por Zod e montado com os presets, nunca HTML livre. Linhas como
   "Nome: ____" viram campos; valores e nomes, variáveis sugeridas.
 - Usa o provedor e a cota de IA do CRM; o progresso aparece ao vivo.
+- Detalhes do fluxo, regras e falhas: [ia.md](ia.md).
 
 ## Migração das propostas
 
