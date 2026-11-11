@@ -58,8 +58,8 @@ describe('resolveDocumentToken (local adapter)', () => {
     ['a template', { isTemplate: true }],
     ['with the link off', { linkEnabled: false }],
     ['never sent', { versionId: null }],
-    ['archived', { status: 'ARCHIVED' as const }],
-  ])('is DOCUMENT_LINK_UNAVAILABLE when %s', async (_label, overrides) => {
+    ['archived', { status: 'ARCHIVED' }],
+  ] as const)('is unavailable when %s', async (_label, overrides) => {
     mockedRepo.findLink.mockResolvedValue(ok(link(overrides)))
     expectErr(await resolveDocumentToken('tok'), 'DOCUMENT_LINK_UNAVAILABLE')
   })
