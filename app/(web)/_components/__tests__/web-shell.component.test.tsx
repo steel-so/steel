@@ -195,6 +195,8 @@ const OUT = [
   '(public)/tv/',
   // Deal room shared with a customer (nov: crm-deals C8): focused public page.
   '(public)/sala/',
+  // Public link of a document (ADR 0063): the sender's brand, no Steel shell.
+  '(public)/d/',
   // Public newsletter archive (ADR 0054): the customer's brand, no Steel shell.
   '(newsletter-archive)/',
   // Published customer sites: their own header/footer globals, no Steel shell.
