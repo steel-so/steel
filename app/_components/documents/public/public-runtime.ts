@@ -21,6 +21,11 @@ export function publicDocumentUrl(token: string, path = ''): string {
   return `/api/documents/${encodeURIComponent(token)}${path}`
 }
 
+/** Leaves for another link (a reader's personal link after identifying). */
+export function navigateTo(url: string): void {
+  window.location.replace(url)
+}
+
 const STALE_MESSAGE =
   'O documento foi atualizado enquanto você lia. Recarregue a página para ver a versão nova.'
 const NETWORK_MESSAGE = 'Sem conexão. Verifique a internet e tente de novo.'

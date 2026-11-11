@@ -8,10 +8,12 @@ import { IdentifyDocumentReaderSchema } from '@/src/schemas/document.schema'
 import { type PublicReader, publicDocumentUrl } from './public-runtime'
 
 type MessageBody = { message?: string } | null
+type IdentifyBody = { data?: { url?: string } } | null
 
 /**
  * Asked by the generic link when the document requires identification:
- * name and e-mail before the content shows (`POST /identify`).
+ * name and e-mail before the content shows (`POST /identify`, which
+ * answers with the reader's personal link so the reading is theirs).
  */
 export function IdentificationGate({
   token,
@@ -22,7 +24,8 @@ export function IdentificationGate({
   token: string
   title: string
   brandName: string
-  onIdentified: (reader: PublicReader) => void
+  /** `url`: the reader's personal link, when the server made one. */
+  onIdentified: (reader: PublicReader, url: string | null) => void
 }) {
   const id = useId()
   const [name, setName] = useState('')
@@ -50,7 +53,8 @@ export function IdentificationGate({
         setError(body?.message ?? 'Não foi possível continuar. Tente de novo.')
         return
       }
-      onIdentified(parsed.data)
+      const body = (await res.json().catch(() => null)) as IdentifyBody
+      onIdentified(parsed.data, body?.data?.url ?? null)
     } catch {
       setError('Sem conexão. Verifique a internet e tente de novo.')
     } finally {

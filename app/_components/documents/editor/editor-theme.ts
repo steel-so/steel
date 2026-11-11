@@ -1,11 +1,8 @@
-import type { CanvasColorToken } from '@/src/lib/canvas/values'
-import { DOCUMENT_PAGE_SIZES } from '@/src/lib/canvas-document'
 import { SITE_FONTS } from '@/src/lib/canvas-site/theme'
-import type { DocumentSettingsDTO } from '@/src/schemas/document.schema'
 
 /**
  * The few theme fields the document settings panel edits (brand color,
- * fonts, logo) and the editor viewport, read from the stored theme
+ * fonts, logo), read from the stored theme
  * overrides (`documents.theme`). The catalog completes everything else
  * with its defaults on render (`parseDocumentTheme` of the catalog), so the
  * panel only writes the keys it owns: `colors.primary`, `fonts.heading`,
@@ -82,31 +79,6 @@ export function writeEditableTheme(
     next.logoUrl = url
   }
   return next
-}
-
-/** Brand color offered first in the color controls (`token:primary`). */
-export function editorColorTokens(
-  theme: Record<string, unknown>,
-): CanvasColorToken[] {
-  return [
-    {
-      id: 'primary',
-      label: 'Principal',
-      value: readEditableTheme(theme).primary,
-    },
-  ]
-}
-
-const MM_TO_PX = 96 / 25.4
-
-/** Canvas width: the sheet plus a gutter (paged) or a reading width (web). */
-export function editorViewportWidths(
-  settings: Pick<DocumentSettingsDTO, 'layout' | 'pageSize' | 'orientation'>,
-): { base: number; mobile: number } {
-  if (settings.layout !== 'paged') return { base: 1024, mobile: 390 }
-  const size = DOCUMENT_PAGE_SIZES[settings.pageSize] ?? DOCUMENT_PAGE_SIZES.A4
-  const width = settings.orientation === 'landscape' ? size.height : size.width
-  return { base: Math.round(width * MM_TO_PX) + 96, mobile: 390 }
 }
 
 export const EDITOR_FONTS = DOCUMENT_THEME_FONTS.map((font) => ({
