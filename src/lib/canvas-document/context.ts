@@ -30,6 +30,17 @@ export interface DocumentRenderContext {
   brand?: { name: string; logoUrl?: string | null }
   /** Payment is shown only when the workspace PSP is on (C6 flag). */
   paymentEnabled?: boolean
+  /** IANA timezone of the workspace for the dates the document shows
+   * (validity, accept); defaults to America/Sao_Paulo. */
+  timeZone?: string
+  /** Print mode: answers of the recipient to show filled in (PDF of an
+   * accepted document). Public mode reads the runtime instead. */
+  fieldValues?: DocumentFieldValuesDTO
+  /** Print mode: pricing selection of the recipient. */
+  selection?: DocumentPricingSelectionDTO
+  /** Print mode: who accepted and when (ISO). */
+  acceptedByName?: string | null
+  acceptedAt?: string | null
 }
 
 /** One line of a `pricing-table` node (`props.items`). */

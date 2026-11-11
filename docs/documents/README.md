@@ -133,3 +133,38 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   ficam nas tabelas antigas, só para consulta.
 - A migração é idempotente e roda no worker.
 - `/crm/proposals`, `/crm/proposal-templates` e `/p/<token>` redirecionam.
+
+## Catálogo `document` — para quem integra
+
+Arquivos em `src/lib/canvas-document/`:
+
+| Arquivo | O quê |
+|---|---|
+| `catalog.tsx` | `createDocumentCatalog(ctx)`, `buildDocumentCatalog(ctx, getDocument)`, `validateDocumentContent` (envelope + árvore + regras + props, mensagem em pt-BR) |
+| `components/` | `layout.tsx` (raiz, seção, caixa, colunas, divisor, espaço, quebra), `content.tsx` (textos, mídia, destaques, sumário, contato), `functional.tsx` (aceite, preços, pagamento, anexos, validade, reunião, campos), `views.tsx` (peças sem hooks), `live.tsx` (`'use client'`: o que lê o `DocumentRuntime`) |
+| `theme.ts` | Tema (paleta `token:<id>`, fontes, tamanhos, espaçamentos, cantos, largura, margem da página); `parseDocumentTheme` completa e corrige; sem `secondary`/`highlight`, ambos derivam da cor principal |
+| `styles.ts` | `documentCss(theme, { mode, settings })`: variáveis do tema, regras dos elementos (classes `d-*`), folha paginada e CSS de impressão com `@page`. Tudo dentro de `.d-root` |
+| `variables.ts` / `variables-tab.tsx` | Variáveis `{{chave}}` e a aba "Variáveis" do editor (`documentVariablesTab()`) |
+| `view.tsx` / `render.tsx` | `DocumentView` (link público, com a própria folha de estilo), `DocumentStyles` (`frameHead` do editor) e `renderDocumentHtml` (PDF) |
+| `outline.ts` / `starters.ts` / `presets.ts` | Plano → documento, os 8 modelos da galeria e as seções prontas |
+
+Regras:
+
+- **Modos**: `editor` mostra exemplos (variáveis destacadas, campos e aceite
+  como prévia); `public` usa os elementos vivos; `print` é estático (sem
+  campos), com as respostas do destinatário quando o contexto as traz
+  (`fieldValues`, `selection`, `acceptedByName`, `acceptedAt`).
+- **Sem `react-dom/server`**: o Next recusa esse import em módulos que podem
+  virar Server Component ou rota. `renderDocumentHtml` usa um serializador
+  próprio (`html.ts`) e os componentes de impressão não usam hooks — roda no
+  worker, numa rota ou num teste.
+- **Variáveis**: chave conhecida sem valor vira vazio no link e no PDF;
+  chave desconhecida fica como foi escrita.
+- **Aceite e pagamento** são únicos por documento. O pagamento só aparece
+  com `paymentEnabled`; no editor, um aviso explica quando ele liga.
+- **Layout paginado**: no editor e no link a folha mostra onde cada página
+  termina; as quebras reais vêm de "Quebra de página", de "Começar em nova
+  página" na seção e do próprio motor de impressão. A primeira seção do tipo
+  Capa sai sem margem no PDF.
+- **Fontes**: as mesmas famílias dos sites (a CSP do app só serve fontes do
+  próprio domínio). O PDF carrega a Geist do Google Fonts.
