@@ -291,8 +291,13 @@ jobs:
       # (app/(public)/__tests__/csp-hydration.e2e.test.ts): only a real
       # browser enforces the CSP and runs React. The build is the one pinned
       # by the playwright-core version in the lockfile.
+      # The runner image already ships Chrome's system libraries, so when the
+      # Ubuntu apt mirrors are down (`--with-deps` runs apt-get) the browser
+      # alone is enough for the check.
       - name: Install Chromium for the hydration check
-        run: pnpm exec playwright-core install --with-deps --only-shell chromium
+        run: |
+          pnpm exec playwright-core install --with-deps --only-shell chromium \
+            || pnpm exec playwright-core install --only-shell chromium
 
       - name: Run e2e tests
         run: pnpm test:e2e --shard=${{ matrix.shard }}/3
