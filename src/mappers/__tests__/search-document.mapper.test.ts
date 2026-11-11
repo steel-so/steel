@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type {
   CrmCompanySearchRow,
+  CrmDocumentSearchRow,
   CrmLeadSearchRow,
   CrmOpportunitySearchRow,
   CrmPersonSearchRow,
@@ -18,6 +19,7 @@ import type {
 } from '@/src/repositories/search-source.repository'
 import {
   toCrmCompanySearchDocument,
+  toCrmDocumentSearchDocument,
   toCrmLeadSearchDocument,
   toCrmOpportunitySearchDocument,
   toCrmPersonSearchDocument,
@@ -371,6 +373,40 @@ describe('search document mapper', () => {
         subtitle: 'Enviada · Lead X · Ana',
         path: '/crm/proposals/pr1',
       })
+    })
+
+    it('should index documents by kind, status or template and links', () => {
+      const row: CrmDocumentSearchRow = {
+        id: 'doc1',
+        title: 'Proposta Agro 2027',
+        kind: 'PROPOSAL',
+        status: 'VIEWED',
+        isTemplate: false,
+        ownerId: 'u1',
+        updatedAt: T,
+        company: null,
+        person: { name: 'Ana' },
+        lead: { name: 'Lead X' },
+        opportunity: { name: 'Implantação' },
+      }
+      expect(toCrmDocumentSearchDocument(WS, row)).toMatchObject({
+        entityType: 'crm-document',
+        title: 'Proposta Agro 2027',
+        subtitle: 'Proposta · Visualizado · Lead X · Ana · Implantação',
+        userIds: ['u1'],
+        path: '/crm/documents/doc1',
+      })
+      expect(
+        toCrmDocumentSearchDocument(WS, {
+          ...row,
+          kind: 'CONTRACT',
+          isTemplate: true,
+          company: { name: 'Agro' },
+          person: null,
+          lead: null,
+          opportunity: null,
+        }).subtitle,
+      ).toBe('Contrato · Modelo · Agro')
     })
   })
 

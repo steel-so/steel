@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { seedCrmNote } from '@/src/__tests__/factories/crm-note.factory'
+import { seedDocument } from '@/src/__tests__/factories/document-migration.factory'
 import {
   seedCrmProposal,
   seedCrmProposalSection,
@@ -130,6 +131,25 @@ describe('AiKnowledgeSourceRepository', () => {
     const proposals = expectOk(await repo.crmProposals(ws.id, ALL))
     expect(proposals.map((p) => p.id)).toEqual([proposal.id])
     expect(proposals[0].sections.map((s) => s.type)).toEqual(['COVER'])
+  })
+
+  it('should load live CRM documents and skip migrated proposals', async () => {
+    const { ws, user } = await setup()
+    const pending = await seedCrmProposal(ws.id, user.id)
+    const migrated = await seedCrmProposal(ws.id, user.id)
+    const doc = await seedDocument(ws.id, user.id, {
+      legacyProposalId: migrated.id,
+      content: { nodes: { t: { props: { text: 'Escopo' } } } },
+    })
+    await seedDocument(ws.id, user.id, { deletedAt: new Date() })
+
+    const proposals = expectOk(await repo.crmProposals(ws.id, ALL))
+    expect(proposals.map((p) => p.id)).toEqual([pending.id])
+    const docs = expectOk(await repo.crmDocuments(ws.id, ALL))
+    expect(docs.map((d) => d.id)).toEqual([doc.id])
+    expect(docs[0]?.content).toEqual({
+      nodes: { t: { props: { text: 'Escopo' } } },
+    })
   })
 
   it('should list the workspaces with Steel AI on (default on)', async () => {

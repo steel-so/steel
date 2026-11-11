@@ -227,7 +227,11 @@ export function toCrmDocumentKnowledge(
 ): KnowledgeDocument {
   const client =
     row.company?.name ?? row.lead?.name ?? row.person?.name ?? null
-  const nodes = (row.content as { nodes?: unknown } | null)?.nodes
+  type Nodes = Record<string, { props?: unknown } | null>
+  const nodes = (row.content as { nodes?: Nodes } | null)?.nodes ?? {}
+  const prose = Object.values(nodes).map((node) =>
+    stripHtml(jsonToKnowledgeText(node?.props ?? null, SOURCE_TEXT_MAX)),
+  )
   return {
     workspaceId,
     sourceType: 'crm-document',
@@ -238,7 +242,7 @@ export function toCrmDocumentKnowledge(
     title: row.title,
     text: joinLines([
       client ? `Cliente: ${client}` : null,
-      stripHtml(jsonToKnowledgeText(nodes ?? null, SOURCE_TEXT_MAX)),
+      ...prose,
     ]).slice(0, SOURCE_TEXT_MAX),
     path: `/crm/documents/${row.id}`,
     updatedAt: row.updatedAt,
