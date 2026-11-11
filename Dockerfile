@@ -141,10 +141,24 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
 # Instagram (remove edit list e garante moov no início — exigência da Meta).
 RUN apk add --no-cache postgresql17-client ffmpeg
 
+# Headless Chromium + fonts for the PDF export of CRM > Documentos (ADR 0063).
+# Only the worker launches it (one browser per job, closed at the end); the app
+# replicas never start it, they just carry the files. Fonts: Noto covers Latin
+# and symbols, Noto Emoji the emoji, Liberation the metric-compatible
+# Arial/Times/Courier fallbacks. Its own layer, so it stays cached between
+# deploys.
+RUN apk add --no-cache chromium font-noto font-noto-emoji ttf-liberation && \
+    fc-cache -f
+ENV CHROMIUM_PATH=/usr/bin/chromium
+
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
+# playwright-core drives the Chromium above. It stays outside the worker
+# bundle (esbuild `--external`) because it loads its own files at runtime; it
+# has no dependencies, so copying the package folder is enough.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/playwright-core ./node_modules/playwright-core
 
 USER nextjs
 EXPOSE 3000

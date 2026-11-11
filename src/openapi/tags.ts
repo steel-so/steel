@@ -212,6 +212,11 @@ export const TAG_GROUPS = [
         description:
           'Série de boas-vindas (e-mails depois da confirmação, com estatística por etapa) e reengajamento de assinantes inativos.',
       },
+      {
+        name: 'CRM · Documentos · PDF',
+        description:
+          'Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público.',
+      },
     ],
   },
   {

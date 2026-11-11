@@ -60,6 +60,8 @@ export const QueueName = {
   CrmNewsletterAutomation: 'crm-newsletter-automation',
   WhatsappChatbot: 'whatsapp-chatbot',
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
+  // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
+  DocumentsPdf: 'documents-pdf',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1226,4 +1228,22 @@ export type QaReviewJobPayload = {
   [QaReviewJob.Review]: {
     reviewId: string
   }
+}
+
+/**
+ * documents-pdf: PDF export of CRM > Documentos (ADR 0063). `render` prints
+ * one export with headless Chromium (job id = export id); `prune-expired`
+ * runs daily and deletes exports past retention (file + row).
+ */
+export const DocumentsPdfJob = {
+  Render: 'render',
+  PruneExpired: 'prune-expired',
+} as const
+
+export type DocumentsPdfJob =
+  (typeof DocumentsPdfJob)[keyof typeof DocumentsPdfJob]
+
+export type DocumentsPdfJobPayload = {
+  [DocumentsPdfJob.Render]: { exportId: string }
+  [DocumentsPdfJob.PruneExpired]: Record<string, never>
 }

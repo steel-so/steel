@@ -8,6 +8,7 @@ import {
 } from '../lib/env/server'
 import { createJobTracing, installJobContext } from '../lib/otel/job-tracing'
 import { getQueueConnection } from '../src/lib/queue/connection'
+import { scheduleDocumentsPdfJobs } from '../src/lib/queue/documents-pdf'
 import { createJobFailureAlarm } from '../src/lib/queue/failure-alarm'
 import {
   type JobFailureListener,
@@ -40,6 +41,7 @@ import { processCrmWorkflowSchedule } from '../src/lib/queue/processors/crm-work
 import { processDataExport } from '../src/lib/queue/processors/data-export'
 import { processDataRetention } from '../src/lib/queue/processors/data-retention'
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
+import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
 import { processQaReview } from '../src/lib/queue/processors/qa-review'
@@ -349,6 +351,13 @@ async function main(): Promise<void> {
   workers.push(
     registerWorker(QueueName.WhatsappChatbot, processWhatsappChatbot),
   )
+  // documents-pdf: one Chromium at a time keeps the small server's RAM in
+  // check (each render launches and closes its own browser).
+  workers.push(
+    registerWorker(QueueName.DocumentsPdf, processDocumentsPdf, {
+      concurrency: 1,
+    }),
+  )
 
   failureListener = startJobFailureListener(
     workers.map((w) => w.name as QueueName),
@@ -397,6 +406,7 @@ async function main(): Promise<void> {
   await scheduleSendingDomainsJobs()
   await scheduleCrmNewsletterJobs()
   await scheduleCrmNewsletterAutomationJobs()
+  await scheduleDocumentsPdfJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

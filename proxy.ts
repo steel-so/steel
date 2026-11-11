@@ -60,6 +60,8 @@ const PUBLIC_ROUTES = [
   // Deal room (nov: crm-deals C8): public page and API, the token is the access;
   // payment webhook of the proposal charges, authenticated by the PSP signature.
   '/sala', '/api/crm/deal-rooms', '/api/crm/payments',
+  // CRM > Documentos (ADR 0063): public link API (the token is the access).
+  '/api/documents',
   // Pesquisa de satisfação (NPS/CSAT/CES) por e-mail: link sem sessão (token)
   '/pesquisa', '/api/surveys/public',
   // Descadastro LGPD de campanhas de e-mail: link sem sessão (token HMAC)

@@ -96,7 +96,23 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
   baixa a versão atual quando `settings.allowDownload`.
 - O worker monta o HTML com `renderDocumentHtml` (modo `print`) e imprime com
   Chromium headless (`playwright-core`). O arquivo vai para o MinIO
-  (bucket `documents`) e o download usa URL temporária.
+  (bucket `documents`, `<workspace>/<documento>/exports/<exportação>.pdf`).
+- Fila `documents-pdf`: um Chromium por job, sempre fechado no fim, um job
+  por vez, JavaScript desligado na página e toda requisição filtrada — só
+  dados embutidos e hosts públicos http(s) carregam (nada de `localhost`, IP
+  privado ou serviço interno do Docker). Limites: 30 s para abrir o navegador
+  e 90 s para carregar e imprimir. Falhou → `FAILED` com uma mensagem para o
+  usuário; o motivo técnico vai para o log.
+- O dono exporta pela API (`POST .../documents/<id>/exports`) e acompanha até
+  `READY`; o download passa pelo app (`.../exports/<id>/download`), porque a
+  API do MinIO nunca é pública. Uma exportação pronta da mesma versão é
+  reaproveitada; a do rascunho só enquanto ele não for editado de novo.
+- O link público baixa por `GET /api/documents/<token>/pdf`: a primeira
+  chamada enfileira e responde 202, as seguintes (`?exportId=`) acompanham, e
+  a última devolve o arquivo. Cada download vira `PDF_DOWNLOADED` na linha do
+  tempo. Cada destinatário tem o seu PDF (as variáveis são dele).
+- Guarda: 7 dias. Todo dia às 03:45 o worker apaga arquivo e registro das
+  exportações vencidas e das que ficaram presas ou falharam.
 
 ## IA
 

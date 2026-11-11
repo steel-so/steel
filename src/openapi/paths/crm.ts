@@ -5,6 +5,7 @@ import { crmCadenceRoutes } from './crm/cadences'
 import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
 import { crmDealsRoutes } from './crm/deals'
+import { crmDocumentExportsRoutes } from './crm/document-exports'
 import { crmDuplicateRoutes } from './crm/duplicates'
 import { crmEmailRoutes } from './crm/email'
 import { crmEmailEditorRoutes } from './crm/email-editor'
@@ -82,6 +83,7 @@ const routes: RouteConfig[] = [
   ...crmNewsletterEngageRoutes,
   ...crmNewsletterAutomationRoutes,
   ...crmNewsletterDigestAiRoutes,
+  ...crmDocumentExportsRoutes,
 ]
 
 export function registerCrmPaths(registry: OpenApiRegistry): void {

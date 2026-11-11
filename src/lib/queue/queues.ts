@@ -55,6 +55,8 @@ import {
   type DataExportJobPayload,
   type DataRetentionJob,
   type DataRetentionJobPayload,
+  type DocumentsPdfJob,
+  type DocumentsPdfJobPayload,
   type NotificationsJob,
   type NotificationsJobPayload,
   type PhoneCallAiJob,
@@ -191,6 +193,7 @@ let crmCampaignsQueue: Queue | null = null
 let crmWorkflowDelayQueue: Queue | null = null
 let whatsappArchiveQueue: Queue | null = null
 let sendingDomainsQueue: Queue | null = null
+let documentsPdfQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
   DataRetentionJobPayload[DataRetentionJob],
@@ -973,6 +976,7 @@ export async function closeQueues(): Promise<void> {
     aiProactiveQueue?.close(),
     whatsappArchiveQueue?.close(),
     sendingDomainsQueue?.close(),
+    documentsPdfQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -1024,6 +1028,7 @@ export async function closeQueues(): Promise<void> {
   aiProactiveQueue = null
   whatsappArchiveQueue = null
   sendingDomainsQueue = null
+  documentsPdfQueue = null
 }
 
 /** Daily duplicate scan (crm-ops C7). */
@@ -1416,6 +1421,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmNewsletter]: getCrmNewsletterQueue,
   [QueueName.CrmNewsletterAutomation]: getCrmNewsletterAutomationQueue,
   [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
+  [QueueName.DocumentsPdf]: getDocumentsPdfQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1593,5 +1599,27 @@ export function getWhatsappChatbotQueue(): Queue<
     WhatsappChatbotJobPayload[WhatsappChatbotJob],
     unknown,
     WhatsappChatbotJob
+  >
+}
+
+/**
+ * documents-pdf (ADR 0063). One attempt: a failed render is marked FAILED and
+ * the user asks again; a blind retry would only relaunch Chromium.
+ */
+export function getDocumentsPdfQueue(): Queue<
+  DocumentsPdfJobPayload[DocumentsPdfJob],
+  unknown,
+  DocumentsPdfJob
+> {
+  if (!documentsPdfQueue) {
+    documentsPdfQueue = new Queue(QueueName.DocumentsPdf, {
+      connection: getQueueConnection(),
+      defaultJobOptions: { ...defaultJobOptions, attempts: 1 },
+    })
+  }
+  return documentsPdfQueue as Queue<
+    DocumentsPdfJobPayload[DocumentsPdfJob],
+    unknown,
+    DocumentsPdfJob
   >
 }
