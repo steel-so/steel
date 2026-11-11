@@ -61,7 +61,11 @@ const BRL = new Intl.NumberFormat('pt-BR', {
 
 const COSTS_PATH = '/zap/reports?aba=custos'
 
-function warn(event: string, workspaceId: string, extra: object) {
+function warn(
+  event: string,
+  workspaceId: string,
+  extra: Record<string, unknown>,
+) {
   logger.warn(
     event,
     logFields({ component: 'WhatsAppSpendCapService', workspaceId }, extra),
