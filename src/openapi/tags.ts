@@ -217,6 +217,11 @@ export const TAG_GROUPS = [
         description:
           'Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público.',
       },
+      {
+        name: 'CRM · Documentos · IA',
+        description:
+          'Montagem de documentos por IA a partir de um PDF, um DOCX ou um pedido em texto: contexto (cota e custo), importação, acompanhamento e stream do progresso.',
+      },
     ],
   },
   {

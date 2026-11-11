@@ -45,16 +45,23 @@ function imageBlock(url: string): ContentBlockParam {
   return { type: 'image', source: { type: 'url', url } }
 }
 
+function partBlock(part: AiContentPart): ContentBlockParam {
+  if (part.type === 'text') {
+    return { type: 'text', text: part.text || '(vazio)' }
+  }
+  if (part.type === 'image') return imageBlock(part.url)
+  return {
+    type: 'document',
+    source: { type: 'base64', media_type: part.mediaType, data: part.data },
+    ...(part.filename && { title: part.filename }),
+  }
+}
+
 function toUserContent(
   content: string | AiContentPart[],
 ): string | ContentBlockParam[] {
   if (typeof content === 'string') return content.trim() ? content : '(vazio)'
-  return content.map(
-    (part): ContentBlockParam =>
-      part.type === 'text'
-        ? { type: 'text', text: part.text || '(vazio)' }
-        : imageBlock(part.url),
-  )
+  return content.map(partBlock)
 }
 
 export function toAnthropicMessages(messages: AiMessage[]): MessageParam[] {

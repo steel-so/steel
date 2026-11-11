@@ -57,6 +57,8 @@ import {
   type DataRetentionJobPayload,
   type DocumentsPdfJob,
   type DocumentsPdfJobPayload,
+  type DocumentsAiJob,
+  type DocumentsAiJobPayload,
   type NotificationsJob,
   type NotificationsJobPayload,
   type PhoneCallAiJob,
@@ -194,6 +196,7 @@ let crmWorkflowDelayQueue: Queue | null = null
 let whatsappArchiveQueue: Queue | null = null
 let sendingDomainsQueue: Queue | null = null
 let documentsPdfQueue: Queue | null = null
+let documentsAiQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
   DataRetentionJobPayload[DataRetentionJob],
@@ -977,6 +980,7 @@ export async function closeQueues(): Promise<void> {
     whatsappArchiveQueue?.close(),
     sendingDomainsQueue?.close(),
     documentsPdfQueue?.close(),
+    documentsAiQueue?.close(),
   ])
   dataRetentionQueue = null
   accountLifecycleQueue = null
@@ -1029,6 +1033,7 @@ export async function closeQueues(): Promise<void> {
   whatsappArchiveQueue = null
   sendingDomainsQueue = null
   documentsPdfQueue = null
+  documentsAiQueue = null
 }
 
 /** Daily duplicate scan (crm-ops C7). */
@@ -1422,6 +1427,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmNewsletterAutomation]: getCrmNewsletterAutomationQueue,
   [QueueName.WhatsappChatbot]: getWhatsappChatbotQueue,
   [QueueName.DocumentsPdf]: getDocumentsPdfQueue,
+  [QueueName.DocumentsAi]: getDocumentsAiQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1621,5 +1627,24 @@ export function getDocumentsPdfQueue(): Queue<
     DocumentsPdfJobPayload[DocumentsPdfJob],
     unknown,
     DocumentsPdfJob
+  >
+}
+
+/** AI import of CRM > Documentos (ADR 0063): one job per import. */
+export function getDocumentsAiQueue(): Queue<
+  DocumentsAiJobPayload[DocumentsAiJob],
+  unknown,
+  DocumentsAiJob
+> {
+  if (!documentsAiQueue) {
+    documentsAiQueue = new Queue(QueueName.DocumentsAi, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return documentsAiQueue as Queue<
+    DocumentsAiJobPayload[DocumentsAiJob],
+    unknown,
+    DocumentsAiJob
   >
 }

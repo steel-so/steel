@@ -181,6 +181,10 @@
       "description": "Exportação de documentos em PDF (Chromium headless no worker, guarda de 7 dias) e o download do PDF pelo link público."
     },
     {
+      "name": "CRM · Documentos · IA",
+      "description": "Montagem de documentos por IA a partir de um PDF, um DOCX ou um pedido em texto: contexto (cota e custo), importação, acompanhamento e stream do progresso."
+    },
+    {
       "name": "Comunicação · Conversas",
       "description": "Conversas e mensagens do WhatsApp, atribuição e fechamento."
     },
@@ -529,7 +533,8 @@
         "CRM · Newsletter · Segmentos",
         "CRM · Newsletter · Engajamento",
         "CRM · Newsletter · Automação",
-        "CRM · Documentos · PDF"
+        "CRM · Documentos · PDF",
+        "CRM · Documentos · IA"
       ]
     },
     {
@@ -36358,6 +36363,273 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/imports": {
+      "post": {
+        "tags": ["CRM · Documentos · IA"],
+        "summary": "Importar PDF/DOCX ou gerar documento com IA",
+        "operationId": "postWorkspacesByIdCrmDocumentsImports",
+        "description": "**Multipart** com `file` (PDF ou DOCX até 20 MB e 60 páginas) e os campos `mode` (`PDF`/`DOCX`; deduzido do arquivo se ausente), `kind` e `title`; ou **JSON** `{ \"mode\": \"PROMPT\", \"prompt\": \"…\", \"kind\": \"PROPOSAL\", \"title\": \"…\" }`. O tipo do arquivo é conferido pelo conteúdo e o PDF pelas páginas.\n\nConfere plano, modelo e cota, guarda o arquivo no bucket privado `documents` (`<workspaceId>/imports/<importId>/<arquivo>`) e enfileira a montagem (`documents-ai`). Responde 201 com a importação em `PENDING`; acompanhe por `GET …/imports/{importId}` ou pelo `stream`.\n\nNo worker, o PDF vai inteiro ao modelo quando ele aceita PDF (senão, o texto de cada página); o DOCX vai como texto. A saída é um plano estruturado (seções → blocos do catálogo), validado e montado com os presets do catálogo `document`: linhas \"Nome: ____\" viram campos, linhas de assinatura viram um bloco de aceite (não há assinatura), preços e tabelas viram tabela de preços e tabela, e imagens viram espaços reservados. O documento nasce em `DRAFT`, com o usuário como dono e `source` `PDF_IMPORT` ou `AI_PROMPT`.\n\nUsa a IA do CRM do workspace e consome a cota mensal (até 2 chamadas por importação). Limite próprio: o de mensagens de IA por usuário.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Também aceita `application/json` para `mode: \"PROMPT\"` (sem arquivo).",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": ["PDF", "DOCX", "PROMPT"]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "maxLength": 4000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Importação criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentImport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "402": {
+            "$ref": "#/components/responses/402_AI_QUOTA_EXCEEDED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_IMPORT_UNSUPPORTED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "500": {
+            "$ref": "#/components/responses/500_STORAGE_ERROR"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_DOCUMENT_IMPORT_FAILED"
+          },
+          "503": {
+            "$ref": "#/components/responses/503_AI_PROVIDER_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/imports/context": {
+      "get": {
+        "tags": ["CRM · Documentos · IA"],
+        "summary": "Contexto da importação com IA",
+        "operationId": "getWorkspacesByIdCrmDocumentsImportsContext",
+        "description": "Se a IA do CRM está disponível (plano e modelo), se o modelo do workspace lê o PDF inteiro (senão vai o texto extraído de cada página), os limites do arquivo, a cota mensal de IA e o custo estimado: fixo + por página para arquivos, e o de um documento gerado por pedido.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contexto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentImportContext"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/imports/{importId}": {
+      "get": {
+        "tags": ["CRM · Documentos · IA"],
+        "summary": "Ver importação",
+        "operationId": "getWorkspacesByIdCrmDocumentsImportsByImportId",
+        "description": "Estado e progresso da importação. Em `READY`, `documentId` aponta o documento criado (abra em `/crm/documents/<id>/edit`); em `FAILED`, `error` traz o motivo em pt-BR.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "description": "Id da importação.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1dimp0000ab7d3k1e5xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Importação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/DocumentImport"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_IMPORT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/documents/imports/{importId}/stream": {
+      "get": {
+        "tags": ["CRM · Documentos · IA"],
+        "summary": "Acompanhar importação (stream)",
+        "operationId": "getWorkspacesByIdCrmDocumentsImportsByImportIdStream",
+        "description": "Responde em **`text/event-stream`**: um frame `event: import` com o `DocumentImport` inteiro agora e a cada etapa (`lendo o arquivo` → `entendendo a estrutura` → `montando as seções` → `pronto`), comentários `: ping` a cada 15 s, e fecha quando a importação fica `READY` ou `FAILED`.\n\nErros de permissão ou importação inexistente voltam no envelope JSON, antes do stream.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "importId",
+            "in": "path",
+            "required": true,
+            "description": "Id da importação.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ckw1dimp0000ab7d3k1e5xyz"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stream do progresso.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "event: import\ndata: {\"id\":\"ckw1dimp0000ab7d3k1e5xyz\",\"status\":\"RUNNING\",\"progress\":{\"step\":\"sections\",\"message\":\"Montando as seções\",\"pct\":60}}\n\n"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_DOCUMENT_IMPORT_NOT_FOUND"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -174512,6 +174784,29 @@
           }
         }
       },
+      "404_DOCUMENT_IMPORT_NOT_FOUND": {
+        "description": "Não encontrado: `DOCUMENT_IMPORT_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_IMPORT_NOT_FOUND": {
+                "summary": "DOCUMENT_IMPORT_NOT_FOUND — Importação inexistente, de outro workspace ou de outro usuário (OWNER/ADMIN veem todas)",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Importação não encontrada",
+                  "error": {
+                    "code": "DOCUMENT_IMPORT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_DOCUMENT_NOT_FOUND": {
         "description": "Não encontrado: `DOCUMENT_NOT_FOUND`",
         "content": {
@@ -191475,6 +191770,46 @@
           }
         }
       },
+      "422_VALIDATION_ERROR_DOCUMENT_IMPORT_UNSUPPORTED": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`, `DOCUMENT_IMPORT_UNSUPPORTED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_IMPORT_UNSUPPORTED": {
+                "summary": "DOCUMENT_IMPORT_UNSUPPORTED — Sem arquivo, arquivo vazio, maior que 20 MB, com mais de 60 páginas, protegido por senha ou que não é PDF/DOCX",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "error": {
+                    "code": "DOCUMENT_IMPORT_UNSUPPORTED"
+                  }
+                }
+              },
+              "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Campos inválidos ou `PROMPT` sem `prompt`",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "422_VALIDATION_ERROR_PABX_EXTENSION_REQUIRED": {
         "description": "Dados inválidos: `VALIDATION_ERROR`, `PABX_EXTENSION_REQUIRED`",
         "content": {
@@ -195856,6 +196191,28 @@
                   "statusCode": 502,
                   "error": {
                     "code": "DOCUMENT_EXPORT_FAILED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_DOCUMENT_IMPORT_FAILED": {
+        "description": "Falha em serviço externo: `DOCUMENT_IMPORT_FAILED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "DOCUMENT_IMPORT_FAILED": {
+                "summary": "DOCUMENT_IMPORT_FAILED — Não foi possível enfileirar a montagem",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "error": {
+                    "code": "DOCUMENT_IMPORT_FAILED"
                   }
                 }
               }
@@ -226452,6 +226809,207 @@
           "createdAt",
           "finishedAt"
         ]
+      },
+      "DocumentImport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "ckw1dimp0000ab7d3k1e5xyz"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["PDF", "DOCX", "PROMPT"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PENDING", "RUNNING", "READY", "FAILED"]
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["PROPOSAL", "CONTRACT", "QUOTE", "PRESENTATION", "TERMS", "REPORT", "OTHER"]
+          },
+          "fileName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "proposta.pdf"
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "string",
+                "enum": ["queued", "reading", "structure", "sections", "done", "failed"]
+              },
+              "message": {
+                "example": "Montando as seções",
+                "type": "string"
+              },
+              "pct": {
+                "example": 60,
+                "type": "number"
+              }
+            }
+          },
+          "documentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "costUsd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "example": 0.042
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-11-11T13:00:00.000Z"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "status",
+          "kind",
+          "fileName",
+          "progress",
+          "documentId",
+          "error",
+          "costUsd",
+          "createdAt",
+          "finishedAt"
+        ],
+        "description": "Importação com IA: estado, progresso ao vivo (etapa, mensagem e %), o documento criado quando `READY` e o motivo quando `FAILED`."
+      },
+      "DocumentImportContext": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "unavailableReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nativePdf": {
+            "type": "boolean"
+          },
+          "maxBytes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 20971520
+          },
+          "maxPages": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "example": 60
+          },
+          "quota": {
+            "type": "object",
+            "properties": {
+              "usedUsd": {
+                "type": "number",
+                "example": 2.35
+              },
+              "quotaUsd": {
+                "type": "number",
+                "example": 50
+              },
+              "remainingUsd": {
+                "type": "number",
+                "example": 47.65
+              },
+              "exceeded": {
+                "type": "boolean"
+              }
+            },
+            "required": ["usedUsd", "quotaUsd", "remainingUsd", "exceeded"]
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "example": "Claude Sonnet 5"
+                  },
+                  "baseUsd": {
+                    "type": "number",
+                    "example": 0.01
+                  },
+                  "pageUsd": {
+                    "type": "number",
+                    "example": 0.013
+                  },
+                  "promptUsd": {
+                    "type": "number",
+                    "example": 0.063
+                  }
+                },
+                "required": ["model", "baseUsd", "pageUsd", "promptUsd"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "available",
+          "unavailableReason",
+          "nativePdf",
+          "maxBytes",
+          "maxPages",
+          "quota",
+          "estimate"
+        ],
+        "description": "O que \"Importar PDF\" e \"Gerar com IA\" mostram antes de começar: se a IA do CRM está disponível, se o modelo lê o PDF inteiro, os limites do arquivo, a cota mensal e o custo estimado (fixo, por página e de um documento gerado por pedido)."
       },
       "DocumentPdfPending": {
         "type": "object",

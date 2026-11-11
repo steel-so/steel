@@ -12,19 +12,25 @@ import {
 
 type InputItem = OpenAI.Responses.ResponseInputItem
 
+type InputContent = OpenAI.Responses.ResponseInputMessageContentList[number]
+
+function inputPart(part: AiContentPart): InputContent {
+  if (part.type === 'text') return { type: 'input_text', text: part.text }
+  if (part.type === 'image') {
+    return { type: 'input_image', image_url: part.url, detail: 'auto' }
+  }
+  return {
+    type: 'input_file',
+    filename: part.filename ?? 'documento.pdf',
+    file_data: `data:${part.mediaType};base64,${part.data}`,
+  }
+}
+
 function toUserContent(
   content: string | AiContentPart[],
 ): string | OpenAI.Responses.ResponseInputMessageContentList {
   if (typeof content === 'string') return content
-  return content.map((part) =>
-    part.type === 'text'
-      ? { type: 'input_text' as const, text: part.text }
-      : {
-          type: 'input_image' as const,
-          image_url: part.url,
-          detail: 'auto' as const,
-        },
-  )
+  return content.map(inputPart)
 }
 
 function toInput(system: string | undefined, messages: AiMessage[]) {

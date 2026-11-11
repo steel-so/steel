@@ -62,6 +62,7 @@ export const QueueName = {
   CrmCnpjEnrichment: 'crm-cnpj-enrichment',
   // documents-pdf: PDF export of CRM > Documentos (ADR 0063).
   DocumentsPdf: 'documents-pdf',
+  DocumentsAi: 'documents-ai',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1246,4 +1247,19 @@ export type DocumentsPdfJob =
 export type DocumentsPdfJobPayload = {
   [DocumentsPdfJob.Render]: { exportId: string }
   [DocumentsPdfJob.PruneExpired]: Record<string, never>
+}
+
+/**
+ * AI import of CRM > Documentos (ADR 0063): one job per `DocumentImport`
+ * (jobId = import id). `title` is the title the user typed, if any.
+ */
+export const DocumentsAiJob = {
+  Import: 'import',
+} as const
+
+export type DocumentsAiJob =
+  (typeof DocumentsAiJob)[keyof typeof DocumentsAiJob]
+
+export type DocumentsAiJobPayload = {
+  [DocumentsAiJob.Import]: { importId: string; title?: string }
 }

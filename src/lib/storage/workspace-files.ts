@@ -109,7 +109,8 @@ export const WORKSPACE_BUCKETS: readonly WorkspaceBucket[] = [
   },
   {
     // CRM > Documentos (private, ADR 0063): PDF exports in
-    // `<ws>/<documentId>/exports/<exportId>.pdf`.
+    // `<ws>/<documentId>/exports/<exportId>.pdf` and AI imports in
+    // `<ws>/imports/<importId>/<file>` (document-import.service.ts).
     name: 'documents',
     public: false,
     writtenBy: 'src/lib/queue/processors/documents-pdf.ts',
