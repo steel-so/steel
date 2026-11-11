@@ -36,6 +36,8 @@ rascunho com os blocos do catálogo `document`.
      `PDF_IMPORT` ou `AI_PROMPT`, layout paginado para arquivos e web para
      pedidos, e o evento `CREATED`;
    - o custo vai para o consumo de IA do CRM e fica na importação.
+   - o arquivo enviado é apagado do MinIO depois que o documento existe
+     (só serviu de entrada para o modelo; menos dado pessoal guardado).
 4. **Acompanhamento**: `GET .../imports/<id>/stream` (SSE) e, como reserva,
    `GET .../imports/<id>` a cada 4 s. Quando fica pronto, o diálogo abre
    `/crm/documents/<id>/edit`.

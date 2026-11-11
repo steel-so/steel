@@ -26,6 +26,7 @@ vi.mock('@/src/services/feature-flag.service')
 vi.mock('@/src/services/platform-ai-settings.service')
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/lib/storage/s3', () => ({
+  deleteObject: vi.fn(async () => undefined),
   ensureBucket: vi.fn(async () => undefined),
   putObject: vi.fn(async () => undefined),
   getObject: vi.fn(async () => Buffer.from('%PDF-1.4 conteúdo')),
@@ -61,7 +62,7 @@ import {
 } from '@/src/lib/document-ai/extract'
 import { publishDocumentImport } from '@/src/lib/document-ai/realtime'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
-import { getObject, putObject } from '@/src/lib/storage/s3'
+import { deleteObject, getObject, putObject } from '@/src/lib/storage/s3'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
@@ -86,6 +87,7 @@ const publish = vi.mocked(publishDocumentImport)
 const queue = vi.mocked(getDocumentsAiQueue)
 const download = vi.mocked(getObject)
 const upload = vi.mocked(putObject)
+const remove = vi.mocked(deleteObject)
 
 const WS = 'ws1'
 const ACTOR = 'u1'
@@ -743,6 +745,18 @@ describe('DocumentImportService.run()', () => {
     )
   })
 
+  it('should delete the uploaded file once the document exists', async () => {
+    expectOk(await DocumentImportService.run('imp1'))
+    expect(remove).toHaveBeenCalledWith({
+      bucket: 'documents',
+      key: `${WS}/imports/imp1/proposta.pdf`,
+    })
+
+    remove.mockRejectedValueOnce(new Error('minio down'))
+    const result = expectOk(await DocumentImportService.run('imp1'))
+    expect(result.status).toBe('ready')
+  })
+
   it("should keep the user's kind and use the model's title", async () => {
     imports.findForRun.mockResolvedValue(ok(stored({ kind: 'CONTRACT' })))
 
@@ -777,6 +791,7 @@ describe('DocumentImportService.run()', () => {
     expectOk(await DocumentImportService.run('imp1'))
 
     expect(download).not.toHaveBeenCalled()
+    expect(remove).not.toHaveBeenCalled()
     expect(requests[0].system).toMatch(/write a complete business document/)
     expect(requests[0].messages[0].content).toEqual(
       expect.stringContaining('Proposta de PABX em nuvem para clínica'),

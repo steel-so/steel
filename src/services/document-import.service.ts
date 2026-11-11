@@ -59,7 +59,12 @@ import { outlineCall } from '@/src/lib/document-ai/run'
 import { DocumentsAiJob } from '@/src/lib/queue/jobs'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
-import { ensureBucket, getObject, putObject } from '@/src/lib/storage/s3'
+import {
+  deleteObject,
+  ensureBucket,
+  getObject,
+  putObject,
+} from '@/src/lib/storage/s3'
 import { toDocumentImportDTO } from '@/src/mappers/document-import.mapper'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
@@ -326,6 +331,25 @@ async function buildModelInput(
     native: false,
     truncated: text.value.truncated,
   })
+}
+
+/**
+ * The uploaded file is only the model's input: once the document exists it
+ * is deleted (less personal data kept, LGPD). Best effort — the workspace
+ * purge still covers a leftover.
+ */
+async function dropSourceFile(row: DocumentImport): Promise<void> {
+  if (!row.fileKey) return
+  try {
+    await deleteObject({ bucket: DOCUMENT_FILES_BUCKET, key: row.fileKey })
+  } catch (cause) {
+    logger.warn('documents.import.source_delete_failed', {
+      component: COMPONENT,
+      workspaceId: row.workspaceId,
+      importId: row.id,
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+  }
 }
 
 /** Records every provider call and keeps the running cost. */
@@ -742,6 +766,7 @@ export const DocumentImportService = {
     }
 
     await publishDocumentImport(toDocumentImportDTO(completed.value.import))
+    await dropSourceFile(row)
     auditMutation({
       entity: 'document_import',
       action: 'update',
