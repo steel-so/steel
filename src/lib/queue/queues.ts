@@ -1624,6 +1624,9 @@ export function getDocumentsPdfQueue(): Queue<
     DocumentsPdfJobPayload[DocumentsPdfJob],
     unknown,
     DocumentsPdfJob
+  >
+}
+
 let documentsAnalyticsQueue: Queue | null = null
 
 /**

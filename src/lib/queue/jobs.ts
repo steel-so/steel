@@ -1247,6 +1247,9 @@ export type DocumentsPdfJob =
 export type DocumentsPdfJobPayload = {
   [DocumentsPdfJob.Render]: { exportId: string }
   [DocumentsPdfJob.PruneExpired]: Record<string, never>
+}
+
+/**
  * documents analytics (ADR 0063): every minute, the reading buffer of the
  * public document links goes from Redis to Postgres.
  */
