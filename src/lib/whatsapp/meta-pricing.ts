@@ -129,9 +129,7 @@ function priceCategory(category: string): {
   if (category.startsWith('AUTHENTICATION')) {
     return { category: 'AUTHENTICATION', lite: false }
   }
-  if (category === 'UTILITY' || category === 'SERVICE') {
-    return { category, lite: false }
-  }
+  if (category === 'UTILITY') return { category, lite: false }
   // Unknown category: price it as the most expensive tier (never under-report).
   return { category: 'MARKETING', lite: false }
 }
