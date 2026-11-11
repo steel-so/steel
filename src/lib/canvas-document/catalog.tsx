@@ -57,7 +57,8 @@ import {
   DOCUMENT_SECTION_TYPE,
 } from './constants'
 import type { DocumentRenderContext } from './context'
-import { documentRootClass } from './styles'
+import { documentCss, documentRootClass } from './styles'
+import { parseDocumentTheme } from './theme'
 
 /**
  * The `document` catalog of Steel Canvas (ADR 0063): root → sections →
@@ -146,6 +147,13 @@ export function buildDocumentCatalog(
     ...functionalDefinitions(docCtx),
   ]
   const rootClass = documentRootClass(docCtx.mode, docCtx.settings)
+  const editorCss =
+    docCtx.mode === 'editor'
+      ? documentCss(parseDocumentTheme(ctx?.theme), {
+          mode: 'editor',
+          settings: docCtx.settings,
+        })
+      : null
   return defineCatalog({
     id: DOCUMENT_CATALOG_ID,
     version: DOCUMENT_CATALOG_VERSION,
@@ -157,7 +165,15 @@ export function buildDocumentCatalog(
       definitions.map((definition) => [definition.type, definition]),
     ),
     renderDocument: ({ children }) => (
-      <div className={rootClass}>{children}</div>
+      <div className={rootClass}>
+        {editorCss ? (
+          <style
+            data-document-css=''
+            dangerouslySetInnerHTML={{ __html: editorCss }}
+          />
+        ) : null}
+        {children}
+      </div>
     ),
   })
 }
