@@ -8145,9 +8145,6 @@
           "403": {
             "$ref": "#/components/responses/403_MODULE_DISABLED_3"
           },
-          "404": {
-            "$ref": "#/components/responses/404_DOCUMENT_NOT_FOUND"
-          },
           "410": {
             "$ref": "#/components/responses/410_DOCUMENT_LINK_UNAVAILABLE"
           },
@@ -187578,7 +187575,7 @@
             },
             "examples": {
               "DOCUMENT_LINK_UNAVAILABLE": {
-                "summary": "DOCUMENT_LINK_UNAVAILABLE — Nunca enviado, link desligado, arquivado ou excluído",
+                "summary": "DOCUMENT_LINK_UNAVAILABLE — Token desconhecido, documento nunca enviado, arquivado ou excluído, ou link genérico desligado",
                 "value": {
                   "success": false,
                   "statusCode": 410,
