@@ -13,7 +13,7 @@ import { seedWorkspace } from './workspace.factory'
 export function documentContent(
   sections: Array<{ id: string; title: string; name?: string }>,
 ): Prisma.InputJsonValue {
-  const nodes: Record<string, unknown> = {
+  const nodes: Record<string, Prisma.InputJsonObject> = {
     root: {
       id: 'root',
       type: 'document',

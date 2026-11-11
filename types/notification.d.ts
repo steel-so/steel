@@ -88,6 +88,7 @@ export type NotificationKindDTO =
   | 'AGENT_SIMULATION_FINISHED'
   | 'CRM_CNPJ_ENRICHMENT_FINISHED'
   | 'CRM_DUPLICATES_FOUND'
+  | 'CRM_DOCUMENT_VIEWED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'
