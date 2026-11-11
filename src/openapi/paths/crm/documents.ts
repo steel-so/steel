@@ -4,6 +4,7 @@ import {
   AddDocumentRecipientsSchema,
   CreateDocumentSchema,
   DeclineDocumentSchema,
+  DocumentRecipientInputSchema,
   DuplicateDocumentSchema,
   IdentifyDocumentReaderSchema,
   ListDocumentsQuerySchema,
@@ -267,16 +268,19 @@ export const crmDocumentsRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Adicionar destinatários',
     description: describe(
-      'Novos leitores da versão atual, entregues na hora (mesmas regras do envio).',
+      'Novos leitores da versão atual, entregues na hora (mesmas regras do envio). Com `{ recipients: [...] }` devolve a lista; com um destinatário só (o objeto direto), devolve ele.',
       crmAccess('documents', 'EDIT'),
     ),
     params: DOCUMENT_ID,
     consent: true,
-    body: AddDocumentRecipientsSchema,
+    body: z.union([AddDocumentRecipientsSchema, DocumentRecipientInputSchema]),
     responses: {
       201: {
-        description: 'Destinatários criados.',
-        schema: z.array(DocumentRecipientDeliveryDTO),
+        description: 'Destinatário(s) criado(s).',
+        schema: z.union([
+          z.array(DocumentRecipientDeliveryDTO),
+          DocumentRecipientDeliveryDTO,
+        ]),
       },
     },
     errors: [

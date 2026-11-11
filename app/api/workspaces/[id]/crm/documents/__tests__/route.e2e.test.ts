@@ -129,6 +129,17 @@ describe('documents lifecycle', () => {
     expect(added.status).toBe(201)
     const recipient = (await added.json()).data[0]
 
+    const single = await postJson(
+      `${root}/${doc.id}/recipients`,
+      { name: 'Bia', email: 'bia@example.com', channel: 'EMAIL' },
+      user.cookie,
+    )
+    expect(single.status).toBe(201)
+    expect((await single.json()).data).toMatchObject({
+      name: 'Bia',
+      delivery: { requested: 'EMAIL' },
+    })
+
     const resent = await postJson(
       `${root}/${doc.id}/recipients/${recipient.id}/resend`,
       {},

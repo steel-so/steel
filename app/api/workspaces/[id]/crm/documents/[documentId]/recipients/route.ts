@@ -51,7 +51,14 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     readJsonBody(request),
   ])
   if (!json.ok) return handleError(json.error)
-  const parsed = AddDocumentRecipientsSchema.safeParse(json.value)
+  // `{ recipients: [...] }` adds many; a bare recipient adds one.
+  const many =
+    typeof json.value === 'object' &&
+    json.value !== null &&
+    'recipients' in json.value
+  const parsed = AddDocumentRecipientsSchema.safeParse(
+    many ? json.value : { recipients: [json.value] },
+  )
   if (!parsed.success) {
     return standardError(
       'VALIDATION_ERROR',
@@ -68,5 +75,5 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   )
   if (!result.ok) return handleError(result.error)
 
-  return successResponse(result.value, 201)
+  return successResponse(many ? result.value : result.value[0], 201)
 })
