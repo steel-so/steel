@@ -65,6 +65,7 @@ export const QueueName = {
   DocumentsAi: 'documents-ai',
   // documents backend (ADR 0063): daily expiry of sent documents
   DocumentsExpiry: 'documents-expiry',
+  DocumentsAnalytics: 'documents-analytics',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1279,4 +1280,19 @@ export type DocumentsExpiryJob =
 
 export type DocumentsExpiryJobPayload = {
   [DocumentsExpiryJob.RunTick]: Record<string, never>
+}
+
+/**
+ * documents analytics (ADR 0063): every minute, the reading buffer of the
+ * public document links goes from Redis to Postgres.
+ */
+export const DocumentsAnalyticsJob = {
+  Flush: 'flush',
+} as const
+
+export type DocumentsAnalyticsJob =
+  (typeof DocumentsAnalyticsJob)[keyof typeof DocumentsAnalyticsJob]
+
+export type DocumentsAnalyticsJobPayload = {
+  [DocumentsAnalyticsJob.Flush]: Record<string, never>
 }

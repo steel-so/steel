@@ -252,3 +252,6 @@ export const DocumentExportRetentionMs = 7 * DAY_MS
  * proposal expiry (00:05).
  */
 export const DocumentsExpiryCron = '10 0 * * *' as const
+
+/** documents analytics: flush of the reading buffer, every minute. */
+export const DocumentsAnalyticsFlushCron = '* * * * *' as const

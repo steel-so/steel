@@ -92,6 +92,7 @@ export type NotificationKindDTO =
   | 'CRM_DOCUMENT_ACCEPTED'
   | 'CRM_DOCUMENT_DECLINED'
   | 'CRM_DOCUMENT_EXPIRED'
+  | 'CRM_DOCUMENT_VIEWED'
 
 export type NotificationModuleDTO =
   | 'SERVICE_DESK'

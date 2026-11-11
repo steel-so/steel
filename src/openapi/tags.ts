@@ -227,6 +227,11 @@ export const TAG_GROUPS = [
         description:
           'Construtor de documentos (ADR 0063): documentos e modelos no Steel Canvas, autosave, envio com versão congelada, destinatários, linha do tempo e respostas. A proposta é um tipo de documento.',
       },
+      {
+        name: 'CRM · Leitura de documentos',
+        description:
+          'Analytics de leitura de CRM > Documentos: tempo por seção, alcance, leitores, revisitas, encaminhamentos e dispositivos (no modelo, a soma dos documentos criados a partir dele).',
+      },
     ],
   },
   {
@@ -532,6 +537,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Documentos',
         description:
           'Link público de um documento (`/d/<token>`): leitura, identificação do leitor, aceite, recusa e envio de campos. Sem sessão: o token do link é o acesso.',
+      },
+      {
+        name: 'CRM público · Leitura de documentos',
+        description:
+          'Sinal de leitura do link público de um documento `/d/<token>` (sem sessão; o token do link é o acesso, limite por IP com hash).',
       },
     ],
   },

@@ -43,6 +43,7 @@ import { processDataRetention } from '../src/lib/queue/processors/data-retention
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
 import { processDocumentsAi } from '../src/lib/queue/processors/documents-ai'
 import { processDocumentsExpiry } from '../src/lib/queue/processors/documents-expiry'
+import { processDocumentsAnalytics } from '../src/lib/queue/processors/documents-analytics'
 import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
@@ -98,6 +99,7 @@ import {
   scheduleDatabaseBackupJobs,
   scheduleDataRetentionJobs,
   scheduleDocumentsExpiryJobs,
+  scheduleDocumentsAnalyticsJobs,
   scheduleNotificationsJobs,
   scheduleSearchReindexJobs,
   scheduleSendingDomainsJobs,
@@ -369,6 +371,7 @@ async function main(): Promise<void> {
   )
   workers.push(
     registerWorker(QueueName.DocumentsExpiry, processDocumentsExpiry),
+    registerWorker(QueueName.DocumentsAnalytics, processDocumentsAnalytics),
   )
 
   failureListener = startJobFailureListener(
@@ -420,6 +423,7 @@ async function main(): Promise<void> {
   await scheduleCrmNewsletterAutomationJobs()
   await scheduleDocumentsPdfJobs()
   await scheduleDocumentsExpiryJobs()
+  await scheduleDocumentsAnalyticsJobs()
   voiceAgentServer = await startVoiceAgentServer()
 
   logger.info('queue.worker.started', {

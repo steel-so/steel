@@ -5694,6 +5694,8 @@ enum NotificationKind {
   CRM_DOCUMENT_DECLINED
   /// documents backend: a sent document expired unanswered.
   CRM_DOCUMENT_EXPIRED
+  /// documents analytics: someone opened a document ("<Nome> abriu <documento> agora").
+  CRM_DOCUMENT_VIEWED
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).

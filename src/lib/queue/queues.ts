@@ -57,6 +57,8 @@ import {
   type DataRetentionJobPayload,
   type DocumentsExpiryJob,
   type DocumentsExpiryJobPayload,
+  type DocumentsAnalyticsJob,
+  type DocumentsAnalyticsJobPayload,
   type DocumentsPdfJob,
   type DocumentsPdfJobPayload,
   type DocumentsAiJob,
@@ -1431,6 +1433,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DocumentsPdf]: getDocumentsPdfQueue,
   [QueueName.DocumentsAi]: getDocumentsAiQueue,
   [QueueName.DocumentsExpiry]: getDocumentsExpiryQueue,
+  [QueueName.DocumentsAnalytics]: getDocumentsAnalyticsQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1670,5 +1673,33 @@ export function getDocumentsExpiryQueue(): Queue<
     DocumentsExpiryJobPayload[DocumentsExpiryJob],
     unknown,
     DocumentsExpiryJob
+  >
+}
+
+let documentsAnalyticsQueue: Queue | null = null
+
+/**
+ * Reading analytics flush of the documents (ADR 0063). One attempt and no
+ * backoff: the next minute retries anyway, and the batch waits in Redis.
+ */
+export function getDocumentsAnalyticsQueue(): Queue<
+  DocumentsAnalyticsJobPayload[DocumentsAnalyticsJob],
+  unknown,
+  DocumentsAnalyticsJob
+> {
+  if (!documentsAnalyticsQueue) {
+    documentsAnalyticsQueue = new Queue(QueueName.DocumentsAnalytics, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        ...defaultJobOptions,
+        attempts: 1,
+        removeOnComplete: { age: 60 * 60, count: 100 },
+      },
+    })
+  }
+  return documentsAnalyticsQueue as Queue<
+    DocumentsAnalyticsJobPayload[DocumentsAnalyticsJob],
+    unknown,
+    DocumentsAnalyticsJob
   >
 }

@@ -20,6 +20,7 @@ import {
   DatabaseBackupJob,
   DataRetentionJob,
   DocumentsExpiryJob,
+  DocumentsAnalyticsJob,
   NotificationsJob,
   SearchReindexJob,
   SendingDomainsJob,
@@ -65,6 +66,7 @@ import {
   getDatabaseBackupQueue,
   getDataRetentionQueue,
   getDocumentsExpiryQueue,
+  getDocumentsAnalyticsQueue,
   getNotificationsQueue,
   getSearchReindexQueue,
   getSendingDomainsQueue,
@@ -113,6 +115,7 @@ import {
   CrmWorkflowScheduleCron,
   DatabaseBackupCron,
   DocumentsExpiryCron,
+  DocumentsAnalyticsFlushCron,
   NotificationsAiActionExpiryCron,
   RetentionCron,
   RetentionTimezone,
@@ -950,6 +953,22 @@ export async function scheduleDocumentsExpiryJobs(): Promise<void> {
   logger.info('queue.scheduler.documents_expiry_registered', {
     component: 'Worker',
     pattern: DocumentsExpiryCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+/** documents analytics: reading buffer → Postgres, every minute. */
+export async function scheduleDocumentsAnalyticsJobs(): Promise<void> {
+  const queue = getDocumentsAnalyticsQueue()
+  await queue.upsertJobScheduler(
+    DocumentsAnalyticsJob.Flush,
+    { pattern: DocumentsAnalyticsFlushCron, tz: RetentionTimezone },
+    { name: DocumentsAnalyticsJob.Flush, data: {} },
+  )
+
+  logger.info('queue.scheduler.documents_analytics_registered', {
+    component: 'Worker',
+    pattern: DocumentsAnalyticsFlushCron,
     timezone: RetentionTimezone,
   })
 }
