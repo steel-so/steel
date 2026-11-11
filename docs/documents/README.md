@@ -90,6 +90,35 @@ SENT/VIEWED ──validade──▶ EXPIRED      qualquer ──arquivar──�
 
 LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
 
+### Detalhes da implementação
+
+- **Sessão**: um `sessionKey` por aba (sessionStorage; recarregar continua a
+  sessão, 30 min sem sinal abre outra) e um `visitorId` duradouro
+  (localStorage, ou só em memória quando o navegador bloqueia). O primeiro
+  sinal de cada sessão cria a `DocumentSession`; sinais repetidos com o mesmo
+  `sessionKey` não duplicam nada.
+- **Visualizado**: a primeira sessão marca `firstViewedAt`/`lastViewedAt` do
+  documento e do destinatário e passa `SENT → VIEWED` (documento) e
+  `PENDING → VIEWED` (destinatário) em SQL direto, sem mexer em
+  `documents.updated_at` — o autosave do editor usa esse campo para detectar
+  conflito.
+- **Encaminhado**: `FORWARDED` quando um link pessoal é aberto por um
+  navegador novo depois de outro já ter lido (uma vez por navegador).
+- **Aviso "abriu agora"**: notificação `CRM_DOCUMENT_VIEWED` para o dono e
+  e-mail quando `settings.notifyOnView`; no máximo um aviso a cada 30 min por
+  leitor (Redis).
+- **Buffer**: os sinais só somam contadores num hash do Redis
+  (`doc:analytics:buffer`). O worker renomeia o hash para
+  `doc:analytics:flushing`, grava tudo numa transação e só então apaga — uma
+  falha deixa o lote para a próxima rodada, sem contar duas vezes.
+- **Eventos**: cliques em links, downloads de anexos e play de vídeo viram
+  `DocumentEvent` (até 60 por sessão por hora). O IP é guardado como HMAC
+  com o segredo do servidor e o referrer só como domínio.
+- **Painel**: `GET .../documents/<id>/analytics?days=7|30|90|all`, com as
+  seções da versão atual (seções que saíram aparecem como "Seção removida")
+  e dias no fuso de Brasília. Num modelo, soma os documentos criados a partir
+  dele. Os números chegam com até 1 minuto de atraso.
+
 ## PDF
 
 - O dono exporta o documento (rascunho ou versão enviada); o destinatário
