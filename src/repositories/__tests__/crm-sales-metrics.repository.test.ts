@@ -243,17 +243,19 @@ describe('CrmSalesMetricsRepository', () => {
     })
   })
 
-  it('lists proposals waiting for the customer, earliest validity first', async () => {
+  it('lists proposal documents waiting for the customer, earliest validity first', async () => {
     const w = await world()
     const opp = await deal(w, { amount: 7000 })
-    const proposal = (name: string, data: Record<string, unknown>) =>
-      prisma.crmProposal.create({
+    const proposal = (title: string, data: Record<string, unknown>) =>
+      prisma.document.create({
         data: {
-          name,
+          title,
+          kind: 'PROPOSAL',
+          content: {},
           workspaceId: w.workspace.id,
           createdById: w.owner.id,
-          responsibleId: w.owner.id,
-          shareToken: `t-${name}`,
+          ownerId: w.owner.id,
+          publicToken: `t-${title}`,
           ...data,
         },
       })
@@ -266,14 +268,27 @@ describe('CrmSalesMetricsRepository', () => {
     })
     await proposal('rascunho', { status: 'DRAFT' })
     await proposal('aceita', { status: 'ACCEPTED' })
+    await proposal('modelo', { status: 'SENT', isTemplate: true })
+    await proposal('contrato', { status: 'SENT', kind: 'CONTRACT' })
+    await proposal('com-total', {
+      status: 'SENT',
+      validUntil: new Date('2026-10-25T02:59:59.999Z'),
+      totalValue: 1234.5,
+      opportunityId: opp.id,
+    })
 
     const rows = expectOk(await repo.listWaitingProposals(w.workspace.id))
-    expect(rows.map((row) => row.name)).toEqual(['vista', 'sem-validade'])
+    expect(rows.map((row) => row.name)).toEqual([
+      'vista',
+      'com-total',
+      'sem-validade',
+    ])
     expect(rows[0]).toMatchObject({
       company: { name: 'ACME' },
       responsible: { name: 'Ana Souza' },
     })
     expect(Number(rows[0].opportunity?.amount)).toBe(7000)
+    expect(Number(rows[1].opportunity?.amount)).toBe(1234.5)
   })
 
   it('counts the activity of a day', async () => {
@@ -464,7 +479,7 @@ describe('CrmSalesMetricsRepository', () => {
     expectErr(await repo.countLeadFunnel('ws', FROM, TO), 'DATABASE_ERROR')
     vi.spyOn(prisma.crmOpportunity, 'count').mockRejectedValueOnce(boom())
     expectErr(await repo.countDealFunnel('ws', FROM, TO), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmProposal, 'findMany').mockRejectedValueOnce(boom())
+    vi.spyOn(prisma.document, 'findMany').mockRejectedValueOnce(boom())
     expectErr(await repo.listWaitingProposals('ws'), 'DATABASE_ERROR')
     vi.spyOn(prisma.crmTask, 'count').mockRejectedValueOnce(boom())
     expectErr(await repo.countDayActivity('ws', FROM, TO), 'DATABASE_ERROR')
