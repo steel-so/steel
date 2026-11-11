@@ -38,6 +38,10 @@ export interface DocumentRenderContext {
   fieldValues?: DocumentFieldValuesDTO
   /** Print mode: pricing selection of the recipient. */
   selection?: DocumentPricingSelectionDTO
+  /** Theme overrides (`documents.theme`). In editor mode the catalog root
+   * renders the stylesheet with it, so the canvas is styled even without a
+   * `frameHead`; the public link and the PDF take the theme as a prop. */
+  theme?: Record<string, unknown>
   /** Print mode: who accepted and when (ISO). */
   acceptedByName?: string | null
   acceptedAt?: string | null

@@ -240,6 +240,22 @@ describe('editor and public renders', () => {
     expect(out).toContain('Quebra de página')
     expect(out).not.toContain(DOC_SECTION_ATTR)
     expect(out).toContain('Aparece no link quando o Pix estiver ativo')
+    expect(out).toContain('<style data-document-css="">')
+    expect(out).toContain('--canvas-primary:#2453d6')
+  })
+
+  it('styles the editor canvas with the theme from the context', () => {
+    const theme = { colors: { primary: '#0f766e' } }
+    const catalog = buildDocumentCatalog({ mode: 'editor', theme })
+    const out = renderToHtml(
+      catalog.renderDocument({ children: null, rootProps: {}, editing: true }),
+    )
+    expect(out).toContain('--canvas-primary:#0f766e')
+    const print = buildDocumentCatalog({ mode: 'print' })
+    const printOut = renderToHtml(
+      print.renderDocument({ children: null, rootProps: {}, editing: false }),
+    )
+    expect(printOut).toBe('<div class="d-root d-mode-print d-layout-web"></div>')
   })
 
   it('renders live elements on the public link', () => {
