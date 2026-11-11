@@ -206,12 +206,16 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         <SteelIcon icon={ViewIcon} data-icon='inline-start' />
         <span className='hidden xl:inline'>Pré-visualizar</span>
       </Button>
-      <DocumentExportButton
-        workspaceId={workspaceId}
-        documentId={document.id}
-        hasVersion={sent}
-        variant='ghost'
-      />
+      {/* Pending edits are saved as the export starts: the worker renders
+          the stored draft a moment later. */}
+      <span className='contents' onClickCapture={() => void save()}>
+        <DocumentExportButton
+          workspaceId={workspaceId}
+          documentId={document.id}
+          hasVersion={sent}
+          variant='ghost'
+        />
+      </span>
       <Button
         size='sm'
         className='ml-1'
