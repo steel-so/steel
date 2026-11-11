@@ -240,3 +240,8 @@ export const CrmNewsletterAutomationCron = {
 export const CrmNewsletterDigestTickCron = '*/5 * * * *' as const
 /** newsletter2 nl2-digest-ai: subject A/B decisions, off the digest tick. */
 export const CrmNewsletterAbTickCron = '2-59/5 * * * *' as const
+
+/** documents-pdf: daily delete of PDF exports past retention, off 03:15/03:30. */
+export const DocumentsPdfPruneCron = '45 3 * * *' as const
+/** documents-pdf: a PDF export is kept (and reused) for 7 days. */
+export const DocumentExportRetentionMs = 7 * DAY_MS

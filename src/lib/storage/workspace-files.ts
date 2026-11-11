@@ -107,6 +107,13 @@ export const WORKSPACE_BUCKETS: readonly WorkspaceBucket[] = [
     public: false,
     writtenBy: 'src/services/phone-call-recording.service.ts',
   },
+  {
+    // CRM > Documentos (private, ADR 0063): PDF exports in
+    // `<ws>/<documentId>/exports/<exportId>.pdf`.
+    name: 'documents',
+    public: false,
+    writtenBy: 'src/lib/queue/processors/documents-pdf.ts',
+  },
 ] as const
 
 export const WORKSPACE_PREFIXED_BUCKETS = WORKSPACE_BUCKETS.map((b) => b.name)

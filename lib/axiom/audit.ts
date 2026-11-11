@@ -326,6 +326,8 @@ export type AuditEntity =
   | 'crm_deals_settings'
   | 'crm_deal_room'
   | 'crm_contract'
+  // documents-pdf: PDF exports of CRM > Documentos (ADR 0063).
+  | 'document_export'
 
 export type AuditAction =
   | 'create'
