@@ -15,6 +15,11 @@ const pdf = vi.hoisted(() => vi.fn())
 vi.mock('@/src/hooks/use-document-exports', () => ({
   requestPublicDocumentPdf: pdf,
 }))
+const navigate = vi.hoisted(() => vi.fn())
+vi.mock('../public/public-runtime', async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
+  navigateTo: navigate,
+}))
 vi.mock('@/src/lib/canvas-document/tracker', () => ({
   startDocumentTracker: (options: unknown) => {
     tracker.start(options)
@@ -221,7 +226,11 @@ describe('<DocumentViewer />', () => {
 
   it('asks who is reading on a generic link that requires it', async () => {
     const spy = mockFetch([
-      { method: 'POST', match: `${URL_BASE}/identify`, data: { ok: true } },
+      {
+        method: 'POST',
+        match: `${URL_BASE}/identify`,
+        data: { token: 'tok_carlos', recipientId: 'r9', url: null },
+      },
     ])
     const data = fakePublic(
       { recipient: null },
@@ -275,5 +284,34 @@ describe('<DocumentViewer />', () => {
     render(<DocumentViewer data={fakePublic({ canDownload: false })} />)
     await screen.findByText('Stratus Telecom')
     expect(screen.queryByRole('button', { name: 'Baixar PDF' })).toBeNull()
+  })
+
+  it('moves an identified reader to their personal link', async () => {
+    mockFetch([
+      {
+        method: 'POST',
+        match: `${URL_BASE}/identify`,
+        data: { url: 'https://steel.example.com/d/tok_carlos' },
+      },
+    ])
+    const data = fakePublic(
+      { recipient: null },
+      {
+        settings: { ...DEFAULT_DOCUMENT_SETTINGS, requireIdentification: true },
+      },
+    )
+    render(<DocumentViewer data={data} />)
+    fireEvent.change(await screen.findByLabelText('Nome'), {
+      target: { value: 'Carlos Pereira' },
+    })
+    fireEvent.change(screen.getByLabelText('E-mail'), {
+      target: { value: 'carlos@acme.com.br' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir documento' }))
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(
+        'https://steel.example.com/d/tok_carlos',
+      ),
+    )
   })
 })
