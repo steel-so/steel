@@ -102,6 +102,7 @@ export const CrmDealRoomRepository = {
             welcomeMessage: data.welcomeMessage,
           }),
           ...(data.proposalId !== undefined && { proposalId: data.proposalId }),
+          ...(data.documentId !== undefined && { documentId: data.documentId }),
         }
         const room = existing
           ? await tx.crmDealRoom.update({

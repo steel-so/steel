@@ -197,6 +197,7 @@ export function toCrmDealRoomDTO(
     title: room.title,
     welcomeMessage: room.welcomeMessage,
     proposalId: room.proposalId,
+    documentId: room.documentId,
     materials: room.materials.map(toDealRoomMaterialDTO),
     actions: room.actions.map(toDealRoomActionDTO),
     visitors: visitors.map(toDealRoomVisitorDTO),

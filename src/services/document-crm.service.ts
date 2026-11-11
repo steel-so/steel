@@ -268,6 +268,39 @@ export const DocumentCrmService = {
     return ok(toCrmDocumentSummaryDTO(created.value))
   },
 
+  /**
+   * "Gerar proposta" of an opportunity (and of a renewal deal): a proposal
+   * linked to the deal, its company and point of contact, priced with the
+   * deal's line items.
+   */
+  async createForOpportunity(
+    actorId: string,
+    workspaceId: string,
+    opportunityId: string,
+    input: { title?: string; templateId?: string | null } = {},
+  ): Promise<Result<CrmDocumentSummaryDTO>> {
+    const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
+      resource: 'documents',
+      action: 'CREATE',
+    })
+    if (!membership.ok) return membership
+
+    const opportunity = await CrmOpportunityRepository.findById(
+      opportunityId,
+      workspaceId,
+    )
+    if (!opportunity.ok) return opportunity
+    const deal = opportunity.value
+
+    return DocumentCrmService.createProposal(actorId, workspaceId, {
+      title: input.title?.trim() || `Proposta — ${deal.name}`,
+      templateId: input.templateId,
+      opportunityId,
+      companyId: deal.companyId,
+      personId: deal.pointOfContactId,
+    })
+  },
+
   /** Proposals (or proposal templates) of the workspace, newest first. */
   async listProposals(
     actorId: string,

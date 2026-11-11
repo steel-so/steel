@@ -20,6 +20,7 @@ import {
 } from '@/src/schemas/crm-lead.schema'
 import type { ErrorSpec, RouteConfig } from '../../registry'
 import {
+  CrmDocumentSummaryDTO,
   CrmLeadContactAttemptDTO,
   CrmLeadMeetingDTO,
   CrmLeadProposalPresentationDTO,
@@ -33,7 +34,6 @@ import {
   CrmLeadWithQualificationDTO,
 } from '../../schemas/crm/leads'
 import { CrmPersonDTO } from '../../schemas/crm/people'
-import { CrmProposalDTO } from '../../schemas/crm/proposals'
 import { CrmLeadDTO } from '../../schemas/public'
 import { CRM_ERRORS, crmAccess, describe, notFoundError } from './shared'
 
@@ -325,14 +325,14 @@ export const crmLeadsRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Obter proposta ativa do lead',
     description: describe(
-      'A proposta mais recente vinculada ao lead; `data: null` se não houver.',
+      'A proposta mais recente vinculada ao lead — um documento do tipo `PROPOSAL` (ADR 0063); `data: null` se não houver. Uma proposta antiga ainda não migrada é convertida na hora.',
       crmAccess('documents', 'VIEW'),
     ),
     params: LEAD_ID,
     responses: {
       200: {
-        description: 'Proposta (ou `null`).',
-        schema: CrmProposalDTO.nullable(),
+        description: 'Documento da proposta (ou `null`).',
+        schema: CrmDocumentSummaryDTO.nullable(),
       },
     },
     errors: [...CRM_ERRORS, LEAD_NOT_FOUND],
@@ -343,7 +343,7 @@ export const crmLeadsRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Criar proposta do lead',
     description: describe(
-      'Transição `OPPORTUNITY` → `PROPOSAL`: exige o lead em `OPPORTUNITY` com ao menos uma reunião registrada. Cria a proposta (rascunho, sem seções; `templateId` opcional) com o usuário como responsável; sem `validUntil`, a validade é hoje + a validade padrão das configurações do CRM.',
+      'Transição `OPPORTUNITY` → `PROPOSAL`: exige o lead em `OPPORTUNITY` com ao menos uma reunião registrada. Cria a proposta como documento do tipo `PROPOSAL` em rascunho (`templateId` opcional: um modelo de documento) com o usuário como responsável; sem `validUntil`, a validade é hoje + a validade padrão das configurações do CRM.',
       crmAccess('documents', 'CREATE'),
     ),
     consent: true,
@@ -351,13 +351,17 @@ export const crmLeadsRoutes: RouteConfig[] = [
     body: CreateCrmLeadProposalSchema,
     responses: {
       201: {
-        description: 'Lead (em `PROPOSAL`) e a proposta criada.',
-        schema: z.object({ lead: CrmLeadDTO, proposal: CrmProposalDTO }),
+        description: 'Lead (em `PROPOSAL`) e o documento da proposta.',
+        schema: z.object({ lead: CrmLeadDTO, proposal: CrmDocumentSummaryDTO }),
       },
     },
     errors: [
       ...CRM_ERRORS,
       LEAD_NOT_FOUND,
+      {
+        code: 'DOCUMENT_TEMPLATE_NOT_FOUND',
+        when: '`templateId` não é um modelo de documento do workspace',
+      },
       transition(
         'Crie a proposta somente a partir da etapa "Interesse/Oportunidade"',
         'Lead fora da etapa `OPPORTUNITY`',
@@ -376,10 +380,10 @@ export const crmLeadsRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Listar apresentações de proposta',
     description: describe(
-      'Apresentações da proposta `proposalId` (mais recentes primeiro). A proposta precisa ser do lead.',
+      'Apresentações do documento da proposta `proposalId` (mais recentes primeiro). O documento precisa ser uma proposta do lead.',
       crmAccess('leads', 'VIEW'),
     ),
-    params: { ...LEAD_ID, proposalId: 'ID da proposta.' },
+    params: { ...LEAD_ID, proposalId: 'ID do documento da proposta.' },
     responses: {
       200: {
         description: 'Apresentações.',
@@ -389,10 +393,9 @@ export const crmLeadsRoutes: RouteConfig[] = [
     errors: [
       ...CRM_ERRORS,
       LEAD_NOT_FOUND,
-      { code: 'CRM_PROPOSAL_NOT_FOUND', when: 'Proposta inexistente' },
       {
         code: 'CRM_LEAD_PROPOSAL_NOT_FOUND',
-        when: 'A proposta é de outro lead',
+        when: 'Documento inexistente, de outro lead ou que não é proposta',
       },
     ],
   },
@@ -406,7 +409,7 @@ export const crmLeadsRoutes: RouteConfig[] = [
       crmAccess('leads', 'EDIT'),
     ),
     consent: true,
-    params: { ...LEAD_ID, proposalId: 'ID da proposta.' },
+    params: { ...LEAD_ID, proposalId: 'ID do documento da proposta.' },
     body: RegisterCrmLeadProposalPresentationSchema,
     responses: {
       201: {
@@ -417,10 +420,9 @@ export const crmLeadsRoutes: RouteConfig[] = [
     errors: [
       ...CRM_ERRORS,
       LEAD_NOT_FOUND,
-      { code: 'CRM_PROPOSAL_NOT_FOUND', when: 'Proposta inexistente' },
       {
         code: 'CRM_LEAD_PROPOSAL_NOT_FOUND',
-        when: 'A proposta é de outro lead',
+        when: 'Documento inexistente, de outro lead ou que não é proposta',
       },
       transition(
         'Registre apresentações somente na etapa "Proposta"',

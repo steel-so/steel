@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmLeadContactAttemptDTO,
   CrmLeadContactChannelDTO,
@@ -13,7 +14,6 @@ import type {
   CrmLeadReopeningDTO,
 } from '@/types/crm-lead'
 import type { CrmPersonDTO } from '@/types/crm-person'
-import type { CrmProposalDTO } from '@/types/crm-proposal'
 import { apiFetch } from './_fetch'
 
 const base = (workspaceId: string, leadId: string) =>
@@ -100,7 +100,7 @@ export function useRegisterCrmLeadMeeting(workspaceId: string) {
 export function useCreateCrmLeadProposal(workspaceId: string) {
   return useMutation({
     mutationFn: (input: { leadId: string; name: string }) =>
-      apiFetch<{ lead: CrmLeadDTO; proposal: CrmProposalDTO }>(
+      apiFetch<{ lead: CrmLeadDTO; proposal: CrmDocumentSummaryDTO }>(
         `${base(workspaceId, input.leadId)}/proposal`,
         {
           method: 'POST',

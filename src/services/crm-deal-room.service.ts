@@ -29,6 +29,7 @@ import type {
 } from '@/types/crm-deals'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import { notifyCrmDealRoomMessage } from './crm-notifications'
+import { DocumentCrmService } from './document-crm.service'
 
 const ACTIVITY_LIMIT = 50
 const PUBLIC_MESSAGE_LIMIT = 100
@@ -40,6 +41,39 @@ function hashIp(ip: string): string {
 
 async function requireOpportunity(workspaceId: string, opportunityId: string) {
   return CrmOpportunityRepository.findById(opportunityId, workspaceId)
+}
+
+/** Statuses a recipient can open: the document left the draft. */
+const SHAREABLE_DOCUMENT = new Set(['SENT', 'VIEWED', 'ACCEPTED', 'DECLINED'])
+
+/**
+ * What the public room links to: the document (ADR 0063) when it was sent
+ * and its link is on, else the legacy proposal when it left the draft.
+ */
+async function sharedProposal(
+  room: Awaited<ReturnType<typeof CrmDealRoomRepository.findPublicByToken>>,
+): Promise<Result<PublicDealRoomDTO['proposal']>> {
+  if (!room.ok) return room
+  const { documentId, proposal, workspaceId } = room.value
+  if (documentId) {
+    const doc = await DocumentCrmService.findInWorkspace(
+      workspaceId,
+      documentId,
+    )
+    if (!doc.ok) return doc
+    const shared =
+      doc.value?.linkEnabled && SHAREABLE_DOCUMENT.has(doc.value.status)
+    return ok(
+      shared && doc.value
+        ? { name: doc.value.title, sharePath: `/d/${doc.value.publicToken}` }
+        : null,
+    )
+  }
+  return ok(
+    proposal && proposal.status !== 'DRAFT'
+      ? { name: proposal.name, sharePath: `/p/${proposal.shareToken}` }
+      : null,
+  )
 }
 
 /** Loads the room of a deal with its recent activity. */
@@ -100,6 +134,26 @@ export const CrmDealRoomService = {
     if (!membership.ok) return membership
     const deal = await requireOpportunity(workspaceId, opportunityId)
     if (!deal.ok) return deal
+
+    if (dto.documentId) {
+      const doc = await DocumentCrmService.findInWorkspace(
+        workspaceId,
+        dto.documentId,
+      )
+      if (!doc.ok) return doc
+      if (!doc.value) {
+        return err(
+          crmDealRoomInvalid(
+            'O documento informado não existe neste workspace',
+          ),
+        )
+      }
+      if (doc.value.opportunityId !== opportunityId) {
+        return err(
+          crmDealRoomInvalid('O documento informado não é desta oportunidade'),
+        )
+      }
+    }
 
     if (dto.proposalId) {
       const proposal = await CrmProposalRepository.findById(
@@ -214,16 +268,16 @@ export const CrmDealRoomService = {
     )
     if (!messages.ok) return messages
 
-    const { proposal, opportunity } = room.value
+    const proposal = await sharedProposal(room)
+    if (!proposal.ok) return proposal
+
+    const { opportunity } = room.value
     return ok({
       title: room.value.title ?? opportunity.name,
       welcomeMessage: room.value.welcomeMessage,
       companyName: opportunity.company?.name ?? null,
       workspaceName: room.value.workspace.name,
-      proposal:
-        proposal && proposal.status !== 'DRAFT'
-          ? { name: proposal.name, sharePath: `/p/${proposal.shareToken}` }
-          : null,
+      proposal: proposal.value,
       materials: room.value.materials.map(toDealRoomMaterialDTO),
       actions: room.value.actions.map(toDealRoomActionDTO),
       messages: messages.value.map(toDealRoomMessageDTO),

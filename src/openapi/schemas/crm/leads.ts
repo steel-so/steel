@@ -4,6 +4,10 @@ import {
   CrmLeadInterestLevelEnum,
   CrmLeadStageEnum,
 } from '@/src/schemas/crm-lead.schema'
+import {
+  DocumentKindSchema,
+  DocumentStatusSchema,
+} from '@/src/schemas/document.schema'
 import { dto } from '../../common'
 import { CrmLeadDTO } from '../public'
 
@@ -90,7 +94,13 @@ export const CrmLeadProposalPresentationDTO = dto(
   z.object({
     id: z.string(),
     leadId: z.string(),
-    proposalId: z.string(),
+    proposalId: z.string().nullable().meta({
+      description: 'Proposta antiga (apresentações anteriores ao ADR 0063).',
+    }),
+    documentId: z
+      .string()
+      .nullable()
+      .meta({ description: 'Documento (proposta) apresentado.' }),
     presentedAt: dateTime(),
     format: z.enum(['IN_PERSON', 'ONLINE', 'EMAIL', 'OTHER']),
     amount: z.number().meta({ description: 'Valor apresentado.' }),
@@ -100,6 +110,39 @@ export const CrmLeadProposalPresentationDTO = dto(
     interactionsCount: z.number().int(),
     createdById: z.string(),
     createdAt: dateTime(),
+  }),
+)
+
+/** `types/crm-document-summary.d.ts` — a proposal document (ADR 0063). */
+export const CrmDocumentSummaryDTO = dto(
+  'CrmDocumentSummary',
+  z.object({
+    id: z.string(),
+    workspaceId: z.string(),
+    kind: DocumentKindSchema,
+    status: DocumentStatusSchema,
+    title: z.string(),
+    isTemplate: z.boolean(),
+    templateId: z.string().nullable(),
+    totalValue: z.number().nullable(),
+    validUntil: nullableDateTime(),
+    sentAt: nullableDateTime(),
+    acceptedAt: nullableDateTime(),
+    acceptedByName: z.string().nullable(),
+    companyId: z.string().nullable(),
+    personId: z.string().nullable(),
+    opportunityId: z.string().nullable(),
+    leadId: z.string().nullable(),
+    ownerId: z.string(),
+    path: z.string().meta({
+      description: 'Página do documento no workspace (`/crm/documents/<id>`).',
+    }),
+    publicPath: z
+      .string()
+      .nullable()
+      .meta({ description: 'Link público (`/d/<token>`); null em modelos.' }),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
   }),
 )
 
