@@ -61,7 +61,6 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/cadences/o': 'signed open-pixel token',
   '/api/crm/deal-rooms': 'deal room link token (rate limited)',
   // documents-pdf (ADR 0063): public PDF of a document link.
-  '/api/documents': 'document link token (rate limited by hashed IP)',
   '/api/crm/payments': 'payment provider signature over the raw body',
   '/api/servicedesk/approvals': 'approval link token',
   '/api/surveys/public': 'survey link token',
