@@ -1,12 +1,13 @@
 import type { AiModelDefinition } from '@/src/lib/ai/models'
+import { DOCUMENTS_BUCKET } from '@/src/lib/document-export/storage'
 
 /**
  * AI import of CRM > Documentos (ADR 0063, docs/documents/README.md): the
  * shared names of the upload, the worker and the UI.
  */
 
-/** Private MinIO bucket of the documents module (imports and PDF exports). */
-export const DOCUMENT_FILES_BUCKET = 'documents'
+/** Private MinIO bucket of the documents module (shared with PDF exports). */
+export const DOCUMENT_FILES_BUCKET = DOCUMENTS_BUCKET
 
 export const DOCUMENT_IMPORT_PDF_TYPE = 'application/pdf'
 export const DOCUMENT_IMPORT_DOCX_TYPE =

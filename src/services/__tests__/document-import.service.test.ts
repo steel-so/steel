@@ -258,9 +258,12 @@ beforeEach(() => {
       }),
     ),
   )
-  imports.update.mockImplementation(async (id, data) =>
-    ok(stored({ id, ...(data as unknown as Partial<DocumentImport>) })),
-  )
+  // The repository returns the whole updated row: merge onto the loaded one.
+  imports.update.mockImplementation(async (id, data) => {
+    const loaded = await imports.findForRun.getMockImplementation()?.(id)
+    const row = loaded?.ok && loaded.value ? loaded.value : stored({ id })
+    return ok({ ...row, ...(data as unknown as Partial<DocumentImport>) })
+  })
   imports.findForRun.mockResolvedValue(ok(stored()))
   imports.findById.mockResolvedValue(ok(stored()))
   imports.complete.mockImplementation(async (id, document, result) =>

@@ -1,3 +1,4 @@
+import '@/src/__tests__/helpers/dom-matchers'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -128,6 +129,9 @@ function pickFile(file: File) {
   })
 }
 
+const submitButton = () =>
+  screen.getByTestId('document-import-submit') as HTMLButtonElement
+
 const pdfFile = (size = 600_000) =>
   new File([new Uint8Array(size)], 'proposta.pdf', { type: 'application/pdf' })
 
@@ -199,7 +203,7 @@ describe('DocumentImportDialog', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Envie um arquivo PDF ou DOCX.',
     )
-    expect(screen.getByTestId('document-import-submit')).toBeDisabled()
+    expect(submitButton().disabled).toBe(true)
   })
 
   it('should generate from a prompt', async () => {
@@ -211,7 +215,7 @@ describe('DocumentImportDialog', () => {
     })
     await screen.findByTestId('site-ai-cost')
     expect(screen.getByTestId('site-ai-cost').textContent).toMatch(/0,06/)
-    expect(screen.getByTestId('document-import-submit')).toBeDisabled()
+    expect(submitButton().disabled).toBe(true)
 
     fireEvent.change(screen.getByLabelText('O que a IA deve escrever?'), {
       target: { value: '  Proposta de PABX para clínica  ' },
@@ -289,7 +293,7 @@ describe('DocumentImportDialog', () => {
       await screen.findByText('A IA do CRM não está incluída no plano.'),
     ).toBeInTheDocument()
     pickFile(pdfFile())
-    expect(screen.getByTestId('document-import-submit')).toBeDisabled()
+    expect(submitButton().disabled).toBe(true)
   })
 
   it('should warn when the model reads only the text', async () => {
