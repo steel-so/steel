@@ -23,6 +23,7 @@ import {
   applyNlResult,
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
+import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
@@ -633,6 +634,7 @@ export function CrmLeadsBoard({
           {selectedLead ? (
             <LeadStagePanel
               workspaceId={workspaceId}
+              slug={slug}
               lead={selectedLead}
               onChanged={refetch}
               onClose={() => setSelectedLeadId(null)}
@@ -709,11 +711,13 @@ function LeadPanelShortcuts({ onClose }: { onClose: () => void }) {
 
 function LeadStagePanel({
   workspaceId,
+  slug,
   lead,
   onChanged,
   onClose,
 }: {
   workspaceId: string
+  slug: string
   lead: CrmLeadDTO
   onChanged: () => void
   onClose: () => void
@@ -791,6 +795,15 @@ function LeadStagePanel({
             onChanged={onChanged}
           />
         ) : null}
+
+        <RecordDocumentsSection
+          workspaceId={workspaceId}
+          slug={slug}
+          link={{ leadId: lead.id }}
+          listBy='leadId'
+          defaultKind='PROPOSAL'
+          defaultTitle={`Proposta — ${lead.name}`}
+        />
 
         <ReopeningHistory workspaceId={workspaceId} leadId={lead.id} />
       </div>

@@ -833,7 +833,7 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = define([
     keys: 'g r',
     scope: 'crm',
     group: 'crm',
-    label: 'Propostas',
+    label: 'Documentos',
     priority: 'P2',
   },
   {

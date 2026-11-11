@@ -113,7 +113,7 @@ export default async function CrmLayout({
             <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
               Notas
             </NavItem>
-            <NavItem href={`${base}/proposals`} icon={DocumentValidationIcon}>
+            <NavItem href={`${base}/documents`} icon={DocumentValidationIcon}>
               Documentos
             </NavItem>
             <NavItem href={`${base}/forms`} icon={FormIcon}>
@@ -216,7 +216,7 @@ export default async function CrmLayout({
           { id: 'crm.go-people', href: `${base}/people` },
           { id: 'crm.go-companies', href: `${base}/companies` },
           { id: 'crm.go-tasks', href: `${base}/tasks` },
-          { id: 'crm.go-proposals', href: `${base}/proposals` },
+          { id: 'crm.go-proposals', href: `${base}/documents` },
         ]}
       />
       {children}
