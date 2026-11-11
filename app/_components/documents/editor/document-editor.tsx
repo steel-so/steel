@@ -200,9 +200,11 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         variant='ghost'
         onClick={() => setPreview(store.getState().doc)}
         data-testid='document-preview-open'
+        aria-label='Pré-visualizar'
+        title='Pré-visualizar'
       >
         <SteelIcon icon={ViewIcon} data-icon='inline-start' />
-        Pré-visualizar
+        <span className='hidden xl:inline'>Pré-visualizar</span>
       </Button>
       <DocumentExportButton
         workspaceId={workspaceId}
