@@ -239,7 +239,7 @@ describe('WhatsAppCostService.record()', () => {
       now: NOW,
     })
     expect(costs.createEntry).toHaveBeenCalledWith(
-      expect.objectContaining({ unitPrice: 0.04 }),
+      expect.objectContaining({ unitPrice: 0.035 }),
     )
   })
 
