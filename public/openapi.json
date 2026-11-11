@@ -38062,7 +38062,7 @@
         "tags": ["CRM · Documentos"],
         "summary": "Adicionar destinatários",
         "operationId": "postWorkspacesByIdCrmDocumentsByDocumentIdRecipients",
-        "description": "Novos leitores da versão atual, entregues na hora (mesmas regras do envio).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Novos leitores da versão atual, entregues na hora (mesmas regras do envio). Com `{ recipients: [...] }` devolve a lista; com um destinatário só (o objeto direto), devolve ele.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `documents` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -38082,60 +38082,98 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "recipients": {
-                    "minItems": 1,
-                    "maxItems": 50,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "maxLength": 200
-                        },
-                        "email": {
-                          "type": "string",
-                          "maxLength": 320,
-                          "format": "email"
-                        },
-                        "phone": {
-                          "type": "string",
-                          "maxLength": 32
-                        },
-                        "personId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "role": {
-                          "default": "APPROVER",
-                          "type": "string",
-                          "enum": ["VIEWER", "APPROVER"]
-                        },
-                        "channel": {
-                          "default": "LINK",
-                          "type": "string",
-                          "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "recipients": {
+                        "minItems": 1,
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "email": {
+                              "type": "string",
+                              "maxLength": 320,
+                              "format": "email"
+                            },
+                            "phone": {
+                              "type": "string",
+                              "maxLength": 32
+                            },
+                            "personId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "role": {
+                              "default": "APPROVER",
+                              "type": "string",
+                              "enum": ["VIEWER", "APPROVER"]
+                            },
+                            "channel": {
+                              "default": "LINK",
+                              "type": "string",
+                              "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                            }
+                          },
+                          "required": ["name"]
                         }
                       },
-                      "required": ["name"]
-                    }
+                      "message": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "required": ["recipients"]
                   },
-                  "message": {
-                    "type": "string",
-                    "maxLength": 2000
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      },
+                      "email": {
+                        "type": "string",
+                        "maxLength": 320,
+                        "format": "email"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "personId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "role": {
+                        "default": "APPROVER",
+                        "type": "string",
+                        "enum": ["VIEWER", "APPROVER"]
+                      },
+                      "channel": {
+                        "default": "LINK",
+                        "type": "string",
+                        "enum": ["LINK", "EMAIL", "WHATSAPP"]
+                      }
+                    },
+                    "required": ["name"]
                   }
-                },
-                "required": ["recipients"]
+                ]
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Destinatários criados.",
+            "description": "Destinatário(s) criado(s).",
             "content": {
               "application/json": {
                 "schema": {
@@ -38147,10 +38185,17 @@
                       "type": "object",
                       "properties": {
                         "data": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/DocumentRecipientDelivery"
-                          }
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/DocumentRecipientDelivery"
+                              }
+                            },
+                            {
+                              "$ref": "#/components/schemas/DocumentRecipientDelivery"
+                            }
+                          ]
                         }
                       }
                     }
