@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
-import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
+import { expectErr } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, whatsappContactBlocked } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
@@ -141,7 +141,7 @@ describe('WhatsAppSend — blocked contacts (zap-block-contacts)', () => {
   )
 
   it.each(sends)('%s() goes out when nobody is blocked', async (_name, run) => {
-    expectOk(await run())
+    expect((await run()).ok).toBe(true)
     expect(guard).toHaveBeenCalledTimes(1)
   })
 

@@ -747,7 +747,10 @@ describe('WhatsAppContactBlockService.sync()', () => {
             })),
           })
         : fakeClient({
-            list: vi.fn(async () => ({ supported: false as const, waIds: [] })),
+            list: vi.fn(async () => ({
+              supported: false as const,
+              waIds: [] as [],
+            })),
           }),
     )
     contacts.findManyByWaIds.mockResolvedValue(ok([contact]))
