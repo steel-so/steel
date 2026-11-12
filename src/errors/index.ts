@@ -1,5 +1,6 @@
 // nov: s6-swarming
 // nov: s2-major-incident
+// nov: crm-deals
 export {
   aiInsightNotFound,
   aiModelNotEnabled,
@@ -57,11 +58,16 @@ export {
   crmCompetitorIdeasFailed,
   crmCompetitorNoPosts,
   crmCompetitorProfileNotFound,
+  crmContractInvalid,
+  crmContractNotFound,
   crmCustomFieldConflict,
   crmCustomFieldInvalid,
   crmCustomFieldNotFound,
   crmDashboardNotFound,
   crmDashboardWidgetNotFound,
+  crmDealRoomInvalid,
+  crmDealRoomNotFound,
+  crmDealsPaymentDisabled,
   crmDuplicateInvalid,
   crmDuplicateNotFound,
   crmEmailAccountConflict,
@@ -138,9 +144,13 @@ export {
   crmPipelineStageNotFound,
   crmProductConflict,
   crmProductNotFound,
+  crmProposalChargeInvalid,
+  crmProposalChargeNotFound,
   crmProposalExpired,
   crmProposalNotAcceptable,
   crmProposalNotFound,
+  crmProposalSignatureNotFound,
+  crmProposalSignatureRequired,
   crmProposalTemplateNotFound,
   crmQuotaConflict,
   crmQuotaNotFound,
@@ -220,6 +230,10 @@ export {
   projectMemberNotInWorkspace,
   projectNotFound,
   projectSlugConflict,
+  qaCriteriaInvalid,
+  qaDisabled,
+  qaReviewNotFound,
+  qaSubjectNotFound,
   rateLimited,
   releaseNotesUnavailable,
   sdAiConversationClosed,
@@ -361,10 +375,6 @@ export {
   sendingDomainNotVerified,
   sendingDomainProviderError,
   sendingDomainTaken,
-  qaCriteriaInvalid,
-  qaDisabled,
-  qaReviewNotFound,
-  qaSubjectNotFound,
   slowDown,
   storageError,
   subscriptionCancelFailed,
@@ -464,6 +474,9 @@ export {
   whiteboardNotFound,
   whiteboardRevisionConflict,
   whiteboardVersionNotFound,
+  widgetNotAvailable,
+  widgetOriginNotAllowed,
+  widgetVisitorInvalid,
   wikiAiFailed,
   wikiCommentForbidden,
   wikiCommentNestingTooDeep,
@@ -484,24 +497,4 @@ export {
   workspaceOperationInProgress,
   workspaceStatusConflict,
   workspaceSuspended,
-} from './app-error'
-
-
-
-// nov: crm-deals
-export {
-  crmContractInvalid,
-  crmContractNotFound,
-  crmDealRoomInvalid,
-  crmDealRoomNotFound,
-  crmDealsPaymentDisabled,
-  crmProposalChargeInvalid,
-  crmProposalChargeNotFound,
-  crmProposalSignatureNotFound,
-  crmProposalSignatureRequired,
-} from './app-error'
-export {
-  widgetNotAvailable,
-  widgetOriginNotAllowed,
-  widgetVisitorInvalid,
 } from './app-error'

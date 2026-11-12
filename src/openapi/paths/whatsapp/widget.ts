@@ -59,7 +59,10 @@ export const widgetRoutes: RouteConfig[] = [
     description: `Upsert parcial (omitido = mantém). Na primeira gravação nasce a chave pública e, ao ligar, a conexão virtual \`WIDGET\` onde as conversas caem no inbox. Para ligar é preciso ao menos um site autorizado. Auditado. ${PRIVILEGED}`,
     body: UpdateWhatsAppWidgetSettingsSchema,
     responses: {
-      200: { description: 'Configuração salva.', schema: WhatsAppWidgetSettingsDTO },
+      200: {
+        description: 'Configuração salva.',
+        schema: WhatsAppWidgetSettingsDTO,
+      },
     },
     errors: [
       ...PRIVILEGED_ERRORS,
@@ -76,7 +79,10 @@ export const widgetRoutes: RouteConfig[] = [
     summary: 'Gerar nova chave do chat do site',
     description: `Troca a chave pública: os trechos de código já colados nos sites param de abrir o chat até serem atualizados. Auditado. ${PRIVILEGED}`,
     responses: {
-      200: { description: 'Configuração com a nova chave.', schema: WhatsAppWidgetSettingsDTO },
+      200: {
+        description: 'Configuração com a nova chave.',
+        schema: WhatsAppWidgetSettingsDTO,
+      },
     },
     errors: [
       ...PRIVILEGED_ERRORS,
@@ -93,7 +99,10 @@ export const widgetRoutes: RouteConfig[] = [
     rateLimit: 'ip',
     query: WidgetKeyQuerySchema,
     responses: {
-      200: { description: 'Configuração pública.', schema: WidgetPublicConfigDTO },
+      200: {
+        description: 'Configuração pública.',
+        schema: WidgetPublicConfigDTO,
+      },
     },
     errors: PUBLIC_ERRORS,
   },

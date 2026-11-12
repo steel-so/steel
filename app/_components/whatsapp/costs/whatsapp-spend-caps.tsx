@@ -361,8 +361,8 @@ export function WhatsAppSpendCapsCard({
         <CardDescription>
           Valores lidos da Meta a cada acesso a esta página e a cada 15 minutos
           para os números com limite. A Meta informa os dias já encerrados (em
-          UTC); o dia de hoje vem dos envios registrados pelo Steel. Com o
-          modo bloquear, templates deixam de sair ao atingir o limite.
+          UTC); o dia de hoje vem dos envios registrados pelo Steel. Com o modo
+          bloquear, templates deixam de sair ao atingir o limite.
         </CardDescription>
       </CardHeader>
       <CardContent>

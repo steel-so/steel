@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  documentAnalyticsPeriodDays,
   DocumentAnalyticsQuerySchema,
+  documentAnalyticsPeriodDays,
 } from '../document-analytics.schema'
 
 describe('DocumentAnalyticsQuerySchema', () => {

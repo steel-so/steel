@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { seedSchedulingFixtures } from '@/src/__tests__/factories/whatsapp-scheduling.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
+import { seedSchedulingFixtures } from '@/src/__tests__/factories/whatsapp-scheduling.factory'
 import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { prisma } from '@/src/lib/prisma'
@@ -41,7 +41,9 @@ async function seed() {
 const book = (
   s: Awaited<ReturnType<typeof seed>>,
   start: Date,
-  over: Partial<Parameters<typeof WhatsAppSchedAppointmentRepository.createIfFree>[0]> = {},
+  over: Partial<
+    Parameters<typeof WhatsAppSchedAppointmentRepository.createIfFree>[0]
+  > = {},
 ) =>
   WhatsAppSchedAppointmentRepository.createIfFree({
     workspaceId: s.workspace.id,
@@ -59,14 +61,22 @@ describe('settings, services and professionals', () => {
   it('upserts settings', async () => {
     const workspace = await seedWorkspace()
     expect(
-      expectOk(await WhatsAppSchedulingSettingsRepository.findByWorkspace(workspace.id)),
+      expectOk(
+        await WhatsAppSchedulingSettingsRepository.findByWorkspace(
+          workspace.id,
+        ),
+      ),
     ).toBeNull()
     const created = expectOk(
-      await WhatsAppSchedulingSettingsRepository.upsert(workspace.id, { enabled: true }),
+      await WhatsAppSchedulingSettingsRepository.upsert(workspace.id, {
+        enabled: true,
+      }),
     )
     expect(created.reminderOffsets).toEqual([1440])
     const updated = expectOk(
-      await WhatsAppSchedulingSettingsRepository.upsert(workspace.id, { slotMinutes: 15 }),
+      await WhatsAppSchedulingSettingsRepository.upsert(workspace.id, {
+        slotMinutes: 15,
+      }),
     )
     expect(updated.id).toBe(created.id)
   })
@@ -74,14 +84,26 @@ describe('settings, services and professionals', () => {
   it('manages services', async () => {
     const { workspace, service } = await seed()
     const other = await seedWorkspace()
-    expect(expectOk(await WhatsAppSchedServiceRepository.list(workspace.id))).toHaveLength(1)
     expect(
-      expectOk(await WhatsAppSchedServiceRepository.findById(service.id, other.id)),
+      expectOk(await WhatsAppSchedServiceRepository.list(workspace.id)),
+    ).toHaveLength(1)
+    expect(
+      expectOk(
+        await WhatsAppSchedServiceRepository.findById(service.id, other.id),
+      ),
     ).toBeNull()
     expect(
-      expectOk(await WhatsAppSchedServiceRepository.update(service.id, { active: false })).active,
+      expectOk(
+        await WhatsAppSchedServiceRepository.update(service.id, {
+          active: false,
+        }),
+      ).active,
     ).toBe(false)
-    expect(expectOk(await WhatsAppSchedServiceRepository.countAppointments(service.id))).toBe(0)
+    expect(
+      expectOk(
+        await WhatsAppSchedServiceRepository.countAppointments(service.id),
+      ),
+    ).toBe(0)
     const spare = expectOk(
       await WhatsAppSchedServiceRepository.create({
         workspaceId: workspace.id,
@@ -91,40 +113,67 @@ describe('settings, services and professionals', () => {
     )
     expectOk(await WhatsAppSchedServiceRepository.delete(spare.id))
     expect(
-      expectOk(await WhatsAppSchedServiceRepository.findById(spare.id, workspace.id)),
+      expectOk(
+        await WhatsAppSchedServiceRepository.findById(spare.id, workspace.id),
+      ),
     ).toBeNull()
   })
 
   it('manages professionals and their services', async () => {
     const s = await seed()
-    const list = expectOk(await WhatsAppSchedProfessionalRepository.list(s.workspace.id))
+    const list = expectOk(
+      await WhatsAppSchedProfessionalRepository.list(s.workspace.id),
+    )
     expect(list[0].services.map((x) => x.serviceId)).toEqual([s.service.id])
     expect(
       expectOk(
-        await WhatsAppSchedProfessionalRepository.listForService(s.workspace.id, s.service.id),
+        await WhatsAppSchedProfessionalRepository.listForService(
+          s.workspace.id,
+          s.service.id,
+        ),
       ),
     ).toHaveLength(1)
     const updated = expectOk(
-      await WhatsAppSchedProfessionalRepository.update(s.professional.id, { name: 'Ana M.' }, []),
+      await WhatsAppSchedProfessionalRepository.update(
+        s.professional.id,
+        { name: 'Ana M.' },
+        [],
+      ),
     )
     expect(updated.name).toBe('Ana M.')
     expect(updated.services).toEqual([])
     expect(
       expectOk(
-        await WhatsAppSchedProfessionalRepository.listForService(s.workspace.id, s.service.id),
+        await WhatsAppSchedProfessionalRepository.listForService(
+          s.workspace.id,
+          s.service.id,
+        ),
       ),
     ).toEqual([])
     const kept = expectOk(
-      await WhatsAppSchedProfessionalRepository.update(s.professional.id, { active: false }),
+      await WhatsAppSchedProfessionalRepository.update(s.professional.id, {
+        active: false,
+      }),
     )
     expect(kept.active).toBe(false)
     expect(
-      expectOk(await WhatsAppSchedProfessionalRepository.findById(s.professional.id, 'other')),
+      expectOk(
+        await WhatsAppSchedProfessionalRepository.findById(
+          s.professional.id,
+          'other',
+        ),
+      ),
     ).toBeNull()
     expect(
-      expectOk(await WhatsAppSchedProfessionalRepository.countAppointments(s.professional.id)),
+      expectOk(
+        await WhatsAppSchedProfessionalRepository.countAppointments(
+          s.professional.id,
+        ),
+      ),
     ).toBe(0)
-    expectOk(await WhatsAppSchedProfessionalRepository.delete(s.professional.id))
+    expectOk(
+      await WhatsAppSchedProfessionalRepository.delete(s.professional.id),
+    )
   })
 })
 
@@ -149,7 +198,11 @@ describe('WhatsAppSchedAppointmentRepository', () => {
   it('frees the slot once the appointment is canceled', async () => {
     const s = await seed()
     const first = expectOk(await book(s, at('13:00')))
-    expectOk(await WhatsAppSchedAppointmentRepository.update(first.id, { status: 'CANCELED' }))
+    expectOk(
+      await WhatsAppSchedAppointmentRepository.update(first.id, {
+        status: 'CANCELED',
+      }),
+    )
     expectOk(await book(s, at('13:00')))
   })
 
@@ -184,11 +237,20 @@ describe('WhatsAppSchedAppointmentRepository', () => {
     const appointment = expectOk(await book(s, at('13:00')))
     expectOk(await book(s, at('15:00'), { source: 'FLOW' }))
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.findById(appointment.id, s.workspace.id))
-        ?.service.name,
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.findById(
+          appointment.id,
+          s.workspace.id,
+        ),
+      )?.service.name,
     ).toBe('Corte')
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.findById(appointment.id, 'other')),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.findById(
+          appointment.id,
+          'other',
+        ),
+      ),
     ).toBeNull()
     const day = expectOk(
       await WhatsAppSchedAppointmentRepository.list(s.workspace.id, {
@@ -208,7 +270,11 @@ describe('WhatsAppSchedAppointmentRepository', () => {
       ),
     ).toHaveLength(2)
     const busy = expectOk(
-      await WhatsAppSchedAppointmentRepository.listBusy([s.professional.id], at('00:00'), at('23:59')),
+      await WhatsAppSchedAppointmentRepository.listBusy(
+        [s.professional.id],
+        at('00:00'),
+        at('23:59'),
+      ),
     )
     expect(busy).toHaveLength(2)
     expect(busy[0].service.bufferMinutes).toBe(10)
@@ -220,24 +286,50 @@ describe('WhatsAppSchedAppointmentRepository', () => {
     const appointment = expectOk(await book(s, at('13:00')))
     expect(
       expectOk(
-        await WhatsAppSchedAppointmentRepository.findNextNotified(s.workspace.id, s.contact.id, now),
+        await WhatsAppSchedAppointmentRepository.findNextNotified(
+          s.workspace.id,
+          s.contact.id,
+          now,
+        ),
       ),
     ).toBeNull()
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.claimConfirmation(appointment.id, now)),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.claimConfirmation(
+          appointment.id,
+          now,
+        ),
+      ),
     ).toBe(true)
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.claimConfirmation(appointment.id, now)),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.claimConfirmation(
+          appointment.id,
+          now,
+        ),
+      ),
     ).toBe(false)
     expect(
       expectOk(
-        await WhatsAppSchedAppointmentRepository.findNextNotified(s.workspace.id, s.contact.id, now),
+        await WhatsAppSchedAppointmentRepository.findNextNotified(
+          s.workspace.id,
+          s.contact.id,
+          now,
+        ),
       )?.id,
     ).toBe(appointment.id)
-    expectOk(await WhatsAppSchedAppointmentRepository.releaseConfirmation(appointment.id))
+    expectOk(
+      await WhatsAppSchedAppointmentRepository.releaseConfirmation(
+        appointment.id,
+      ),
+    )
     expect(
       expectOk(
-        await WhatsAppSchedAppointmentRepository.findNextNotified(s.workspace.id, s.contact.id, now),
+        await WhatsAppSchedAppointmentRepository.findNextNotified(
+          s.workspace.id,
+          s.contact.id,
+          now,
+        ),
       ),
     ).toBeNull()
   })
@@ -246,38 +338,76 @@ describe('WhatsAppSchedAppointmentRepository', () => {
     const s = await seed()
     const appointment = expectOk(await book(s, at('13:00')))
     const upcoming = expectOk(
-      await WhatsAppSchedAppointmentRepository.listUpcomingLive(at('00:00'), at('23:00'), 10),
+      await WhatsAppSchedAppointmentRepository.listUpcomingLive(
+        at('00:00'),
+        at('23:00'),
+        10,
+      ),
     )
     expect(upcoming.map((a) => a.id)).toEqual([appointment.id])
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.claimReminder(appointment.id, 120, [120, 1440])),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.claimReminder(
+          appointment.id,
+          120,
+          [120, 1440],
+        ),
+      ),
     ).toBe(true)
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.claimReminder(appointment.id, 120, [120])),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.claimReminder(
+          appointment.id,
+          120,
+          [120],
+        ),
+      ),
     ).toBe(false)
     const notified = expectOk(
-      await WhatsAppSchedAppointmentRepository.findNextNotified(s.workspace.id, s.contact.id, at('12:00')),
+      await WhatsAppSchedAppointmentRepository.findNextNotified(
+        s.workspace.id,
+        s.contact.id,
+        at('12:00'),
+      ),
     )
     expect(notified?.remindersSent).toEqual([120, 1440])
-    expectOk(await WhatsAppSchedAppointmentRepository.releaseReminder(appointment.id, [120, 1440]))
+    expectOk(
+      await WhatsAppSchedAppointmentRepository.releaseReminder(
+        appointment.id,
+        [120, 1440],
+      ),
+    )
     expect(
-      expectOk(await WhatsAppSchedAppointmentRepository.claimReminder(appointment.id, 120, [120])),
+      expectOk(
+        await WhatsAppSchedAppointmentRepository.claimReminder(
+          appointment.id,
+          120,
+          [120],
+        ),
+      ),
     ).toBe(true)
-    expectOk(await WhatsAppSchedAppointmentRepository.releaseReminder('missing', [1]))
+    expectOk(
+      await WhatsAppSchedAppointmentRepository.releaseReminder('missing', [1]),
+    )
   })
 
   it('wraps database errors', async () => {
     const boom = new Error('boom')
     const reject = (target: object, method: string) => {
       const spy = vi.spyOn(target as Record<string, never>, method as never)
-      ;(spy as unknown as { mockRejectedValue: (e: unknown) => void }).mockRejectedValue(boom)
+      ;(
+        spy as unknown as { mockRejectedValue: (e: unknown) => void }
+      ).mockRejectedValue(boom)
     }
     for (const [model, methods] of [
       [
         prisma.whatsAppSchedAppointment,
         ['findFirst', 'findMany', 'update', 'updateMany', 'findUnique'],
       ],
-      [prisma.whatsAppSchedService, ['findMany', 'findFirst', 'create', 'update', 'delete']],
+      [
+        prisma.whatsAppSchedService,
+        ['findMany', 'findFirst', 'create', 'update', 'delete'],
+      ],
       [
         prisma.whatsAppSchedProfessional,
         ['findMany', 'findFirst', 'create', 'delete'],
@@ -296,19 +426,29 @@ describe('WhatsAppSchedAppointmentRepository', () => {
       await WhatsAppSchedulingSettingsRepository.upsert('w', {}),
       await WhatsAppSchedServiceRepository.list('w'),
       await WhatsAppSchedServiceRepository.findById('s', 'w'),
-      await WhatsAppSchedServiceRepository.create({ workspaceId: 'w', name: 'x', durationMinutes: 5 }),
+      await WhatsAppSchedServiceRepository.create({
+        workspaceId: 'w',
+        name: 'x',
+        durationMinutes: 5,
+      }),
       await WhatsAppSchedServiceRepository.update('s', {}),
       await WhatsAppSchedServiceRepository.countAppointments('s'),
       await WhatsAppSchedServiceRepository.delete('s'),
       await WhatsAppSchedProfessionalRepository.list('w'),
       await WhatsAppSchedProfessionalRepository.findById('p', 'w'),
       await WhatsAppSchedProfessionalRepository.listForService('w', 's'),
-      await WhatsAppSchedProfessionalRepository.create({ workspaceId: 'w', name: 'x' }, []),
+      await WhatsAppSchedProfessionalRepository.create(
+        { workspaceId: 'w', name: 'x' },
+        [],
+      ),
       await WhatsAppSchedProfessionalRepository.update('p', {}, []),
       await WhatsAppSchedProfessionalRepository.countAppointments('p'),
       await WhatsAppSchedProfessionalRepository.delete('p'),
       await WhatsAppSchedAppointmentRepository.findById('a', 'w'),
-      await WhatsAppSchedAppointmentRepository.list('w', { from: now, to: now }),
+      await WhatsAppSchedAppointmentRepository.list('w', {
+        from: now,
+        to: now,
+      }),
       await WhatsAppSchedAppointmentRepository.listBusy(['p'], now, now),
       await WhatsAppSchedAppointmentRepository.update('a', {}),
       await WhatsAppSchedAppointmentRepository.findNextNotified('w', 'c', now),

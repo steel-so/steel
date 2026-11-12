@@ -41,7 +41,9 @@ async function seed() {
 describe('CrmDealsSettingsRepository', () => {
   it('reads nothing, then upserts and updates in place', async () => {
     const { workspace, user } = await seedHealthWorkspace()
-    expect(expectOk(await CrmDealsSettingsRepository.findByWorkspace(workspace.id))).toBeNull()
+    expect(
+      expectOk(await CrmDealsSettingsRepository.findByWorkspace(workspace.id)),
+    ).toBeNull()
 
     const created = expectOk(
       await CrmDealsSettingsRepository.upsert(workspace.id, user.id, {
@@ -65,10 +67,20 @@ describe('CrmDealsSettingsRepository', () => {
   })
 
   it('wraps a database failure', async () => {
-    vi.spyOn(prisma.crmDealsSettings, 'findUnique').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealsSettingsRepository.findByWorkspace('w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealsSettings, 'upsert').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealsSettingsRepository.upsert('w', 'u', {}), 'DATABASE_ERROR')
+    vi.spyOn(prisma.crmDealsSettings, 'findUnique').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealsSettingsRepository.findByWorkspace('w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmDealsSettings, 'upsert').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealsSettingsRepository.upsert('w', 'u', {}),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -109,15 +121,23 @@ describe('CrmProposalChargeRepository', () => {
     )
 
     const byProvider = expectOk(
-      await CrmProposalChargeRepository.findByProviderCharge('mock', created.providerChargeId),
+      await CrmProposalChargeRepository.findByProviderCharge(
+        'mock',
+        created.providerChargeId,
+      ),
     )
     expect(byProvider?.id).toBe(created.id)
     expect(
-      expectOk(await CrmProposalChargeRepository.findByProviderCharge('mock', 'nope')),
+      expectOk(
+        await CrmProposalChargeRepository.findByProviderCharge('mock', 'nope'),
+      ),
     ).toBeNull()
 
     const list = expectOk(
-      await CrmProposalChargeRepository.listByProposal(ctx.proposal.id, ctx.workspace.id),
+      await CrmProposalChargeRepository.listByProposal(
+        ctx.proposal.id,
+        ctx.workspace.id,
+      ),
     )
     expect(list.map((c) => c.id)).toEqual([created.id])
   })
@@ -132,7 +152,11 @@ describe('CrmProposalChargeRepository', () => {
         payerName: 'Ana',
       }),
     )
-    expect(paid).toMatchObject({ status: 'PAID', payerName: 'Ana', endToEndId: 'E2E' })
+    expect(paid).toMatchObject({
+      status: 'PAID',
+      payerName: 'Ana',
+      endToEndId: 'E2E',
+    })
     expect(Number(paid?.paidAmount)).toBe(1500.5)
     expect(
       expectOk(
@@ -148,10 +172,14 @@ describe('CrmProposalChargeRepository', () => {
 
   it('cancels only a pending charge', async () => {
     const { created } = await charge()
-    const canceled = expectOk(await CrmProposalChargeRepository.markCanceled(created.id))
+    const canceled = expectOk(
+      await CrmProposalChargeRepository.markCanceled(created.id),
+    )
     expect(canceled?.status).toBe('CANCELED')
     expect(canceled?.canceledAt).toBeInstanceOf(Date)
-    expect(expectOk(await CrmProposalChargeRepository.markCanceled(created.id))).toBeNull()
+    expect(
+      expectOk(await CrmProposalChargeRepository.markCanceled(created.id)),
+    ).toBeNull()
   })
 
   it('detaches the charge from a deal that is deleted', async () => {
@@ -164,7 +192,9 @@ describe('CrmProposalChargeRepository', () => {
   })
 
   it('wraps database failures', async () => {
-    vi.spyOn(prisma.crmProposalCharge, 'create').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmProposalCharge, 'create').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmProposalChargeRepository.create({
         workspaceId: 'w',
@@ -181,16 +211,30 @@ describe('CrmProposalChargeRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmProposalCharge, 'findMany').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalChargeRepository.listByProposal('p', 'w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmProposalCharge, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalChargeRepository.findById('i', 'w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmProposalCharge, 'findUnique').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmProposalCharge, 'findMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalChargeRepository.listByProposal('p', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmProposalCharge, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalChargeRepository.findById('i', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmProposalCharge, 'findUnique').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmProposalChargeRepository.findByProviderCharge('m', 'x'),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmProposalCharge, 'updateMany').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmProposalCharge, 'updateMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmProposalChargeRepository.markPaid('i', {
         paidAt: now,
@@ -200,8 +244,13 @@ describe('CrmProposalChargeRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmProposalCharge, 'updateMany').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalChargeRepository.markCanceled('i'), 'DATABASE_ERROR')
+    vi.spyOn(prisma.crmProposalCharge, 'updateMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalChargeRepository.markCanceled('i'),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -220,35 +269,60 @@ describe('CrmProposalSignatureRepository', () => {
       ipHash: 'c',
     }
     expect(
-      expectOk(await CrmProposalSignatureRepository.latestByProposal(ctx.proposal.id)),
+      expectOk(
+        await CrmProposalSignatureRepository.latestByProposal(ctx.proposal.id),
+      ),
     ).toBeNull()
     const first = expectOk(
-      await CrmProposalSignatureRepository.create({ ...base, id: 's1', signedAt: inDays(-2) }),
+      await CrmProposalSignatureRepository.create({
+        ...base,
+        id: 's1',
+        signedAt: inDays(-2),
+      }),
     )
     const second = expectOk(
-      await CrmProposalSignatureRepository.create({ ...base, id: 's2', signedAt: inDays(-1) }),
+      await CrmProposalSignatureRepository.create({
+        ...base,
+        id: 's2',
+        signedAt: inDays(-1),
+      }),
     )
     expect(
-      expectOk(await CrmProposalSignatureRepository.latestByProposal(ctx.proposal.id))?.id,
+      expectOk(
+        await CrmProposalSignatureRepository.latestByProposal(ctx.proposal.id),
+      )?.id,
     ).toBe(second.id)
     expect(
       expectOk(
-        await CrmProposalSignatureRepository.listByProposal(ctx.proposal.id, ctx.workspace.id),
+        await CrmProposalSignatureRepository.listByProposal(
+          ctx.proposal.id,
+          ctx.workspace.id,
+        ),
       ).map((s) => s.id),
     ).toEqual(['s2', first.id])
     expect(
       expectOk(
-        await CrmProposalSignatureRepository.findById('s1', ctx.proposal.id, ctx.workspace.id),
+        await CrmProposalSignatureRepository.findById(
+          's1',
+          ctx.proposal.id,
+          ctx.workspace.id,
+        ),
       ).signerName,
     ).toBe('Carlos')
     expectErr(
-      await CrmProposalSignatureRepository.findById('s1', 'other', ctx.workspace.id),
+      await CrmProposalSignatureRepository.findById(
+        's1',
+        'other',
+        ctx.workspace.id,
+      ),
       'CRM_PROPOSAL_SIGNATURE_NOT_FOUND',
     )
   })
 
   it('wraps database failures', async () => {
-    vi.spyOn(prisma.crmProposalSignature, 'create').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmProposalSignature, 'create').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmProposalSignatureRepository.create({
         id: 'i',
@@ -265,12 +339,27 @@ describe('CrmProposalSignatureRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmProposalSignature, 'findMany').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalSignatureRepository.listByProposal('p', 'w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmProposalSignature, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalSignatureRepository.findById('i', 'p', 'w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmProposalSignature, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmProposalSignatureRepository.latestByProposal('p'), 'DATABASE_ERROR')
+    vi.spyOn(prisma.crmProposalSignature, 'findMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalSignatureRepository.listByProposal('p', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmProposalSignature, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalSignatureRepository.findById('i', 'p', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmProposalSignature, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmProposalSignatureRepository.latestByProposal('p'),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -287,7 +376,12 @@ describe('CrmDealRoomRepository', () => {
     })
 
     expect(
-      expectOk(await CrmDealRoomRepository.findByOpportunity(ctx.deal.id, ctx.workspace.id)),
+      expectOk(
+        await CrmDealRoomRepository.findByOpportunity(
+          ctx.deal.id,
+          ctx.workspace.id,
+        ),
+      ),
     ).toBeNull()
 
     const room = expectOk(
@@ -323,10 +417,22 @@ describe('CrmDealRoomRepository', () => {
       await CrmDealRoomRepository.upsert(
         input({
           welcomeMessage: null,
-          materials: [{ id: materialA?.id, title: 'A2', url: 'https://a2.example' }],
+          materials: [
+            { id: materialA?.id, title: 'A2', url: 'https://a2.example' },
+          ],
           actions: [
-            { id: sellerAction?.id, title: 'Vendedor 2', owner: 'SELLER', done: true },
-            { id: customerAction?.id, title: 'Cliente', owner: 'CUSTOMER', done: false },
+            {
+              id: sellerAction?.id,
+              title: 'Vendedor 2',
+              owner: 'SELLER',
+              done: true,
+            },
+            {
+              id: customerAction?.id,
+              title: 'Cliente',
+              owner: 'CUSTOMER',
+              done: false,
+            },
             { title: 'Nova', owner: 'CUSTOMER' },
           ],
         }),
@@ -336,14 +442,25 @@ describe('CrmDealRoomRepository', () => {
     expect(edited.token).toBe(room.token)
     expect(edited.welcomeMessage).toBeNull()
     expect(edited.materials.map((m) => m.title)).toEqual(['A2'])
-    expect(edited.actions.map((a) => a.title)).toEqual(['Vendedor 2', 'Cliente', 'Nova'])
+    expect(edited.actions.map((a) => a.title)).toEqual([
+      'Vendedor 2',
+      'Cliente',
+      'Nova',
+    ])
     // The first check is kept: a later save does not rewrite when it was done.
     expect(edited.actions[0]?.doneAt?.toISOString()).toBe(doneAt?.toISOString())
 
     const unchecked = expectOk(
       await CrmDealRoomRepository.upsert(
         input({
-          actions: [{ id: sellerAction?.id, title: 'Vendedor 2', owner: 'SELLER', done: false }],
+          actions: [
+            {
+              id: sellerAction?.id,
+              title: 'Vendedor 2',
+              owner: 'SELLER',
+              done: false,
+            },
+          ],
         }),
       ),
     )
@@ -351,7 +468,9 @@ describe('CrmDealRoomRepository', () => {
     expect(unchecked.actions[0]?.doneAt).toBeNull()
 
     const rotated = expectOk(
-      await CrmDealRoomRepository.upsert(input({ rotateToken: true, enabled: false })),
+      await CrmDealRoomRepository.upsert(
+        input({ rotateToken: true, enabled: false }),
+      ),
     )
     expect(rotated.token).not.toBe(room.token)
     expect(rotated.enabled).toBe(false)
@@ -369,12 +488,23 @@ describe('CrmDealRoomRepository', () => {
         data: { enabled: true, proposalId: ctx.proposal.id },
       }),
     )
-    const pub = expectOk(await CrmDealRoomRepository.findPublicByToken(room.token))
+    const pub = expectOk(
+      await CrmDealRoomRepository.findPublicByToken(room.token),
+    )
     expect(pub.opportunity.company?.name).toBe('Acme')
     expect(pub.proposal?.id).toBe(ctx.proposal.id)
-    expectErr(await CrmDealRoomRepository.findPublicByToken('nope'), 'CRM_DEAL_ROOM_NOT_FOUND')
-    await prisma.crmDealRoom.update({ where: { id: room.id }, data: { enabled: false } })
-    expectErr(await CrmDealRoomRepository.findPublicByToken(room.token), 'CRM_DEAL_ROOM_NOT_FOUND')
+    expectErr(
+      await CrmDealRoomRepository.findPublicByToken('nope'),
+      'CRM_DEAL_ROOM_NOT_FOUND',
+    )
+    await prisma.crmDealRoom.update({
+      where: { id: room.id },
+      data: { enabled: false },
+    })
+    expectErr(
+      await CrmDealRoomRepository.findPublicByToken(room.token),
+      'CRM_DEAL_ROOM_NOT_FOUND',
+    )
   })
 
   it('tracks visitors, events, messages and the customer plan', async () => {
@@ -414,10 +544,15 @@ describe('CrmDealRoomRepository', () => {
     expect(again.id).toBe(visitor.id)
     expect(again.name).toBe('Ana Souza')
     expect(
-      expectOk(await CrmDealRoomRepository.findVisitor(room.id, visitor.id))?.ipHash,
+      expectOk(await CrmDealRoomRepository.findVisitor(room.id, visitor.id))
+        ?.ipHash,
     ).toBe('h2')
-    expect(expectOk(await CrmDealRoomRepository.findVisitor(room.id, 'nope'))).toBeNull()
-    expect(expectOk(await CrmDealRoomRepository.listVisitors(room.id))).toHaveLength(1)
+    expect(
+      expectOk(await CrmDealRoomRepository.findVisitor(room.id, 'nope')),
+    ).toBeNull()
+    expect(
+      expectOk(await CrmDealRoomRepository.listVisitors(room.id)),
+    ).toHaveLength(1)
 
     expectOk(
       await CrmDealRoomRepository.createEvent({
@@ -454,10 +589,14 @@ describe('CrmDealRoomRepository', () => {
       visitorId: null,
       body: 'segunda',
     })
-    const messages = expectOk(await CrmDealRoomRepository.listMessages(room.id, 10))
+    const messages = expectOk(
+      await CrmDealRoomRepository.listMessages(room.id, 10),
+    )
     expect(messages.map((m) => m.body)).toEqual(['primeira', 'segunda'])
     expect(
-      expectOk(await CrmDealRoomRepository.listMessages(room.id, 1)).map((m) => m.body),
+      expectOk(await CrmDealRoomRepository.listMessages(room.id, 1)).map(
+        (m) => m.body,
+      ),
     ).toEqual(['segunda'])
 
     const [customerAction, sellerAction] = room.actions
@@ -490,19 +629,38 @@ describe('CrmDealRoomRepository', () => {
     })
     expect(checked?.doneByLabel).toBe('Ana')
     expectOk(
-      await CrmDealRoomRepository.setActionDone(room.id, customerAction?.id ?? '', false, 'Ana', now),
+      await CrmDealRoomRepository.setActionDone(
+        room.id,
+        customerAction?.id ?? '',
+        false,
+        'Ana',
+        now,
+      ),
     )
     expect(
-      (await prisma.crmDealRoomAction.findUnique({ where: { id: customerAction?.id ?? '' } }))
-        ?.doneAt,
+      (
+        await prisma.crmDealRoomAction.findUnique({
+          where: { id: customerAction?.id ?? '' },
+        })
+      )?.doneAt,
     ).toBeNull()
   })
 
   it('wraps database failures', async () => {
-    vi.spyOn(prisma.crmDealRoom, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealRoomRepository.findByOpportunity('o', 'w'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealRoom, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealRoomRepository.findPublicByToken('t'), 'DATABASE_ERROR')
+    vi.spyOn(prisma.crmDealRoom, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealRoomRepository.findByOpportunity('o', 'w'),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmDealRoom, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealRoomRepository.findPublicByToken('t'),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(new Error('x'))
     expectErr(
       await CrmDealRoomRepository.upsert({
@@ -515,13 +673,24 @@ describe('CrmDealRoomRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmDealRoomVisitor, 'findMany').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomVisitor, 'findMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(await CrmDealRoomRepository.listVisitors('r'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealRoomEvent, 'findMany').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomEvent, 'findMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(await CrmDealRoomRepository.listEvents('r', 5), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealRoomMessage, 'findMany').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealRoomRepository.listMessages('r', 5), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealRoomMessage, 'create').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomMessage, 'findMany').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealRoomRepository.listMessages('r', 5),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmDealRoomMessage, 'create').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmDealRoomRepository.createMessage({
         roomId: 'r',
@@ -533,7 +702,9 @@ describe('CrmDealRoomRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmDealRoomVisitor, 'upsert').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomVisitor, 'upsert').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmDealRoomRepository.upsertVisitor({
         roomId: 'r',
@@ -543,14 +714,27 @@ describe('CrmDealRoomRepository', () => {
       }),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmDealRoomVisitor, 'findFirst').mockRejectedValueOnce(new Error('x'))
-    expectErr(await CrmDealRoomRepository.findVisitor('r', 'v'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmDealRoomEvent, 'create').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomVisitor, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
-      await CrmDealRoomRepository.createEvent({ roomId: 'r', visitorId: null, kind: 'ROOM_OPENED' }),
+      await CrmDealRoomRepository.findVisitor('r', 'v'),
       'DATABASE_ERROR',
     )
-    vi.spyOn(prisma.crmDealRoomAction, 'findFirst').mockRejectedValueOnce(new Error('x'))
+    vi.spyOn(prisma.crmDealRoomEvent, 'create').mockRejectedValueOnce(
+      new Error('x'),
+    )
+    expectErr(
+      await CrmDealRoomRepository.createEvent({
+        roomId: 'r',
+        visitorId: null,
+        kind: 'ROOM_OPENED',
+      }),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmDealRoomAction, 'findFirst').mockRejectedValueOnce(
+      new Error('x'),
+    )
     expectErr(
       await CrmDealRoomRepository.setActionDone('r', 'a', true, 'x', now),
       'DATABASE_ERROR',
@@ -589,11 +773,15 @@ describe('CrmContractRepository', () => {
     expect(soon.company.name).toBe('Acme')
 
     expect(
-      expectOk(await CrmContractRepository.list(ctx.workspace.id, {})).map((c) => c.name),
+      expectOk(await CrmContractRepository.list(ctx.workspace.id, {})).map(
+        (c) => c.name,
+      ),
     ).toEqual(['Perto', 'Longe'])
     expect(
       expectOk(
-        await CrmContractRepository.list(ctx.workspace.id, { endsBefore: inDays(60) }),
+        await CrmContractRepository.list(ctx.workspace.id, {
+          endsBefore: inDays(60),
+        }),
       ).map((c) => c.name),
     ).toEqual(['Perto'])
     expect(
@@ -606,12 +794,16 @@ describe('CrmContractRepository', () => {
     ).toEqual([])
 
     const updated = expectOk(
-      await CrmContractRepository.update(far.id, { status: 'CANCELED', alertedAt: now }),
+      await CrmContractRepository.update(far.id, {
+        status: 'CANCELED',
+        alertedAt: now,
+      }),
     )
     expect(updated.status).toBe('CANCELED')
 
     expect(
-      expectOk(await CrmContractRepository.findById(soon.id, ctx.workspace.id)).name,
+      expectOk(await CrmContractRepository.findById(soon.id, ctx.workspace.id))
+        .name,
     ).toBe('Perto')
     expectErr(
       await CrmContractRepository.findById(soon.id, 'other'),
@@ -628,7 +820,10 @@ describe('CrmContractRepository', () => {
     const ctx = await seed()
     const fresh = await contract(ctx, { name: 'Novo', endDate: inDays(20) })
     await contract(ctx, { name: 'Já avisado', endDate: inDays(20) }).then((c) =>
-      CrmContractRepository.update(c.id, { alertedAt: now, renewalOpportunityId: ctx.deal.id }),
+      CrmContractRepository.update(c.id, {
+        alertedAt: now,
+        renewalOpportunityId: ctx.deal.id,
+      }),
     )
     await contract(ctx, { name: 'Longe', endDate: inDays(400) })
     await contract(ctx, { name: 'Vencido', endDate: inDays(-3) })
@@ -640,25 +835,33 @@ describe('CrmContractRepository', () => {
     const window = inDays(60)
 
     expect(
-      expectOk(await CrmContractRepository.listToAlert(ctx.workspace.id, window))
+      expectOk(
+        await CrmContractRepository.listToAlert(ctx.workspace.id, window),
+      )
         .map((c) => c.name)
         .sort(),
     ).toEqual(['Automático', 'Novo', 'Vencido'])
-    expect(
-      expectOk(await CrmContractRepository.listToRenew(ctx.workspace.id, window))
-        .map((c) => c.name)
-        .sort(),
-    ).toEqual(['Automático', 'Novo', 'Vencido'])
-    expect(
-      expectOk(await CrmContractRepository.listAutoRenewDue(ctx.workspace.id, now)).map(
-        (c) => c.id,
-      ),
-    ).toEqual([auto.id])
-
-    expect(expectOk(await CrmContractRepository.expireEnded(ctx.workspace.id, now))).toBe(1)
     expect(
       expectOk(
-        await CrmContractRepository.list(ctx.workspace.id, { status: 'EXPIRED' }),
+        await CrmContractRepository.listToRenew(ctx.workspace.id, window),
+      )
+        .map((c) => c.name)
+        .sort(),
+    ).toEqual(['Automático', 'Novo', 'Vencido'])
+    expect(
+      expectOk(
+        await CrmContractRepository.listAutoRenewDue(ctx.workspace.id, now),
+      ).map((c) => c.id),
+    ).toEqual([auto.id])
+
+    expect(
+      expectOk(await CrmContractRepository.expireEnded(ctx.workspace.id, now)),
+    ).toBe(1)
+    expect(
+      expectOk(
+        await CrmContractRepository.list(ctx.workspace.id, {
+          status: 'EXPIRED',
+        }),
       ).map((c) => c.name),
     ).toEqual(['Vencido'])
     expect(fresh.status).toBe('ACTIVE')
@@ -682,17 +885,39 @@ describe('CrmContractRepository', () => {
     })
     await prisma.crmOpportunityLineItem.createMany({
       data: [
-        { opportunityId: won.id, productId: product.id, name: 'CRM', unitPrice: 99 },
+        {
+          opportunityId: won.id,
+          productId: product.id,
+          name: 'CRM',
+          unitPrice: 99,
+        },
         { opportunityId: won.id, name: 'Sem produto', unitPrice: 5 },
-        { opportunityId: ctx.deal.id, productId: product.id, name: 'Aberto', unitPrice: 1 },
+        {
+          opportunityId: ctx.deal.id,
+          productId: product.id,
+          name: 'Aberto',
+          unitPrice: 1,
+        },
       ],
     })
-    expect(expectOk(await CrmContractRepository.wonProductRows(ctx.workspace.id))).toEqual([
-      { productId: product.id, name: 'CRM', unitPrice: 99, companyId: ctx.company.id },
+    expect(
+      expectOk(await CrmContractRepository.wonProductRows(ctx.workspace.id)),
+    ).toEqual([
+      {
+        productId: product.id,
+        name: 'CRM',
+        unitPrice: 99,
+        companyId: ctx.company.id,
+      },
     ])
 
     expect(
-      expectOk(await CrmContractRepository.latestSatisfaction(ctx.workspace.id, ctx.company.id)),
+      expectOk(
+        await CrmContractRepository.latestSatisfaction(
+          ctx.workspace.id,
+          ctx.company.id,
+        ),
+      ),
     ).toBeNull()
     await seedCrmPerson(ctx.workspace.id, ctx.user.id, {
       companyId: ctx.company.id,
@@ -713,17 +938,37 @@ describe('CrmContractRepository', () => {
           ...overrides,
         },
       })
-    await survey({ recipientEmail: 'ana@example.com', score: 6, answeredAt: inDays(-10) })
-    await survey({ recipientPhone: '5511999990000', score: 10, answeredAt: inDays(-1) })
-    await survey({ recipientEmail: 'outra@example.com', score: 1, answeredAt: now })
+    await survey({
+      recipientEmail: 'ana@example.com',
+      score: 6,
+      answeredAt: inDays(-10),
+    })
+    await survey({
+      recipientPhone: '5511999990000',
+      score: 10,
+      answeredAt: inDays(-1),
+    })
+    await survey({
+      recipientEmail: 'outra@example.com',
+      score: 1,
+      answeredAt: now,
+    })
     const latest = expectOk(
-      await CrmContractRepository.latestSatisfaction(ctx.workspace.id, ctx.company.id),
+      await CrmContractRepository.latestSatisfaction(
+        ctx.workspace.id,
+        ctx.company.id,
+      ),
     )
     expect(latest?.score).toBe(10)
     expect(latest?.kind).toBe('NPS')
 
     expect(
-      expectOk(await CrmContractRepository.customerHealthLevel(ctx.workspace.id, ctx.company.id)),
+      expectOk(
+        await CrmContractRepository.customerHealthLevel(
+          ctx.workspace.id,
+          ctx.company.id,
+        ),
+      ),
     ).toBeNull()
     await prisma.crmCustomerHealth.create({
       data: {
@@ -735,7 +980,12 @@ describe('CrmContractRepository', () => {
       },
     })
     expect(
-      expectOk(await CrmContractRepository.customerHealthLevel(ctx.workspace.id, ctx.company.id)),
+      expectOk(
+        await CrmContractRepository.customerHealthLevel(
+          ctx.workspace.id,
+          ctx.company.id,
+        ),
+      ),
     ).toBe('HIGH')
   })
 
@@ -747,7 +997,12 @@ describe('CrmContractRepository', () => {
       phones: [],
     })
     expect(
-      expectOk(await CrmContractRepository.latestSatisfaction(ctx.workspace.id, ctx.company.id)),
+      expectOk(
+        await CrmContractRepository.latestSatisfaction(
+          ctx.workspace.id,
+          ctx.company.id,
+        ),
+      ),
     ).toBeNull()
   })
 
@@ -779,18 +1034,38 @@ describe('CrmContractRepository', () => {
     vi.spyOn(prisma.crmContract, 'update').mockRejectedValueOnce(fail)
     expectErr(await CrmContractRepository.softDelete('i'), 'DATABASE_ERROR')
     vi.spyOn(prisma.crmContract, 'findMany').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.listToAlert('w', now), 'DATABASE_ERROR')
+    expectErr(
+      await CrmContractRepository.listToAlert('w', now),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma.crmContract, 'findMany').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.listToRenew('w', now), 'DATABASE_ERROR')
+    expectErr(
+      await CrmContractRepository.listToRenew('w', now),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma.crmContract, 'updateMany').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.expireEnded('w', now), 'DATABASE_ERROR')
+    expectErr(
+      await CrmContractRepository.expireEnded('w', now),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma.crmContract, 'findMany').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.listAutoRenewDue('w', now), 'DATABASE_ERROR')
-    vi.spyOn(prisma.crmOpportunityLineItem, 'findMany').mockRejectedValueOnce(fail)
+    expectErr(
+      await CrmContractRepository.listAutoRenewDue('w', now),
+      'DATABASE_ERROR',
+    )
+    vi.spyOn(prisma.crmOpportunityLineItem, 'findMany').mockRejectedValueOnce(
+      fail,
+    )
     expectErr(await CrmContractRepository.wonProductRows('w'), 'DATABASE_ERROR')
     vi.spyOn(prisma.crmPerson, 'findMany').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.latestSatisfaction('w', 'c'), 'DATABASE_ERROR')
+    expectErr(
+      await CrmContractRepository.latestSatisfaction('w', 'c'),
+      'DATABASE_ERROR',
+    )
     vi.spyOn(prisma.crmCustomerHealth, 'findFirst').mockRejectedValueOnce(fail)
-    expectErr(await CrmContractRepository.customerHealthLevel('w', 'c'), 'DATABASE_ERROR')
+    expectErr(
+      await CrmContractRepository.customerHealthLevel('w', 'c'),
+      'DATABASE_ERROR',
+    )
   })
 })

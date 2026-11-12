@@ -167,9 +167,15 @@ describe('DocumentTrackRepository.openSession', () => {
     await DocumentTrackRepository.openSession(input)
 
     const spy = fail(prisma.documentSession, 'findUnique')
-    expectErr(await DocumentTrackRepository.openSession(input), 'DATABASE_ERROR')
+    expectErr(
+      await DocumentTrackRepository.openSession(input),
+      'DATABASE_ERROR',
+    )
     spy.mockResolvedValue(null as never)
-    expectErr(await DocumentTrackRepository.openSession(input), 'DATABASE_ERROR')
+    expectErr(
+      await DocumentTrackRepository.openSession(input),
+      'DATABASE_ERROR',
+    )
   })
 })
 

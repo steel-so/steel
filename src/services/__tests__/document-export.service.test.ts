@@ -397,9 +397,7 @@ describe('DocumentExportService.requestPublicPdf', () => {
   })
 
   it('should propagate an unavailable link', async () => {
-    mocks.resolveDocumentToken.mockResolvedValue(
-      err(documentLinkUnavailable()),
-    )
+    mocks.resolveDocumentToken.mockResolvedValue(err(documentLinkUnavailable()))
     expectErr(
       await DocumentExportService.requestPublicPdf('tok', null),
       'DOCUMENT_LINK_UNAVAILABLE',

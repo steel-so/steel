@@ -23,7 +23,11 @@ export function QaScoreBadge({
   return (
     <Badge
       variant={
-        tone === 'low' ? 'destructive' : tone === 'good' ? 'default' : 'secondary'
+        tone === 'low'
+          ? 'destructive'
+          : tone === 'good'
+            ? 'default'
+            : 'secondary'
       }
       className={cn('tabular-nums', className)}
     >

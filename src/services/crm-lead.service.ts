@@ -50,6 +50,7 @@ import {
   type UpsertCrmLeadQualificationDTO,
 } from '@/src/schemas/crm-lead.schema'
 import type { CrmWorkflowLeadEvent } from '@/src/schemas/crm-workflow.schema'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmLeadContactAttemptDTO,
   CrmLeadDTO,
@@ -58,7 +59,6 @@ import type {
   CrmLeadQualificationDTO,
   CrmLeadReopeningDTO,
 } from '@/types/crm-lead'
-import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type { CrmPersonDTO } from '@/types/crm-person'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import {

@@ -6,11 +6,11 @@ import {
   aiProcedureVersionNotFound,
   forbidden,
 } from '@/src/errors/app-error'
-import { STEEL_AI_TOOLS } from '@/src/lib/ai/tools'
-import { findTool } from '@/src/lib/ai/tools/registry'
-import { currentPeriodStart } from '@/src/lib/ai/quota'
 import { planFor } from '@/src/lib/ai/procedures/engine'
 import { procedureProblems } from '@/src/lib/ai/procedures/validate'
+import { currentPeriodStart } from '@/src/lib/ai/quota'
+import { STEEL_AI_TOOLS } from '@/src/lib/ai/tools'
+import { findTool } from '@/src/lib/ai/tools/registry'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   toAiProcedureDTO,
@@ -18,9 +18,9 @@ import {
   toAiProcedureRunDTO,
   toAiProcedureVersionDTO,
 } from '@/src/mappers/ai-procedure.mapper'
-import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { AiProcedureRepository } from '@/src/repositories/ai-procedure.repository'
 import { AiProcedureRunRepository } from '@/src/repositories/ai-procedure-run.repository'
+import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { SteelAgentRepository } from '@/src/repositories/steel-agent.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import {
@@ -113,7 +113,9 @@ async function validateOwnerAndAgents(
     if (!agents.ok) return agents
     const known = new Set(agents.value.map((agent) => agent.id))
     if (agentIds.some((id) => !known.has(id))) {
-      return err(aiProcedureInvalid('Um dos agentes não existe neste workspace'))
+      return err(
+        aiProcedureInvalid('Um dos agentes não existe neste workspace'),
+      )
     }
   }
   return ok(true)

@@ -1,7 +1,5 @@
 import type { Prisma } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
-import { createFakeCrmProposalSignature } from '@/src/__tests__/factories/nov-crm-deals.factory'
 import {
   createFakeCrmProposal,
   createFakeCrmProposalSection,
@@ -10,6 +8,8 @@ import {
   createFakeCrmProposalTemplate,
   createFakeCrmProposalTemplateSection,
 } from '@/src/__tests__/factories/crm-proposal-template.factory'
+import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
+import { createFakeCrmProposalSignature } from '@/src/__tests__/factories/nov-crm-deals.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
@@ -49,8 +49,8 @@ import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import {
   canonicalJson,
-  DocumentLegacyImportService as Service,
   legacyTotalValue,
+  DocumentLegacyImportService as Service,
   versionSha256,
 } from '../document-legacy-import.service'
 
@@ -217,7 +217,11 @@ describe('importTemplate', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ entity: 'document', action: 'migrate' }),
     )
-    expect(indexSearchDocument).toHaveBeenCalledWith('crm-document', 'ws', 'doc-t')
+    expect(indexSearchDocument).toHaveBeenCalledWith(
+      'crm-document',
+      'ws',
+      'doc-t',
+    )
   })
 
   it('returns the existing document without converting again', async () => {
@@ -280,9 +284,9 @@ describe('importTemplate', () => {
     vi.mocked(outlineToDocument).mockImplementationOnce(() => {
       throw 'plain'
     })
-    expect(
-      expectErr(await Service.importTemplate('tpl1')).message,
-    ).toBe('plain')
+    expect(expectErr(await Service.importTemplate('tpl1')).message).toBe(
+      'plain',
+    )
 
     repo.createTemplateDocument.mockResolvedValueOnce(err(databaseError()))
     expectErr(await Service.importTemplate('tpl1'), 'DATABASE_ERROR')
@@ -344,8 +348,9 @@ describe('importProposal', () => {
       data: { legacy: true, name: 'Maria' },
       createdAt: T2,
     })
-    expect(vi.mocked(outlineToDocument).mock.calls[0]?.[0].sections.at(-1))
-      .toMatchObject({ name: 'Aceite' })
+    expect(
+      vi.mocked(outlineToDocument).mock.calls[0]?.[0].sections.at(-1),
+    ).toMatchObject({ name: 'Aceite' })
   })
 
   it('logs one ACCEPTED event per legacy signature, keeping the signature data out', async () => {
@@ -607,9 +612,7 @@ describe('ensurePublicToken', () => {
     repo.findProposalRefByShareToken.mockResolvedValueOnce(ok(null))
     expect(expectOk(await Service.ensurePublicToken('tok'))).toBe(false)
 
-    repo.findProposalRefByShareToken.mockResolvedValueOnce(
-      err(databaseError()),
-    )
+    repo.findProposalRefByShareToken.mockResolvedValueOnce(err(databaseError()))
     expectErr(await Service.ensurePublicToken('tok'), 'DATABASE_ERROR')
 
     repo.findProposalRefByShareToken.mockResolvedValueOnce(ok({ id: 'p1' }))

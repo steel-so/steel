@@ -46,9 +46,7 @@ export default async function CrmRenewalsPage({
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
       <div className='min-h-0 flex-1'>
-        <CrmRenewalsPanel
-          workspaceId={membership.value.workspaceId}
-        />
+        <CrmRenewalsPanel workspaceId={membership.value.workspaceId} />
       </div>
     </div>
   )

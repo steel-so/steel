@@ -111,7 +111,10 @@ export function DealRoomView({
     return () => clearInterval(timer)
   }, [visitor, refresh])
 
-  function track(kind: 'PROPOSAL_VIEWED' | 'MATERIAL_OPENED', targetId?: string) {
+  function track(
+    kind: 'PROPOSAL_VIEWED' | 'MATERIAL_OPENED',
+    targetId?: string,
+  ) {
     if (!visitor) return
     void post(`${api}/events`, {
       visitorId: visitor.visitorId,

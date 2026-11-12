@@ -154,9 +154,7 @@ export function DocumentSettingsPanel() {
             value={document.kind}
             options={KIND_OPTIONS}
             disabled={disabled}
-            onChange={(value) =>
-              updateMeta({ kind: value as DocumentKindDTO })
-            }
+            onChange={(value) => updateMeta({ kind: value as DocumentKindDTO })}
           />
         </div>
         <div className='grid gap-1.5'>

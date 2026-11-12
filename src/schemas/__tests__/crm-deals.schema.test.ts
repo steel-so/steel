@@ -103,9 +103,7 @@ describe('deal room schemas', () => {
   it('parses the room upsert with dates coerced', () => {
     const parsed = UpsertCrmDealRoomSchema.parse({
       enabled: true,
-      actions: [
-        { title: 'Assinar', owner: 'CUSTOMER', dueDate: '2026-11-10' },
-      ],
+      actions: [{ title: 'Assinar', owner: 'CUSTOMER', dueDate: '2026-11-10' }],
     })
     expect(parsed.actions?.[0]?.dueDate).toBeInstanceOf(Date)
     expect(
@@ -155,9 +153,9 @@ describe('contract schemas', () => {
   })
 
   it('accepts partial updates and statuses', () => {
-    expect(UpdateCrmContractSchema.safeParse({ status: 'CANCELED' }).success).toBe(
-      true,
-    )
+    expect(
+      UpdateCrmContractSchema.safeParse({ status: 'CANCELED' }).success,
+    ).toBe(true)
     expect(UpdateCrmContractSchema.safeParse({ status: 'X' }).success).toBe(
       false,
     )

@@ -68,7 +68,9 @@ const VALID_CPF = '529.982.247-25'
 
 function executors(over: Partial<ProcedureExecutors> = {}): ProcedureExecutors {
   return {
-    http: vi.fn().mockResolvedValue({ ok: true, json: { data: { link: 'L1' } } }),
+    http: vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: { data: { link: 'L1' } } }),
     tool: vi.fn().mockResolvedValue({ ok: true, json: { id: 7 } }),
     ...over,
   }
@@ -86,12 +88,7 @@ describe('procedure engine', () => {
   it('should run the whole procedure in order after a valid value', async () => {
     const def = definition([COLLECT, HTTP, SEND])
     const ex = executors()
-    const submitted = submitValue(
-      def,
-      initialState(def),
-      'cpf',
-      VALID_CPF,
-    )
+    const submitted = submitValue(def, initialState(def), 'cpf', VALID_CPF)
     expect(submitted.ok).toBe(true)
     if (!submitted.ok) return
     const result = await settle(def, submitted.state, ex)
@@ -133,7 +130,11 @@ describe('procedure engine', () => {
     const def = definition([COLLECT], 2)
     let state = initialState(def)
     const first = submitValue(def, state, 'cpf', '123')
-    expect(first).toMatchObject({ ok: false, reason: 'invalid', attemptsLeft: 1 })
+    expect(first).toMatchObject({
+      ok: false,
+      reason: 'invalid',
+      attemptsLeft: 1,
+    })
     state = first.state
     const second = submitValue(def, state, 'cpf', '456')
     expect(second).toMatchObject({
@@ -238,7 +239,9 @@ describe('procedure engine', () => {
       kind: 'failed',
     })
     const optional = definition([{ ...tool, required: false }])
-    expect((await settle(optional, initialState(optional), ex)).outcome).toEqual({
+    expect(
+      (await settle(optional, initialState(optional), ex)).outcome,
+    ).toEqual({
       kind: 'completed',
     })
   })
@@ -277,7 +280,9 @@ describe('procedure engine', () => {
     expect(result.outcome).toEqual({ kind: 'handoff', stepKey: 'h' })
     expect(result.messages).toEqual(['Já te passo, Ana'])
     const silent = definition([{ ...handoff, text: undefined }])
-    expect((await settle(silent, initialState(silent), executors())).messages).toEqual([])
+    expect(
+      (await settle(silent, initialState(silent), executors())).messages,
+    ).toEqual([])
   })
 
   it('should wait for the model on an instruction MESSAGE and complete it', async () => {
@@ -311,11 +316,14 @@ describe('procedure engine', () => {
 
   it('should tolerate a state saved before a step existed', () => {
     const def = definition([COLLECT, SEND])
-    const old = { variables: {}, steps: { cpf: { status: 'DONE' as const, attempts: 0 } } }
+    const old = {
+      variables: {},
+      steps: { cpf: { status: 'DONE' as const, attempts: 0 } },
+    }
     expect(currentStep(def, old)?.key).toBe('envio')
-    expect(currentStep(definition([COLLECT]), { variables: {}, steps: {} })?.key).toBe(
-      'cpf',
-    )
+    expect(
+      currentStep(definition([COLLECT]), { variables: {}, steps: {} })?.key,
+    ).toBe('cpf')
   })
 
   it('should evaluate conditions and plan a preview', () => {
@@ -327,8 +335,20 @@ describe('procedure engine', () => {
     expect(conditionHolds(step, { n: '3' })).toBe(true)
     expect(conditionHolds(step, {})).toBe(false)
     expect(planFor(definition([COLLECT, step]), { n: '1' })).toEqual([
-      { key: 'cpf', title: 'Validar CPF', kind: 'COLLECT', required: true, applies: true },
-      { key: 'envio', title: 'Enviar', kind: 'MESSAGE', required: true, applies: false },
+      {
+        key: 'cpf',
+        title: 'Validar CPF',
+        kind: 'COLLECT',
+        required: true,
+        applies: true,
+      },
+      {
+        key: 'envio',
+        title: 'Enviar',
+        kind: 'MESSAGE',
+        required: true,
+        applies: false,
+      },
     ])
   })
 })
@@ -343,7 +363,11 @@ describe('procedure definition problems', () => {
       HTTP,
       { ...HTTP },
       { ...base, key: 'm', kind: 'MESSAGE', title: 'Vazia' },
-      { ...SEND, key: 'c', condition: { variable: 'zzz', operator: 'equals', value: '' } },
+      {
+        ...SEND,
+        key: 'c',
+        condition: { variable: 'zzz', operator: 'equals', value: '' },
+      },
     ])
     expect(problems.some((p) => p.includes('chave repetida'))).toBe(true)
     expect(problems.some((p) => p.includes('{{cpf}}'))).toBe(true)
@@ -353,14 +377,18 @@ describe('procedure definition problems', () => {
 
   it('should flag reserved names, empty lists and too many steps', () => {
     const reserved: ProcedureStep = { ...COLLECT, variable: 'contact_name' }
-    expect(procedureProblems([reserved]).some((p) => p.includes('reservado'))).toBe(true)
+    expect(
+      procedureProblems([reserved]).some((p) => p.includes('reservado')),
+    ).toBe(true)
     expect(procedureProblems([])).toContain('O procedimento precisa de passos')
     const many = Array.from({ length: 31 }, (_, i) => ({
       ...SEND,
       key: `k${i}`,
       text: 'x',
     }))
-    expect(procedureProblems(many).some((p) => p.includes('No máximo'))).toBe(true)
+    expect(procedureProblems(many).some((p) => p.includes('No máximo'))).toBe(
+      true,
+    )
   })
 
   it('should read texts of every kind for placeholders', () => {
@@ -422,9 +450,9 @@ describe('procedure prompts', () => {
     expect(text).toContain('Passo atual: nenhum')
     expect(stepDirective(null)).toContain('concluídos')
     expect(stepDirective(COLLECT)).toContain('variavel="cpf"')
-    expect(stepDirective({ ...SEND, text: undefined, instruction: 'diga oi' })).toContain(
-      'diga oi',
-    )
+    expect(
+      stepDirective({ ...SEND, text: undefined, instruction: 'diga oi' }),
+    ).toContain('diga oi')
     expect(stepDirective(HTTP)).toContain('sozinho')
   })
 })

@@ -42,10 +42,10 @@ import { processDataExport } from '../src/lib/queue/processors/data-export'
 import { processDataRetention } from '../src/lib/queue/processors/data-retention'
 import { processDatabaseBackup } from '../src/lib/queue/processors/database-backup'
 import { processDocumentsAi } from '../src/lib/queue/processors/documents-ai'
-import { processDocumentsExpiry } from '../src/lib/queue/processors/documents-expiry'
 import { processDocumentsAnalytics } from '../src/lib/queue/processors/documents-analytics'
-import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
+import { processDocumentsExpiry } from '../src/lib/queue/processors/documents-expiry'
 import { processDocumentsLegacyImport } from '../src/lib/queue/processors/documents-legacy-import'
+import { processDocumentsPdf } from '../src/lib/queue/processors/documents-pdf'
 import { processNotifications } from '../src/lib/queue/processors/notifications'
 import { processPhoneCallAi } from '../src/lib/queue/processors/phone-call-ai'
 import { processQaReview } from '../src/lib/queue/processors/qa-review'
@@ -100,8 +100,8 @@ import {
   scheduleCrmWorkflowScheduleJobs,
   scheduleDatabaseBackupJobs,
   scheduleDataRetentionJobs,
-  scheduleDocumentsExpiryJobs,
   scheduleDocumentsAnalyticsJobs,
+  scheduleDocumentsExpiryJobs,
   scheduleNotificationsJobs,
   scheduleSearchReindexJobs,
   scheduleSendingDomainsJobs,

@@ -3,8 +3,8 @@
 import {
   AiBrain01Icon,
   CheckmarkBadge01Icon,
-  Task01Icon,
   Shield01Icon,
+  Task01Icon,
   Wrench01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'

@@ -103,8 +103,8 @@ describe('QaCoachingQuerySchema and CreateQaReviewSchema', () => {
       CreateQaReviewSchema.safeParse({ subjectType: 'TICKET', subjectId: 't1' })
         .success,
     ).toBe(true)
-    expect(CreateQaReviewSchema.safeParse({ subjectType: 'TICKET' }).success).toBe(
-      false,
-    )
+    expect(
+      CreateQaReviewSchema.safeParse({ subjectType: 'TICKET' }).success,
+    ).toBe(false)
   })
 })

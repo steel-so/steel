@@ -20,8 +20,8 @@ import {
   type DocumentAnalyticsScope,
 } from '@/src/repositories/document-analytics.repository'
 import {
-  documentAnalyticsPeriodDays,
   type DocumentAnalyticsQuery,
+  documentAnalyticsPeriodDays,
 } from '@/src/schemas/document-analytics.schema'
 import type { DocumentAnalyticsDTO } from '@/types/document'
 import { assertModuleMember } from './authz'

@@ -40,10 +40,18 @@ const propose = vi.mocked(proposeWriteTool)
 const log = vi.mocked(AiActionLogRepository.create)
 
 const TOOLS = {
-  act_list_connectors: { name: 'act_list_connectors', kind: 'READ', module: null },
+  act_list_connectors: {
+    name: 'act_list_connectors',
+    kind: 'READ',
+    module: null,
+  },
   act_lookup: { name: 'act_lookup', kind: 'READ', module: null },
   act_run: { name: 'act_run', kind: 'ACTION', module: null },
-  sd_cancel_ticket: { name: 'sd_cancel_ticket', kind: 'DELETE', module: 'SERVICE_DESK' },
+  sd_cancel_ticket: {
+    name: 'sd_cancel_ticket',
+    kind: 'DELETE',
+    module: 'SERVICE_DESK',
+  },
 } as const
 
 function config(tools: { toolName: string; mode: 'AUTO' | 'APPROVAL' }[]) {
@@ -70,9 +78,7 @@ const call = (name: string, tainted = false) => ({
 
 describe('loadZapAiTools', () => {
   it('should be off when the switch, the identity or the list is missing', async () => {
-    zapConfig.mockResolvedValue(
-      ok({ enabled: false, tools: [], actorId: 'a' }),
-    )
+    zapConfig.mockResolvedValue(ok({ enabled: false, tools: [], actorId: 'a' }))
     expect(await loadZapAiTools('ws1')).toBeNull()
     zapConfig.mockResolvedValue(ok({ enabled: true, tools: [], actorId: 'a' }))
     expect(await loadZapAiTools('ws1')).toBeNull()
@@ -137,7 +143,11 @@ describe('ZapAiTools.run', () => {
 
   it('should run reads with the configured identity', async () => {
     config([{ toolName: 'act_lookup', mode: 'AUTO' }])
-    readTool.mockResolvedValue({ ok: true, content: 'READ', output: {} as never })
+    readTool.mockResolvedValue({
+      ok: true,
+      content: 'READ',
+      output: {} as never,
+    })
     const tools = await loadZapAiTools('ws1')
     expect(await tools?.run(call('act_lookup'))).toBe('READ')
     expect(readTool.mock.calls[0]?.[1]).toEqual({
@@ -190,15 +200,18 @@ describe('ZapAiTools.run', () => {
   it.each([
     ['APPROVAL mode', 'APPROVAL' as const, false],
     ['a tainted conversation', 'AUTO' as const, true],
-  ])('should propose instead of running with %s', async (_label, mode, tainted) => {
-    config([{ toolName: 'act_run', mode }])
-    propose.mockResolvedValue(ok({ id: 'pa1' } as never))
-    const tools = await loadZapAiTools('ws1')
-    const out = JSON.parse((await tools?.run(call('act_run', tainted))) ?? '')
-    expect(out.status).toBe('pending_confirmation')
-    expect(out.actionId).toBe('pa1')
-    expect(run).not.toHaveBeenCalled()
-  })
+  ])(
+    'should propose instead of running with %s',
+    async (_label, mode, tainted) => {
+      config([{ toolName: 'act_run', mode }])
+      propose.mockResolvedValue(ok({ id: 'pa1' } as never))
+      const tools = await loadZapAiTools('ws1')
+      const out = JSON.parse((await tools?.run(call('act_run', tainted))) ?? '')
+      expect(out.status).toBe('pending_confirmation')
+      expect(out.actionId).toBe('pa1')
+      expect(run).not.toHaveBeenCalled()
+    },
+  )
 
   it('should always propose deletes, even when saved as AUTO', async () => {
     config([{ toolName: 'sd_cancel_ticket', mode: 'AUTO' }])

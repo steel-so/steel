@@ -43,11 +43,8 @@ export const AiTemplateService = {
     }
 
     const enabled = modules.value.filter((m) => m.enabled).map((m) => m.module)
-    const agents = [
-      ...STEEL_AGENT_TEMPLATES,
-      ...CRM_SALES_AGENT_TEMPLATES,
-    ].map((template) =>
-      toSteelAgentTemplateDTO(template, enabled, findTool),
+    const agents = [...STEEL_AGENT_TEMPLATES, ...CRM_SALES_AGENT_TEMPLATES].map(
+      (template) => toSteelAgentTemplateDTO(template, enabled, findTool),
     )
     const skills = AI_SKILL_TEMPLATES.map((template) =>
       toAiSkillTemplateDTO(template, enabled, findTool),

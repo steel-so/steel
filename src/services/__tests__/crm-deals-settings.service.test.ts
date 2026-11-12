@@ -69,16 +69,16 @@ describe('CrmDealsSettingsService.update', () => {
       proposalPaymentEnabled: true,
     })
     expect(auditMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ entity: 'crm_deals_settings', action: 'update' }),
+      expect.objectContaining({
+        entity: 'crm_deals_settings',
+        action: 'update',
+      }),
     )
   })
 
   it('refuses a plain member', async () => {
     asRole('MEMBER')
-    expectErr(
-      await CrmDealsSettingsService.update('u', 'ws', {}),
-      'FORBIDDEN',
-    )
+    expectErr(await CrmDealsSettingsService.update('u', 'ws', {}), 'FORBIDDEN')
     expect(repo.upsert).not.toHaveBeenCalled()
   })
 

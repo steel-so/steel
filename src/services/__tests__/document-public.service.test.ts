@@ -341,9 +341,7 @@ describe('DocumentPublicService.accept()', () => {
           to: 'joao@example.com',
           action: 'ACCEPT',
           totalLabel: 'R$ 2.000,00',
-          documentUrl: expect.stringContaining(
-            '/stratus-lab/crm/documents/d1',
-          ),
+          documentUrl: expect.stringContaining('/stratus-lab/crm/documents/d1'),
         }),
       ),
     )

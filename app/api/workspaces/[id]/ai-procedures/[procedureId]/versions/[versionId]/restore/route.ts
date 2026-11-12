@@ -12,7 +12,9 @@ import {
   successResponse,
 } from '@/utils/http-response'
 
-type Params = { params: Promise<{ id: string; procedureId: string; versionId: string }> }
+type Params = {
+  params: Promise<{ id: string; procedureId: string; versionId: string }>
+}
 
 export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()

@@ -16,12 +16,12 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { useWhatsAppTeams } from '@/src/hooks/use-whatsapp-teams'
 import {
   useRotateWhatsAppWidgetKey,
   useUpdateWhatsAppWidgetSettings,
   useWhatsAppWidgetSettings,
 } from '@/src/hooks/use-whatsapp-widget'
-import { useWhatsAppTeams } from '@/src/hooks/use-whatsapp-teams'
 import type { WhatsAppWidgetPositionDTO } from '@/types/whatsapp-widget'
 
 const NO_TEAM = '__none'
@@ -52,7 +52,12 @@ function SwitchRow({
         </Label>
         <p className='text-muted-foreground text-xs'>{hint}</p>
       </div>
-      <Switch id={id} aria-label={title} checked={checked} onCheckedChange={onChange} />
+      <Switch
+        id={id}
+        aria-label={title}
+        checked={checked}
+        onCheckedChange={onChange}
+      />
     </div>
   )
 }
@@ -150,7 +155,10 @@ export function WhatsappSettingsWidget({
       await navigator.clipboard.writeText(settings.data.snippet)
       notify.success('Código copiado')
     } catch {
-      notify.error(new Error('Copie o código manualmente'), 'Não foi possível copiar')
+      notify.error(
+        new Error('Copie o código manualmente'),
+        'Não foi possível copiar',
+      )
     }
   }
 

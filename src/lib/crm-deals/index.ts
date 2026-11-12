@@ -1,5 +1,5 @@
 export * from './payment'
 export * from './renewal'
+export * from './signature'
 export * from './snapshot'
 export * from './upsell'
-export * from './signature'

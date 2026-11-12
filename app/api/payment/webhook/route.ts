@@ -25,7 +25,8 @@ const WebhookPayloadSchema = z
     }),
   })
   .refine(
-    ({ data }) => Boolean(data.subscription?.id ?? data.checkout?.id ?? data.id),
+    ({ data }) =>
+      Boolean(data.subscription?.id ?? data.checkout?.id ?? data.id),
     { message: 'data.id missing', path: ['data'] },
   )
 

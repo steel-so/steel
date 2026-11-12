@@ -4,7 +4,12 @@ export interface ProposalSnapshotInput {
   id: string
   name: string
   validUntil: Date | null
-  sections: { type: string; order: number; enabled: boolean; content: unknown }[]
+  sections: {
+    type: string
+    order: number
+    enabled: boolean
+    content: unknown
+  }[]
 }
 
 /**

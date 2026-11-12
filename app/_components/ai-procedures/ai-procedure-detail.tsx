@@ -37,7 +37,11 @@ export function AiProcedureDetail({
   return (
     <div className='flex h-full min-h-0 w-full flex-col'>
       <SteelAiTopBar
-        title={procedureId ? (procedure.data?.name ?? 'Procedimento') : 'Novo procedimento'}
+        title={
+          procedureId
+            ? (procedure.data?.name ?? 'Procedimento')
+            : 'Novo procedimento'
+        }
         actions={
           procedureId && canManage ? (
             <Button

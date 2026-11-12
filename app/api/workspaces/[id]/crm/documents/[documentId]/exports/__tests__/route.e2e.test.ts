@@ -94,8 +94,6 @@ describe('POST /api/workspaces/[id]/crm/documents/[documentId]/exports', () => {
 
     const download = await getJson(`${path}/${data.id}/download`, user.cookie)
     expect(download.status).toBe(404)
-    expect((await download.json()).error.code).toBe(
-      'DOCUMENT_EXPORT_NOT_FOUND',
-    )
+    expect((await download.json()).error.code).toBe('DOCUMENT_EXPORT_NOT_FOUND')
   })
 })

@@ -152,7 +152,10 @@ describe('AI procedures CRUD and versions', () => {
   })
 
   it('should not leak procedures across workspaces', async () => {
-    const [a, b] = await Promise.all([authenticatedOwner(), authenticatedOwner()])
+    const [a, b] = await Promise.all([
+      authenticatedOwner(),
+      authenticatedOwner(),
+    ])
     const created = await postJson(base(a.workspace.id), body(), a.user.cookie)
     const procedure = (await created.json()).data
     const res = await getJson(

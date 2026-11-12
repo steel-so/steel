@@ -273,9 +273,7 @@ export const DocumentLegacyRepository = {
     }
   },
 
-  async documentIdByPublicToken(
-    token: string,
-  ): Promise<Result<string | null>> {
+  async documentIdByPublicToken(token: string): Promise<Result<string | null>> {
     try {
       const doc = await prisma.document.findUnique({
         where: { publicToken: token },

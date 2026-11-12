@@ -22,9 +22,19 @@ describe('QaReviewSourceRepository.loadConversation', () => {
       conversation() as never,
     )
     vi.spyOn(prisma.whatsAppMessage, 'findMany').mockResolvedValueOnce([
-      { direction: 'OUT', text: 'Segunda', senderUserId: 'u1', sentByAi: false },
+      {
+        direction: 'OUT',
+        text: 'Segunda',
+        senderUserId: 'u1',
+        sentByAi: false,
+      },
       { direction: 'IN', text: '   ', senderUserId: null, sentByAi: false },
-      { direction: 'IN', text: 'Primeira', senderUserId: null, sentByAi: false },
+      {
+        direction: 'IN',
+        text: 'Primeira',
+        senderUserId: null,
+        sentByAi: false,
+      },
     ] as never)
     const source = expectOk(await Repo.loadConversation('ws', 'c1'))
     expect(source).toMatchObject({
@@ -88,8 +98,18 @@ describe('QaReviewSourceRepository.loadTicket', () => {
       ticket() as never,
     )
     vi.spyOn(prisma.sdTicketMessage, 'findMany').mockResolvedValueOnce([
-      { authorKind: 'AGENT', visibility: 'PUBLIC', body: 'b', authorUserId: 'u1' },
-      { authorKind: 'REQUESTER', visibility: 'PUBLIC', body: 'a', authorUserId: null },
+      {
+        authorKind: 'AGENT',
+        visibility: 'PUBLIC',
+        body: 'b',
+        authorUserId: 'u1',
+      },
+      {
+        authorKind: 'REQUESTER',
+        visibility: 'PUBLIC',
+        body: 'a',
+        authorUserId: null,
+      },
     ] as never)
     const source = expectOk(await Repo.loadTicket('ws', 't1'))
     expect(source).toMatchObject({
@@ -120,7 +140,9 @@ describe('QaReviewSourceRepository.loadTicket', () => {
     find.mockResolvedValueOnce(
       ticket({ company: null, customer: null }) as never,
     )
-    expect(expectOk(await Repo.loadTicket('ws', 't1'))?.customerName).toBe('Ana')
+    expect(expectOk(await Repo.loadTicket('ws', 't1'))?.customerName).toBe(
+      'Ana',
+    )
     find.mockResolvedValueOnce(
       ticket({ company: null, customer: null, contact: null }) as never,
     )

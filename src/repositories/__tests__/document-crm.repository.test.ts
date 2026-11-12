@@ -50,9 +50,7 @@ describe('DocumentCrmRepository', () => {
       deletedAt: new Date(),
     })
 
-    expect(expectOk(await Repo.findById(doc.id, workspace.id))?.id).toBe(
-      doc.id,
-    )
+    expect(expectOk(await Repo.findById(doc.id, workspace.id))?.id).toBe(doc.id)
     expect(expectOk(await Repo.findById(doc.id, other.id))).toBeNull()
     expect(expectOk(await Repo.findById(gone.id, workspace.id))).toBeNull()
   })

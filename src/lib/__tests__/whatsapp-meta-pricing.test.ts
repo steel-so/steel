@@ -184,7 +184,13 @@ describe('summarizePricing()', () => {
 
   it('treats a non-number metric as zero', () => {
     const summary = summarizePricing(
-      [{ pricing_category: 'MARKETING', volume: 'x' as never, cost: Number.NaN }],
+      [
+        {
+          pricing_category: 'MARKETING',
+          volume: 'x' as never,
+          cost: Number.NaN,
+        },
+      ],
       'META_COST',
       prices,
     )

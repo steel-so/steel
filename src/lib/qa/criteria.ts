@@ -52,10 +52,7 @@ export const DEFAULT_QA_CRITERIA: QaCriterionDTO[] = [
 /** Active criteria that apply to the kind of attendance. */
 export function criteriaForSubject<
   T extends Pick<QaCriterionDTO, 'active' | 'appliesTo'>,
->(
-  criteria: T[],
-  subject: QaSubjectTypeDTO,
-): T[] {
+>(criteria: T[], subject: QaSubjectTypeDTO): T[] {
   return criteria.filter(
     (criterion) =>
       criterion.active &&

@@ -4,11 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeDocumentImport } from '@/src/__tests__/factories/document-ai.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import {
-  aiQuotaExceeded,
-  databaseError,
-  featureNotEnabled,
-} from '@/src/errors'
+import { aiQuotaExceeded, databaseError, featureNotEnabled } from '@/src/errors'
 import type {
   AiChatRequest,
   AiChatResponse,

@@ -30,7 +30,9 @@ describe('payment helpers', () => {
 
   it('builds a deterministic test boleto line that starts with the fake bank', () => {
     const line = buildMockBoletoLine('abcdef0123456789abcdef0123456789', 1234.5)
-    expect(line).toBe(buildMockBoletoLine('abcdef0123456789abcdef0123456789', 1234.5))
+    expect(line).toBe(
+      buildMockBoletoLine('abcdef0123456789abcdef0123456789', 1234.5),
+    )
     expect(line.startsWith('999')).toBe(true)
     expect(line.replace(/\D/g, '')).toHaveLength(47)
     // 10-digit value in cents closes the line.
@@ -85,7 +87,9 @@ describe('proposal snapshot and signature', () => {
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
       Buffer.from('payload'),
     ])
-    const ok = decodeSignaturePng(`data:image/png;base64,${png.toString('base64')}`)
+    const ok = decodeSignaturePng(
+      `data:image/png;base64,${png.toString('base64')}`,
+    )
     expect(ok.ok).toBe(true)
     const notPng = decodeSignaturePng(
       `data:image/png;base64,${Buffer.from('not a png at all').toString('base64')}`,
@@ -145,37 +149,46 @@ describe('upsellTiming', () => {
   const answered = new Date(now)
 
   it('waits when the churn risk is high, whatever the survey says', () => {
-    const result = upsellTiming({ kind: 'NPS', score: 10, answeredAt: answered }, 'HIGH')
+    const result = upsellTiming(
+      { kind: 'NPS', score: 10, answeredAt: answered },
+      'HIGH',
+    )
     expect(result.timing).toBe('WAIT')
   })
 
   it('waits on a detractor, for NPS and for the 1-5 scales', () => {
     expect(
-      upsellTiming({ kind: 'NPS', score: 6, answeredAt: answered }, 'LOW').timing,
+      upsellTiming({ kind: 'NPS', score: 6, answeredAt: answered }, 'LOW')
+        .timing,
     ).toBe('WAIT')
     expect(
-      upsellTiming({ kind: 'CSAT', score: 2, answeredAt: answered }, null).timing,
+      upsellTiming({ kind: 'CSAT', score: 2, answeredAt: answered }, null)
+        .timing,
     ).toBe('WAIT')
   })
 
   it('goes on a promoter with good health', () => {
     expect(
-      upsellTiming({ kind: 'NPS', score: 9, answeredAt: answered }, 'LOW').timing,
+      upsellTiming({ kind: 'NPS', score: 9, answeredAt: answered }, 'LOW')
+        .timing,
     ).toBe('GO')
     expect(
-      upsellTiming({ kind: 'CES', score: 5, answeredAt: answered }, null).timing,
+      upsellTiming({ kind: 'CES', score: 5, answeredAt: answered }, null)
+        .timing,
     ).toBe('GO')
   })
 
   it('stays neutral on medium health or without a survey', () => {
     expect(
-      upsellTiming({ kind: 'NPS', score: 10, answeredAt: answered }, 'MEDIUM').timing,
+      upsellTiming({ kind: 'NPS', score: 10, answeredAt: answered }, 'MEDIUM')
+        .timing,
     ).toBe('NEUTRAL')
     const none = upsellTiming(null, 'LOW')
     expect(none.timing).toBe('NEUTRAL')
     expect(none.reason).toContain('Sem pesquisa')
     expect(
-      upsellTiming({ kind: 'NPS', score: 8, answeredAt: answered }, 'LOW').reason,
+      upsellTiming({ kind: 'NPS', score: 8, answeredAt: answered }, 'LOW')
+        .reason,
     ).toContain('Sem sinal forte')
   })
 })

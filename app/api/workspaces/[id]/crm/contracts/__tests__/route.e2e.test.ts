@@ -28,9 +28,7 @@ async function seedFunnel(workspaceId: string, cookie: string) {
 
 describe('contracts routes', () => {
   it('should return 401 via middleware when unauthenticated', async () => {
-    const res = await fetch(
-      `${BASE_URL}/api/workspaces/some-id/crm/contracts`,
-    )
+    const res = await fetch(`${BASE_URL}/api/workspaces/some-id/crm/contracts`)
     expect(res.status).toBe(401)
   })
 
@@ -75,10 +73,13 @@ describe('contracts routes', () => {
       status: 'ACTIVE',
     })
 
-    const soon = await getJson(`${base}/contracts?endsWithinDays=30`, user.cookie)
-    expect(
-      (await soon.json()).data.map((c: { id: string }) => c.id),
-    ).toContain(contract.id)
+    const soon = await getJson(
+      `${base}/contracts?endsWithinDays=30`,
+      user.cookie,
+    )
+    expect((await soon.json()).data.map((c: { id: string }) => c.id)).toContain(
+      contract.id,
+    )
 
     const renewed = await postJson(
       `${base}/contracts/${contract.id}/renew`,
@@ -146,21 +147,30 @@ describe('contracts routes', () => {
     const member = await addMember(workspace.id, 'MEMBER')
     const base = `/api/workspaces/${workspace.id}/crm`
 
-    expect((await postJson(`${base}/contracts/scan`, {}, member.cookie)).status).toBe(
-      403,
-    )
     expect(
-      (await patchJson(`${base}/deals-settings`, { renewalLeadDays: 30 }, member.cookie))
-        .status,
+      (await postJson(`${base}/contracts/scan`, {}, member.cookie)).status,
     ).toBe(403)
-    expect((await getJson(`${base}/deals-settings`, member.cookie)).status).toBe(200)
+    expect(
+      (
+        await patchJson(
+          `${base}/deals-settings`,
+          { renewalLeadDays: 30 },
+          member.cookie,
+        )
+      ).status,
+    ).toBe(403)
+    expect(
+      (await getJson(`${base}/deals-settings`, member.cookie)).status,
+    ).toBe(200)
   })
 
   it('should let an owner change the settings and run the scan', async () => {
     const { user, workspace } = await authenticatedOwner()
     const base = `/api/workspaces/${workspace.id}/crm`
 
-    const before = await (await getJson(`${base}/deals-settings`, user.cookie)).json()
+    const before = await (
+      await getJson(`${base}/deals-settings`, user.cookie)
+    ).json()
     expect(before.data.proposalPaymentEnabled).toBe(false)
 
     const saved = await patchJson(

@@ -102,7 +102,8 @@ export function SteelAgentGuidedDialog({
           `/${slug}/ai/agents/${agent.id}?${FROM_TEMPLATE_PARAM}=${FROM_TEMPLATE_VALUE}`,
         )
       },
-      onError: (cause) => notify.error(cause, 'Não foi possível criar o agente'),
+      onError: (cause) =>
+        notify.error(cause, 'Não foi possível criar o agente'),
     })
   }
 
@@ -176,11 +177,16 @@ export function SteelAgentGuidedDialog({
             </div>
             {template.triggerType === 'SCHEDULE' ? (
               <fieldset className='grid gap-1.5'>
-                <legend className='font-medium text-sm'>Com que frequência</legend>
+                <legend className='font-medium text-sm'>
+                  Com que frequência
+                </legend>
                 <RadioGroup
                   value={answers.scheduleId ?? 'default'}
                   onValueChange={(value) =>
-                    set('scheduleId', value === 'default' ? null : (value as string))
+                    set(
+                      'scheduleId',
+                      value === 'default' ? null : (value as string),
+                    )
                   }
                   className='grid gap-2'
                 >
@@ -188,14 +194,14 @@ export function SteelAgentGuidedDialog({
                     <RadioGroupItem value='default' />
                     {template.scheduleLabel} (sugerido)
                   </Label>
-                  {GUIDED_SCHEDULES.filter(
-                    (s) => s.cron !== template.cron,
-                  ).map((s) => (
-                    <Label key={s.id} className='gap-2 font-normal'>
-                      <RadioGroupItem value={s.id} />
-                      {s.label}
-                    </Label>
-                  ))}
+                  {GUIDED_SCHEDULES.filter((s) => s.cron !== template.cron).map(
+                    (s) => (
+                      <Label key={s.id} className='gap-2 font-normal'>
+                        <RadioGroupItem value={s.id} />
+                        {s.label}
+                      </Label>
+                    ),
+                  )}
                 </RadioGroup>
               </fieldset>
             ) : (
@@ -242,7 +248,9 @@ export function SteelAgentGuidedDialog({
               </Label>
             </RadioGroup>
             <div className='grid gap-1.5'>
-              <Label htmlFor='guided-cap'>Limite de execuções por mês (opcional)</Label>
+              <Label htmlFor='guided-cap'>
+                Limite de execuções por mês (opcional)
+              </Label>
               <Input
                 id='guided-cap'
                 type='number'

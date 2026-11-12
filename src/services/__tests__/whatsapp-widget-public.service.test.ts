@@ -71,7 +71,9 @@ const connection = createFakeWhatsAppConnection({
   provider: 'WIDGET',
 })
 
-function context(overrides?: Parameters<typeof createFakeWhatsAppWidgetSettings>[0]) {
+function context(
+  overrides?: Parameters<typeof createFakeWhatsAppWidgetSettings>[0],
+) {
   const settings = createFakeWhatsAppWidgetSettings({
     workspaceId: WS,
     connectionId: 'conn1',
@@ -290,9 +292,7 @@ describe('listMessages', () => {
     })
 
     it('should show the open survey of a closed conversation', async () => {
-      surveyRepo.findOpenByPhone.mockResolvedValue(
-        ok({ kind: 'NPS' } as never),
-      )
+      surveyRepo.findOpenByPhone.mockResolvedValue(ok({ kind: 'NPS' } as never))
       const result = expectOk(
         await WhatsAppWidgetPublicService.listMessages(
           context({ showSurvey: true }),
@@ -511,12 +511,10 @@ describe('sendMessage', () => {
 
     it('should call an anonymous visitor by a generic name', async () => {
       expectOk(
-        await WhatsAppWidgetPublicService.sendMessage(
-          context(),
-          null,
-          dto,
-          { ip: 'unknown', origin: null },
-        ),
+        await WhatsAppWidgetPublicService.sendMessage(context(), null, dto, {
+          ip: 'unknown',
+          origin: null,
+        }),
       )
       expect(contactRepo.upsertByWaId.mock.calls[0][0].name).toBe(
         'Visitante do site',

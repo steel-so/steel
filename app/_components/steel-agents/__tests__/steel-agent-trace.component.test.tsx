@@ -138,13 +138,20 @@ describe('traceEntry', () => {
     const skipped = traceEntry(
       step({
         kind: 'PROCEDURE',
-        output: { title: 'Consultar', stepStatus: 'SKIPPED', reason: 'condição' },
+        output: {
+          title: 'Consultar',
+          stepStatus: 'SKIPPED',
+          reason: 'condição',
+        },
       }),
     )
     expect(skipped.title).toBe('Procedimento: Consultar (dispensado)')
     expect(skipped.body).toBe('condição')
     const saved = traceEntry(
-      step({ kind: 'PROCEDURE', output: { title: 'Consultar', saved: ['link'] } }),
+      step({
+        kind: 'PROCEDURE',
+        output: { title: 'Consultar', saved: ['link'] },
+      }),
     )
     expect(saved.body).toBe('Guardou: link')
     expect(summarizeTrace([step({ kind: 'PROCEDURE' })]).procedureSteps).toBe(1)

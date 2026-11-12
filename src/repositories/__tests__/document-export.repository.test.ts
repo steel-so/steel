@@ -179,9 +179,7 @@ describe('DocumentExportRepository', () => {
         now: NOW,
         inFlightSince: minutesAgo(15),
       }
-      const found = expectOk(
-        await DocumentExportRepository.findReusable(query),
-      )
+      const found = expectOk(await DocumentExportRepository.findReusable(query))
       expect(found?.id).toBe(recent.id)
       expect(found?.version).toBeNull()
     })

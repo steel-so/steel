@@ -15,8 +15,8 @@ import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { prisma } from '@/src/lib/prisma'
 import {
-  DocumentLegacyRepository as Repo,
   type LegacyDocumentData,
+  DocumentLegacyRepository as Repo,
 } from '../document-legacy.repository'
 
 afterEach(() => {

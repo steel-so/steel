@@ -6,13 +6,9 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
-import type {
-  QaConfigDTO,
-  QaCoachingDTO,
-  QaReviewDTO,
-} from '@/types/qa-review'
-import { qaScoreTone, qaSkipReasonLabel } from '../qa-format'
+import type { QaCoachingDTO, QaConfigDTO, QaReviewDTO } from '@/types/qa-review'
 import { QaCoachingPanel } from '../qa-coaching-panel'
+import { qaScoreTone, qaSkipReasonLabel } from '../qa-format'
 import { QaReviewsList } from '../qa-reviews-list'
 import { QaScoreBadge } from '../qa-score-badge'
 import { QaSettings } from '../qa-settings'
@@ -221,7 +217,9 @@ describe('<QaReviewsList />', () => {
     ])
     renderWithQuery(<QaReviewsList workspaceId='ws1' initialReviewId='r1' />)
     expect(await screen.findByText('Faltou resolver.')).toBeTruthy()
-    expect(screen.getByText('Nenhuma avaliação com esses filtros.')).toBeTruthy()
+    expect(
+      screen.getByText('Nenhuma avaliação com esses filtros.'),
+    ).toBeTruthy()
   })
 
   it('shows the error state', async () => {
@@ -264,7 +262,9 @@ describe('<QaSettings />', () => {
     renderWithQuery(<QaSettings workspaceId='ws1' canEdit />)
     await screen.findByLabelText('Nome do critério')
     fireEvent.click(screen.getByRole('switch', { name: 'Critério ativo' }))
-    expect(screen.getByText('Mantenha ao menos um critério ativo.')).toBeTruthy()
+    expect(
+      screen.getByText('Mantenha ao menos um critério ativo.'),
+    ).toBeTruthy()
     expect(screen.getByText('Salvar').closest('button')?.disabled).toBe(true)
     fireEvent.click(screen.getByLabelText('Remover critério'))
     expect(screen.queryByLabelText('Nome do critério')).toBeNull()
@@ -284,7 +284,9 @@ describe('<QaSettings />', () => {
   it('is read-only for non-managers', async () => {
     mockFetch(routes())
     renderWithQuery(<QaSettings workspaceId='ws1' canEdit={false} />)
-    expect(await screen.findByText(/Só o dono e os administradores/)).toBeTruthy()
+    expect(
+      await screen.findByText(/Só o dono e os administradores/),
+    ).toBeTruthy()
     expect(screen.queryByText('Salvar')).toBeNull()
     expect(
       (screen.getByLabelText('Nome do critério') as HTMLInputElement).disabled,

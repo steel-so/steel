@@ -71,10 +71,7 @@ const CHANNEL_OPTIONS = (['LINK', 'EMAIL', 'WHATSAPP'] as const).map(
 const MAX_MATCHES = 6
 
 function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
 /** A CRM person as a recipient: e-mail when there is one, else WhatsApp. */

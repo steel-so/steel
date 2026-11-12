@@ -5,7 +5,10 @@ import {
   ABACATEPAY_BOLETO_PROVIDER_ID,
   createAbacatePayBoletoProvider,
 } from './abacatepay-provider'
-import { createMockBoletoProvider, MOCK_BOLETO_PROVIDER_ID } from './mock-provider'
+import {
+  createMockBoletoProvider,
+  MOCK_BOLETO_PROVIDER_ID,
+} from './mock-provider'
 import type { BoletoProvider } from './provider'
 
 /** Ids a webhook URL (`/api/boleto/webhook/{provider}`) may name. */

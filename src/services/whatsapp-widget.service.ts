@@ -30,7 +30,8 @@ export const WhatsAppWidgetService = {
     )
     if (!privileged.ok) return privileged
 
-    const row = await WhatsAppWidgetSettingsRepository.findByWorkspace(workspaceId)
+    const row =
+      await WhatsAppWidgetSettingsRepository.findByWorkspace(workspaceId)
     if (!row.ok) return row
     return ok(toWhatsAppWidgetSettingsDTO(workspaceId, row.value, baseEmailUrl))
   },
@@ -58,7 +59,9 @@ export const WhatsAppWidgetService = {
       WHATSAPP_WIDGET_DEFAULTS.allowedOrigins
     if (enabled && origins.length === 0) {
       return err(
-        validationError('Informe ao menos um site autorizado para ligar o chat'),
+        validationError(
+          'Informe ao menos um site autorizado para ligar o chat',
+        ),
       )
     }
 
@@ -77,10 +80,11 @@ export const WhatsAppWidgetService = {
     // is switched on for the first time.
     let connectionId = existing.value?.connectionId ?? null
     if (enabled && !connectionId) {
-      const connection = await WhatsAppWidgetSettingsRepository.ensureConnection(
-        workspaceId,
-        actorId,
-      )
+      const connection =
+        await WhatsAppWidgetSettingsRepository.ensureConnection(
+          workspaceId,
+          actorId,
+        )
       if (!connection.ok) return connection
       connectionId = connection.value.id
     }
@@ -102,7 +106,9 @@ export const WhatsAppWidgetService = {
       targetId: saved.value.id,
       meta: { workspaceId, ...dto },
     })
-    return ok(toWhatsAppWidgetSettingsDTO(workspaceId, saved.value, baseEmailUrl))
+    return ok(
+      toWhatsAppWidgetSettingsDTO(workspaceId, saved.value, baseEmailUrl),
+    )
   },
 
   /** New public key: snippets already pasted on sites stop working. */
@@ -121,7 +127,9 @@ export const WhatsAppWidgetService = {
       await WhatsAppWidgetSettingsRepository.findByWorkspace(workspaceId)
     if (!existing.ok) return existing
     if (!existing.value) {
-      return err(validationError('Salve as configurações antes de trocar a chave'))
+      return err(
+        validationError('Salve as configurações antes de trocar a chave'),
+      )
     }
 
     const rotated = await WhatsAppWidgetSettingsRepository.rotateKey(

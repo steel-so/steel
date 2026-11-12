@@ -148,7 +148,10 @@ export function createFakeSchedAppointmentFull(
 }
 
 /** Workspace + user + connection + contact rows for integration tests. */
-export async function seedSchedulingFixtures(workspaceId: string, userId: string) {
+export async function seedSchedulingFixtures(
+  workspaceId: string,
+  userId: string,
+) {
   const connection = await prisma.whatsAppConnection.create({
     data: {
       workspaceId,

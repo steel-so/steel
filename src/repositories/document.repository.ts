@@ -332,9 +332,7 @@ export const DocumentRepository = {
     }
   },
 
-  async findPublicContext(
-    id: string,
-  ): Promise<Result<DocumentPublicContext>> {
+  async findPublicContext(id: string): Promise<Result<DocumentPublicContext>> {
     try {
       const row = await prisma.document.findFirst({
         where: { id, deletedAt: null },

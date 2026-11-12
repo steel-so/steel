@@ -1,8 +1,4 @@
-import type {
-  Prisma,
-  QaReview,
-  WhatsAppConversation,
-} from '@prisma/client'
+import type { Prisma, QaReview, WhatsAppConversation } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import {
@@ -46,8 +42,8 @@ import type {
   UpdateQaConfigDTO,
 } from '@/src/schemas/qa-review.schema'
 import type {
-  QaConfigDTO,
   QaCoachingDTO,
+  QaConfigDTO,
   QaReviewDTO,
   QaReviewListDTO,
 } from '@/types/qa-review'

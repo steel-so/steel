@@ -9,8 +9,8 @@ import type {
 } from '@prisma/client'
 import { whatsappSchedSlotTaken } from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
-import { bufferedOverlap } from '@/src/lib/scheduling/slots'
 import { err, ok, type Result } from '@/src/lib/result'
+import { bufferedOverlap } from '@/src/lib/scheduling/slots'
 import { dbError } from './db-error'
 
 const MINUTE_MS = 60_000

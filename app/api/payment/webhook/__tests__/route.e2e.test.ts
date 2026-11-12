@@ -1,8 +1,8 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
 import { authenticatedOwner } from '@/src/__tests__/helpers/e2e'
-import { signAbacatePayBody } from '@/src/lib/abacatepay-webhook'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { signAbacatePayBody } from '@/src/lib/abacatepay-webhook'
 import { prisma } from '@/src/lib/prisma'
 
 const SECRET = process.env.ABACATE_PAY_WEBHOOK_SECRET ?? ''
@@ -16,7 +16,8 @@ async function postWebhook(
   signature?: string,
 ) {
   const raw = JSON.stringify(body)
-  const query = secret === null ? '' : `?webhookSecret=${encodeURIComponent(secret)}`
+  const query =
+    secret === null ? '' : `?webhookSecret=${encodeURIComponent(secret)}`
   return fetch(`${BASE_URL}/api/payment/webhook${query}`, {
     method: 'POST',
     headers: {

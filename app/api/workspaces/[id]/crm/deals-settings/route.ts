@@ -19,14 +19,20 @@ export const GET = withAxiom(async (_request: NextRequest, ctx: Params) => {
 })
 
 export const PATCH = withAxiom(async (request: NextRequest, ctx: Params) => {
-  const user = await authorizedUser('PATCH /api/workspaces/[id]/crm/deals-settings')
+  const user = await authorizedUser(
+    'PATCH /api/workspaces/[id]/crm/deals-settings',
+  )
   if (!user.ok) return handleError(user.error)
 
   const { id } = await ctx.params
   const body = await parseBody(request, UpdateCrmDealsSettingsSchema)
   if (!body.ok) return handleError(body.error)
 
-  const result = await CrmDealsSettingsService.update(user.value, id, body.value)
+  const result = await CrmDealsSettingsService.update(
+    user.value,
+    id,
+    body.value,
+  )
   if (!result.ok) return handleError(result.error)
 
   return successResponse(result.value)

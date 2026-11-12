@@ -1,6 +1,10 @@
 'use client'
 
-import { GitMergeIcon, Search01Icon, Undo02Icon } from '@hugeicons-pro/core-stroke-rounded'
+import {
+  GitMergeIcon,
+  Search01Icon,
+  Undo02Icon,
+} from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
@@ -54,7 +58,9 @@ function RecordColumn({
         <p className='truncate font-medium'>{record.name}</p>
         <p className='text-muted-foreground text-xs'>
           Criado em {formatDate(record.createdAt)} · {record.historyCount}{' '}
-          {record.historyCount === 1 ? 'item de histórico' : 'itens de histórico'}
+          {record.historyCount === 1
+            ? 'item de histórico'
+            : 'itens de histórico'}
         </p>
       </div>
       <dl className='grid grid-cols-[6.5rem_1fr] gap-x-2 gap-y-1 text-sm'>
@@ -86,7 +92,10 @@ function PairCard({
 }: {
   pair: CrmDuplicateDTO
   busy: boolean
-  onKeep: (survivor: CrmDuplicateRecordDTO, merged: CrmDuplicateRecordDTO) => void
+  onKeep: (
+    survivor: CrmDuplicateRecordDTO,
+    merged: CrmDuplicateRecordDTO,
+  ) => void
   onDismiss: () => void
 }) {
   return (
@@ -336,10 +345,12 @@ export function CrmDuplicatesPanel({ workspaceId }: { workspaceId: string }) {
           <DialogHeader>
             <DialogTitle>Mesclar {label.plural}</DialogTitle>
             <DialogDescription>
-              Manter “{pending?.survivor.name}” e arquivar “{pending?.merged.name}
+              Manter “{pending?.survivor.name}” e arquivar “
+              {pending?.merged.name}
               ”. As notas, tarefas, oportunidades e atividades de “
-              {pending?.merged.name}” passam para “{pending?.survivor.name}”, que
-              também ganha o que faltava nele. Dá para desfazer por 24 horas.
+              {pending?.merged.name}” passam para “{pending?.survivor.name}”,
+              que também ganha o que faltava nele. Dá para desfazer por 24
+              horas.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

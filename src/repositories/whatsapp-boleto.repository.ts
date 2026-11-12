@@ -26,7 +26,10 @@ export const WhatsAppBoletoSettingsRepository = {
 
   async upsert(
     workspaceId: string,
-    data: Omit<Prisma.WhatsAppBoletoSettingsUncheckedCreateInput, 'workspaceId'>,
+    data: Omit<
+      Prisma.WhatsAppBoletoSettingsUncheckedCreateInput,
+      'workspaceId'
+    >,
   ): Promise<Result<WhatsAppBoletoSettings>> {
     try {
       return ok(
@@ -105,7 +108,11 @@ export const WhatsAppBoletoChargeRepository = {
     id: string,
     data: { paidAt: Date; paidAmount: number },
   ): Promise<Result<WhatsAppBoletoCharge | null>> {
-    return updateWhere(id, { status: { not: 'PAID' } }, { status: 'PAID', ...data })
+    return updateWhere(
+      id,
+      { status: { not: 'PAID' } },
+      { status: 'PAID', ...data },
+    )
   },
 
   /** Cancels a charge that is still pending; `null` when it no longer is. */

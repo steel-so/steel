@@ -150,7 +150,10 @@ export const DocumentOutlineSchema = z.object({
   sections: z.array(DocumentOutlineSectionSchema).min(1).max(60),
   theme: z
     .object({
-      primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+      primaryColor: z
+        .string()
+        .regex(/^#[0-9a-fA-F]{6}$/)
+        .optional(),
       fontFamily: z.string().max(80).optional(),
       logoUrl: UrlText.optional(),
     })

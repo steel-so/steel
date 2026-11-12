@@ -35,19 +35,22 @@ export function upsellTiming(
   if (healthLevel === 'HIGH') {
     return {
       timing: 'WAIT',
-      reason: 'A saúde do cliente está em risco alto: resolva isso antes de vender mais.',
+      reason:
+        'A saúde do cliente está em risco alto: resolva isso antes de vender mais.',
     }
   }
   if (satisfaction && isDetractor(satisfaction)) {
     return {
       timing: 'WAIT',
-      reason: 'A última pesquisa de satisfação teve nota baixa: trate o motivo antes de oferecer algo novo.',
+      reason:
+        'A última pesquisa de satisfação teve nota baixa: trate o motivo antes de oferecer algo novo.',
     }
   }
   if (satisfaction && isPromoter(satisfaction) && healthLevel !== 'MEDIUM') {
     return {
       timing: 'GO',
-      reason: 'O cliente é promotor na última pesquisa e a saúde está boa: bom momento para ampliar.',
+      reason:
+        'O cliente é promotor na última pesquisa e a saúde está boa: bom momento para ampliar.',
     }
   }
   return {
@@ -84,7 +87,9 @@ export function rankUpsell(
       ...candidate,
       adoptionPct: Math.round((candidate.buyers / candidate.peers) * 100),
     }))
-    .sort((a, b) => b.buyers - a.buyers || a.name.localeCompare(b.name, 'pt-BR'))
+    .sort(
+      (a, b) => b.buyers - a.buyers || a.name.localeCompare(b.name, 'pt-BR'),
+    )
     .slice(0, limit)
 }
 
@@ -122,7 +127,8 @@ export function computePeerAdoption(
   const byProduct = new Map<string, UpsellCandidate>()
   const buyers = new Map<string, Set<string>>()
   for (const row of rows) {
-    if (!peers.has(row.companyId) || ownedProductIds.has(row.productId)) continue
+    if (!peers.has(row.companyId) || ownedProductIds.has(row.productId))
+      continue
     const set = buyers.get(row.productId) ?? new Set<string>()
     set.add(row.companyId)
     buyers.set(row.productId, set)

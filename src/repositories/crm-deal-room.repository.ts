@@ -29,7 +29,9 @@ const publicInclude = {
   opportunity: {
     select: { name: true, company: { select: { name: true } } },
   },
-  proposal: { select: { id: true, name: true, shareToken: true, status: true } },
+  proposal: {
+    select: { id: true, name: true, shareToken: true, status: true },
+  },
 } satisfies Prisma.CrmDealRoomInclude
 
 export type CrmDealRoomPublicRow = Prisma.CrmDealRoomGetPayload<{
@@ -128,7 +130,11 @@ export const CrmDealRoomRepository = {
             where: { roomId: room.id, id: { notIn: keep } },
           })
           for (const [position, material] of data.materials.entries()) {
-            const values = { title: material.title, url: material.url, position }
+            const values = {
+              title: material.title,
+              url: material.url,
+              position,
+            }
             if (material.id) {
               await tx.crmDealRoomMaterial.updateMany({
                 where: { id: material.id, roomId: room.id },

@@ -451,9 +451,7 @@ export const SdMajorIncidentRepository = {
       categoryId?: string | null
       customerId?: string | null
     },
-  ): Promise<
-    Result<{ id: string; title: string; ticketId: string } | null>
-  > {
+  ): Promise<Result<{ id: string; title: string; ticketId: string } | null>> {
     const or: Prisma.SdTicketWhereInput[] = []
     if (match.configItemId) or.push({ configItemId: match.configItemId })
     if (match.categoryId) or.push({ categoryId: match.categoryId })

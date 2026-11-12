@@ -126,7 +126,8 @@ export function AiProcedureRuns({
         title: step.title,
         stepStatus: step.status,
       },
-      status: step.status === 'OK' || step.status === 'SKIPPED' ? 'OK' : 'FAILED',
+      status:
+        step.status === 'OK' || step.status === 'SKIPPED' ? 'OK' : 'FAILED',
       error: step.error,
       createdAt: step.createdAt,
     }),
@@ -142,8 +143,12 @@ export function AiProcedureRuns({
               onClick={() => setOpenId(run.id)}
               className='flex w-full flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50'
             >
-              <span className='font-medium'>{RUN_STATUS_LABEL[run.status]}</span>
-              <Badge variant='secondary'>{SUBJECT_LABEL[run.subjectType]}</Badge>
+              <span className='font-medium'>
+                {RUN_STATUS_LABEL[run.status]}
+              </span>
+              <Badge variant='secondary'>
+                {SUBJECT_LABEL[run.subjectType]}
+              </Badge>
               <span className='text-muted-foreground'>
                 versão {run.versionNumber} ·{' '}
                 {formatProcedureDate(run.startedAt, TIMEZONE)}
@@ -157,7 +162,10 @@ export function AiProcedureRuns({
           </li>
         ))}
       </ul>
-      <Dialog open={openId !== null} onOpenChange={(o) => !o && setOpenId(null)}>
+      <Dialog
+        open={openId !== null}
+        onOpenChange={(o) => !o && setOpenId(null)}
+      >
         <DialogContent className='max-h-[90dvh] overflow-y-auto sm:max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Passos da execução</DialogTitle>

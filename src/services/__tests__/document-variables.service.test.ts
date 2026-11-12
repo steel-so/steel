@@ -17,8 +17,8 @@ vi.mock('@/src/repositories/document.repository')
 vi.mock('@/src/repositories/document-recipient.repository')
 
 import {
-  type DocumentVariableContext,
   DocumentRepository,
+  type DocumentVariableContext,
 } from '@/src/repositories/document.repository'
 import { DocumentRecipientRepository } from '@/src/repositories/document-recipient.repository'
 import { DocumentVariablesService } from '../document-variables.service'

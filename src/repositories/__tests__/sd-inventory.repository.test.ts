@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  seedSdInventoryDevice,
-} from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
+import { seedSdInventoryDevice } from '@/src/__tests__/factories/nov-s1-asset-inventory.factory'
 import {
   seedSdConfigItem,
   seedSdConfigItemType,

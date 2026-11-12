@@ -314,10 +314,7 @@ function CrmLinksCard({ document }: { document: DocumentDTO }) {
   const id = useId()
   const canEdit = useCan('documents', 'EDIT')
   const update = useUpdateDocument(document.workspaceId, document.id)
-  const { lookups } = useCrmWorkspaceLookups(
-    document.workspaceId,
-    LOOKUP_KINDS,
-  )
+  const { lookups } = useCrmWorkspaceLookups(document.workspaceId, LOOKUP_KINDS)
   const leads = useCrmResourceList<{ id: string; name: string }>(
     document.workspaceId,
     'leads',

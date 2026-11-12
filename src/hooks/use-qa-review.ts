@@ -5,8 +5,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import type {
-  QaConfigDTO,
   QaCoachingDTO,
+  QaConfigDTO,
   QaReviewDTO,
   QaReviewListDTO,
   QaReviewStatusDTO,

@@ -182,7 +182,10 @@ export function useRestoreAiProcedureVersion(
   })
 }
 
-export function usePreviewAiProcedure(workspaceId: string, procedureId: string) {
+export function usePreviewAiProcedure(
+  workspaceId: string,
+  procedureId: string,
+) {
   return useMutation({
     mutationFn: (variables: Record<string, string>) =>
       apiFetch<AiProcedurePreviewDTO>(

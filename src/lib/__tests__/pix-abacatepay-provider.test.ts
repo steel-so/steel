@@ -26,7 +26,10 @@ function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body }
 }
 
-function call(body: unknown, opts: { secret?: string | null; sig?: string | null } = {}) {
+function call(
+  body: unknown,
+  opts: { secret?: string | null; sig?: string | null } = {},
+) {
   const raw = typeof body === 'string' ? body : JSON.stringify(body)
   const headers = new Headers()
   const sig = opts.sig === undefined ? signAbacatePayBody(raw) : opts.sig
@@ -60,7 +63,10 @@ describe('AbacatePay Pix provider', () => {
 
   it('creates a charge in cents with the txid as externalId', async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse({ success: true, data: { id: 'pix_char_1', brCode: '000201' } }),
+      jsonResponse({
+        success: true,
+        data: { id: 'pix_char_1', brCode: '000201' },
+      }),
     )
     const charge = expectOk(await provider.createCharge(input))
     expect(charge).toEqual({ providerChargeId: 'pix_char_1', brCode: '000201' })
@@ -82,7 +88,9 @@ describe('AbacatePay Pix provider', () => {
       await provider.createCharge({ ...input, amount: 0.5 }),
       'PIX_PROVIDER_ERROR',
     )
-    fetchMock.mockResolvedValueOnce(jsonResponse({ success: false, data: null }))
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ success: false, data: null }),
+    )
     expectErr(await provider.createCharge(input), 'PIX_PROVIDER_ERROR')
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ success: true, data: { id: 'x' } }),
@@ -123,7 +131,9 @@ describe('AbacatePay Pix provider', () => {
     expect(fetchMock.mock.calls[0][0]).toBe(
       'https://api.abacatepay.com/v2/transparents/check?id=pix_char_1',
     )
-    fetchMock.mockResolvedValueOnce(jsonResponse({ success: false, data: null }))
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ success: false, data: null }),
+    )
     expectErr(await check('x'), 'PIX_PROVIDER_ERROR')
     fetchMock.mockRejectedValueOnce(new Error('network'))
     expectErr(await check('x'), 'PIX_PROVIDER_ERROR')
@@ -136,7 +146,11 @@ describe('AbacatePay Pix provider', () => {
       apiVersion: 2,
       devMode: true,
       data: {
-        transparent: { id: 'pix_char_1', amount: 15050, updatedAt: '2026-10-31T12:00:00.000Z' },
+        transparent: {
+          id: 'pix_char_1',
+          amount: 15050,
+          updatedAt: '2026-10-31T12:00:00.000Z',
+        },
         payerInformation: { method: 'PIX', PIX: { name: 'Maria' } },
       },
     }
@@ -156,7 +170,12 @@ describe('AbacatePay Pix provider', () => {
     it('accepts a flat payload and paidAmount, with defaults', () => {
       const c = call({
         event: 'transparent.completed',
-        data: { id: 'pix_char_2', amount: 100, paidAmount: 200, updatedAt: 'bad' },
+        data: {
+          id: 'pix_char_2',
+          amount: 100,
+          paidAmount: 200,
+          updatedAt: 'bad',
+        },
       })
       const [n] = expectOk(provider.parseWebhook(c.headers, c.raw, c.query))
       expect(n.providerChargeId).toBe('pix_char_2')
@@ -167,17 +186,25 @@ describe('AbacatePay Pix provider', () => {
         event: 'transparent.completed',
         data: { checkout: { id: 'c', amount: 100 } },
       })
-      expect(expectOk(provider.parseWebhook(d.headers, d.raw, d.query))[0].providerChargeId).toBe('c')
+      expect(
+        expectOk(provider.parseWebhook(d.headers, d.raw, d.query))[0]
+          .providerChargeId,
+      ).toBe('c')
     })
 
     it('ignores other events once authenticated', () => {
       const c = call({ event: 'transparent.refunded', data: {} })
-      expect(expectOk(provider.parseWebhook(c.headers, c.raw, c.query))).toEqual([])
+      expect(
+        expectOk(provider.parseWebhook(c.headers, c.raw, c.query)),
+      ).toEqual([])
     })
 
     it('rejects bad secret, bad signature and bad bodies', () => {
       const bad = (c: ReturnType<typeof call>, p = provider) =>
-        expectErr(p.parseWebhook(c.headers, c.raw, c.query), 'PIX_WEBHOOK_INVALID')
+        expectErr(
+          p.parseWebhook(c.headers, c.raw, c.query),
+          'PIX_WEBHOOK_INVALID',
+        )
       bad(call(paid), createAbacatePayPixProvider(undefined))
       bad(call(paid, { secret: null }))
       bad(call(paid, { secret: 'other-secret-value' }))

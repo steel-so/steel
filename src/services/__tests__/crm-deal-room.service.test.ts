@@ -122,11 +122,18 @@ describe('upsert', () => {
 
   it('saves the room and audits it', async () => {
     const dto = expectOk(
-      await Service.upsert('u', 'ws', 'o1', { enabled: true, rotateToken: true }),
+      await Service.upsert('u', 'ws', 'o1', {
+        enabled: true,
+        rotateToken: true,
+      }),
     )
     expect(dto.id).toBe('r1')
     expect(rooms.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: 'ws', opportunityId: 'o1', actorId: 'u' }),
+      expect.objectContaining({
+        workspaceId: 'ws',
+        opportunityId: 'o1',
+        actorId: 'u',
+      }),
     )
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -142,7 +149,10 @@ describe('upsert', () => {
     )
     expectOk(await Service.upsert('u', 'ws', 'o1', { proposalId: 'p1' }))
     proposals.findById.mockResolvedValue(
-      ok({ ...createFakeCrmProposal({ opportunityId: 'other' }), sections: [] }),
+      ok({
+        ...createFakeCrmProposal({ opportunityId: 'other' }),
+        sections: [],
+      }),
     )
     expectErr(
       await Service.upsert('u', 'ws', 'o1', { proposalId: 'p1' }),
@@ -226,7 +236,10 @@ describe('seller chat', () => {
 
   it('needs a room and access', async () => {
     rooms.findByOpportunity.mockResolvedValue(ok(null))
-    expectErr(await Service.listMessages('u', 'ws', 'o1'), 'CRM_DEAL_ROOM_NOT_FOUND')
+    expectErr(
+      await Service.listMessages('u', 'ws', 'o1'),
+      'CRM_DEAL_ROOM_NOT_FOUND',
+    )
     rooms.findByOpportunity.mockResolvedValue(err(databaseError('x')))
     expectErr(await Service.listMessages('u', 'ws', 'o1'), 'DATABASE_ERROR')
     rooms.findByOpportunity.mockResolvedValue(ok(room))
@@ -238,11 +251,20 @@ describe('seller chat', () => {
 
   it('posts as the seller with the user name', async () => {
     rooms.findByOpportunity.mockResolvedValue(ok(room))
-    users.findById.mockResolvedValue(ok({ id: 'u', name: 'Vendedor Silva' } as never))
-    rooms.createMessage.mockResolvedValue(
-      ok(createFakeDealRoomMessage({ authorKind: 'SELLER', authorName: 'Vendedor Silva' })),
+    users.findById.mockResolvedValue(
+      ok({ id: 'u', name: 'Vendedor Silva' } as never),
     )
-    const dto = expectOk(await Service.postMessage('u', 'ws', 'o1', { body: 'Oi' }))
+    rooms.createMessage.mockResolvedValue(
+      ok(
+        createFakeDealRoomMessage({
+          authorKind: 'SELLER',
+          authorName: 'Vendedor Silva',
+        }),
+      ),
+    )
+    const dto = expectOk(
+      await Service.postMessage('u', 'ws', 'o1', { body: 'Oi' }),
+    )
     expect(dto.authorKind).toBe('SELLER')
     expect(rooms.createMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -260,15 +282,27 @@ describe('seller chat', () => {
       'CRM_DEAL_ROOM_NOT_FOUND',
     )
     rooms.findByOpportunity.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.postMessage('u', 'ws', 'o1', { body: 'x' }), 'DATABASE_ERROR')
+    expectErr(
+      await Service.postMessage('u', 'ws', 'o1', { body: 'x' }),
+      'DATABASE_ERROR',
+    )
     rooms.findByOpportunity.mockResolvedValue(ok(room))
     users.findById.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.postMessage('u', 'ws', 'o1', { body: 'x' }), 'DATABASE_ERROR')
+    expectErr(
+      await Service.postMessage('u', 'ws', 'o1', { body: 'x' }),
+      'DATABASE_ERROR',
+    )
     users.findById.mockResolvedValue(ok({ id: 'u', name: 'V' } as never))
     rooms.createMessage.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.postMessage('u', 'ws', 'o1', { body: 'x' }), 'DATABASE_ERROR')
+    expectErr(
+      await Service.postMessage('u', 'ws', 'o1', { body: 'x' }),
+      'DATABASE_ERROR',
+    )
     asRole('VIEWER')
-    expectErr(await Service.postMessage('u', 'ws', 'o1', { body: 'x' }), 'FORBIDDEN')
+    expectErr(
+      await Service.postMessage('u', 'ws', 'o1', { body: 'x' }),
+      'FORBIDDEN',
+    )
   })
 })
 
@@ -290,7 +324,12 @@ describe('getPublic', () => {
       ok({
         ...publicRow,
         title: 'Proposta Acme',
-        proposal: { id: 'p1', name: 'Proposta', shareToken: 'share1', status: 'SENT' },
+        proposal: {
+          id: 'p1',
+          name: 'Proposta',
+          shareToken: 'share1',
+          status: 'SENT',
+        },
       }),
     )
     const dto = expectOk(await Service.getPublic('tok'))
@@ -300,7 +339,12 @@ describe('getPublic', () => {
       ok({
         ...publicRow,
         opportunity: { name: 'N', company: null },
-        proposal: { id: 'p1', name: 'Proposta', shareToken: 'share1', status: 'DRAFT' },
+        proposal: {
+          id: 'p1',
+          name: 'Proposta',
+          shareToken: 'share1',
+          status: 'DRAFT',
+        },
       }),
     )
     const draft = expectOk(await Service.getPublic('tok'))
@@ -319,12 +363,20 @@ describe('getPublic', () => {
       ok({
         ...publicRow,
         documentId: 'd1',
-        proposal: { id: 'p1', name: 'Antiga', shareToken: 'share1', status: 'SENT' },
+        proposal: {
+          id: 'p1',
+          name: 'Antiga',
+          shareToken: 'share1',
+          status: 'SENT',
+        },
       }),
     )
     documents.findInWorkspace.mockResolvedValue(ok(sent))
     const dto = expectOk(await Service.getPublic('tok'))
-    expect(dto.proposal).toEqual({ name: 'Proposta 2027', sharePath: '/d/pub1' })
+    expect(dto.proposal).toEqual({
+      name: 'Proposta 2027',
+      sharePath: '/d/pub1',
+    })
     expect(documents.findInWorkspace).toHaveBeenCalledWith('ws', 'd1')
 
     for (const doc of [
@@ -358,7 +410,10 @@ describe('identify', () => {
   it('registers the visitor with a hashed IP and logs the opening', async () => {
     rooms.upsertVisitor.mockResolvedValue(ok(visitor))
     const session = expectOk(
-      await Service.identify('tok', '9.9.9.9', { name: 'Ana', email: 'ana@x.com' }),
+      await Service.identify('tok', '9.9.9.9', {
+        name: 'Ana',
+        email: 'ana@x.com',
+      }),
     )
     expect(session).toEqual({ visitorId: 'v1', name: 'Ana Souza' })
     const saved = rooms.upsertVisitor.mock.calls[0]?.[0]
@@ -374,7 +429,10 @@ describe('identify', () => {
     rooms.findPublicByToken.mockResolvedValue(
       err({ code: 'CRM_DEAL_ROOM_NOT_FOUND', message: 'x' }),
     )
-    expectErr(await Service.identify('tok', 'ip', input), 'CRM_DEAL_ROOM_NOT_FOUND')
+    expectErr(
+      await Service.identify('tok', 'ip', input),
+      'CRM_DEAL_ROOM_NOT_FOUND',
+    )
     rooms.findPublicByToken.mockResolvedValue(ok(publicRow))
     access.isEnabled.mockResolvedValue(ok(false))
     expectErr(await Service.identify('tok', 'ip', input), 'MODULE_DISABLED')
@@ -392,14 +450,22 @@ describe('recordEvent', () => {
     rooms.findPublicByToken.mockResolvedValue(
       ok({
         ...publicRow,
-        proposal: { id: 'p1', name: 'Proposta', shareToken: 's', status: 'SENT' },
+        proposal: {
+          id: 'p1',
+          name: 'Proposta',
+          shareToken: 's',
+          status: 'SENT',
+        },
       }),
     )
 
   it('logs the opening of the proposal and of a material with their labels', async () => {
     withProposal()
     expectOk(
-      await Service.recordEvent('tok', { visitorId: 'v1', kind: 'PROPOSAL_VIEWED' }),
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'PROPOSAL_VIEWED',
+      }),
     )
     expect(rooms.createEvent).toHaveBeenLastCalledWith(
       expect.objectContaining({ targetId: 'p1', targetLabel: 'Proposta' }),
@@ -415,7 +481,12 @@ describe('recordEvent', () => {
     expect(rooms.createEvent).toHaveBeenLastCalledWith(
       expect.objectContaining({ targetLabel: material?.title }),
     )
-    expectOk(await Service.recordEvent('tok', { visitorId: 'v1', kind: 'ROOM_OPENED' }))
+    expectOk(
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'ROOM_OPENED',
+      }),
+    )
   })
 
   it('refuses unknown visitors, proposals and materials', async () => {
@@ -426,7 +497,10 @@ describe('recordEvent', () => {
     )
     rooms.findVisitor.mockResolvedValue(ok(visitor))
     expectErr(
-      await Service.recordEvent('tok', { visitorId: 'v1', kind: 'PROPOSAL_VIEWED' }),
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'PROPOSAL_VIEWED',
+      }),
       'CRM_DEAL_ROOM_INVALID',
     )
     expectErr(
@@ -444,19 +518,28 @@ describe('recordEvent', () => {
       err({ code: 'CRM_DEAL_ROOM_NOT_FOUND', message: 'x' }),
     )
     expectErr(
-      await Service.recordEvent('tok', { visitorId: 'v1', kind: 'ROOM_OPENED' }),
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'ROOM_OPENED',
+      }),
       'CRM_DEAL_ROOM_NOT_FOUND',
     )
     rooms.findPublicByToken.mockResolvedValue(ok(publicRow))
     rooms.findVisitor.mockResolvedValue(err(databaseError('x')))
     expectErr(
-      await Service.recordEvent('tok', { visitorId: 'v1', kind: 'ROOM_OPENED' }),
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'ROOM_OPENED',
+      }),
       'DATABASE_ERROR',
     )
     rooms.findVisitor.mockResolvedValue(ok(visitor))
     rooms.createEvent.mockResolvedValue(err(databaseError('x')))
     expectErr(
-      await Service.recordEvent('tok', { visitorId: 'v1', kind: 'ROOM_OPENED' }),
+      await Service.recordEvent('tok', {
+        visitorId: 'v1',
+        kind: 'ROOM_OPENED',
+      }),
       'DATABASE_ERROR',
     )
   })
@@ -492,13 +575,19 @@ describe('postPublicMessage', () => {
 
   it('refuses unknown visitors and propagates failures', async () => {
     rooms.findVisitor.mockResolvedValue(ok(null))
-    expectErr(await Service.postPublicMessage('tok', input), 'CRM_DEAL_ROOM_INVALID')
+    expectErr(
+      await Service.postPublicMessage('tok', input),
+      'CRM_DEAL_ROOM_INVALID',
+    )
     rooms.findVisitor.mockResolvedValue(err(databaseError('x')))
     expectErr(await Service.postPublicMessage('tok', input), 'DATABASE_ERROR')
     rooms.findPublicByToken.mockResolvedValue(
       err({ code: 'CRM_DEAL_ROOM_NOT_FOUND', message: 'x' }),
     )
-    expectErr(await Service.postPublicMessage('tok', input), 'CRM_DEAL_ROOM_NOT_FOUND')
+    expectErr(
+      await Service.postPublicMessage('tok', input),
+      'CRM_DEAL_ROOM_NOT_FOUND',
+    )
     rooms.findPublicByToken.mockResolvedValue(ok(publicRow))
     rooms.findVisitor.mockResolvedValue(ok(visitor))
     rooms.createMessage.mockResolvedValue(err(databaseError('x')))
@@ -524,20 +613,28 @@ describe('toggleAction', () => {
       'CUSTOMER',
     )
     expect(rooms.createEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ kind: 'ACTION_COMPLETED', targetLabel: 'Enviar' }),
+      expect.objectContaining({
+        kind: 'ACTION_COMPLETED',
+        targetLabel: 'Enviar',
+      }),
     )
   })
 
   it('does not log an uncheck', async () => {
     rooms.setActionDone.mockResolvedValue(ok({ id: 'a1', title: 'Enviar' }))
-    expectOk(await Service.toggleAction('tok', 'a1', { visitorId: 'v1', done: false }))
+    expectOk(
+      await Service.toggleAction('tok', 'a1', { visitorId: 'v1', done: false }),
+    )
     expect(rooms.createEvent).not.toHaveBeenCalled()
   })
 
   it("refuses a seller's step or an action from another room", async () => {
     rooms.setActionDone.mockResolvedValue(ok(null))
     expectErr(
-      await Service.toggleAction('tok', action.id, { visitorId: 'v1', done: true }),
+      await Service.toggleAction('tok', action.id, {
+        visitorId: 'v1',
+        done: true,
+      }),
       'CRM_DEAL_ROOM_INVALID',
     )
   })

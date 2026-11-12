@@ -255,7 +255,9 @@ describe('editor and public renders', () => {
     const printOut = renderToHtml(
       print.renderDocument({ children: null, rootProps: {}, editing: false }),
     )
-    expect(printOut).toBe('<div class="d-root d-mode-print d-layout-web"></div>')
+    expect(printOut).toBe(
+      '<div class="d-root d-mode-print d-layout-web"></div>',
+    )
   })
 
   it('renders live elements on the public link', () => {

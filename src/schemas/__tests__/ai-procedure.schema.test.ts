@@ -55,7 +55,9 @@ describe('ai-procedure schemas', () => {
 
   it('should accept partial updates and reject bad status', () => {
     expect(UpdateAiProcedureSchema.parse({ name: 'x' })).toEqual({ name: 'x' })
-    expect(UpdateAiProcedureSchema.safeParse({ status: 'X' }).success).toBe(false)
+    expect(UpdateAiProcedureSchema.safeParse({ status: 'X' }).success).toBe(
+      false,
+    )
   })
 
   it('should parse preview and run queries', () => {

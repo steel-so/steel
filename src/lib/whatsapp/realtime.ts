@@ -1,10 +1,10 @@
 import 'server-only'
 import { logger } from '@/lib/axiom/logger'
 import { getQueueConnection } from '@/src/lib/queue/connection'
+import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
-import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 
 export type WhatsAppRealtimeEvent =

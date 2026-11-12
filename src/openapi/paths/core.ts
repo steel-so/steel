@@ -1533,7 +1533,9 @@ const billing: RouteConfig[] = [
           subscription: z
             .object({ id: z.string() })
             .optional()
-            .meta({ description: 'Formato v2: `data.subscription.id` (`billId`).' }),
+            .meta({
+              description: 'Formato v2: `data.subscription.id` (`billId`).',
+            }),
           checkout: z.object({ id: z.string() }).optional(),
         }),
       }),

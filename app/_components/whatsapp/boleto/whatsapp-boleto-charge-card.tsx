@@ -43,14 +43,16 @@ const DATE = new Intl.DateTimeFormat('pt-BR', {
   timeZone: BOLETO_TIMEZONE,
 })
 
-export const BOLETO_STATUS_LABEL: Record<WhatsAppBoletoChargeStatusDTO, string> =
-  {
-    PENDING: 'Aguardando pagamento',
-    PAID: 'Pago',
-    EXPIRED: 'Vencido',
-    CANCELED: 'Cancelado',
-    REFUNDED: 'Estornado',
-  }
+export const BOLETO_STATUS_LABEL: Record<
+  WhatsAppBoletoChargeStatusDTO,
+  string
+> = {
+  PENDING: 'Aguardando pagamento',
+  PAID: 'Pago',
+  EXPIRED: 'Vencido',
+  CANCELED: 'Cancelado',
+  REFUNDED: 'Estornado',
+}
 
 const STATUS_VARIANT: Record<
   WhatsAppBoletoChargeStatusDTO,

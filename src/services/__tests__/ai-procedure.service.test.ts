@@ -155,8 +155,12 @@ describe('AiProcedureService read paths', () => {
   it('should list with the monthly run counts', async () => {
     const list = expectOk(await AiProcedureService.list('u', 'ws1'))
     expect(list[0]).toMatchObject({ id: 'p1', runsThisMonth: 3 })
-    procedures.list.mockResolvedValueOnce(ok([createFakeAiProcedure({ id: 'zz' })]))
-    expect(expectOk(await AiProcedureService.list('u', 'ws1'))[0].runsThisMonth).toBe(0)
+    procedures.list.mockResolvedValueOnce(
+      ok([createFakeAiProcedure({ id: 'zz' })]),
+    )
+    expect(
+      expectOk(await AiProcedureService.list('u', 'ws1'))[0].runsThisMonth,
+    ).toBe(0)
   })
 
   it('should deny a stranger and propagate repository errors', async () => {
@@ -169,11 +173,16 @@ describe('AiProcedureService read paths', () => {
   })
 
   it('should get one with its monthly runs', async () => {
-    expect(expectOk(await AiProcedureService.get('u', 'ws1', 'p1')).runsThisMonth).toBe(3)
+    expect(
+      expectOk(await AiProcedureService.get('u', 'ws1', 'p1')).runsThisMonth,
+    ).toBe(3)
     procedures.findById.mockResolvedValueOnce(
       err({ code: 'AI_PROCEDURE_NOT_FOUND', message: 'x' }),
     )
-    expectErr(await AiProcedureService.get('u', 'ws1', 'zz'), 'AI_PROCEDURE_NOT_FOUND')
+    expectErr(
+      await AiProcedureService.get('u', 'ws1', 'zz'),
+      'AI_PROCEDURE_NOT_FOUND',
+    )
     runs.countSince.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(await AiProcedureService.get('u', 'ws1', 'p1'), 'DATABASE_ERROR')
     member.mockResolvedValueOnce(err(forbidden()))
@@ -215,10 +224,15 @@ describe('AiProcedureService read paths', () => {
   })
 
   it('should list versions and runs, and open a run', async () => {
-    const versions = expectOk(await AiProcedureService.listVersions('u', 'ws1', 'p1'))
+    const versions = expectOk(
+      await AiProcedureService.listVersions('u', 'ws1', 'p1'),
+    )
     expect(versions[0].current).toBe(true)
     member.mockResolvedValueOnce(err(forbidden()))
-    expectErr(await AiProcedureService.listVersions('u', 'ws1', 'p1'), 'FORBIDDEN')
+    expectErr(
+      await AiProcedureService.listVersions('u', 'ws1', 'p1'),
+      'FORBIDDEN',
+    )
     procedures.findById.mockResolvedValueOnce(
       err({ code: 'AI_PROCEDURE_NOT_FOUND', message: 'x' }),
     )
@@ -227,7 +241,10 @@ describe('AiProcedureService read paths', () => {
       'AI_PROCEDURE_NOT_FOUND',
     )
     procedures.listVersions.mockResolvedValueOnce(err(databaseError('x')))
-    expectErr(await AiProcedureService.listVersions('u', 'ws1', 'p1'), 'DATABASE_ERROR')
+    expectErr(
+      await AiProcedureService.listVersions('u', 'ws1', 'p1'),
+      'DATABASE_ERROR',
+    )
 
     const list = await AiProcedureService.listRuns('u', 'ws1', 'p1', {
       limit: 10,
@@ -265,7 +282,9 @@ describe('AiProcedureService read paths', () => {
         steps: [createFakeAiProcedureRunStep()],
       }) as never,
     )
-    expect(expectOk(await AiProcedureService.getRun('u', 'ws1', 'r1')).steps).toHaveLength(1)
+    expect(
+      expectOk(await AiProcedureService.getRun('u', 'ws1', 'r1')).steps,
+    ).toHaveLength(1)
     runs.findDetail.mockResolvedValueOnce(
       err({ code: 'AI_PROCEDURE_RUN_NOT_FOUND', message: 'x' }),
     )
@@ -289,9 +308,15 @@ describe('AiProcedureService.create', () => {
 
   it('should deny members without management rights', async () => {
     member.mockResolvedValueOnce(ok(MEMBER))
-    expectErr(await AiProcedureService.create('u', 'ws1', create()), 'FORBIDDEN')
+    expectErr(
+      await AiProcedureService.create('u', 'ws1', create()),
+      'FORBIDDEN',
+    )
     member.mockResolvedValueOnce(err(forbidden()))
-    expectErr(await AiProcedureService.create('u', 'ws1', create()), 'FORBIDDEN')
+    expectErr(
+      await AiProcedureService.create('u', 'ws1', create()),
+      'FORBIDDEN',
+    )
   })
 
   it('should enforce the per-workspace limit', async () => {
@@ -301,14 +326,20 @@ describe('AiProcedureService.create', () => {
       'AI_PROCEDURE_LIMIT_REACHED',
     )
     procedures.count.mockResolvedValueOnce(err(databaseError('x')))
-    expectErr(await AiProcedureService.create('u', 'ws1', create()), 'DATABASE_ERROR')
+    expectErr(
+      await AiProcedureService.create('u', 'ws1', create()),
+      'DATABASE_ERROR',
+    )
   })
 
   it('should reject steps the engine could not run', async () => {
     const bad = create({
       steps: [{ ...BOLETO_STEPS[1], url: 'https://x.com/{{naoexiste}}' }],
     })
-    expectErr(await AiProcedureService.create('u', 'ws1', bad), 'AI_PROCEDURE_INVALID')
+    expectErr(
+      await AiProcedureService.create('u', 'ws1', bad),
+      'AI_PROCEDURE_INVALID',
+    )
   })
 
   it('should accept only available READ tools and default the owner', async () => {
@@ -351,17 +382,28 @@ describe('AiProcedureService.create', () => {
     )
     agents.listByWorkspace.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(
-      await AiProcedureService.create('u', 'ws1', create({ agentIds: ['ag1'] })),
+      await AiProcedureService.create(
+        'u',
+        'ws1',
+        create({ agentIds: ['ag1'] }),
+      ),
       'DATABASE_ERROR',
     )
     expectOk(
-      await AiProcedureService.create('u', 'ws1', create({ agentIds: ['ag1'] })),
+      await AiProcedureService.create(
+        'u',
+        'ws1',
+        create({ agentIds: ['ag1'] }),
+      ),
     )
   })
 
   it('should propagate a repository failure', async () => {
     procedures.create.mockResolvedValueOnce(err(databaseError('x')))
-    expectErr(await AiProcedureService.create('u', 'ws1', create()), 'DATABASE_ERROR')
+    expectErr(
+      await AiProcedureService.create('u', 'ws1', create()),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -424,7 +466,10 @@ describe('AiProcedureService.update', () => {
       'AI_PROCEDURE_INVALID',
     )
     expectOk(
-      await AiProcedureService.update('u', 'ws1', 'p1', { ownerId: null, description: 'd' }),
+      await AiProcedureService.update('u', 'ws1', 'p1', {
+        ownerId: null,
+        description: 'd',
+      }),
     )
   })
 
@@ -439,16 +484,24 @@ describe('AiProcedureService.update', () => {
       ok(createFakeAiProcedure({ ownerId: 'own' })),
     )
     expectOk(
-      await AiProcedureService.update('actor', 'ws1', 'p1', { status: 'ARCHIVED' }),
+      await AiProcedureService.update('actor', 'ws1', 'p1', {
+        status: 'ARCHIVED',
+      }),
     )
     expect(procedures.update.mock.calls[1][2].ownerId).toBe('own')
   })
 
   it('should enforce access and propagate failures', async () => {
     member.mockResolvedValueOnce(ok(MEMBER))
-    expectErr(await AiProcedureService.update('u', 'ws1', 'p1', {}), 'FORBIDDEN')
+    expectErr(
+      await AiProcedureService.update('u', 'ws1', 'p1', {}),
+      'FORBIDDEN',
+    )
     member.mockResolvedValueOnce(err(forbidden()))
-    expectErr(await AiProcedureService.update('u', 'ws1', 'p1', {}), 'FORBIDDEN')
+    expectErr(
+      await AiProcedureService.update('u', 'ws1', 'p1', {}),
+      'FORBIDDEN',
+    )
     procedures.findById.mockResolvedValueOnce(
       err({ code: 'AI_PROCEDURE_NOT_FOUND', message: 'x' }),
     )
@@ -484,13 +537,21 @@ describe('AiProcedureService.remove and restoreVersion', () => {
   })
 
   it('should restore an old version as a new one', async () => {
-    expectOk(await AiProcedureService.restoreVersion('actor', 'ws1', 'p1', 'v1'))
+    expectOk(
+      await AiProcedureService.restoreVersion('actor', 'ws1', 'p1', 'v1'),
+    )
     expect(procedures.update.mock.calls[0][3]).toEqual({
       changeNote: 'Restaurada da versão 1',
       createdById: 'actor',
     })
     expectOk(
-      await AiProcedureService.restoreVersion('actor', 'ws1', 'p1', 'v1', 'volta'),
+      await AiProcedureService.restoreVersion(
+        'actor',
+        'ws1',
+        'p1',
+        'v1',
+        'volta',
+      ),
     )
     expect(procedures.update.mock.calls[1][3]?.changeNote).toBe('volta')
   })

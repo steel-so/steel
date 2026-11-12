@@ -27,7 +27,10 @@ describe('AiProcedureRunRepository', () => {
     const run = expectOk(await start(ws.id, procedure.id))
     expect(
       expectOk(
-        await AiProcedureRunRepository.findActive('WHATSAPP_CONVERSATION', 'c1'),
+        await AiProcedureRunRepository.findActive(
+          'WHATSAPP_CONVERSATION',
+          'c1',
+        ),
       )?.id,
     ).toBe(run.id)
     expectOk(
@@ -39,7 +42,10 @@ describe('AiProcedureRunRepository', () => {
     )
     expect(
       expectOk(
-        await AiProcedureRunRepository.findActive('WHATSAPP_CONVERSATION', 'c1'),
+        await AiProcedureRunRepository.findActive(
+          'WHATSAPP_CONVERSATION',
+          'c1',
+        ),
       ),
     ).toBeNull()
   })
@@ -48,23 +54,21 @@ describe('AiProcedureRunRepository', () => {
     const { ws, procedure } = await context()
     const run = expectOk(await start(ws.id, procedure.id))
     expectOk(
-      await AiProcedureRunRepository.save(
-        run.id,
-        { state: { a: 1 } },
-        [
-          {
-            position: 0,
-            stepKey: 'cpf',
-            kind: 'COLLECT',
-            title: 'Validar CPF',
-            status: 'OK',
-            output: { variable: 'cpf' },
-          },
-        ],
-      ),
+      await AiProcedureRunRepository.save(run.id, { state: { a: 1 } }, [
+        {
+          position: 0,
+          stepKey: 'cpf',
+          kind: 'COLLECT',
+          title: 'Validar CPF',
+          status: 'OK',
+          output: { variable: 'cpf' },
+        },
+      ]),
     )
     expect(expectOk(await AiProcedureRunRepository.countSteps(run.id))).toBe(1)
-    const detail = expectOk(await AiProcedureRunRepository.findDetail(run.id, ws.id))
+    const detail = expectOk(
+      await AiProcedureRunRepository.findDetail(run.id, ws.id),
+    )
     expect(detail.steps[0].title).toBe('Validar CPF')
     expect(detail.procedure.name).toBe(procedure.name)
   })
@@ -84,7 +88,10 @@ describe('AiProcedureRunRepository', () => {
     const a = expectOk(await start(ws.id, procedure.id, 'c1'))
     expectOk(await start(ws.id, procedure.id, 'c2'))
     expectOk(
-      await AiProcedureRunRepository.save(a.id, { state: {}, status: 'FAILED' }),
+      await AiProcedureRunRepository.save(a.id, {
+        state: {},
+        status: 'FAILED',
+      }),
     )
     const failed = expectOk(
       await AiProcedureRunRepository.list(ws.id, {
@@ -94,9 +101,13 @@ describe('AiProcedureRunRepository', () => {
       }),
     )
     expect(failed.map((r) => r.id)).toEqual([a.id])
-    expect(expectOk(await AiProcedureRunRepository.list(ws.id, { limit: 10 }))).toHaveLength(2)
+    expect(
+      expectOk(await AiProcedureRunRepository.list(ws.id, { limit: 10 })),
+    ).toHaveLength(2)
     const since = new Date(Date.now() - 60_000)
-    expect(expectOk(await AiProcedureRunRepository.countSince(procedure.id, since))).toBe(2)
+    expect(
+      expectOk(await AiProcedureRunRepository.countSince(procedure.id, since)),
+    ).toBe(2)
     expect(
       expectOk(await AiProcedureRunRepository.countsSince(ws.id, since)),
     ).toEqual({ [procedure.id]: 2 })
@@ -118,7 +129,10 @@ describe('AiProcedureRunRepository', () => {
       await AiProcedureRunRepository.findActive('TEST', 'x'),
       'DATABASE_ERROR',
     )
-    expectErr(await AiProcedureRunRepository.findDetail('x', 'w'), 'DATABASE_ERROR')
+    expectErr(
+      await AiProcedureRunRepository.findDetail('x', 'w'),
+      'DATABASE_ERROR',
+    )
     spy.mockRestore()
   })
 })

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { createFakeWhatsAppWidgetSettings } from '@/src/__tests__/factories/nov-site-widget.factory'
+import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
@@ -49,7 +49,12 @@ describe('WhatsAppWidgetService.get', () => {
 
   it('should return the saved settings with the snippet', async () => {
     repo.findByWorkspace.mockResolvedValue(
-      ok(createFakeWhatsAppWidgetSettings({ workspaceId: WS, publicKey: 'stw_k' })),
+      ok(
+        createFakeWhatsAppWidgetSettings({
+          workspaceId: WS,
+          publicKey: 'stw_k',
+        }),
+      ),
     )
     const dto = expectOk(await WhatsAppWidgetService.get(ACTOR, WS))
     expect(dto.snippet).toContain('stw_k')
@@ -82,7 +87,10 @@ describe('WhatsAppWidgetService.update', () => {
 
   it('should propagate a failure reading the current row', async () => {
     repo.findByWorkspace.mockResolvedValue(err(databaseError('x')))
-    expectErr(await WhatsAppWidgetService.update(ACTOR, WS, {}), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppWidgetService.update(ACTOR, WS, {}),
+      'DATABASE_ERROR',
+    )
   })
 
   it('should not switch on without an allowed site', async () => {
@@ -180,7 +188,10 @@ describe('WhatsAppWidgetService.update', () => {
 
   it('should propagate an upsert failure', async () => {
     repo.upsert.mockResolvedValue(err(databaseError('x')))
-    expectErr(await WhatsAppWidgetService.update(ACTOR, WS, {}), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppWidgetService.update(ACTOR, WS, {}),
+      'DATABASE_ERROR',
+    )
     expect(audit).not.toHaveBeenCalled()
   })
 })

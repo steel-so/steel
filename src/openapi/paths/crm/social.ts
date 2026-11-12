@@ -228,12 +228,7 @@ const PUBLISH_BODY = {
   },
 }
 
-const PUBLISHABLE: Platform[] = [
-  'FACEBOOK',
-  'INSTAGRAM',
-  'YOUTUBE',
-  'TIKTOK',
-]
+const PUBLISHABLE: Platform[] = ['FACEBOOK', 'INSTAGRAM', 'YOUTUBE', 'TIKTOK']
 
 /* ------------------------------ posts agendados ------------------------------ */
 
@@ -453,12 +448,7 @@ export const crmSocialRoutes: RouteConfig[] = [
       crmAccess('social', 'VIEW'),
     ),
     params: {
-      platform: platformParam([
-        'FACEBOOK',
-        'INSTAGRAM',
-        'YOUTUBE',
-        'TIKTOK',
-      ]),
+      platform: platformParam(['FACEBOOK', 'INSTAGRAM', 'YOUTUBE', 'TIKTOK']),
     },
     query: { type: 'object', properties: { connectionId: CONNECTION_QUERY } },
     responses: {
@@ -598,13 +588,8 @@ export const crmSocialRoutes: RouteConfig[] = [
       crmAccess('social', 'DELETE'),
     ),
     params: {
-      platform: platformParam([
-        'FACEBOOK',
-        'INSTAGRAM',
-        'YOUTUBE',
-      ]),
-      postId:
-        'ID devolvido no publish (post, mídia ou vídeo).',
+      platform: platformParam(['FACEBOOK', 'INSTAGRAM', 'YOUTUBE']),
+      postId: 'ID devolvido no publish (post, mídia ou vídeo).',
     },
     query: { type: 'object', properties: { connectionId: CONNECTION_QUERY } },
     responses: {

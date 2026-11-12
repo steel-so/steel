@@ -247,9 +247,10 @@ export function AiProcedureStepForm({
           <Field>
             <FieldLabel>Validação</FieldLabel>
             <Select
-              items={Object.entries(VALIDATION_LABEL).map(
-                ([value, label]) => ({ value, label }),
-              )}
+              items={Object.entries(VALIDATION_LABEL).map(([value, label]) => ({
+                value,
+                label,
+              }))}
               value={step.validation}
               disabled={disabled}
               onValueChange={(next) => next && patch({ validation: next })}
@@ -414,8 +415,8 @@ export function AiProcedureStepForm({
               onChange={(e) => patch({ text: e.target.value })}
             />
             <FieldDescription>
-              Deixe em branco para a IA escrever a mensagem seguindo a
-              instrução abaixo.
+              Deixe em branco para a IA escrever a mensagem seguindo a instrução
+              abaixo.
             </FieldDescription>
           </Field>
           {!step.text ? (

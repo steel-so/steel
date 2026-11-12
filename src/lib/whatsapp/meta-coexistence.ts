@@ -119,9 +119,10 @@ function toDate(timestamp: string | number | undefined): Date {
  * Reads a `history` webhook value. `declined` is true when Meta reports the
  * customer refused to share the history (the connection still works).
  */
-export function parseHistoryWebhook(value: {
-  history?: RawHistoryEntry[]
-}): { declined: boolean; chunks: CoexistenceHistoryChunk[] } {
+export function parseHistoryWebhook(value: { history?: RawHistoryEntry[] }): {
+  declined: boolean
+  chunks: CoexistenceHistoryChunk[]
+} {
   const chunks: CoexistenceHistoryChunk[] = []
   let declined = false
   for (const entry of value.history ?? []) {

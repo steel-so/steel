@@ -204,7 +204,9 @@ export const WhatsAppWidgetVisitorRepository = {
     data: Prisma.WhatsAppWidgetVisitorUncheckedUpdateInput,
   ): Promise<Result<WhatsAppWidgetVisitor>> {
     try {
-      return ok(await prisma.whatsAppWidgetVisitor.update({ where: { id }, data }))
+      return ok(
+        await prisma.whatsAppWidgetVisitor.update({ where: { id }, data }),
+      )
     } catch (error) {
       return err(dbError('Failed to update whatsapp widget visitor', error))
     }

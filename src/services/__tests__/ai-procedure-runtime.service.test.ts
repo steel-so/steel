@@ -22,12 +22,12 @@ vi.mock('@/src/lib/ai/tools/registry', () => ({
   runReadTool: vi.fn(),
 }))
 
-import { callChatbotWebhook } from '@/src/lib/whatsapp/chatbot/webhook-call'
 import {
   availableTools,
   resolveToolAccess,
   runReadTool,
 } from '@/src/lib/ai/tools/registry'
+import { callChatbotWebhook } from '@/src/lib/whatsapp/chatbot/webhook-call'
 import { AiProcedureRepository } from '@/src/repositories/ai-procedure.repository'
 import { AiProcedureRunRepository } from '@/src/repositories/ai-procedure-run.repository'
 import {
@@ -96,7 +96,9 @@ describe('AiProcedureRuntime.beginTurn', () => {
 
   it('should filter by channel', async () => {
     await AiProcedureRuntime.beginTurn(SUBJECT)
-    expect(procedures.listActive).toHaveBeenCalledWith('ws1', { whatsapp: true })
+    expect(procedures.listActive).toHaveBeenCalledWith('ws1', {
+      whatsapp: true,
+    })
     await AiProcedureRuntime.beginTurn({
       ...SUBJECT,
       channel: 'AGENT',
@@ -122,7 +124,10 @@ describe('AiProcedureRuntime.beginTurn', () => {
           id: 'run1',
           procedureId: 'p1',
           versionNumber: 1,
-          state: { variables: {}, steps: { cpf: { status: 'PENDING', attempts: 0 } } },
+          state: {
+            variables: {},
+            steps: { cpf: { status: 'PENDING', attempts: 0 } },
+          },
         }),
       ),
     )
@@ -191,7 +196,10 @@ describe('procedure turn: the happy path', () => {
     expect(turn.tools().map((t) => t.name)).toEqual(['procedimento_iniciar'])
 
     const started = JSON.parse(await turn.handle(start()))
-    expect(started).toMatchObject({ status: 'iniciado', passo_atual: 'Validar CPF' })
+    expect(started).toMatchObject({
+      status: 'iniciado',
+      passo_atual: 'Validar CPF',
+    })
     expect(turn.tools().map((t) => t.name)).toContain('procedimento_registrar')
     expect(runs.create).toHaveBeenCalledWith(
       expect.objectContaining({ procedureId: 'p1', versionNumber: 1 }),
@@ -256,11 +264,9 @@ describe('procedure turn: enforcement', () => {
     expect(blocked.status).toBe('erro')
     expect(blocked.erro).toContain('fora de ordem')
     expect(webhook).not.toHaveBeenCalled()
-    expect(runs.save).toHaveBeenLastCalledWith(
-      'run1',
-      expect.anything(),
-      [expect.objectContaining({ status: 'REJECTED' })],
-    )
+    expect(runs.save).toHaveBeenLastCalledWith('run1', expect.anything(), [
+      expect.objectContaining({ status: 'REJECTED' }),
+    ])
   })
 
   it('should count invalid values and hand off after the last attempt', async () => {
@@ -300,7 +306,9 @@ describe('procedure turn: enforcement', () => {
     const turn = await turnOf()
     await turn.handle(start())
     const out = JSON.parse(
-      await turn.handle(call('procedimento_transferir', { motivo: 'cliente irritado' })),
+      await turn.handle(
+        call('procedimento_transferir', { motivo: 'cliente irritado' }),
+      ),
     )
     expect(out.status).toBe('transferir')
     expect(await turn.finish('')).toMatchObject({
@@ -333,7 +341,9 @@ describe('procedure turn: enforcement', () => {
   it('should report a procedure whose version or run cannot be stored', async () => {
     procedures.findVersionByNumber.mockResolvedValueOnce(ok(null))
     const turn = await turnOf()
-    expect(JSON.parse(await turn.handle(start())).erro).toContain('indisponível')
+    expect(JSON.parse(await turn.handle(start())).erro).toContain(
+      'indisponível',
+    )
     runs.create.mockResolvedValueOnce(err(databaseError('x')))
     const second = await turnOf()
     expect(JSON.parse(await second.handle(start())).erro).toContain('Falha')
@@ -357,7 +367,10 @@ describe('procedure turn: enforcement', () => {
     expect(runs.save).toHaveBeenCalledTimes(1)
     expect(runs.save).toHaveBeenCalledWith(
       'run1',
-      expect.objectContaining({ status: 'CANCELED', failureReason: 'terminou antes' }),
+      expect.objectContaining({
+        status: 'CANCELED',
+        failureReason: 'terminou antes',
+      }),
       [],
     )
   })
@@ -366,7 +379,13 @@ describe('procedure turn: enforcement', () => {
 describe('procedure turn: step kinds', () => {
   const withSteps = (steps: ProcedureStep[]) => {
     procedures.listActive.mockResolvedValue(
-      ok([createFakeAiProcedure({ id: 'p1', steps: steps as never, ownerId: 'owner1' })]),
+      ok([
+        createFakeAiProcedure({
+          id: 'p1',
+          steps: steps as never,
+          ownerId: 'owner1',
+        }),
+      ]),
     )
     procedures.findVersionByNumber.mockResolvedValue(
       ok(createFakeAiProcedureVersion({ steps: steps as never })),
@@ -376,7 +395,13 @@ describe('procedure turn: step kinds', () => {
 
   it('should let the model write an instruction message and finish the run', async () => {
     withSteps([
-      { ...base, key: 'ia', kind: 'MESSAGE', title: 'Explicar', instruction: 'explique' },
+      {
+        ...base,
+        key: 'ia',
+        kind: 'MESSAGE',
+        title: 'Explicar',
+        instruction: 'explique',
+      },
     ])
     const turn = await turnOf()
     const started = JSON.parse(await turn.handle(start()))
@@ -403,7 +428,13 @@ describe('procedure turn: step kinds', () => {
         args: { id: '{{contact_name}}' },
         saves: [{ variable: 'st', path: 'status' }],
       },
-      { ...base, key: 'm', kind: 'MESSAGE', title: 'Dizer', text: 'Status {{st}}' },
+      {
+        ...base,
+        key: 'm',
+        kind: 'MESSAGE',
+        title: 'Dizer',
+        text: 'Status {{st}}',
+      },
     ])
     const fakeTool = { name: 'sd_get_ticket' }
     vi.mocked(resolveToolAccess).mockResolvedValue(ok({} as never))
@@ -438,7 +469,13 @@ describe('procedure turn: step kinds', () => {
       saves: [],
     }
     procedures.listActive.mockResolvedValue(
-      ok([createFakeAiProcedure({ id: 'p1', steps: [tool] as never, ownerId: null })]),
+      ok([
+        createFakeAiProcedure({
+          id: 'p1',
+          steps: [tool] as never,
+          ownerId: null,
+        }),
+      ]),
     )
     procedures.findVersionByNumber.mockResolvedValue(
       ok(createFakeAiProcedureVersion({ steps: [tool] as never })),
@@ -451,9 +488,17 @@ describe('procedure turn: step kinds', () => {
     })
 
     procedures.listActive.mockResolvedValue(
-      ok([createFakeAiProcedure({ id: 'p1', steps: [tool] as never, ownerId: 'o' })]),
+      ok([
+        createFakeAiProcedure({
+          id: 'p1',
+          steps: [tool] as never,
+          ownerId: 'o',
+        }),
+      ]),
     )
-    vi.mocked(resolveToolAccess).mockResolvedValueOnce(err(databaseError('sem acesso')))
+    vi.mocked(resolveToolAccess).mockResolvedValueOnce(
+      err(databaseError('sem acesso')),
+    )
     const noAccess = await turnOf()
     await noAccess.handle(start())
     expect((await noAccess.finish('')).handoffReason).toBe('sem acesso')
@@ -462,7 +507,9 @@ describe('procedure turn: step kinds', () => {
     vi.mocked(availableTools).mockReturnValue([])
     const hidden = await turnOf()
     await hidden.handle(start())
-    expect((await hidden.finish('')).handoffReason).toBe('Ferramenta indisponível')
+    expect((await hidden.finish('')).handoffReason).toBe(
+      'Ferramenta indisponível',
+    )
 
     vi.mocked(availableTools).mockReturnValue([{ name: 'x' }] as never)
     vi.mocked(runReadTool).mockResolvedValue({
@@ -496,7 +543,13 @@ describe('procedure turn: step kinds', () => {
 
   it('should stop at a HANDOFF step with its message', async () => {
     withSteps([
-      { ...base, key: 'h', kind: 'HANDOFF', title: 'Humano', text: 'Já te passo' },
+      {
+        ...base,
+        key: 'h',
+        kind: 'HANDOFF',
+        title: 'Humano',
+        text: 'Já te passo',
+      },
     ])
     const turn = await turnOf()
     const out = JSON.parse(await turn.handle(start()))
@@ -510,6 +563,10 @@ describe('procedure turn: step kinds', () => {
 
 describe('boleto steps sanity', () => {
   it('should have the three-step example the docs describe', () => {
-    expect(BOLETO_STEPS.map((s) => s.kind)).toEqual(['COLLECT', 'HTTP', 'MESSAGE'])
+    expect(BOLETO_STEPS.map((s) => s.kind)).toEqual([
+      'COLLECT',
+      'HTTP',
+      'MESSAGE',
+    ])
   })
 })

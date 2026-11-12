@@ -61,18 +61,18 @@ import {
 import { CrmNoteRepository } from '@/src/repositories/crm-note.repository'
 import { CrmOpportunityRepository } from '@/src/repositories/crm-opportunity.repository'
 import { CrmPipelineStageRepository } from '@/src/repositories/crm-pipeline.repository'
+import { CrmProposalRepository } from '@/src/repositories/crm-proposal.repository'
 import {
   CrmProposalChargeRepository,
   CrmProposalSignatureRepository,
 } from '@/src/repositories/crm-proposal-payment.repository'
-import { CrmProposalRepository } from '@/src/repositories/crm-proposal.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmDealsSettingsService } from '../crm-deals-settings.service'
 import { notifyCrmProposalPaid } from '../crm-notifications'
 import { emitCrmOpportunityStageWebhooks } from '../crm-opportunity-webhooks'
-import { CrmProposalPaymentService as Service } from '../crm-proposal-payment.service'
 import { CrmProposalService } from '../crm-proposal.service'
+import { CrmProposalPaymentService as Service } from '../crm-proposal-payment.service'
 
 const members = vi.mocked(MembershipRepository)
 const access = vi.mocked(WorkspaceModuleAccessRepository)
@@ -207,9 +207,19 @@ describe('checkout', () => {
   })
 
   it.each([
-    ['settings', () => settings.resolve.mockResolvedValue(err(databaseError('x')))],
-    ['charges', () => charges.listByProposal.mockResolvedValue(err(databaseError('x')))],
-    ['signatures', () => signatures.listByProposal.mockResolvedValue(err(databaseError('x')))],
+    [
+      'settings',
+      () => settings.resolve.mockResolvedValue(err(databaseError('x'))),
+    ],
+    [
+      'charges',
+      () => charges.listByProposal.mockResolvedValue(err(databaseError('x'))),
+    ],
+    [
+      'signatures',
+      () =>
+        signatures.listByProposal.mockResolvedValue(err(databaseError('x'))),
+    ],
   ])('propagates a failure reading the %s', async (_name, fail) => {
     proposals.findById.mockResolvedValue(ok(sentProposal()))
     charges.listByProposal.mockResolvedValue(ok([]))
@@ -225,10 +235,17 @@ describe('createCharge', () => {
   beforeEach(() => {
     proposals.findById.mockResolvedValue(ok(sentProposal()))
     deals.findById.mockResolvedValue(
-      ok(createFakeCrmOpportunity({ id: 'o1', amount: new Prisma.Decimal(900) })),
+      ok(
+        createFakeCrmOpportunity({ id: 'o1', amount: new Prisma.Decimal(900) }),
+      ),
     )
     charges.create.mockImplementation(async (data) =>
-      ok(createFakeCrmProposalCharge({ ...data, amount: new Prisma.Decimal(data.amount) })),
+      ok(
+        createFakeCrmProposalCharge({
+          ...data,
+          amount: new Prisma.Decimal(data.amount),
+        }),
+      ),
     )
   })
 
@@ -250,7 +267,10 @@ describe('createCharge', () => {
       }),
     )
     expect(auditMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ entity: 'crm_proposal_charge', action: 'create' }),
+      expect.objectContaining({
+        entity: 'crm_proposal_charge',
+        action: 'create',
+      }),
     )
   })
 
@@ -341,7 +361,9 @@ describe('createCharge', () => {
   })
 
   it('needs an amount from somewhere', async () => {
-    proposals.findById.mockResolvedValue(ok(sentProposal({ opportunityId: null })))
+    proposals.findById.mockResolvedValue(
+      ok(sentProposal({ opportunityId: null })),
+    )
     expectErr(
       await Service.createCharge('u', 'ws', 'p1', dto),
       'CRM_PROPOSAL_CHARGE_INVALID',
@@ -358,7 +380,10 @@ describe('createCharge', () => {
 
   it('propagates the lookups and the provider failing', async () => {
     deals.findById.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.createCharge('u', 'ws', 'p1', dto), 'DATABASE_ERROR')
+    expectErr(
+      await Service.createCharge('u', 'ws', 'p1', dto),
+      'DATABASE_ERROR',
+    )
     deals.findById.mockResolvedValue(
       ok(createFakeCrmOpportunity({ amount: new Prisma.Decimal(10) })),
     )
@@ -377,7 +402,10 @@ describe('createCharge', () => {
 
   it('cancels at the provider when the charge cannot be stored', async () => {
     charges.create.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.createCharge('u', 'ws', 'p1', dto), 'DATABASE_ERROR')
+    expectErr(
+      await Service.createCharge('u', 'ws', 'p1', dto),
+      'DATABASE_ERROR',
+    )
     expect(provider.cancelCharge).toHaveBeenCalledWith('txid1')
   })
 
@@ -402,7 +430,9 @@ describe('cancelCharge', () => {
   it('logs but succeeds when the provider fails to cancel', async () => {
     const charge = createFakeCrmProposalCharge({ id: 'c1', proposalId: 'p1' })
     charges.findById.mockResolvedValue(ok(charge))
-    charges.markCanceled.mockResolvedValue(ok({ ...charge, status: 'CANCELED' as const }))
+    charges.markCanceled.mockResolvedValue(
+      ok({ ...charge, status: 'CANCELED' as const }),
+    )
     provider.cancelCharge.mockResolvedValue(err(pixProviderError()))
     expectOk(await Service.cancelCharge('u', 'ws', 'p1', 'c1'))
     expect(logger.warn).toHaveBeenCalled()
@@ -411,7 +441,9 @@ describe('cancelCharge', () => {
   it('skips the provider when it is unknown', async () => {
     const charge = createFakeCrmProposalCharge({ id: 'c1', proposalId: 'p1' })
     charges.findById.mockResolvedValue(ok(charge))
-    charges.markCanceled.mockResolvedValue(ok({ ...charge, status: 'CANCELED' as const }))
+    charges.markCanceled.mockResolvedValue(
+      ok({ ...charge, status: 'CANCELED' as const }),
+    )
     providerById.mockReturnValue(err(pixProviderError()))
     expectOk(await Service.cancelCharge('u', 'ws', 'p1', 'c1'))
     expect(provider.cancelCharge).not.toHaveBeenCalled()
@@ -440,12 +472,18 @@ describe('cancelCharge', () => {
 
   it('propagates repository failures and denies a viewer', async () => {
     charges.findById.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.cancelCharge('u', 'ws', 'p1', 'c1'), 'DATABASE_ERROR')
+    expectErr(
+      await Service.cancelCharge('u', 'ws', 'p1', 'c1'),
+      'DATABASE_ERROR',
+    )
     charges.findById.mockResolvedValue(
       ok(createFakeCrmProposalCharge({ proposalId: 'p1' })),
     )
     charges.markCanceled.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.cancelCharge('u', 'ws', 'p1', 'c1'), 'DATABASE_ERROR')
+    expectErr(
+      await Service.cancelCharge('u', 'ws', 'p1', 'c1'),
+      'DATABASE_ERROR',
+    )
     asRole('VIEWER')
     expectErr(await Service.cancelCharge('u', 'ws', 'p1', 'c1'), 'FORBIDDEN')
   })
@@ -463,7 +501,9 @@ describe('simulatePayment', () => {
   beforeEach(() => {
     charges.findById.mockResolvedValue(ok(charge))
     charges.findByProviderCharge.mockResolvedValue(ok(charge))
-    charges.markPaid.mockResolvedValue(ok({ ...charge, status: 'PAID' as const }))
+    charges.markPaid.mockResolvedValue(
+      ok({ ...charge, status: 'PAID' as const }),
+    )
     proposals.findById.mockResolvedValue(ok(sentProposal()))
   })
 
@@ -498,7 +538,10 @@ describe('simulatePayment', () => {
       'CRM_PROPOSAL_CHARGE_NOT_FOUND',
     )
     charges.findById.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.simulatePayment('u', 'ws', 'p1', 'c1'), 'DATABASE_ERROR')
+    expectErr(
+      await Service.simulatePayment('u', 'ws', 'p1', 'c1'),
+      'DATABASE_ERROR',
+    )
     charges.findById.mockResolvedValue(ok(charge))
     providerById.mockReturnValue(err(pixProviderError()))
     expectErr(
@@ -509,7 +552,10 @@ describe('simulatePayment', () => {
 
   it('propagates a failure while settling', async () => {
     charges.markPaid.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.simulatePayment('u', 'ws', 'p1', 'c1'), 'DATABASE_ERROR')
+    expectErr(
+      await Service.simulatePayment('u', 'ws', 'p1', 'c1'),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -651,7 +697,9 @@ describe('handlePayment', () => {
   })
 
   it('falls back to the paid-by user, then to the deal creator, for the note', async () => {
-    charges.markPaid.mockResolvedValue(ok({ ...paid, createdById: null, paidAmount: null }))
+    charges.markPaid.mockResolvedValue(
+      ok({ ...paid, createdById: null, paidAmount: null }),
+    )
     expectOk(await Service.handlePayment('mock', notice))
     expect(notes.create).toHaveBeenCalledWith(
       expect.objectContaining({ createdById: deal.createdById }),
@@ -690,7 +738,9 @@ describe('handleWebhook', () => {
     charges.findByProviderCharge.mockImplementation(async (_p, id) =>
       ok(id === 'txid1' ? charge : null),
     )
-    charges.markPaid.mockResolvedValue(ok({ ...charge, status: 'PAID' as const }))
+    charges.markPaid.mockResolvedValue(
+      ok({ ...charge, status: 'PAID' as const }),
+    )
     proposals.findById.mockResolvedValue(ok(sentProposal()))
     const result = expectOk(
       await Service.handleWebhook('mock', new Headers(), '{}'),
@@ -792,7 +842,10 @@ describe('accept', () => {
     )
     proposals.findByShareToken.mockResolvedValue(ok(sentProposal()))
     settings.resolve.mockResolvedValue(err(databaseError('x')))
-    expectErr(await Service.accept('tok', 'ip', { name: 'Ana' }), 'DATABASE_ERROR')
+    expectErr(
+      await Service.accept('tok', 'ip', { name: 'Ana' }),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -802,7 +855,9 @@ describe('sign', () => {
   beforeEach(() => {
     withSettings({ proposalSignatureEnabled: true })
     proposals.findByShareToken.mockResolvedValue(ok(sentProposal()))
-    proposalService.accept.mockResolvedValue(ok({ status: 'ACCEPTED' } as never))
+    proposalService.accept.mockResolvedValue(
+      ok({ status: 'ACCEPTED' } as never),
+    )
     signatures.create.mockImplementation(async (data) =>
       ok(createFakeCrmProposalSignature(data)),
     )
@@ -824,7 +879,10 @@ describe('sign', () => {
       name: 'Carlos Lima',
     })
     expect(auditMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ entity: 'crm_proposal_signature', action: 'sign' }),
+      expect.objectContaining({
+        entity: 'crm_proposal_signature',
+        action: 'sign',
+      }),
     )
   })
 
@@ -881,7 +939,9 @@ describe('signatureImage', () => {
   it('returns the stored PNG', async () => {
     signatures.findById.mockResolvedValue(ok(createFakeCrmProposalSignature()))
     vi.mocked(getObject).mockResolvedValue(PNG)
-    expect(expectOk(await Service.signatureImage('u', 'ws', 'p1', 's1'))).toBe(PNG)
+    expect(expectOk(await Service.signatureImage('u', 'ws', 'p1', 's1'))).toBe(
+      PNG,
+    )
   })
 
   it('answers not found when the object is gone', async () => {
@@ -907,7 +967,6 @@ describe('signatureImage', () => {
   })
 })
 
-
 describe('handleBoletoNotification', () => {
   const boleto = createFakeCrmProposalCharge({
     method: 'BOLETO',
@@ -918,7 +977,9 @@ describe('handleBoletoNotification', () => {
 
   it('settles a paid boleto through the common payment path', async () => {
     charges.findByProviderCharge.mockResolvedValue(ok(boleto))
-    charges.markPaid.mockResolvedValue(ok({ ...boleto, status: 'PAID' as const }))
+    charges.markPaid.mockResolvedValue(
+      ok({ ...boleto, status: 'PAID' as const }),
+    )
     proposals.findById.mockResolvedValue(ok(sentProposal()))
     expectOk(
       await Service.handleBoletoNotification('mock', {
@@ -948,7 +1009,12 @@ describe('handleBoletoNotification', () => {
   })
 
   it('treats a Pix charge or an unknown id as not found, and passes read errors', async () => {
-    const notice = { kind: 'PAID' as const, providerChargeId: 'x', amount: 1, at }
+    const notice = {
+      kind: 'PAID' as const,
+      providerChargeId: 'x',
+      amount: 1,
+      at,
+    }
     charges.findByProviderCharge.mockResolvedValue(ok(null))
     expectErr(
       await Service.handleBoletoNotification('mock', notice),

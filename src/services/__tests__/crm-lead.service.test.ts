@@ -521,11 +521,12 @@ describe('CrmLeadService', () => {
       )
       expect(result.lead.stage).toBe('PROPOSAL')
       expect(result.proposal.id).toBe('d1')
-      expect(mockedDocuments.createProposal).toHaveBeenCalledWith(
-        'u1',
-        'ws1',
-        { title: 'Proposta X', templateId: 'tpl-1', leadId: 'l1', validUntil },
-      )
+      expect(mockedDocuments.createProposal).toHaveBeenCalledWith('u1', 'ws1', {
+        title: 'Proposta X',
+        templateId: 'tpl-1',
+        leadId: 'l1',
+        validUntil,
+      })
     })
 
     it('should keep the stage when the document cannot be created', async () => {

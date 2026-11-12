@@ -5,7 +5,7 @@ import type {
   Prisma,
 } from '@prisma/client'
 import { crmContractNotFound } from '@/src/errors'
-import { phoneVariants, type PeerItemRow } from '@/src/lib/crm-deals/upsell'
+import { type PeerItemRow, phoneVariants } from '@/src/lib/crm-deals/upsell'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -76,9 +76,7 @@ export const CrmContractRepository = {
     notes: string | null
   }): Promise<Result<CrmContractWithCompany>> {
     try {
-      return ok(
-        await prisma.crmContract.create({ data, include: withCompany }),
-      )
+      return ok(await prisma.crmContract.create({ data, include: withCompany }))
     } catch (error) {
       return err(dbError('Failed to create CRM contract', error))
     }
@@ -208,9 +206,7 @@ export const CrmContractRepository = {
   // ─── upsell signals (C9) ──────────────────────────────────────────────────
 
   /** Products of the line items of the WON deals of every customer. */
-  async wonProductRows(
-    workspaceId: string,
-  ): Promise<Result<PeerItemRow[]>> {
+  async wonProductRows(workspaceId: string): Promise<Result<PeerItemRow[]>> {
     try {
       const items = await prisma.crmOpportunityLineItem.findMany({
         where: {
@@ -242,7 +238,9 @@ export const CrmContractRepository = {
       }
       return ok(rows)
     } catch (error) {
-      return err(dbError('Failed to read the products sold to customers', error))
+      return err(
+        dbError('Failed to read the products sold to customers', error),
+      )
     }
   },
 
@@ -251,7 +249,11 @@ export const CrmContractRepository = {
     workspaceId: string,
     companyId: string,
   ): Promise<
-    Result<{ kind: 'NPS' | 'CSAT' | 'CES'; score: number; answeredAt: Date } | null>
+    Result<{
+      kind: 'NPS' | 'CSAT' | 'CES'
+      score: number
+      answeredAt: Date
+    } | null>
   > {
     try {
       const people = await prisma.crmPerson.findMany({
@@ -272,7 +274,14 @@ export const CrmContractRepository = {
           score: { not: null },
           OR: [
             ...(emails.length > 0
-              ? [{ recipientEmail: { in: emails, mode: 'insensitive' as const } }]
+              ? [
+                  {
+                    recipientEmail: {
+                      in: emails,
+                      mode: 'insensitive' as const,
+                    },
+                  },
+                ]
               : []),
             ...(phones.length > 0 ? [{ recipientPhone: { in: phones } }] : []),
           ],
@@ -280,14 +289,17 @@ export const CrmContractRepository = {
         orderBy: { answeredAt: 'desc' },
         select: { kind: true, score: true, answeredAt: true },
       })
-      if (!survey || survey.score === null || !survey.answeredAt) return ok(null)
+      if (!survey || survey.score === null || !survey.answeredAt)
+        return ok(null)
       return ok({
         kind: survey.kind,
         score: survey.score,
         answeredAt: survey.answeredAt,
       })
     } catch (error) {
-      return err(dbError('Failed to read the latest satisfaction survey', error))
+      return err(
+        dbError('Failed to read the latest satisfaction survey', error),
+      )
     }
   },
 

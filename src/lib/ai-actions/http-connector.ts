@@ -46,22 +46,29 @@ export function buildConnectorRequest(
     }
   }
   for (const param of spec.params) {
-    if (param.required && (args[param.name] === undefined || args[param.name] === '')) {
+    if (
+      param.required &&
+      (args[param.name] === undefined || args[param.name] === '')
+    ) {
       return err(aiActionConnectorInvalid(`Informe o parâmetro ${param.name}`))
     }
   }
 
   const used = new Set<string>()
-  const url = spec.urlTemplate.replaceAll(/\{([^}]*)\}/g, (_m, name: string) => {
-    used.add(name)
-    return encodeURIComponent(String(args[name] ?? ''))
-  })
+  const url = spec.urlTemplate.replaceAll(
+    /\{([^}]*)\}/g,
+    (_m, name: string) => {
+      used.add(name)
+      return encodeURIComponent(String(args[name] ?? ''))
+    },
+  )
 
   const rest = Object.entries(args).filter(([name]) => !used.has(name))
   if (spec.method === 'GET' || spec.method === 'DELETE') {
     if (rest.length === 0) return ok({ url, method: spec.method, body: null })
     const target = new URL(url)
-    for (const [name, value] of rest) target.searchParams.set(name, String(value))
+    for (const [name, value] of rest)
+      target.searchParams.set(name, String(value))
     return ok({ url: target.toString(), method: spec.method, body: null })
   }
   return ok({

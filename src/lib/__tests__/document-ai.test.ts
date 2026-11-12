@@ -405,7 +405,13 @@ describe('extract', () => {
   it('should extract the text of each page in order', async () => {
     parse.mockImplementationOnce(async (_buffer, options) => {
       const render = options?.pagerender as (page: unknown) => Promise<string>
-      await render(page([['Linha 1', 10], [' cont.', 10], ['Linha 2', 20]]))
+      await render(
+        page([
+          ['Linha 1', 10],
+          [' cont.', 10],
+          ['Linha 2', 20],
+        ]),
+      )
       await render({ getTextContent: async () => Promise.reject(new Error()) })
       return { numpages: 2 } as never
     })

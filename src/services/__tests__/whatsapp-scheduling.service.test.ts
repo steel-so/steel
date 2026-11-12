@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
+import { createFakeWhatsAppContactWithoutCount } from '@/src/__tests__/factories/whatsapp-contact.factory'
 import {
   createFakeSchedAppointmentFull,
   createFakeSchedProfessional,
   createFakeSchedService,
   createFakeSchedulingSettings,
 } from '@/src/__tests__/factories/whatsapp-scheduling.factory'
-import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
-import { createFakeWhatsAppContactWithoutCount } from '@/src/__tests__/factories/whatsapp-contact.factory'
 import { createFakeWhatsAppTemplate } from '@/src/__tests__/factories/whatsapp-template.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, forbidden } from '@/src/errors'

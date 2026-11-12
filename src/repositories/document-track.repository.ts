@@ -333,9 +333,7 @@ export const DocumentTrackRepository = {
       })
       const documentOf = new Map(existing.map((s) => [s.id, s.documentId]))
 
-      const sessions = batch.sessions.filter((s) =>
-        documentOf.has(s.sessionId),
-      )
+      const sessions = batch.sessions.filter((s) => documentOf.has(s.sessionId))
       const sections = batch.sections.filter(
         (s) => documentOf.has(s.sessionId) && (s.activeMs > 0 || s.views > 0),
       )

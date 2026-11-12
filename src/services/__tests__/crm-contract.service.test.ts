@@ -95,7 +95,11 @@ describe('list / get', () => {
   it('lists contracts with the renewal state against the workspace window', async () => {
     contracts.list.mockResolvedValue(
       // Relative to the real clock: the mapper reads "now" itself.
-      ok([createFakeCrmContract({ endDate: new Date(Date.now() + 20 * 86_400_000) })]),
+      ok([
+        createFakeCrmContract({
+          endDate: new Date(Date.now() + 20 * 86_400_000),
+        }),
+      ]),
     )
     const rows = expectOk(await Service.list('u', 'ws', {}))
     expect(rows[0]?.renewalState).toBe('EXPIRING')
@@ -106,12 +110,21 @@ describe('list / get', () => {
     expectOk(await Service.list('u', 'ws', { endsWithinDays: 30 }))
     expect(contracts.list).toHaveBeenCalledWith(
       'ws',
-      expect.objectContaining({ status: 'ACTIVE', endsBefore: expect.any(Date) }),
+      expect.objectContaining({
+        status: 'ACTIVE',
+        endsBefore: expect.any(Date),
+      }),
     )
-    expectOk(await Service.list('u', 'ws', { status: 'EXPIRED', companyId: 'c1' }))
+    expectOk(
+      await Service.list('u', 'ws', { status: 'EXPIRED', companyId: 'c1' }),
+    )
     expect(contracts.list).toHaveBeenLastCalledWith(
       'ws',
-      expect.objectContaining({ status: 'EXPIRED', companyId: 'c1', endsBefore: undefined }),
+      expect.objectContaining({
+        status: 'EXPIRED',
+        companyId: 'c1',
+        endsBefore: undefined,
+      }),
     )
   })
 
@@ -127,7 +140,9 @@ describe('list / get', () => {
   })
 
   it('reads one contract', async () => {
-    contracts.findById.mockResolvedValue(ok(createFakeCrmContract({ id: 'k1' })))
+    contracts.findById.mockResolvedValue(
+      ok(createFakeCrmContract({ id: 'k1' })),
+    )
     expect(expectOk(await Service.get('u', 'ws', 'k1')).id).toBe('k1')
     contracts.findById.mockResolvedValue(
       err({ code: 'CRM_CONTRACT_NOT_FOUND', message: 'x' }),
@@ -166,7 +181,11 @@ describe('create', () => {
   it('defaults the owner to the account owner and audits', async () => {
     expectOk(await Service.create('u', 'ws', dto))
     expect(contracts.create).toHaveBeenCalledWith(
-      expect.objectContaining({ ownerId: 'acct', createdById: 'u', value: null }),
+      expect.objectContaining({
+        ownerId: 'acct',
+        createdById: 'u',
+        value: null,
+      }),
     )
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ entity: 'crm_contract', action: 'create' }),
@@ -176,7 +195,11 @@ describe('create', () => {
   it('checks the deal and the owner when given', async () => {
     deals.findById.mockResolvedValue(ok(createFakeCrmOpportunity()))
     expectOk(
-      await Service.create('u', 'ws', { ...dto, opportunityId: 'o1', ownerId: 'u' }),
+      await Service.create('u', 'ws', {
+        ...dto,
+        opportunityId: 'o1',
+        ownerId: 'u',
+      }),
     )
     deals.findById.mockResolvedValue(
       err({ code: 'RESOURCE_NOT_FOUND', message: 'x' }),
@@ -246,7 +269,11 @@ describe('update', () => {
     )
     const data = contracts.update.mock.calls[0]?.[1] as Record<string, unknown>
     expect(data).not.toHaveProperty('alertedAt')
-    expect(data).toMatchObject({ name: 'Novo', status: 'CANCELED', autoRenews: true })
+    expect(data).toMatchObject({
+      name: 'Novo',
+      status: 'CANCELED',
+      autoRenews: true,
+    })
     expectOk(await Service.update('u', 'ws', 'k1', {}))
     expect(contracts.update.mock.calls[1]?.[1]).toEqual({})
   })
@@ -270,7 +297,10 @@ describe('update', () => {
     contracts.findById.mockResolvedValue(
       err({ code: 'CRM_CONTRACT_NOT_FOUND', message: 'x' }),
     )
-    expectErr(await Service.update('u', 'ws', 'k1', {}), 'CRM_CONTRACT_NOT_FOUND')
+    expectErr(
+      await Service.update('u', 'ws', 'k1', {}),
+      'CRM_CONTRACT_NOT_FOUND',
+    )
     contracts.findById.mockResolvedValue(ok(existing))
     contracts.update.mockResolvedValue(err(databaseError('x')))
     expectErr(await Service.update('u', 'ws', 'k1', {}), 'DATABASE_ERROR')
@@ -283,7 +313,9 @@ describe('update', () => {
 
 describe('remove', () => {
   it('soft-deletes and audits', async () => {
-    contracts.findById.mockResolvedValue(ok(createFakeCrmContract({ id: 'k1' })))
+    contracts.findById.mockResolvedValue(
+      ok(createFakeCrmContract({ id: 'k1' })),
+    )
     contracts.softDelete.mockResolvedValue(ok(undefined))
     expectOk(await Service.remove('u', 'ws', 'k1'))
     expect(auditMutation).toHaveBeenCalledWith(
@@ -321,7 +353,9 @@ describe('renew', () => {
     stages.listByPipeline.mockResolvedValue(
       ok([stage('s-won', 'WON'), stage('s-open', 'OPEN')]),
     )
-    deals.create.mockResolvedValue(ok(createFakeCrmOpportunity({ id: 'renewal' })))
+    deals.create.mockResolvedValue(
+      ok(createFakeCrmOpportunity({ id: 'renewal' })),
+    )
     contracts.update.mockResolvedValue(ok(contract))
   })
 
@@ -354,9 +388,7 @@ describe('renew', () => {
       value: null,
     })
     contracts.findById.mockResolvedValue(ok(bare))
-    pipelines.findDefault.mockResolvedValue(
-      ok({ id: 'pipe' } as never),
-    )
+    pipelines.findDefault.mockResolvedValue(ok({ id: 'pipe' } as never))
     expectOk(await Service.renew('u', 'ws', 'k2'))
     expect(deals.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -453,7 +485,12 @@ describe('upsell', () => {
     const dto = expectOk(await Service.upsell('u', 'ws', 'c1'))
     expect(dto.timing).toBe('GO')
     expect(dto.suggestions).toEqual([
-      expect.objectContaining({ productId: 'zap', buyers: 1, peers: 1, adoptionPct: 100 }),
+      expect.objectContaining({
+        productId: 'zap',
+        buyers: 1,
+        peers: 1,
+        adoptionPct: 100,
+      }),
     ])
     expect(dto.satisfaction).toEqual({
       kind: 'NPS',
@@ -511,7 +548,9 @@ describe('renewalTick', () => {
     )
     pipelines.findDefault.mockResolvedValue(ok({ id: 'pipe' } as never))
     stages.listByPipeline.mockResolvedValue(ok([stage('s-open', 'OPEN')]))
-    deals.create.mockResolvedValue(ok(createFakeCrmOpportunity({ id: 'renewal' })))
+    deals.create.mockResolvedValue(
+      ok(createFakeCrmOpportunity({ id: 'renewal' })),
+    )
   })
 
   it('warns the owner once, opens the renewal and expires the ended', async () => {

@@ -162,7 +162,11 @@ export const CrmDealRoomService = {
       )
       if (!proposal.ok) {
         return proposal.error.code === 'CRM_PROPOSAL_NOT_FOUND'
-          ? err(crmDealRoomInvalid('A proposta informada não existe neste workspace'))
+          ? err(
+              crmDealRoomInvalid(
+                'A proposta informada não existe neste workspace',
+              ),
+            )
           : proposal
       }
       if (proposal.value.opportunityId !== opportunityId) {
@@ -322,7 +326,8 @@ export const CrmDealRoomService = {
       dto.visitorId,
     )
     if (!visitor.ok) return visitor
-    if (!visitor.value) return err(crmDealRoomInvalid('Visitante não identificado'))
+    if (!visitor.value)
+      return err(crmDealRoomInvalid('Visitante não identificado'))
 
     let targetLabel: string | null = null
     let targetId: string | null = null
@@ -335,7 +340,8 @@ export const CrmDealRoomService = {
     }
     if (dto.kind === 'MATERIAL_OPENED') {
       const material = room.value.materials.find((m) => m.id === dto.targetId)
-      if (!material) return err(crmDealRoomInvalid('Material inexistente nesta sala'))
+      if (!material)
+        return err(crmDealRoomInvalid('Material inexistente nesta sala'))
       targetId = material.id
       targetLabel = material.title
     }
@@ -362,7 +368,8 @@ export const CrmDealRoomService = {
       dto.visitorId,
     )
     if (!visitor.ok) return visitor
-    if (!visitor.value) return err(crmDealRoomInvalid('Visitante não identificado'))
+    if (!visitor.value)
+      return err(crmDealRoomInvalid('Visitante não identificado'))
 
     const message = await CrmDealRoomRepository.createMessage({
       roomId: room.value.id,
@@ -411,7 +418,8 @@ export const CrmDealRoomService = {
       dto.visitorId,
     )
     if (!visitor.ok) return visitor
-    if (!visitor.value) return err(crmDealRoomInvalid('Visitante não identificado'))
+    if (!visitor.value)
+      return err(crmDealRoomInvalid('Visitante não identificado'))
 
     const updated = await CrmDealRoomRepository.setActionDone(
       room.value.id,
@@ -423,7 +431,9 @@ export const CrmDealRoomService = {
     )
     if (!updated.ok) return updated
     if (!updated.value) {
-      return err(crmDealRoomInvalid('Você só pode concluir as ações do cliente'))
+      return err(
+        crmDealRoomInvalid('Você só pode concluir as ações do cliente'),
+      )
     }
     if (dto.done) {
       await CrmDealRoomRepository.createEvent({

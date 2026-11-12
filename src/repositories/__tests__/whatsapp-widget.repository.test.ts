@@ -62,11 +62,16 @@ describe('WhatsAppWidgetSettingsRepository', () => {
   it('should find by public key', async () => {
     const workspace = await seedWorkspace()
     const row = expectOk(
-      await WhatsAppWidgetSettingsRepository.upsert(workspace.id, 'stw_find', {}),
+      await WhatsAppWidgetSettingsRepository.upsert(
+        workspace.id,
+        'stw_find',
+        {},
+      ),
     )
     expect(
-      expectOk(await WhatsAppWidgetSettingsRepository.findByPublicKey('stw_find'))
-        ?.id,
+      expectOk(
+        await WhatsAppWidgetSettingsRepository.findByPublicKey('stw_find'),
+      )?.id,
     ).toBe(row.id)
     expect(
       expectOk(await WhatsAppWidgetSettingsRepository.findByPublicKey('nope')),
@@ -133,7 +138,10 @@ describe('WhatsAppWidgetSettingsRepository', () => {
     })
     expect(
       expectOk(
-        await WhatsAppWidgetSettingsRepository.teamExists(workspace.id, team.id),
+        await WhatsAppWidgetSettingsRepository.teamExists(
+          workspace.id,
+          team.id,
+        ),
       ),
     ).toBe(true)
     expect(
@@ -404,7 +412,11 @@ describe('WhatsAppWidgetVisitorRepository', () => {
       'DATABASE_ERROR',
     )
     expectErr(
-      await WhatsAppWidgetVisitorRepository.hasOutboundText('c', 't', new Date()),
+      await WhatsAppWidgetVisitorRepository.hasOutboundText(
+        'c',
+        't',
+        new Date(),
+      ),
       'DATABASE_ERROR',
     )
   })

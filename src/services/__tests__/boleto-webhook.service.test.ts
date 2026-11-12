@@ -16,8 +16,8 @@ vi.mock('../whatsapp-boleto.service', () => ({
 }))
 
 import { logger } from '@/lib/axiom/logger'
-import { CrmProposalPaymentService } from '../crm-proposal-payment.service'
 import { BoletoWebhookService } from '../boleto-webhook.service'
+import { CrmProposalPaymentService } from '../crm-proposal-payment.service'
 import { WhatsAppBoletoService } from '../whatsapp-boleto.service'
 
 const proposal = vi.mocked(CrmProposalPaymentService.handleBoletoNotification)
@@ -33,7 +33,10 @@ const proposalMissing = err({
   code: 'CRM_PROPOSAL_CHARGE_NOT_FOUND',
   message: 'x',
 } as never)
-const chatMissing = err({ code: 'BOLETO_CHARGE_NOT_FOUND', message: 'x' } as never)
+const chatMissing = err({
+  code: 'BOLETO_CHARGE_NOT_FOUND',
+  message: 'x',
+} as never)
 
 describe('BoletoWebhookService.handle()', () => {
   const headers = new Headers()
@@ -58,7 +61,8 @@ describe('BoletoWebhookService.handle()', () => {
     proposal.mockResolvedValue(proposalMissing)
     chat.mockResolvedValue(ok({} as never))
     expect(
-      expectOk(await BoletoWebhookService.handle('mock', headers, '{}')).processed,
+      expectOk(await BoletoWebhookService.handle('mock', headers, '{}'))
+        .processed,
     ).toBe(1)
   })
 
@@ -97,6 +101,9 @@ describe('BoletoWebhookService.handle()', () => {
     registry.getBoletoProviderById.mockReturnValue(
       ok({ parseWebhook: () => err(forbidden()) }),
     )
-    expectErr(await BoletoWebhookService.handle('mock', headers, '{}'), 'FORBIDDEN')
+    expectErr(
+      await BoletoWebhookService.handle('mock', headers, '{}'),
+      'FORBIDDEN',
+    )
   })
 })

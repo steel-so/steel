@@ -756,7 +756,12 @@ describe('builder tools (ported)', () => {
       after: 'opp_1',
     })
     vi.mocked(DocumentCrmService.createForOpportunity).mockResolvedValue(
-      ok(createFakeCrmDocumentSummaryDTO({ id: 'doc_1', title: 'Proposta Acme' })),
+      ok(
+        createFakeCrmDocumentSummaryDTO({
+          id: 'doc_1',
+          title: 'Proposta Acme',
+        }),
+      ),
     )
     const out = expectOk(await run(crmCreateProposalTool, fromDeal))
     expect(out.target?.href).toBe('/acme/crm/documents/doc_1')

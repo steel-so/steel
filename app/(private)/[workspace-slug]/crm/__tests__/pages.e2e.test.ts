@@ -1,8 +1,8 @@
 import { createId } from '@paralleldrive/cuid2'
 import { describe, expect, it } from 'vitest'
 import { authenticatedOwner, defaultHeaders } from '@/src/__tests__/helpers/e2e'
-import { prisma } from '@/src/lib/prisma'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
+import { prisma } from '@/src/lib/prisma'
 
 // Renders every CRM sidebar section end-to-end against a real `next start`
 // build, asserting a 200 (not a Next.js error boundary / 500) — this project
@@ -131,10 +131,7 @@ describe('proposals moved to Documentos (ADR 0063)', () => {
     expect(list.searchParams.get('kind')).toBe('PROPOSAL')
 
     for (const path of ['proposal-templates', 'proposal-templates/any']) {
-      const url = await location(
-        `/${workspace.slug}/crm/${path}`,
-        user.cookie,
-      )
+      const url = await location(`/${workspace.slug}/crm/${path}`, user.cookie)
       expect(url.pathname).toBe(`/${workspace.slug}/crm/documents`)
       expect(url.searchParams.get('tab')).toBe('modelos')
     }

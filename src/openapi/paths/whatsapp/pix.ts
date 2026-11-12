@@ -35,7 +35,8 @@ const REALTIME =
 const PROVIDER_NOTE =
   'As cobranças saem por uma interface (`PixProvider`). O provedor padrão é o de teste `mock` (BR Code válido que nenhum banco liquida); com `PIX_PROVIDER=abacatepay` as cobranças são reais, pelo AbacatePay API v2.'
 
-const BOLETO_BASE = '/workspaces/{id}/whatsapp/conversations/{conversationId}/boleto'
+const BOLETO_BASE =
+  '/workspaces/{id}/whatsapp/conversations/{conversationId}/boleto'
 
 const BOLETO_REALTIME =
   'O boleto atualizado é publicado no SSE `GET /whatsapp/events` (`boleto-charge.updated`).'
@@ -292,7 +293,10 @@ export const pixRoutes: RouteConfig[] = [
     description: `Fecha no Steel um boleto que ainda aguarda pagamento. O PSP não tem rota de cancelamento: se o contato pagar mesmo assim, o aviso de pagamento ainda baixa o boleto. ${BOLETO_REALTIME} Auditado. ${perm('conversations', 'EDIT')}`,
     params: { ...PARAMS, chargeId: 'Id do boleto.' },
     responses: {
-      200: { description: 'Boleto cancelado.', schema: WhatsAppBoletoChargeDTO },
+      200: {
+        description: 'Boleto cancelado.',
+        schema: WhatsAppBoletoChargeDTO,
+      },
     },
     errors: [
       ...permErrors('conversations', 'EDIT'),

@@ -7,8 +7,8 @@ import {
 import { WORKSPACE_MEMBER_ERRORS, WORKSPACE_PRIVILEGED_ERRORS } from '../common'
 import type { OpenApiRegistry, RouteConfig } from '../registry'
 import {
-  QaConfigDTO,
   QaCoachingDTO,
+  QaConfigDTO,
   QaReviewDTO,
   QaReviewListDTO,
 } from '../schemas/steel-ai-qa'

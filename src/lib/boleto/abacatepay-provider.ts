@@ -110,7 +110,12 @@ export function createAbacatePayBoletoProvider(
     },
 
     parseWebhook(headers, rawBody, query) {
-      const event = readAbacatePayWebhook(webhookSecret, headers, rawBody, query)
+      const event = readAbacatePayWebhook(
+        webhookSecret,
+        headers,
+        rawBody,
+        query,
+      )
       if (!event) return err(boletoWebhookInvalid())
       const kind = EVENT_KINDS[event.event]
       if (!kind) return ok([])

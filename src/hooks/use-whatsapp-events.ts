@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import type { WhatsAppPhoneCallDTO } from '@/types/whatsapp-phone-call'
-import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { phoneCallsKey } from './use-phone-calls'
 

@@ -48,6 +48,10 @@ import {
 } from '@/src/repositories/whatsapp-boleto.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { assertModuleMember, assertModulePrivileged } from '../authz'
+import {
+  boletoMessageText,
+  WhatsAppBoletoService as Service,
+} from '../whatsapp-boleto.service'
 import { WhatsAppBusinessHoursService } from '../whatsapp-business-hours.service'
 import { loadVisibleConversation } from '../whatsapp-conversation-scope.service'
 import {
@@ -55,10 +59,6 @@ import {
   checkOpportunity,
   deliverText,
 } from '../whatsapp-pix.service'
-import {
-  boletoMessageText,
-  WhatsAppBoletoService as Service,
-} from '../whatsapp-boleto.service'
 
 const settingsRepo = vi.mocked(WhatsAppBoletoSettingsRepository)
 const chargeRepo = vi.mocked(WhatsAppBoletoChargeRepository)
@@ -143,14 +143,18 @@ describe('settings', () => {
 
   it('lets only privileged members switch it', async () => {
     vi.mocked(assertModulePrivileged).mockResolvedValueOnce(err(forbidden()))
-    expectErr(await Service.updateSettings('u', WS, { enabled: true }), 'FORBIDDEN')
+    expectErr(
+      await Service.updateSettings('u', WS, { enabled: true }),
+      'FORBIDDEN',
+    )
 
     vi.mocked(assertModulePrivileged).mockResolvedValue(ok({} as never))
     settingsRepo.upsert.mockResolvedValue(
       ok({ id: 's1', enabled: true } as never),
     )
     expect(
-      expectOk(await Service.updateSettings('u', WS, { enabled: true })).enabled,
+      expectOk(await Service.updateSettings('u', WS, { enabled: true }))
+        .enabled,
     ).toBe(true)
     expect(settingsRepo.upsert).toHaveBeenCalledWith(WS, { enabled: true })
     await Service.updateSettings('u', WS, {})
@@ -171,7 +175,9 @@ describe('createCharge', () => {
 
   beforeEach(() => {
     scope.mockResolvedValue(ok({} as never))
-    settingsRepo.findByWorkspace.mockResolvedValue(ok({ enabled: true } as never))
+    settingsRepo.findByWorkspace.mockResolvedValue(
+      ok({ enabled: true } as never),
+    )
     visible.mockResolvedValue(ok(conversation))
     vi.mocked(WhatsAppBusinessHoursService.assertOpen).mockResolvedValue(
       ok(undefined),
@@ -208,7 +214,13 @@ describe('createCharge', () => {
 
   it('falls back to the computed due date when the PSP sends none', async () => {
     provider.createCharge.mockResolvedValue(
-      ok({ providerChargeId: 'b', barCode: '1', url: null, brCode: null, dueAt: null }),
+      ok({
+        providerChargeId: 'b',
+        barCode: '1',
+        url: null,
+        brCode: null,
+        dueAt: null,
+      }),
     )
     expectOk(await Service.createCharge('u', WS, 'c1', dto))
     expect(chargeRepo.create.mock.calls[0]?.[0].dueAt).toBeInstanceOf(Date)
@@ -272,7 +284,9 @@ describe('listByConversation', () => {
     chargeRepo.listByConversation.mockResolvedValue(
       ok([createFakeWhatsAppBoletoCharge()]),
     )
-    expect(expectOk(await Service.listByConversation('u', WS, 'c1'))).toHaveLength(1)
+    expect(
+      expectOk(await Service.listByConversation('u', WS, 'c1')),
+    ).toHaveLength(1)
     chargeRepo.listByConversation.mockResolvedValue(err(databaseError('x')))
     expectErr(await Service.listByConversation('u', WS, 'c1'), 'DATABASE_ERROR')
     visible.mockResolvedValueOnce(err(forbidden()))
@@ -295,21 +309,33 @@ describe('cancel', () => {
   })
 
   it('closes a pending charge', async () => {
-    expect(expectOk(await Service.cancel('u', WS, 'c1', charge.id)).status).toBe(
-      'CANCELED',
-    )
+    expect(
+      expectOk(await Service.cancel('u', WS, 'c1', charge.id)).status,
+    ).toBe('CANCELED')
   })
 
   it('rejects other conversations, settled charges and races', async () => {
     chargeRepo.findById.mockResolvedValueOnce(ok(null))
-    expectErr(await Service.cancel('u', WS, 'c1', 'x'), 'BOLETO_CHARGE_NOT_FOUND')
-    expectErr(await Service.cancel('u', WS, 'other', charge.id), 'BOLETO_CHARGE_NOT_FOUND')
+    expectErr(
+      await Service.cancel('u', WS, 'c1', 'x'),
+      'BOLETO_CHARGE_NOT_FOUND',
+    )
+    expectErr(
+      await Service.cancel('u', WS, 'other', charge.id),
+      'BOLETO_CHARGE_NOT_FOUND',
+    )
     chargeRepo.findById.mockResolvedValueOnce(
       ok({ ...charge, status: 'PAID' as const }),
     )
-    expectErr(await Service.cancel('u', WS, 'c1', charge.id), 'BOLETO_CHARGE_NOT_PENDING')
+    expectErr(
+      await Service.cancel('u', WS, 'c1', charge.id),
+      'BOLETO_CHARGE_NOT_PENDING',
+    )
     chargeRepo.markCanceled.mockResolvedValueOnce(ok(null))
-    expectErr(await Service.cancel('u', WS, 'c1', charge.id), 'BOLETO_CHARGE_NOT_PENDING')
+    expectErr(
+      await Service.cancel('u', WS, 'c1', charge.id),
+      'BOLETO_CHARGE_NOT_PENDING',
+    )
     chargeRepo.markCanceled.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(await Service.cancel('u', WS, 'c1', charge.id), 'DATABASE_ERROR')
     chargeRepo.findById.mockResolvedValueOnce(err(databaseError('x')))
@@ -324,7 +350,10 @@ describe('cancel', () => {
 describe('handleNotification', () => {
   const charge = createFakeWhatsAppBoletoCharge({ opportunityId: 'o1' })
   const at = new Date()
-  const notice = (kind: 'PAID' | 'REFUNDED' | 'EXPIRED', amount: number | null = 250) => ({
+  const notice = (
+    kind: 'PAID' | 'REFUNDED' | 'EXPIRED',
+    amount: number | null = 250,
+  ) => ({
     kind,
     providerChargeId: charge.providerChargeId,
     amount,
@@ -343,9 +372,9 @@ describe('handleNotification', () => {
     chargeRepo.markPaid.mockResolvedValue(
       ok({ ...charge, status: 'PAID' as const, paidAmount: 250 as never }),
     )
-    expect(expectOk(await Service.handleNotification('mock', notice('PAID'))).status).toBe(
-      'PAID',
-    )
+    expect(
+      expectOk(await Service.handleNotification('mock', notice('PAID'))).status,
+    ).toBe('PAID')
     expect(chargeRepo.markPaid).toHaveBeenCalledWith(charge.id, {
       paidAt: at,
       paidAmount: 250,
@@ -389,7 +418,8 @@ describe('handleNotification', () => {
     )
     chargeRepo.markExpired.mockResolvedValue(ok(null))
     expect(
-      expectOk(await Service.handleNotification('mock', notice('REFUNDED'))).status,
+      expectOk(await Service.handleNotification('mock', notice('REFUNDED')))
+        .status,
     ).toBe('REFUNDED')
     expectOk(await Service.handleNotification('mock', notice('EXPIRED')))
     expect(chargeRepo.markExpired).toHaveBeenCalled()
@@ -401,10 +431,18 @@ describe('handleNotification', () => {
       await Service.handleNotification('mock', notice('PAID')),
       'BOLETO_CHARGE_NOT_FOUND',
     )
-    chargeRepo.findByProviderCharge.mockResolvedValueOnce(err(databaseError('x')))
-    expectErr(await Service.handleNotification('mock', notice('PAID')), 'DATABASE_ERROR')
+    chargeRepo.findByProviderCharge.mockResolvedValueOnce(
+      err(databaseError('x')),
+    )
+    expectErr(
+      await Service.handleNotification('mock', notice('PAID')),
+      'DATABASE_ERROR',
+    )
     chargeRepo.markPaid.mockResolvedValueOnce(err(databaseError('x')))
-    expectErr(await Service.handleNotification('mock', notice('PAID')), 'DATABASE_ERROR')
+    expectErr(
+      await Service.handleNotification('mock', notice('PAID')),
+      'DATABASE_ERROR',
+    )
     chargeRepo.markRefunded.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(
       await Service.handleNotification('mock', notice('REFUNDED')),

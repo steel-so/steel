@@ -92,7 +92,9 @@ export function AiProceduresPage({
                       <span className='font-medium'>{procedure.name}</span>
                       <Badge
                         variant={
-                          procedure.status === 'ACTIVE' ? 'default' : 'secondary'
+                          procedure.status === 'ACTIVE'
+                            ? 'default'
+                            : 'secondary'
                         }
                       >
                         {PROCEDURE_STATUS_LABEL[procedure.status]}

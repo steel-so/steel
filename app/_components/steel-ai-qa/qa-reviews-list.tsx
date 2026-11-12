@@ -44,7 +44,9 @@ export function QaReviewsList({
 
   const params: QaReviewsParams = {
     subjectType:
-      subjectType === ALL ? undefined : (subjectType as 'TICKET' | 'CONVERSATION'),
+      subjectType === ALL
+        ? undefined
+        : (subjectType as 'TICKET' | 'CONVERSATION'),
     status: status === ALL ? undefined : (status as QaReviewsParams['status']),
     lowOnly,
     cursor: cursors[cursors.length - 1],
@@ -90,13 +92,13 @@ export function QaReviewsList({
           <SelectContent>
             <SelectGroup>
               <SelectItem value={ALL}>Todas as situações</SelectItem>
-              {(Object.keys(QA_STATUS_LABEL) as (keyof typeof QA_STATUS_LABEL)[]).map(
-                (key) => (
-                  <SelectItem key={key} value={key}>
-                    {QA_STATUS_LABEL[key]}
-                  </SelectItem>
-                ),
-              )}
+              {(
+                Object.keys(QA_STATUS_LABEL) as (keyof typeof QA_STATUS_LABEL)[]
+              ).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {QA_STATUS_LABEL[key]}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -171,7 +173,9 @@ export function QaReviewsList({
           variant='outline'
           size='sm'
           disabled={!nextCursor}
-          onClick={() => nextCursor && setCursors((list) => [...list, nextCursor])}
+          onClick={() =>
+            nextCursor && setCursors((list) => [...list, nextCursor])
+          }
         >
           Próxima
         </Button>

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import { STEEL_AGENT_TEMPLATES } from '@/src/lib/ai/templates/agent-templates'
 import {
   CRM_SALES_AGENT_TEMPLATES,
   findCrmSalesAgentTemplate,
 } from '@/src/lib/ai/templates/crm-sales-agent-templates'
-import { STEEL_AGENT_TEMPLATES } from '@/src/lib/ai/templates/agent-templates'
 import { STEEL_AI_TOOLS } from '@/src/lib/ai/tools'
-import { CreateSteelAgentSchema } from '@/src/schemas/steel-agent.schema'
-import { isValidCron, isValidTimeZone } from '@/src/lib/steel-agents/schedule'
 import { steelAgentEvent } from '@/src/lib/steel-agents/events'
+import { isValidCron, isValidTimeZone } from '@/src/lib/steel-agents/schedule'
+import { CreateSteelAgentSchema } from '@/src/schemas/steel-agent.schema'
 
 const toolByName = new Map(STEEL_AI_TOOLS.map((tool) => [tool.name, tool]))
 

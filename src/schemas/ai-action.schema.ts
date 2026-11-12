@@ -140,7 +140,10 @@ export type UpdateAiActionConnectorDTO = z.output<
 >
 
 export const AiActionZapToolSchema = z.object({
-  toolName: z.string().trim().regex(/^[a-z][a-z0-9_]{1,63}$/),
+  toolName: z
+    .string()
+    .trim()
+    .regex(/^[a-z][a-z0-9_]{1,63}$/),
   mode: AiActionToolModeSchema.default('APPROVAL'),
 })
 export type AiActionZapTool = z.output<typeof AiActionZapToolSchema>
@@ -152,8 +155,7 @@ export const UpdateAiActionSettingsSchema = z
       .array(AiActionZapToolSchema)
       .max(AI_ACTION_MAX_ZAP_TOOLS)
       .refine(
-        (tools) =>
-          new Set(tools.map((t) => t.toolName)).size === tools.length,
+        (tools) => new Set(tools.map((t) => t.toolName)).size === tools.length,
         { message: 'Ferramenta repetida' },
       ),
     zapActorId: z.string().trim().min(1).max(64).nullable(),

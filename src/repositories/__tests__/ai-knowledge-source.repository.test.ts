@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { seedCrmNote } from '@/src/__tests__/factories/crm-note.factory'
-import { seedDocument } from '@/src/__tests__/factories/document-migration.factory'
 import {
   seedCrmProposal,
   seedCrmProposalSection,
 } from '@/src/__tests__/factories/crm-proposal.factory'
+import { seedDocument } from '@/src/__tests__/factories/document-migration.factory'
 import {
   seedSdKbArticle,
   seedSdTicket,

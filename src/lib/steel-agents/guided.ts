@@ -79,7 +79,9 @@ export function guidedAnswersProblems(answers: GuidedAnswers): string[] {
     answers.monthlyRunCap !== null &&
     (!Number.isInteger(answers.monthlyRunCap) || answers.monthlyRunCap < 1)
   ) {
-    problems.push('O limite mensal precisa ser um número inteiro maior que zero.')
+    problems.push(
+      'O limite mensal precisa ser um número inteiro maior que zero.',
+    )
   }
   return problems
 }

@@ -26,8 +26,8 @@ import { logger } from '@/lib/axiom/logger'
 import { sendDocumentExpiredEmail } from '@/src/lib/mail/documents/send-document-emails'
 import { DocumentRepository } from '@/src/repositories/document.repository'
 import { CrmSettingsService } from '../crm-settings.service'
-import { notifyDocumentExpired } from '../document-notifications'
 import { DocumentExpiryService } from '../document-expiry.service'
+import { notifyDocumentExpired } from '../document-notifications'
 
 const documentRepo = vi.mocked(DocumentRepository)
 const settings = vi.mocked(CrmSettingsService)

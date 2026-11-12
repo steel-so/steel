@@ -148,7 +148,9 @@ const routes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Detalhar procedimento',
     params: { procedureId: PROCEDURE_PARAM },
-    responses: { 200: { description: 'Procedimento.', schema: AiProcedureDTO } },
+    responses: {
+      200: { description: 'Procedimento.', schema: AiProcedureDTO },
+    },
     errors: [...WORKSPACE_MEMBER_ERRORS, NOT_FOUND],
   },
   {

@@ -32,9 +32,7 @@ vi.mock('@/src/lib/ai-actions/http-connector', async (importOriginal) => ({
   >()),
   callConnector: vi.fn(),
   guardConnectorUrl: vi.fn(async (url: string) =>
-    url.includes('private')
-      ? err(webhookUrlNotAllowed())
-      : ok(new URL(url)),
+    url.includes('private') ? err(webhookUrlNotAllowed()) : ok(new URL(url)),
   ),
 }))
 vi.mock('@/src/lib/ai/tools/registry', () => ({
@@ -55,7 +53,11 @@ const call = vi.mocked(callConnector)
 const member = vi.mocked(assertMember)
 const privileged = vi.mocked(assertPrivileged)
 
-const MEMBERSHIP = { role: 'ADMIN' as const, isPrivileged: true, permissions: null }
+const MEMBERSHIP = {
+  role: 'ADMIN' as const,
+  isPrivileged: true,
+  permissions: null,
+}
 const CTX = {
   workspaceId: 'ws1',
   actorId: 'u1',
@@ -198,9 +200,7 @@ describe('AiActionService.update', () => {
   })
 
   it('should replace the headers only when sent', async () => {
-    expectOk(
-      await AiActionService.update('u1', 'ws1', 'c2', { name: 'Novo' }),
-    )
+    expectOk(await AiActionService.update('u1', 'ws1', 'c2', { name: 'Novo' }))
     expect(connectors.update.mock.calls[0]?.[1]).not.toHaveProperty(
       'encryptedHeaders',
     )
@@ -212,9 +212,7 @@ describe('AiActionService.update', () => {
     expect(connectors.update.mock.calls[1]?.[1]).toMatchObject({
       encryptedHeaders: 'enc:{"X-Key":"v"}',
     })
-    expectOk(
-      await AiActionService.update('u1', 'ws1', 'c2', { headers: {} }),
-    )
+    expectOk(await AiActionService.update('u1', 'ws1', 'c2', { headers: {} }))
     expect(connectors.update.mock.calls[2]?.[1]).toMatchObject({
       encryptedHeaders: null,
     })

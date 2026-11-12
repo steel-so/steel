@@ -64,8 +64,7 @@ const LINK_ERRORS: ErrorEntry[] = [
 
 const LINK_UNAVAILABLE: ErrorEntry = {
   code: 'DOCUMENT_LINK_UNAVAILABLE',
-  when:
-    'Token desconhecido, documento nunca enviado, arquivado, excluído, link genérico desligado ou CRM desabilitado',
+  when: 'Token desconhecido, documento nunca enviado, arquivado, excluído, link genérico desligado ou CRM desabilitado',
 }
 
 const ANSWER_ERRORS: ErrorEntry[] = [
@@ -91,7 +90,10 @@ export const crmDocumentsRoutes: RouteConfig[] = [
     ),
     query: ListDocumentsQuerySchema,
     responses: {
-      200: { description: 'Página de documentos.', schema: DocumentListPageDTO },
+      200: {
+        description: 'Página de documentos.',
+        schema: DocumentListPageDTO,
+      },
     },
     errors: CRM_ERRORS,
   },
@@ -106,7 +108,9 @@ export const crmDocumentsRoutes: RouteConfig[] = [
     ),
     consent: true,
     body: CreateDocumentSchema,
-    responses: { 201: { description: 'Documento criado.', schema: DocumentDTO } },
+    responses: {
+      201: { description: 'Documento criado.', schema: DocumentDTO },
+    },
     errors: [
       ...CRM_ERRORS,
       ...LINK_ERRORS,

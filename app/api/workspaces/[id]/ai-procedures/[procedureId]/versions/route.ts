@@ -3,10 +3,7 @@ import { withAxiom } from '@/lib/axiom/server'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
 import { AiProcedureService } from '@/src/services/ai-procedure.service'
-import {
-  handleError,
-  successResponse,
-} from '@/utils/http-response'
+import { handleError, successResponse } from '@/utils/http-response'
 
 type Params = { params: Promise<{ id: string; procedureId: string }> }
 

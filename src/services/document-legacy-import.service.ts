@@ -2,10 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { CrmProposalStatus, DocumentStatus, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
-import {
-  crmProposalNotFound,
-  crmProposalTemplateNotFound,
-} from '@/src/errors'
+import { crmProposalNotFound, crmProposalTemplateNotFound } from '@/src/errors'
 import { documentContentInvalid } from '@/src/errors/app-error'
 import {
   convertLegacyProposal,

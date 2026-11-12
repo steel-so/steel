@@ -87,11 +87,14 @@ describe('POST /api/payment/webhook — billing on', () => {
   it('rejects a missing secret and a non-JSON body', async () => {
     expect((await postWebhook(null, completed)).status).toBe(401)
     const raw = 'not json'
-    const request = new Request('http://localhost/api/payment/webhook?webhookSecret=whsec-test', {
-      method: 'POST',
-      headers: { 'x-webhook-signature': signAbacatePayBody(raw) },
-      body: raw,
-    })
+    const request = new Request(
+      'http://localhost/api/payment/webhook?webhookSecret=whsec-test',
+      {
+        method: 'POST',
+        headers: { 'x-webhook-signature': signAbacatePayBody(raw) },
+        body: raw,
+      },
+    )
     const res = await (webhook as unknown as Handler)(request as NextRequest)
     expect(res.status).toBe(422)
   })
@@ -106,8 +109,16 @@ describe('POST /api/payment/webhook — billing on', () => {
       event: 'checkout.completed',
       data: { checkout: { id: 'bill_3' } },
     })
-    expect(mockedHandle).toHaveBeenNthCalledWith(1, 'subscription.renewed', 'bill_2')
-    expect(mockedHandle).toHaveBeenNthCalledWith(2, 'checkout.completed', 'bill_3')
+    expect(mockedHandle).toHaveBeenNthCalledWith(
+      1,
+      'subscription.renewed',
+      'bill_2',
+    )
+    expect(mockedHandle).toHaveBeenNthCalledWith(
+      2,
+      'checkout.completed',
+      'bill_3',
+    )
   })
 
   it('rejects a malformed payload with 422', async () => {

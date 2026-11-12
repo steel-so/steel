@@ -39,15 +39,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
+  type LookupKind,
+  useCrmWorkspaceLookups,
+} from '@/src/hooks/use-crm-workspace-lookups'
+import {
   type DocumentListFilters,
   useDeleteDocument,
   useDocuments,
   useDuplicateDocument,
 } from '@/src/hooks/use-documents'
-import {
-  type LookupKind,
-  useCrmWorkspaceLookups,
-} from '@/src/hooks/use-crm-workspace-lookups'
 import {
   DOCUMENT_KINDS,
   DOCUMENT_STATUSES,

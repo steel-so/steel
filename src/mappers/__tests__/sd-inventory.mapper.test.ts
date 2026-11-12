@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createFakeSdInventoryDiscoveryRange,
-} from '@/src/__tests__/factories/nov-inventory-followups.factory'
+import { createFakeSdInventoryDiscoveryRange } from '@/src/__tests__/factories/nov-inventory-followups.factory'
 import {
   createFakeSdInventoryAlert,
   createFakeSdInventoryDevice,

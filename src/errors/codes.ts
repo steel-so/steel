@@ -1534,12 +1534,14 @@ export const ERROR_CODES = {
     status: 422,
   },
   // The customer system answered with an error or timed out.
-  AI_ACTION_CONNECTOR_FAILED: { code: 'AI_ACTION_CONNECTOR_FAILED', status: 502 },
+  AI_ACTION_CONNECTOR_FAILED: {
+    code: 'AI_ACTION_CONNECTOR_FAILED',
+    status: 502,
+  },
   // The AI actions switch of the workspace is off.
   AI_ACTIONS_DISABLED: { code: 'AI_ACTIONS_DISABLED', status: 403 },
   // The same write (idempotency key) is still running.
   AI_ACTION_IN_PROGRESS: { code: 'AI_ACTION_IN_PROGRESS', status: 409 },
-
 
   // nov: crm-deals (C6 proposal signature/payment, C8 deal room, C9 contracts)
   CRM_DEALS_PAYMENT_DISABLED: {

@@ -30,7 +30,9 @@ export const AiActionConnectorRepository = {
   ): Promise<Result<AiActionConnector | null>> {
     try {
       return ok(
-        await prisma.aiActionConnector.findFirst({ where: { id, workspaceId } }),
+        await prisma.aiActionConnector.findFirst({
+          where: { id, workspaceId },
+        }),
       )
     } catch (error) {
       return err(dbError('Failed to find AI action connector', error))
@@ -54,7 +56,9 @@ export const AiActionConnectorRepository = {
 
   async count(workspaceId: string): Promise<Result<number>> {
     try {
-      return ok(await prisma.aiActionConnector.count({ where: { workspaceId } }))
+      return ok(
+        await prisma.aiActionConnector.count({ where: { workspaceId } }),
+      )
     } catch (error) {
       return err(dbError('Failed to count AI action connectors', error))
     }

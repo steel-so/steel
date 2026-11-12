@@ -14,6 +14,8 @@ import {
   notFound,
   storageError,
 } from '@/src/errors'
+import type { BoletoNotification } from '@/src/lib/boleto/provider'
+import { getActiveBoletoProvider } from '@/src/lib/boleto/registry'
 import {
   buildMockBoletoLine,
   CRM_PROPOSAL_BUCKET,
@@ -24,10 +26,6 @@ import {
   proposalSnapshot,
   sha256,
 } from '@/src/lib/crm-deals'
-import type {
-  BoletoNotification,
-} from '@/src/lib/boleto/provider'
-import { getActiveBoletoProvider } from '@/src/lib/boleto/registry'
 import type {
   PixPaymentNotification,
   PixProvider,
@@ -52,32 +50,32 @@ import { CrmNoteRepository } from '@/src/repositories/crm-note.repository'
 import { CrmOpportunityRepository } from '@/src/repositories/crm-opportunity.repository'
 import { CrmPipelineStageRepository } from '@/src/repositories/crm-pipeline.repository'
 import {
-  CrmProposalChargeRepository,
-  CrmProposalSignatureRepository,
-} from '@/src/repositories/crm-proposal-payment.repository'
-import {
   CrmProposalRepository,
   type CrmProposalWithSections,
 } from '@/src/repositories/crm-proposal.repository'
+import {
+  CrmProposalChargeRepository,
+  CrmProposalSignatureRepository,
+} from '@/src/repositories/crm-proposal-payment.repository'
 import type {
   CreateCrmProposalChargeDTO,
   SignCrmProposalDTO,
 } from '@/src/schemas/crm-deals.schema'
 import type { AcceptCrmProposalDTO } from '@/src/schemas/crm-proposal.schema'
-import type { CrmProposalPublicDTO } from '@/types/crm-proposal'
 import type {
   CrmProposalChargeDTO,
   CrmProposalCheckoutDTO,
   CrmProposalPublicCheckoutDTO,
 } from '@/types/crm-deals'
+import type { CrmProposalPublicDTO } from '@/types/crm-proposal'
 import {
   assertModuleEnabled,
   assertModuleMember,
   assertModulePrivileged,
 } from './authz'
 import { CrmDealsSettingsService } from './crm-deals-settings.service'
-import { emitCrmOpportunityStageWebhooks } from './crm-opportunity-webhooks'
 import { notifyCrmProposalPaid } from './crm-notifications'
+import { emitCrmOpportunityStageWebhooks } from './crm-opportunity-webhooks'
 import { CrmProposalService } from './crm-proposal.service'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
@@ -173,10 +171,13 @@ async function winDeal(
 }
 
 /** Settings gate for the payment features. */
-async function requirePaymentEnabled(workspaceId: string): Promise<Result<void>> {
+async function requirePaymentEnabled(
+  workspaceId: string,
+): Promise<Result<void>> {
   const settings = await CrmDealsSettingsService.resolve(workspaceId)
   if (!settings.ok) return settings
-  if (!settings.value.proposalPaymentEnabled) return err(crmDealsPaymentDisabled())
+  if (!settings.value.proposalPaymentEnabled)
+    return err(crmDealsPaymentDisabled())
   return ok(undefined)
 }
 
@@ -333,7 +334,9 @@ export const CrmProposalPaymentService = {
     const proposal = await loadProposal(workspaceId, proposalId)
     if (!proposal.ok) return proposal
     if (
-      !(CHARGEABLE_STATUSES as readonly string[]).includes(proposal.value.status)
+      !(CHARGEABLE_STATUSES as readonly string[]).includes(
+        proposal.value.status,
+      )
     ) {
       return err(
         crmProposalChargeInvalid(
@@ -349,7 +352,8 @@ export const CrmProposalPaymentService = {
         workspaceId,
       )
       if (!deal.ok) return deal
-      amount = deal.value.amount === null ? undefined : Number(deal.value.amount)
+      amount =
+        deal.value.amount === null ? undefined : Number(deal.value.amount)
     }
     if (amount === undefined || amount <= 0) {
       return err(
@@ -678,7 +682,9 @@ export const CrmProposalPaymentService = {
     if (!settings.ok) return settings
     if (!settings.value.proposalSignatureEnabled) {
       return err(
-        badRequest('A assinatura digital não está habilitada para esta proposta'),
+        badRequest(
+          'A assinatura digital não está habilitada para esta proposta',
+        ),
       )
     }
 
@@ -686,11 +692,7 @@ export const CrmProposalPaymentService = {
     if (!png.ok) return png
 
     const id = createId()
-    const storageKey = proposalSignatureKey(
-      workspaceId,
-      proposal.value.id,
-      id,
-    )
+    const storageKey = proposalSignatureKey(workspaceId, proposal.value.id, id)
     try {
       await ensureBucket(CRM_PROPOSAL_BUCKET)
       await putObject({
@@ -712,9 +714,10 @@ export const CrmProposalPaymentService = {
       name: dto.signerName,
     })
     if (!accepted.ok) {
-      await deleteObject({ bucket: CRM_PROPOSAL_BUCKET, key: storageKey }).catch(
-        () => undefined,
-      )
+      await deleteObject({
+        bucket: CRM_PROPOSAL_BUCKET,
+        key: storageKey,
+      }).catch(() => undefined)
       return accepted
     }
 

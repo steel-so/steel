@@ -52,6 +52,9 @@ describe('ai-procedure mapper', () => {
     }
     const detail = toAiProcedureRunDetailDTO(done)
     expect(detail.finishedAt).toBe('2026-10-30T13:00:00.000Z')
-    expect(detail.steps[0]).toMatchObject({ title: 'Validar CPF', status: 'OK' })
+    expect(detail.steps[0]).toMatchObject({
+      title: 'Validar CPF',
+      status: 'OK',
+    })
   })
 })

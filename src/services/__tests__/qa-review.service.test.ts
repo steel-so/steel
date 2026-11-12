@@ -188,9 +188,7 @@ describe('QaReviewService access', () => {
 describe('QaReviewService.updateConfig', () => {
   it('saves only the given fields and replaces the criteria', async () => {
     const criteria = [CRITERION]
-    expectOk(
-      await Service.updateConfig('u', 'ws', { enabled: true, criteria }),
-    )
+    expectOk(await Service.updateConfig('u', 'ws', { enabled: true, criteria }))
     expect(Repo.upsertConfig).toHaveBeenCalledWith('ws', { enabled: true })
     expect(Repo.replaceCriteria).toHaveBeenCalledWith('ws', criteria)
     expect(auditMutation).toHaveBeenCalledWith(
@@ -355,9 +353,15 @@ describe('QaReviewService.requestReview', () => {
     vi.mocked(Repo.findConfig).mockResolvedValue(ok(createFakeQaConfig()))
 
     vi.mocked(Source.loadConversation).mockResolvedValue(ok(null))
-    expectErr(await Service.requestReview('u', 'ws', conv), 'QA_SUBJECT_NOT_FOUND')
+    expectErr(
+      await Service.requestReview('u', 'ws', conv),
+      'QA_SUBJECT_NOT_FOUND',
+    )
     vi.mocked(Source.loadTicket).mockResolvedValue(ok(null))
-    expectErr(await Service.requestReview('u', 'ws', tick), 'QA_SUBJECT_NOT_FOUND')
+    expectErr(
+      await Service.requestReview('u', 'ws', tick),
+      'QA_SUBJECT_NOT_FOUND',
+    )
     vi.mocked(Source.loadConversation).mockResolvedValue(dbErr())
     expectErr(await Service.requestReview('u', 'ws', conv), 'DATABASE_ERROR')
     vi.mocked(Source.loadTicket).mockResolvedValue(dbErr())
@@ -388,11 +392,15 @@ describe('QaReviewService triggers', () => {
 
   it('does nothing when the QA is off, the kind is off or nobody wrote', async () => {
     vi.mocked(Repo.findConfig).mockResolvedValue(ok(null))
-    expect(expectOk(await Service.onConversationClosed(conversation))).toBeNull()
+    expect(
+      expectOk(await Service.onConversationClosed(conversation)),
+    ).toBeNull()
     vi.mocked(Repo.findConfig).mockResolvedValue(
       ok(createFakeQaConfig({ reviewConversations: false })),
     )
-    expect(expectOk(await Service.onConversationClosed(conversation))).toBeNull()
+    expect(
+      expectOk(await Service.onConversationClosed(conversation)),
+    ).toBeNull()
     vi.mocked(Repo.findConfig).mockResolvedValue(ok(createFakeQaConfig()))
     expect(
       expectOk(
@@ -407,10 +415,16 @@ describe('QaReviewService triggers', () => {
 
   it('propagates storage errors when a conversation closes', async () => {
     vi.mocked(Repo.findConfig).mockResolvedValue(dbErr())
-    expectErr(await Service.onConversationClosed(conversation), 'DATABASE_ERROR')
+    expectErr(
+      await Service.onConversationClosed(conversation),
+      'DATABASE_ERROR',
+    )
     vi.mocked(Repo.findConfig).mockResolvedValue(ok(createFakeQaConfig()))
     vi.mocked(Repo.upsertPending).mockResolvedValue(dbErr())
-    expectErr(await Service.onConversationClosed(conversation), 'DATABASE_ERROR')
+    expectErr(
+      await Service.onConversationClosed(conversation),
+      'DATABASE_ERROR',
+    )
   })
 
   it('queues a review when a ticket is resolved and respects the switches', async () => {
@@ -463,7 +477,11 @@ describe('QaReviewService.run', () => {
       expect.anything(),
       expect.objectContaining({ workspaceId: 'ws-1', userId: null }),
     )
-    expect(AiUsageService.prepare).toHaveBeenCalledWith('ws-1', 'QA_REVIEW', null)
+    expect(AiUsageService.prepare).toHaveBeenCalledWith(
+      'ws-1',
+      'QA_REVIEW',
+      null,
+    )
     expect(emitNotification).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'QA_LOW_SCORE',
@@ -561,18 +579,96 @@ describe('QaReviewService.run', () => {
   })
 
   it.each([
-    ['disabled', () => vi.mocked(Repo.findConfig).mockResolvedValue(ok(createFakeQaConfig({ enabled: false })))],
-    ['subject_not_found', () => vi.mocked(Source.loadConversation).mockResolvedValue(ok(null))],
-    ['no_attendant_reply', () => vi.mocked(Source.loadConversation).mockResolvedValue(ok(conversationSource({ messages: [msg('IN', 'a'), msg('IN', 'b'), msg('IN', 'c'), msg('IN', 'd')] }) as never))],
-    ['too_short', () => vi.mocked(Source.loadConversation).mockResolvedValue(ok(conversationSource({ messages: [msg('IN', 'a'), msg('OUT', 'b', 'u1')] }) as never))],
-    ['bots_excluded', () => {
-      vi.mocked(Repo.findConfig).mockResolvedValue(ok(createFakeQaConfig({ includeBots: false })))
-      vi.mocked(Source.loadConversation).mockResolvedValue(ok(conversationSource({ messages: [msg('IN', 'a'), msg('OUT', 'b', null, true), msg('IN', 'c'), msg('OUT', 'd', null, true)] }) as never))
-    }],
-    ['no_criteria', () => vi.mocked(Repo.listCriteria).mockResolvedValue(ok([createFakeQaCriterion({ active: false })]))],
-    ['ai_quota_exceeded', () => vi.mocked(AiUsageService.prepare).mockResolvedValue(err({ code: 'AI_QUOTA_EXCEEDED' } as never))],
-    ['ai_provider_unavailable', () => vi.mocked(AiUsageService.prepare).mockResolvedValue(err({ code: 'AI_PROVIDER_UNAVAILABLE' } as never))],
-    ['ai_prepare_failed', () => vi.mocked(AiUsageService.prepare).mockResolvedValue(err({ code: 'OTHER' } as never))],
+    [
+      'disabled',
+      () =>
+        vi
+          .mocked(Repo.findConfig)
+          .mockResolvedValue(ok(createFakeQaConfig({ enabled: false }))),
+    ],
+    [
+      'subject_not_found',
+      () => vi.mocked(Source.loadConversation).mockResolvedValue(ok(null)),
+    ],
+    [
+      'no_attendant_reply',
+      () =>
+        vi
+          .mocked(Source.loadConversation)
+          .mockResolvedValue(
+            ok(
+              conversationSource({
+                messages: [
+                  msg('IN', 'a'),
+                  msg('IN', 'b'),
+                  msg('IN', 'c'),
+                  msg('IN', 'd'),
+                ],
+              }) as never,
+            ),
+          ),
+    ],
+    [
+      'too_short',
+      () =>
+        vi
+          .mocked(Source.loadConversation)
+          .mockResolvedValue(
+            ok(
+              conversationSource({
+                messages: [msg('IN', 'a'), msg('OUT', 'b', 'u1')],
+              }) as never,
+            ),
+          ),
+    ],
+    [
+      'bots_excluded',
+      () => {
+        vi.mocked(Repo.findConfig).mockResolvedValue(
+          ok(createFakeQaConfig({ includeBots: false })),
+        )
+        vi.mocked(Source.loadConversation).mockResolvedValue(
+          ok(
+            conversationSource({
+              messages: [
+                msg('IN', 'a'),
+                msg('OUT', 'b', null, true),
+                msg('IN', 'c'),
+                msg('OUT', 'd', null, true),
+              ],
+            }) as never,
+          ),
+        )
+      },
+    ],
+    [
+      'no_criteria',
+      () =>
+        vi
+          .mocked(Repo.listCriteria)
+          .mockResolvedValue(ok([createFakeQaCriterion({ active: false })])),
+    ],
+    [
+      'ai_quota_exceeded',
+      () =>
+        vi
+          .mocked(AiUsageService.prepare)
+          .mockResolvedValue(err({ code: 'AI_QUOTA_EXCEEDED' } as never)),
+    ],
+    [
+      'ai_provider_unavailable',
+      () =>
+        vi
+          .mocked(AiUsageService.prepare)
+          .mockResolvedValue(err({ code: 'AI_PROVIDER_UNAVAILABLE' } as never)),
+    ],
+    [
+      'ai_prepare_failed',
+      () =>
+        vi
+          .mocked(AiUsageService.prepare)
+          .mockResolvedValue(err({ code: 'OTHER' } as never)),
+    ],
   ])('skips with %s', async (reason, setup) => {
     arrange()
     setup()
@@ -623,7 +719,12 @@ describe('QaReviewService.run', () => {
   it('attributes an unassigned conversation to whoever answered it', async () => {
     arrange()
     vi.mocked(Source.loadConversation).mockResolvedValue(
-      ok(conversationSource({ assignedUserId: null, assignedUserName: null }) as never),
+      ok(
+        conversationSource({
+          assignedUserId: null,
+          assignedUserName: null,
+        }) as never,
+      ),
     )
     expectOk(await Service.run('r1'))
     expect(UserRepository.findById).toHaveBeenCalledWith('u1')
@@ -688,7 +789,10 @@ describe('QaReviewService.run', () => {
     expect(AiUsageService.record).not.toHaveBeenCalled()
     expect(Repo.update).toHaveBeenCalledWith(
       'r1',
-      expect.objectContaining({ status: 'FAILED', skipReason: 'provider_failed' }),
+      expect.objectContaining({
+        status: 'FAILED',
+        skipReason: 'provider_failed',
+      }),
     )
   })
 
@@ -722,7 +826,10 @@ describe('QaReviewService.run', () => {
 
     chat.mockRejectedValue(new Error('x'))
     expectErr(await Service.run('r1'), 'DATABASE_ERROR')
-    chat.mockResolvedValue({ text: 'x', usage: { inputTokens: 1, outputTokens: 1 } })
+    chat.mockResolvedValue({
+      text: 'x',
+      usage: { inputTokens: 1, outputTokens: 1 },
+    })
     expectErr(await Service.run('r1'), 'DATABASE_ERROR')
 
     vi.mocked(AiUsageService.prepare).mockResolvedValue(

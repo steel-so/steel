@@ -809,7 +809,11 @@ describe('WhatsAppAiReplyService.generateReply() — AI actions (T3)', () => {
 
     expect(tools.run).toHaveBeenCalledTimes(3)
     expect(tools.run).toHaveBeenCalledWith({
-      toolCall: { id: 'call0', name: 'act_lookup', arguments: { connector: 'x' } },
+      toolCall: {
+        id: 'call0',
+        name: 'act_lookup',
+        arguments: { connector: 'x' },
+      },
       conversationId: CONV,
       tainted: false,
     })

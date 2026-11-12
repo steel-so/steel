@@ -230,7 +230,10 @@ export function DealRoomPanel({
     setActions(drafts.actions)
   }, [room, dirty])
 
-  async function save(input: Parameters<typeof upsert.mutateAsync>[0], ok: string) {
+  async function save(
+    input: Parameters<typeof upsert.mutateAsync>[0],
+    ok: string,
+  ) {
     try {
       await upsert.mutateAsync(input)
       setDirty(false)
@@ -444,7 +447,10 @@ export function DealRoomPanel({
           Plano de ação em conjunto
         </h4>
         {actions.map((action, index) => (
-          <div key={action.id ?? `new-${index}`} className='flex items-center gap-2'>
+          <div
+            key={action.id ?? `new-${index}`}
+            className='flex items-center gap-2'
+          >
             <Checkbox
               checked={action.done}
               disabled={!canEdit}
@@ -478,7 +484,10 @@ export function DealRoomPanel({
                 setActions((list) =>
                   list.map((a, i) =>
                     i === index
-                      ? { ...a, owner: (value as 'SELLER' | 'CUSTOMER') ?? a.owner }
+                      ? {
+                          ...a,
+                          owner: (value as 'SELLER' | 'CUSTOMER') ?? a.owner,
+                        }
                       : a,
                   ),
                 )

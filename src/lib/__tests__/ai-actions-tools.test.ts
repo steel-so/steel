@@ -7,13 +7,13 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/src/services/ai-action.service')
 
 import { AiActionService } from '@/src/services/ai-action.service'
+import { STEEL_AI_TOOLS } from '../ai/tools'
 import {
   ACTION_AI_TOOLS,
   actListConnectorsTool,
   actLookupTool,
   actRunTool,
 } from '../ai/tools/actions'
-import { STEEL_AI_TOOLS } from '../ai/tools'
 
 const service = vi.mocked(AiActionService)
 const CTX = { workspaceId: 'ws1', actorId: 'u1', source: 'assistant' as const }
@@ -95,10 +95,10 @@ describe('act_* tools', () => {
       ),
     )
     const preview = expectOk(
-      await actRunTool.preview?.(CTX, {
+      (await actRunTool.preview?.(CTX, {
         connector: 'redefinir_senha',
         params: { email: 'a@b.com' },
-      }) ?? err(databaseError()),
+      })) ?? err(databaseError()),
     )
     expect(preview.title).toBe('Executar “Redefinir senha”')
     expect(preview.fields).toEqual([

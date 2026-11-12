@@ -78,7 +78,10 @@ const routes: RouteConfig[] = [
       'Atualização parcial. `headers`, quando enviado, substitui todos os cabeçalhos.',
     params: { connectorId: CONNECTOR_PARAM },
     consent: true,
-    body: { schema: UpdateAiActionConnectorSchema, example: { enabled: false } },
+    body: {
+      schema: UpdateAiActionConnectorSchema,
+      example: { enabled: false },
+    },
     responses: {
       200: { description: 'Conector.', schema: AiActionConnectorDTO },
     },

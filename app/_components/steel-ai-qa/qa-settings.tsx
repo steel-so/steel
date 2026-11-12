@@ -58,9 +58,7 @@ function SwitchRow({
     <div className='flex items-start justify-between gap-4'>
       <div className='space-y-0.5'>
         <Label htmlFor={id}>{label}</Label>
-        {hint ? (
-          <p className='text-muted-foreground text-xs'>{hint}</p>
-        ) : null}
+        {hint ? <p className='text-muted-foreground text-xs'>{hint}</p> : null}
       </div>
       <Switch
         id={id}
@@ -104,7 +102,10 @@ function CriterionRow({
           disabled={!canEdit}
           onChange={(event) =>
             onChange({
-              weight: Math.min(10, Math.max(1, Number(event.target.value) || 1)),
+              weight: Math.min(
+                10,
+                Math.max(1, Number(event.target.value) || 1),
+              ),
             })
           }
         />
@@ -112,7 +113,8 @@ function CriterionRow({
           value={criterion.appliesTo}
           disabled={!canEdit}
           onValueChange={(value) =>
-            value && onChange({ appliesTo: value as QaCriterionDTO['appliesTo'] })
+            value &&
+            onChange({ appliesTo: value as QaCriterionDTO['appliesTo'] })
           }
         >
           <SelectTrigger className='w-40' aria-label='Onde vale'>
@@ -215,7 +217,9 @@ export function QaSettings({
         minMessages: Math.max(1, draft.minMessages),
         lowScoreThreshold: Math.min(100, Math.max(1, draft.lowScoreThreshold)),
         alertLowScore: draft.alertLowScore,
-        criteria: draft.criteria.map(({ position: _position, ...rest }) => rest),
+        criteria: draft.criteria.map(
+          ({ position: _position, ...rest }) => rest,
+        ),
       },
       {
         onSuccess: () => notify.success('Configuração do QA salva'),

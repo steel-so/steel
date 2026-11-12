@@ -50,13 +50,14 @@ import { OpportunityProposalButton } from './opportunity-proposal-button'
 
 const LOOKUP_KINDS = ['companies'] as ['companies']
 
-const STATUS_FILTER: { value: CrmContractStatusDTO | 'ALL'; label: string }[] = [
-  { value: 'ACTIVE', label: 'Ativos' },
-  { value: 'EXPIRED', label: 'Vencidos' },
-  { value: 'RENEWED', label: 'Renovados' },
-  { value: 'CANCELED', label: 'Cancelados' },
-  { value: 'ALL', label: 'Todos' },
-]
+const STATUS_FILTER: { value: CrmContractStatusDTO | 'ALL'; label: string }[] =
+  [
+    { value: 'ACTIVE', label: 'Ativos' },
+    { value: 'EXPIRED', label: 'Vencidos' },
+    { value: 'RENEWED', label: 'Renovados' },
+    { value: 'CANCELED', label: 'Cancelados' },
+    { value: 'ALL', label: 'Todos' },
+  ]
 
 function daysText(days: number): string {
   if (days < 0) return `venceu há ${Math.abs(days)} dia(s)`
@@ -78,10 +79,7 @@ function UpsellBlock({
   return (
     <div className='flex flex-col gap-2 rounded-md bg-muted/40 p-3 text-sm'>
       <div className='flex flex-wrap items-center gap-2'>
-        <Badge
-          variant='outline'
-          className={UPSELL_TIMING_TONE[data.timing]}
-        >
+        <Badge variant='outline' className={UPSELL_TIMING_TONE[data.timing]}>
           {UPSELL_TIMING_LABEL[data.timing]}
         </Badge>
         <span className='text-muted-foreground'>{data.timingReason}</span>
@@ -301,11 +299,19 @@ function ContractRow({
               {contract.renewalStateLabel}
             </Badge>
           ) : (
-            <Badge variant='outline'>{contract.status === 'RENEWED' ? 'Renovado' : contract.status === 'EXPIRED' ? 'Vencido' : 'Cancelado'}</Badge>
+            <Badge variant='outline'>
+              {contract.status === 'RENEWED'
+                ? 'Renovado'
+                : contract.status === 'EXPIRED'
+                  ? 'Vencido'
+                  : 'Cancelado'}
+            </Badge>
           )}
           <span className='text-muted-foreground text-sm'>
             {formatDealDate(contract.endDate)}
-            {contract.status === 'ACTIVE' ? ` · ${daysText(contract.daysLeft)}` : ''}
+            {contract.status === 'ACTIVE'
+              ? ` · ${daysText(contract.daysLeft)}`
+              : ''}
           </span>
         </div>
       </div>

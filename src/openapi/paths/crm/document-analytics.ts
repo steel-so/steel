@@ -1,5 +1,5 @@
-import { DocumentAnalyticsQuerySchema } from '@/src/schemas/document-analytics.schema'
 import { DocumentTrackSchema } from '@/src/schemas/document.schema'
+import { DocumentAnalyticsQuerySchema } from '@/src/schemas/document-analytics.schema'
 import type { RouteConfig } from '../../registry'
 import { DocumentAnalyticsDTO } from '../../schemas/crm/document-analytics'
 import { CRM_ERRORS, crmAccess, describe } from './shared'
@@ -42,7 +42,8 @@ export const crmDocumentAnalyticsRoutes: RouteConfig[] = [
     description:
       'Sinal do rastreador do link público `/d/<token>` (a cada ~15 s e ao sair, via `navigator.sendBeacon`, por isso o corpo pode chegar como `text/plain`). O primeiro sinal da sessão grava o evento `OPENED` e avisa o dono; os demais só somam tempo, rolagem e seções. O IP é guardado apenas como hash e o referrer só como domínio.',
     params: {
-      token: 'Token do destinatário (link pessoal) ou `publicToken` do documento.',
+      token:
+        'Token do destinatário (link pessoal) ou `publicToken` do documento.',
     },
     body: {
       schema: DocumentTrackSchema,

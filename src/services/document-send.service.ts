@@ -50,11 +50,7 @@ import {
  * permission the legacy proposal send used.
  */
 
-function access(
-  actorId: string,
-  workspaceId: string,
-  action: 'VIEW' | 'EDIT',
-) {
+function access(actorId: string, workspaceId: string, action: 'VIEW' | 'EDIT') {
   return assertModuleMember(actorId, workspaceId, 'CRM', {
     resource: 'documents',
     action,
@@ -342,9 +338,7 @@ export const DocumentSendService = {
     if (!existing.ok) return existing
     const doc = existing.value
     if (!doc.currentVersion || doc.status === 'ARCHIVED') {
-      return err(
-        validationError('Envie o documento antes de reenviar o link.'),
-      )
+      return err(validationError('Envie o documento antes de reenviar o link.'))
     }
     const recipient = await DocumentRecipientRepository.findById(
       recipientId,

@@ -164,11 +164,7 @@ describe('AiKnowledgeSearchService.resolveAccess', () => {
     const access = expectOk(
       await AiKnowledgeSearchService.resolveAccess(USER, WS),
     )
-    expect(access.types).toEqual([
-      'crm-note',
-      'crm-proposal',
-      'crm-document',
-    ])
+    expect(access.types).toEqual(['crm-note', 'crm-proposal', 'crm-document'])
     expect(access.isSdAgent).toBe(false)
     expect(sd.resolve).not.toHaveBeenCalled()
   })

@@ -131,7 +131,8 @@ export async function settle(
 
   for (;;) {
     const step = currentStep(definition, state)
-    if (!step) return { state, events, messages, outcome: { kind: 'completed' } }
+    if (!step)
+      return { state, events, messages, outcome: { kind: 'completed' } }
 
     if (!conditionHolds(step, state.variables)) {
       mark(state, step.key, 'SKIPPED')
@@ -176,9 +177,7 @@ export async function settle(
         }
         break
       case 'HANDOFF': {
-        const text = step.text
-          ? interpolate(step.text, state.variables)
-          : null
+        const text = step.text ? interpolate(step.text, state.variables) : null
         if (text) messages.push(text)
         mark(state, step.key, 'DONE')
         events.push({

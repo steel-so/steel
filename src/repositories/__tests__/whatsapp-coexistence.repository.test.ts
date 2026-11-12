@@ -57,7 +57,10 @@ describe('WhatsAppCoexistenceRepository', () => {
     const { workspace, connection } = await seedConnection()
     const data = { workspaceId: workspace.id, connectionId: connection.id }
     expectOk(await WhatsAppCoexistenceRepository.create(data))
-    expectErr(await WhatsAppCoexistenceRepository.create(data), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppCoexistenceRepository.create(data),
+      'DATABASE_ERROR',
+    )
   })
 
   it('updates the progress and accumulates counters', async () => {
@@ -148,10 +151,9 @@ describe('WhatsAppCoexistenceRepository', () => {
   })
 
   it('returns DATABASE_ERROR when a query throws', async () => {
-    vi.spyOn(
-      prisma.whatsAppCoexistenceSync,
-      'findFirst',
-    ).mockRejectedValueOnce(new Error('boom'))
+    vi.spyOn(prisma.whatsAppCoexistenceSync, 'findFirst').mockRejectedValueOnce(
+      new Error('boom'),
+    )
     expectErr(
       await WhatsAppCoexistenceRepository.findByConnection('w', 'c'),
       'DATABASE_ERROR',

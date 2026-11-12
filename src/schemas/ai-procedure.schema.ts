@@ -85,11 +85,7 @@ export const ProcedureStepSchema = z.discriminatedUnion('kind', [
     /** Fixed text sent as written (variables replaced). */
     text: z.string().trim().max(PROCEDURE_LIMITS.text).optional(),
     /** Or: what the model must say, in its own words. */
-    instruction: z
-      .string()
-      .trim()
-      .max(PROCEDURE_LIMITS.instruction)
-      .optional(),
+    instruction: z.string().trim().max(PROCEDURE_LIMITS.instruction).optional(),
   }),
   z.object({
     ...baseStep,
@@ -111,7 +107,12 @@ const definition = {
     .min(PROCEDURE_LIMITS.attempts.min)
     .max(PROCEDURE_LIMITS.attempts.max)
     .default(3),
-  handoffMessage: z.string().trim().max(PROCEDURE_LIMITS.text).nullable().optional(),
+  handoffMessage: z
+    .string()
+    .trim()
+    .max(PROCEDURE_LIMITS.text)
+    .nullable()
+    .optional(),
   whatsappEnabled: z.boolean().default(true),
   agentIds: z.array(z.string()).max(50).default([]),
   ownerId: z.string().nullable().optional(),

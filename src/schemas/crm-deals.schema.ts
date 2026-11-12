@@ -60,7 +60,10 @@ export const CreateCrmProposalChargeSchema = z.object({
   payerTaxId: z
     .string()
     .transform((value) => value.replace(/\D/g, ''))
-    .refine((digits) => digits.length === 11 || digits.length === 14, 'CPF ou CNPJ inválido')
+    .refine(
+      (digits) => digits.length === 11 || digits.length === 14,
+      'CPF ou CNPJ inválido',
+    )
     .optional(),
 })
 export type CreateCrmProposalChargeDTO = z.infer<
@@ -167,9 +170,7 @@ export const ToggleDealRoomActionSchema = z.object({
   visitorId: z.string().min(1),
   done: z.boolean(),
 })
-export type ToggleDealRoomActionDTO = z.infer<
-  typeof ToggleDealRoomActionSchema
->
+export type ToggleDealRoomActionDTO = z.infer<typeof ToggleDealRoomActionSchema>
 
 export const ListDealRoomMessagesQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(100),

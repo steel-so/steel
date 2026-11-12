@@ -1,8 +1,4 @@
-import type {
-  Prisma,
-  WhatsAppCostEntry,
-  WhatsAppPrice,
-} from '@prisma/client'
+import type { Prisma, WhatsAppCostEntry, WhatsAppPrice } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -286,7 +282,8 @@ export const WhatsAppCostRepository = {
       return ok(
         rows.map((row) => ({
           ...row,
-          provider: row.provider === 'META' ? ('META' as const) : ('ZAPI' as const),
+          provider:
+            row.provider === 'META' ? ('META' as const) : ('ZAPI' as const),
           monthlyFee: row.monthlyFee === null ? null : Number(row.monthlyFee),
         })),
       )

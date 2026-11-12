@@ -86,10 +86,7 @@ export function QaReviewDialog({
                       <span className='text-muted-foreground text-xs'>
                         peso {result.weight}
                       </span>
-                      <QaScoreBadge
-                        score={result.score}
-                        className='ml-auto'
-                      />
+                      <QaScoreBadge score={result.score} className='ml-auto' />
                     </div>
                     {result.evidence ? (
                       <p className='mt-1 text-muted-foreground text-xs'>

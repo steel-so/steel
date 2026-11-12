@@ -6,7 +6,6 @@ import type {
   UpdateCrmDealsSettingsDTO,
   UpsertCrmDealRoomInput,
 } from '@/src/schemas/crm-deals.schema'
-import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmContractDTO,
   CrmContractStatusDTO,
@@ -18,6 +17,7 @@ import type {
   CrmUpsellDTO,
   DealRoomMessageDTO,
 } from '@/types/crm-deals'
+import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type { DocumentListItemDTO } from '@/types/document'
 import { apiFetch, apiFetchJson } from './_fetch'
 

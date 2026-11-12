@@ -420,8 +420,8 @@ function DeviceSheet({
               </div>
               {data.mergedSources.length === 0 ? (
                 <p className='text-muted-foreground text-xs'>
-                  Nenhuma. Quando duas origens enxergam a mesma máquina
-                  (mesma série, MAC ou nome), as fichas são juntadas sozinhas.
+                  Nenhuma. Quando duas origens enxergam a mesma máquina (mesma
+                  série, MAC ou nome), as fichas são juntadas sozinhas.
                 </p>
               ) : (
                 <ul className='flex flex-col gap-1.5'>

@@ -62,7 +62,8 @@ export function parseParams(text: string, urlTemplate: string) {
   }
   // Placeholders of the URL are always arguments, even when not listed.
   for (const name of placeholdersOf(urlTemplate)) {
-    if (!params.has(name)) params.set(name, { name, description: '', required: true })
+    if (!params.has(name))
+      params.set(name, { name, description: '', required: true })
   }
   return [...params.values()]
 }

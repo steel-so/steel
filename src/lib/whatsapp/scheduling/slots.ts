@@ -4,11 +4,7 @@ import {
   type Interval,
   type WeeklyHours,
 } from '@/src/lib/scheduling/slots'
-import {
-  addDaysToDateKey,
-  zonedDateKey,
-  zonedToUtc,
-} from './time'
+import { addDaysToDateKey, zonedDateKey, zonedToUtc } from './time'
 
 /**
  * Thin adapter over the shared slot engine (`scheduling/slots`). The agenda

@@ -144,14 +144,20 @@ describe('deal room', () => {
 
     const after = (await (await getJson(roomPath, user.cookie)).json()).data
     expect(after.visitors).toHaveLength(1)
+    expect(after.events.map((e: { kind: string }) => e.kind).sort()).toEqual([
+      'ACTION_COMPLETED',
+      'MATERIAL_OPENED',
+      'MESSAGE_SENT',
+      'ROOM_OPENED',
+    ])
     expect(
-      after.events.map((e: { kind: string }) => e.kind).sort(),
-    ).toEqual(['ACTION_COMPLETED', 'MATERIAL_OPENED', 'MESSAGE_SENT', 'ROOM_OPENED'])
-    expect(
-      after.actions.find((a: { id: string }) => a.id === customerAction.id).done,
+      after.actions.find((a: { id: string }) => a.id === customerAction.id)
+        .done,
     ).toBe(true)
 
-    const chat = (await (await getJson(`${roomPath}/messages`, user.cookie)).json()).data
+    const chat = (
+      await (await getJson(`${roomPath}/messages`, user.cookie)).json()
+    ).data
     expect(chat.map((m: { authorKind: string }) => m.authorKind)).toEqual([
       'CUSTOMER',
       'SELLER',
@@ -163,7 +169,13 @@ describe('deal room', () => {
       (await fetch(`${BASE_URL}${api}`, { headers: defaultHeaders })).status,
     ).toBe(404)
     const rotated = (
-      await (await putJson(roomPath, { enabled: true, rotateToken: true }, user.cookie)).json()
+      await (
+        await putJson(
+          roomPath,
+          { enabled: true, rotateToken: true },
+          user.cookie,
+        )
+      ).json()
     ).data
     expect(rotated.token).not.toBe(room.token)
     expect(

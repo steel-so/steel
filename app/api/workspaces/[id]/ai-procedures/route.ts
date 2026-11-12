@@ -41,10 +41,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   )
   if (!consent.ok) return handleError(consent.error)
 
-  const [{ id }, json] = await Promise.all([
-    ctx.params,
-    readJsonBody(request),
-  ])
+  const [{ id }, json] = await Promise.all([ctx.params, readJsonBody(request)])
   if (!json.ok) return handleError(json.error)
   const parsed = CreateAiProcedureSchema.safeParse(json.value)
   if (!parsed.success) {

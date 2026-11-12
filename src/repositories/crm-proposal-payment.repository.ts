@@ -3,7 +3,10 @@ import type {
   CrmProposalCharge,
   CrmProposalSignature,
 } from '@prisma/client'
-import { crmProposalChargeNotFound, crmProposalSignatureNotFound } from '@/src/errors'
+import {
+  crmProposalChargeNotFound,
+  crmProposalSignatureNotFound,
+} from '@/src/errors'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -71,7 +74,9 @@ export const CrmProposalChargeRepository = {
         }),
       )
     } catch (error) {
-      return err(dbError('Failed to find CRM proposal charge by provider', error))
+      return err(
+        dbError('Failed to find CRM proposal charge by provider', error),
+      )
     }
   },
 
@@ -179,7 +184,9 @@ export const CrmProposalSignatureRepository = {
         }),
       )
     } catch (error) {
-      return err(dbError('Failed to read the latest CRM proposal signature', error))
+      return err(
+        dbError('Failed to read the latest CRM proposal signature', error),
+      )
     }
   },
 }

@@ -211,9 +211,9 @@ describe('DocumentAnalyticsCache', () => {
     expect(await redis.exists(DOCUMENT_ANALYTICS_FLUSHING_KEY)).toBe(0)
 
     const second = await DocumentAnalyticsCache.takeBatch()
-    expect(
-      second.ok && second.value?.sessions.map((s) => s.sessionId),
-    ).toEqual(['sess-2'])
+    expect(second.ok && second.value?.sessions.map((s) => s.sessionId)).toEqual(
+      ['sess-2'],
+    )
   })
 
   it('retries a batch whose write failed before taking new beacons', async () => {

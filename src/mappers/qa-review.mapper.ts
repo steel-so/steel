@@ -1,11 +1,11 @@
 import type { QaCriterion, QaReview, QaReviewConfig } from '@prisma/client'
 import { DEFAULT_QA_CRITERIA } from '@/src/lib/qa/criteria'
 import type {
-  QaConfigDTO,
   QaCoachingAgentDTO,
   QaCoachingDTO,
   QaCoachingTipDTO,
   QaCoachingTrendDTO,
+  QaConfigDTO,
   QaCriterionDTO,
   QaCriterionResultDTO,
   QaReviewDTO,

@@ -20,7 +20,8 @@ export const AiProcedureDTO = dto(
     name: z.string().meta({ example: 'Segunda via de boleto' }),
     description: z.string().nullable(),
     whenToUse: z.string().meta({
-      example: 'O cliente pede a segunda via ou o código de barras de um boleto',
+      example:
+        'O cliente pede a segunda via ou o código de barras de um boleto',
     }),
     status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']),
     steps: z.array(ProcedureStepSchema),

@@ -1,9 +1,9 @@
 import type {
-  CrmDealsSettings,
   CrmDealRoomAction,
   CrmDealRoomMaterial,
   CrmDealRoomMessage,
   CrmDealRoomVisitor,
+  CrmDealsSettings,
   CrmProposalCharge,
   CrmProposalSignature,
 } from '@prisma/client'
@@ -12,9 +12,7 @@ import {
   RENEWAL_STATE_LABEL,
   renewalState,
 } from '@/src/lib/crm-deals/renewal'
-import type {
-  CrmContractWithCompany,
-} from '@/src/repositories/crm-contract.repository'
+import type { CrmContractWithCompany } from '@/src/repositories/crm-contract.repository'
 import type {
   CrmDealRoomEventWithVisitor,
   CrmDealRoomFull,

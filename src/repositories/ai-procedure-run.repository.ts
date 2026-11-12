@@ -120,9 +120,7 @@ export const AiProcedureRunRepository = {
   async findDetail(
     id: string,
     workspaceId: string,
-  ): Promise<
-    Result<AiProcedureRunWithName & { steps: AiProcedureRunStep[] }>
-  > {
+  ): Promise<Result<AiProcedureRunWithName & { steps: AiProcedureRunStep[] }>> {
     try {
       const found = await prisma.aiProcedureRun.findFirst({
         where: { id, workspaceId },
@@ -137,10 +135,7 @@ export const AiProcedureRunRepository = {
     }
   },
 
-  async countSince(
-    procedureId: string,
-    since: Date,
-  ): Promise<Result<number>> {
+  async countSince(procedureId: string, since: Date): Promise<Result<number>> {
     try {
       return ok(
         await prisma.aiProcedureRun.count({

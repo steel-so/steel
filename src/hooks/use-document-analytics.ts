@@ -17,8 +17,7 @@ export const documentAnalyticsKeys = {
     workspaceId: string,
     documentId: string,
     period: DocumentAnalyticsPeriod,
-  ) =>
-    [...documentAnalyticsKeys.all(workspaceId), documentId, period] as const,
+  ) => [...documentAnalyticsKeys.all(workspaceId), documentId, period] as const,
 }
 
 export function documentAnalyticsUrl(

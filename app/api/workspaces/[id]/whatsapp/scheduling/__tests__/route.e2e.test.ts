@@ -26,7 +26,11 @@ async function setup() {
     },
   })
   const contact = await prisma.whatsAppContact.create({
-    data: { workspaceId: workspace.id, waId: `5511${Date.now()}${counter}`, name: 'Maria' },
+    data: {
+      workspaceId: workspace.id,
+      waId: `5511${Date.now()}${counter}`,
+      name: 'Maria',
+    },
   })
   return { user, workspace, connection, contact }
 }
@@ -63,23 +67,25 @@ describe('scheduling routes', () => {
     const base = `/api/workspaces/${workspace.id}/whatsapp/scheduling`
     expect((await getJson(`${base}/settings`, user.cookie)).status).toBe(200)
     expect(
-      (await patchJson(`${base}/settings`, { enabled: true }, user.cookie)).status,
+      (await patchJson(`${base}/settings`, { enabled: true }, user.cookie))
+        .status,
     ).toBe(422)
     expect(
-      (await patchJson(`${base}/settings`, { timezone: 'Mars/Base' }, user.cookie))
-        .status,
+      (
+        await patchJson(
+          `${base}/settings`,
+          { timezone: 'Mars/Base' },
+          user.cookie,
+        )
+      ).status,
     ).toBe(422)
     expect(
       (await postJson(`${base}/services`, { name: '' }, user.cookie)).status,
     ).toBe(422)
     // The agenda is off, so slots are refused.
     expect(
-      (
-        await getJson(
-          `${base}/slots?serviceId=x&date=2030-01-07`,
-          user.cookie,
-        )
-      ).status,
+      (await getJson(`${base}/slots?serviceId=x&date=2030-01-07`, user.cookie))
+        .status,
     ).toBe(409)
   })
 
@@ -141,12 +147,15 @@ describe('scheduling routes', () => {
     const booked = await postJson(`${base}/appointments`, body, user.cookie)
     expect(booked.status).toBe(201)
     const appointment = (await booked.json()).data
-    expect(appointment).toMatchObject({ status: 'PENDING', serviceName: 'Corte' })
+    expect(appointment).toMatchObject({
+      status: 'PENDING',
+      serviceName: 'Corte',
+    })
 
     // The same start again is taken.
-    expect((await postJson(`${base}/appointments`, body, user.cookie)).status).toBe(
-      409,
-    )
+    expect(
+      (await postJson(`${base}/appointments`, body, user.cookie)).status,
+    ).toBe(409)
     // And it no longer shows as free.
     const after = (
       await (
@@ -208,8 +217,12 @@ describe('scheduling routes', () => {
       (await deleteJson(`${base}/services/${service.id}`, user.cookie)).status,
     ).toBe(409)
     expect(
-      (await deleteJson(`${base}/professionals/${professional.id}`, user.cookie))
-        .status,
+      (
+        await deleteJson(
+          `${base}/professionals/${professional.id}`,
+          user.cookie,
+        )
+      ).status,
     ).toBe(409)
   })
 })

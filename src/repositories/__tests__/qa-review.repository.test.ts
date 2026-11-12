@@ -55,16 +55,20 @@ describe('QaReviewRepository criteria', () => {
       ]),
     )
     expect(replaced.map((c) => c.key)).toEqual(['c', 'a'])
-    expect(replaced[1]).toMatchObject({ weight: 5, name: 'Novo A', position: 1 })
+    expect(replaced[1]).toMatchObject({
+      weight: 5,
+      name: 'Novo A',
+      position: 1,
+    })
   })
 
   it('does not touch another workspace', async () => {
     const [one, two] = [await seedWorkspace(), await seedWorkspace()]
     expectOk(await Repo.replaceCriteria(one.id, [criterion('a')]))
     expectOk(await Repo.replaceCriteria(two.id, [criterion('z')]))
-    expect(expectOk(await Repo.listCriteria(one.id)).map((c) => c.key)).toEqual([
-      'a',
-    ])
+    expect(expectOk(await Repo.listCriteria(one.id)).map((c) => c.key)).toEqual(
+      ['a'],
+    )
   })
 
   it('maps failures to DATABASE_ERROR', async () => {
@@ -73,7 +77,10 @@ describe('QaReviewRepository criteria', () => {
     )
     expectErr(await Repo.listCriteria('ws'), 'DATABASE_ERROR')
     vi.spyOn(prisma, '$transaction').mockRejectedValueOnce(new Error('x'))
-    expectErr(await Repo.replaceCriteria('ws', [criterion('a')]), 'DATABASE_ERROR')
+    expectErr(
+      await Repo.replaceCriteria('ws', [criterion('a')]),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -165,13 +172,17 @@ describe('QaReviewRepository reviews', () => {
     expect(all.items).toHaveLength(2)
     expect(all.nextCursor).toBe(all.items[1].id)
     const next = expectOk(
-      await Repo.list(ws.id, {}, { limit: 2, cursor: all.nextCursor as string }),
+      await Repo.list(
+        ws.id,
+        {},
+        { limit: 2, cursor: all.nextCursor as string },
+      ),
     )
     expect(next.items).toHaveLength(1)
     expect(next.nextCursor).toBeNull()
-    expect(
-      [...all.items, ...next.items].map((r) => r.id).sort(),
-    ).toEqual([a.id, b.id, c.id].sort())
+    expect([...all.items, ...next.items].map((r) => r.id).sort()).toEqual(
+      [a.id, b.id, c.id].sort(),
+    )
 
     const ids = async (filters: Parameters<typeof Repo.list>[1]) =>
       expectOk(await Repo.list(ws.id, filters, { limit: 10 })).items.map(
@@ -195,7 +206,10 @@ describe('QaReviewRepository reviews', () => {
   it('reads only completed reviews of the period, optionally by agent', async () => {
     const ws = await seedWorkspace()
     const inside = new Date('2026-11-03T12:00:00.000Z')
-    const hit = await seedQaReview(ws.id, { agentUserId: 'u1', reviewedAt: inside })
+    const hit = await seedQaReview(ws.id, {
+      agentUserId: 'u1',
+      reviewedAt: inside,
+    })
     await seedQaReview(ws.id, { agentUserId: 'u2', reviewedAt: inside })
     await seedQaReview(ws.id, { status: 'FAILED', reviewedAt: inside })
     await seedQaReview(ws.id, {
@@ -225,9 +239,7 @@ describe('QaReviewRepository reviews', () => {
       new Error('x'),
     )
     expectErr(await Repo.findById('x'), 'DATABASE_ERROR')
-    vi.spyOn(prisma.qaReview, 'findFirst').mockRejectedValueOnce(
-      new Error('x'),
-    )
+    vi.spyOn(prisma.qaReview, 'findFirst').mockRejectedValueOnce(new Error('x'))
     expectErr(await Repo.findInWorkspace('ws', 'x'), 'DATABASE_ERROR')
     vi.spyOn(prisma.qaReview, 'update').mockRejectedValueOnce(new Error('x'))
     expectErr(await Repo.update('x', {}), 'DATABASE_ERROR')

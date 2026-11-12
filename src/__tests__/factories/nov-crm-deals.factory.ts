@@ -9,9 +9,7 @@ import {
   type CrmProposalSignature,
   Prisma,
 } from '@prisma/client'
-import type {
-  CrmContractWithCompany,
-} from '@/src/repositories/crm-contract.repository'
+import type { CrmContractWithCompany } from '@/src/repositories/crm-contract.repository'
 import type {
   CrmDealRoomEventWithVisitor,
   CrmDealRoomFull,

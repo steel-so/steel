@@ -367,10 +367,13 @@ export const WhatsAppBoletoService = {
     if (!found.value) return err(boletoChargeNotFound())
 
     if (notification.kind === 'PAID') {
-      const paid = await WhatsAppBoletoChargeRepository.markPaid(found.value.id, {
-        paidAt: notification.at,
-        paidAmount: notification.amount ?? Number(found.value.amount),
-      })
+      const paid = await WhatsAppBoletoChargeRepository.markPaid(
+        found.value.id,
+        {
+          paidAt: notification.at,
+          paidAmount: notification.amount ?? Number(found.value.amount),
+        },
+      )
       if (!paid.ok) return paid
       if (!paid.value) return ok(toWhatsAppBoletoChargeDTO(found.value))
 

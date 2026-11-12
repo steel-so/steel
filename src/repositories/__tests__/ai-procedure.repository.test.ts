@@ -7,8 +7,8 @@ import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { prisma } from '@/src/lib/prisma'
 import {
-  AiProcedureRepository,
   type AiProcedureDefinitionInput,
+  AiProcedureRepository,
 } from '../ai-procedure.repository'
 import { AiProcedureRunRepository } from '../ai-procedure-run.repository'
 
@@ -35,7 +35,9 @@ describe('AiProcedureRepository', () => {
       await AiProcedureRepository.create(ws.id, 'u1', input()),
     )
     expect(created.currentVersion).toBe(1)
-    const versions = expectOk(await AiProcedureRepository.listVersions(created.id))
+    const versions = expectOk(
+      await AiProcedureRepository.listVersions(created.id),
+    )
     expect(versions.map((v) => v.number)).toEqual([1])
     expect(expectOk(await AiProcedureRepository.count(ws.id))).toBe(1)
   })
@@ -58,7 +60,9 @@ describe('AiProcedureRepository', () => {
       ),
     )
     expect(bumped.currentVersion).toBe(2)
-    const versions = expectOk(await AiProcedureRepository.listVersions(created.id))
+    const versions = expectOk(
+      await AiProcedureRepository.listVersions(created.id),
+    )
     expect(versions.map((v) => [v.number, v.whenToUse])).toEqual([
       [2, 'outro'],
       [1, 'boleto'],
@@ -95,7 +99,11 @@ describe('AiProcedureRepository', () => {
   it('should list only active procedures for a channel', async () => {
     const ws = await seedWorkspace()
     await seedAiProcedure({ workspaceId: ws.id, name: 'A', agentIds: ['ag1'] })
-    await seedAiProcedure({ workspaceId: ws.id, name: 'B', whatsappEnabled: false })
+    await seedAiProcedure({
+      workspaceId: ws.id,
+      name: 'B',
+      whatsappEnabled: false,
+    })
     await seedAiProcedure({ workspaceId: ws.id, name: 'C', status: 'DRAFT' })
     const whatsapp = expectOk(
       await AiProcedureRepository.listActive(ws.id, { whatsapp: true }),

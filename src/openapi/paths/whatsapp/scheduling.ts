@@ -37,7 +37,11 @@ export const schedulingRoutes: RouteConfig[] = [
     description: `Liga o agendamento (exige a conexão), define fuso, grade, antecedência, templates de confirmação e lembrete e o formulário (Flow) de agendamento. Auditado. ${PRIVILEGED}`,
     body: UpdateSchedulingSettingsSchema,
     responses: { 200: 'Configurações salvas.' },
-    errors: [...PRIVILEGED_ERRORS, 'VALIDATION_ERROR', 'WHATSAPP_SCHED_INVALID'],
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      'VALIDATION_ERROR',
+      'WHATSAPP_SCHED_INVALID',
+    ],
   },
   {
     method: 'get',

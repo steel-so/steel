@@ -34,7 +34,8 @@ export const CrmProposalChargeDTO = dto(
     method: Method,
     provider: z.string().meta({ example: 'mock' }),
     isTest: z.boolean().meta({
-      description: 'Verdadeiro quando o provedor não movimenta dinheiro de verdade.',
+      description:
+        'Verdadeiro quando o provedor não movimenta dinheiro de verdade.',
     }),
     amount: z.number(),
     description: z.string(),
@@ -176,7 +177,9 @@ export const CrmDealRoomDTO = dto(
           createdAt: z.iso.datetime(),
         }),
       )
-      .meta({ description: 'Quem abriu o quê, do mais recente ao mais antigo.' }),
+      .meta({
+        description: 'Quem abriu o quê, do mais recente ao mais antigo.',
+      }),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   }),
@@ -189,9 +192,7 @@ export const PublicDealRoomDTO = dto(
     welcomeMessage: z.string().nullable(),
     companyName: z.string().nullable(),
     workspaceName: z.string(),
-    proposal: z
-      .object({ name: z.string(), sharePath: z.string() })
-      .nullable(),
+    proposal: z.object({ name: z.string(), sharePath: z.string() }).nullable(),
     materials: z.array(DealRoomMaterial),
     actions: z.array(DealRoomAction),
     messages: z.array(DealRoomMessageDTO),

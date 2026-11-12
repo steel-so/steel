@@ -11,13 +11,13 @@ import {
   aiActionInProgress,
   aiActionsDisabled,
 } from '@/src/errors/app-error'
+import type { AiToolContext, AiToolOutput } from '@/src/lib/ai/tools/types'
 import {
   buildConnectorRequest,
   callConnector,
   deriveIdempotencyKey,
   guardConnectorUrl,
 } from '@/src/lib/ai-actions/http-connector'
-import type { AiToolContext, AiToolOutput } from '@/src/lib/ai/tools/types'
 import {
   decryptConnectionSecret,
   encryptConnectionSecret,
@@ -182,10 +182,17 @@ export const AiActionService = {
         : null,
     })
     if (!created.ok) return created
-    audit('ai_action_connector', 'create', actorId, workspaceId, created.value.id, {
-      key: dto.key,
-      kind: dto.kind,
-    })
+    audit(
+      'ai_action_connector',
+      'create',
+      actorId,
+      workspaceId,
+      created.value.id,
+      {
+        key: dto.key,
+        kind: dto.kind,
+      },
+    )
     return ok(await toDTO(created.value))
   },
 
@@ -261,7 +268,9 @@ export const AiActionService = {
         const tool = findTool(entry.toolName)
         if (!tool) {
           return err(
-            aiActionConnectorInvalid(`Ferramenta desconhecida: ${entry.toolName}`),
+            aiActionConnectorInvalid(
+              `Ferramenta desconhecida: ${entry.toolName}`,
+            ),
           )
         }
       }
@@ -308,9 +317,7 @@ export const AiActionService = {
   },
 
   /** Enabled connectors the model may use (empty while the switch is off). */
-  async listForAi(
-    ctx: AiToolContext,
-  ): Promise<Result<AiActionConnectorDTO[]>> {
+  async listForAi(ctx: AiToolContext): Promise<Result<AiActionConnectorDTO[]>> {
     const member = await assertMember(ctx.actorId, ctx.workspaceId)
     if (!member.ok) return member
     const on = await enabledSettings(ctx.workspaceId)
@@ -463,7 +470,9 @@ function finish(
       targetId: connector.id,
       outcome,
       ...(outcome === 'failure' && {
-        reason: response.ok ? `http_${response.value.status}` : response.error.code,
+        reason: response.ok
+          ? `http_${response.value.status}`
+          : response.error.code,
       }),
       meta: {
         workspaceId: ctx.workspaceId,

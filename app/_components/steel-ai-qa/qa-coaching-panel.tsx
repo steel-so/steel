@@ -89,10 +89,7 @@ function AgentCard({
       {agent.byCriterion.length > 0 ? (
         <ul className='grid gap-1.5 sm:grid-cols-2'>
           {agent.byCriterion.map((criterion) => (
-            <li
-              key={criterion.key}
-              className='flex items-center gap-2 text-sm'
-            >
+            <li key={criterion.key} className='flex items-center gap-2 text-sm'>
               <span className='min-w-0 flex-1 truncate'>{criterion.name}</span>
               <div className='h-1.5 w-24 overflow-hidden rounded-full bg-muted'>
                 <div
@@ -145,9 +142,13 @@ function AgentCard({
                   className='h-auto w-full justify-start gap-2 px-2 py-1.5 font-normal'
                   onClick={() => onOpen(review.id)}
                 >
-                  <QaScoreBadge score={review.score} lowScore={review.lowScore} />
+                  <QaScoreBadge
+                    score={review.score}
+                    lowScore={review.lowScore}
+                  />
                   <span className='min-w-0 flex-1 truncate text-left'>
-                    {review.subjectLabel ?? QA_SUBJECT_LABEL[review.subjectType]}
+                    {review.subjectLabel ??
+                      QA_SUBJECT_LABEL[review.subjectType]}
                     {review.customerName ? ` · ${review.customerName}` : ''}
                   </span>
                 </Button>
@@ -206,8 +207,8 @@ export function QaCoachingPanel({ workspaceId }: { workspaceId: string }) {
         </p>
       ) : data.reviews === 0 ? (
         <EmptyState>
-          Nenhuma avaliação no período. Com o QA ligado, cada conversa
-          encerrada e cada chamado resolvido é avaliado automaticamente.
+          Nenhuma avaliação no período. Com o QA ligado, cada conversa encerrada
+          e cada chamado resolvido é avaliado automaticamente.
         </EmptyState>
       ) : (
         <>
@@ -215,7 +216,9 @@ export function QaCoachingPanel({ workspaceId }: { workspaceId: string }) {
             <Tile label='Atendimentos avaliados' value={String(data.reviews)} />
             <Tile
               label='Nota média'
-              value={data.averageScore === null ? '—' : String(data.averageScore)}
+              value={
+                data.averageScore === null ? '—' : String(data.averageScore)
+              }
             />
             <Tile label='Notas baixas' value={String(data.lowScoreCount)} />
             <Tile

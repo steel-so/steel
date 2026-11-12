@@ -962,10 +962,7 @@ const SPEND_BRL = new Intl.NumberFormat('pt-BR', {
 })
 
 /** zap-spend-cap (ADR 0064): paid send refused by the number's monthly cap. */
-export const whatsappSpendCapReached = (
-  cap: number,
-  spent: number,
-): AppError =>
+export const whatsappSpendCapReached = (cap: number, spent: number): AppError =>
   appError(
     'WHATSAPP_SPEND_CAP_REACHED',
     `O limite de gasto mensal deste número foi atingido (${SPEND_BRL.format(spent)} de ${SPEND_BRL.format(cap)} neste mês, pelos dados da Meta). Mensagens de template (pagas) estão bloqueadas; respostas dentro da janela de 24 horas continuam liberadas. Para liberar agora, um administrador pode aumentar o limite ou mudar o modo para "só avisar" em Comunicação > Relatórios > Custos.`,
@@ -2347,7 +2344,6 @@ export const aiActionInProgress = (): AppError =>
     'Esta mesma ação já está em andamento. Aguarde alguns instantes.',
   )
 
-
 // ─── nov: crm-deals ─────────────────────────────────────────────────────────
 
 export const crmDealsPaymentDisabled = (): AppError =>
@@ -2357,7 +2353,10 @@ export const crmDealsPaymentDisabled = (): AppError =>
   )
 
 export const crmProposalChargeNotFound = (): AppError =>
-  appError('CRM_PROPOSAL_CHARGE_NOT_FOUND', 'Cobrança da proposta não encontrada')
+  appError(
+    'CRM_PROPOSAL_CHARGE_NOT_FOUND',
+    'Cobrança da proposta não encontrada',
+  )
 
 export const crmProposalChargeInvalid = (message: string): AppError =>
   appError('CRM_PROPOSAL_CHARGE_INVALID', message)
@@ -2444,10 +2443,16 @@ export const aiProcedureNotFound = (): AppError =>
   appError('AI_PROCEDURE_NOT_FOUND', 'Procedimento não encontrado')
 
 export const aiProcedureRunNotFound = (): AppError =>
-  appError('AI_PROCEDURE_RUN_NOT_FOUND', 'Execução do procedimento não encontrada')
+  appError(
+    'AI_PROCEDURE_RUN_NOT_FOUND',
+    'Execução do procedimento não encontrada',
+  )
 
 export const aiProcedureVersionNotFound = (): AppError =>
-  appError('AI_PROCEDURE_VERSION_NOT_FOUND', 'Versão do procedimento não encontrada')
+  appError(
+    'AI_PROCEDURE_VERSION_NOT_FOUND',
+    'Versão do procedimento não encontrada',
+  )
 
 export const aiProcedureInvalid = (message: string): AppError =>
   appError('AI_PROCEDURE_INVALID', message)
@@ -2461,11 +2466,15 @@ export const aiProcedureLimitReached = (limit: number): AppError =>
 export const boletoProviderError = (message?: string): AppError =>
   appError(
     'BOLETO_PROVIDER_ERROR',
-    message ?? 'O provedor de boleto não respondeu. Tente de novo em instantes.',
+    message ??
+      'O provedor de boleto não respondeu. Tente de novo em instantes.',
   )
 
 export const boletoWebhookInvalid = (): AppError =>
-  appError('BOLETO_WEBHOOK_INVALID', 'Autenticação do webhook de boleto inválida')
+  appError(
+    'BOLETO_WEBHOOK_INVALID',
+    'Autenticação do webhook de boleto inválida',
+  )
 
 export const boletoDisabled = (): AppError =>
   appError(

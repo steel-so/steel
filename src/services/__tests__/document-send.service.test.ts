@@ -447,9 +447,7 @@ describe('DocumentSendService recipients', () => {
       ok(createFakeDocumentRecipient({ id: 'r1' })),
     )
     recipientRepo.delete.mockResolvedValue(ok(undefined))
-    expectOk(
-      await DocumentSendService.removeRecipient('u1', 'ws1', 'd1', 'r1'),
-    )
+    expectOk(await DocumentSendService.removeRecipient('u1', 'ws1', 'd1', 'r1'))
     expect(recipientRepo.findById).toHaveBeenCalledWith('r1', 'd1')
     expect(recipientRepo.delete).toHaveBeenCalledWith('r1')
 

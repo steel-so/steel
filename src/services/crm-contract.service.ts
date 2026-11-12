@@ -11,14 +11,12 @@ import {
   upsellTiming,
 } from '@/src/lib/crm-deals'
 import { err, ok, type Result } from '@/src/lib/result'
-import {
-  toCrmContractDTO,
-} from '@/src/mappers/crm-deals.mapper'
+import { toCrmContractDTO } from '@/src/mappers/crm-deals.mapper'
+import { CrmCompanyRepository } from '@/src/repositories/crm-company.repository'
 import {
   CrmContractRepository,
   type CrmContractWithCompany,
 } from '@/src/repositories/crm-contract.repository'
-import { CrmCompanyRepository } from '@/src/repositories/crm-company.repository'
 import { CrmHealthRepository } from '@/src/repositories/crm-health.repository'
 import { CrmOpportunityRepository } from '@/src/repositories/crm-opportunity.repository'
 import {
@@ -41,8 +39,8 @@ import {
   assertModuleMember,
   assertModulePrivileged,
 } from './authz'
-import { notifyCrmContractExpiring } from './crm-notifications'
 import { CrmDealsSettingsService } from './crm-deals-settings.service'
+import { notifyCrmContractExpiring } from './crm-notifications'
 
 const MAX_ROLL_TERMS = 24
 const UPSELL_LIMIT = 5
@@ -78,7 +76,9 @@ async function createRenewalDeal(
     }
   }
   if (!pipelineId) {
-    return err(crmContractInvalid('Crie um pipeline antes de renovar contratos'))
+    return err(
+      crmContractInvalid('Crie um pipeline antes de renovar contratos'),
+    )
   }
 
   const stages = await CrmPipelineStageRepository.listByPipeline(pipelineId)
@@ -134,7 +134,10 @@ async function tickWorkspace(
 ): Promise<void> {
   const windowEnd = renewalWindowEnd(settings.renewalLeadDays, now)
 
-  const toAlert = await CrmContractRepository.listToAlert(workspaceId, windowEnd)
+  const toAlert = await CrmContractRepository.listToAlert(
+    workspaceId,
+    windowEnd,
+  )
   if (toAlert.ok) {
     for (const contract of toAlert.value) {
       await notifyCrmContractExpiring({
@@ -417,7 +420,9 @@ export const CrmContractService = {
     }
     if (existing.value.renewalOpportunityId) {
       return err(
-        crmContractInvalid('Este contrato já tem uma oportunidade de renovação'),
+        crmContractInvalid(
+          'Este contrato já tem uma oportunidade de renovação',
+        ),
       )
     }
 

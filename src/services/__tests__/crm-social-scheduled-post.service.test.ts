@@ -233,12 +233,7 @@ describe('CrmScheduledPostService.create()', () => {
       [
         'every platform at once',
         dto({
-          platforms: [
-            'INSTAGRAM',
-            'FACEBOOK',
-            'TIKTOK',
-            'YOUTUBE',
-          ],
+          platforms: ['INSTAGRAM', 'FACEBOOK', 'TIKTOK', 'YOUTUBE'],
         }),
         [IMAGE, VIDEO],
       ],

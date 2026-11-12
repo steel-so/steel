@@ -78,7 +78,8 @@ function ConnectorDialog({
         setForm(EMPTY_CONNECTOR_FORM)
         onOpenChange(false)
       },
-      onError: (cause) => notify.error(cause, 'Não foi possível criar o conector'),
+      onError: (cause) =>
+        notify.error(cause, 'Não foi possível criar o conector'),
     })
   }
 
@@ -156,7 +157,10 @@ function ConnectorDialog({
                   next && set('method', next as ConnectorFormState['method'])
                 }
               >
-                <SelectTrigger aria-label='Método HTTP' className='w-full sm:w-40'>
+                <SelectTrigger
+                  aria-label='Método HTTP'
+                  className='w-full sm:w-40'
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,12 +191,14 @@ function ConnectorDialog({
             <Textarea
               id='connector-params'
               value={form.params}
-              placeholder={'orderId: número do pedido\nobservacao?: texto livre'}
+              placeholder={
+                'orderId: número do pedido\nobservacao?: texto livre'
+              }
               onChange={(e) => set('params', e.target.value)}
             />
             <p className='text-muted-foreground text-xs'>
-              Um por linha, no formato nome: descrição. Termine o nome com ? para
-              opcional.
+              Um por linha, no formato nome: descrição. Termine o nome com ?
+              para opcional.
             </p>
           </div>
           <div className='grid gap-1.5'>
@@ -283,10 +289,7 @@ function ZapToolsCard({
   )
 
   function save(zapTools: AiActionZapToolDTO[]) {
-    update.mutate(
-      { zapTools },
-      { onError: (cause) => notify.error(cause) },
-    )
+    update.mutate({ zapTools }, { onError: (cause) => notify.error(cause) })
   }
   const entry = (toolName: string) =>
     settings.zapTools.find((t) => t.toolName === toolName)
@@ -296,10 +299,10 @@ function ZapToolsCard({
       <CardHeader>
         <CardTitle>Resposta automática do WhatsApp</CardTitle>
         <CardDescription>
-          Ferramentas que a IA pode usar enquanto conversa com o cliente. As
-          que alteram dados começam pedindo aprovação (aparecem nas pendências
-          da IA da caixa de entrada). Mesmo as automáticas passam a pedir
-          aprovação quando a mensagem do cliente tenta dar ordens à IA.
+          Ferramentas que a IA pode usar enquanto conversa com o cliente. As que
+          alteram dados começam pedindo aprovação (aparecem nas pendências da IA
+          da caixa de entrada). Mesmo as automáticas passam a pedir aprovação
+          quando a mensagem do cliente tenta dar ordens à IA.
         </CardDescription>
       </CardHeader>
       <CardContent className='grid gap-3'>
@@ -341,7 +344,10 @@ function ZapToolsCard({
                       save(
                         settings.zapTools.map((t) =>
                           t.toolName === option.toolName
-                            ? { ...t, mode: checked === true ? 'AUTO' : 'APPROVAL' }
+                            ? {
+                                ...t,
+                                mode: checked === true ? 'AUTO' : 'APPROVAL',
+                              }
                             : t,
                         ),
                       )
@@ -418,8 +424,8 @@ export function AiActionsSection({ workspaceId }: { workspaceId: string }) {
           <CardDescription>
             Deixe a IA consultar um pedido, redefinir uma senha ou liberar um
             acesso no sistema do cliente. Cada ação passa pela aprovação
-            configurada, fica registrada na trilha e leva chave de
-            idempotência. Desligado por padrão.
+            configurada, fica registrada na trilha e leva chave de idempotência.
+            Desligado por padrão.
           </CardDescription>
         </CardHeader>
         <CardContent className='flex items-center justify-between gap-4'>
@@ -449,8 +455,8 @@ export function AiActionsSection({ workspaceId }: { workspaceId: string }) {
             </Button>
           </CardTitle>
           <CardDescription>
-            Só os conectores listados aqui podem ser chamados pela IA. Máximo
-            de {data.limit}.
+            Só os conectores listados aqui podem ser chamados pela IA. Máximo de{' '}
+            {data.limit}.
           </CardDescription>
         </CardHeader>
         <CardContent>

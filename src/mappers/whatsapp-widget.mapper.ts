@@ -48,18 +48,23 @@ export function toWhatsAppWidgetSettingsDTO(
     workspaceId,
     enabled: row?.enabled ?? WHATSAPP_WIDGET_DEFAULTS.enabled,
     publicKey,
-    allowedOrigins: row?.allowedOrigins ?? WHATSAPP_WIDGET_DEFAULTS.allowedOrigins,
+    allowedOrigins:
+      row?.allowedOrigins ?? WHATSAPP_WIDGET_DEFAULTS.allowedOrigins,
     title: row?.title ?? WHATSAPP_WIDGET_DEFAULTS.title,
-    welcomeMessage: row?.welcomeMessage ?? WHATSAPP_WIDGET_DEFAULTS.welcomeMessage,
+    welcomeMessage:
+      row?.welcomeMessage ?? WHATSAPP_WIDGET_DEFAULTS.welcomeMessage,
     accentColor: row?.accentColor ?? WHATSAPP_WIDGET_DEFAULTS.accentColor,
     position: row ? position(row.position) : WHATSAPP_WIDGET_DEFAULTS.position,
-    preChatEnabled: row?.preChatEnabled ?? WHATSAPP_WIDGET_DEFAULTS.preChatEnabled,
+    preChatEnabled:
+      row?.preChatEnabled ?? WHATSAPP_WIDGET_DEFAULTS.preChatEnabled,
     preChatAskEmail:
       row?.preChatAskEmail ?? WHATSAPP_WIDGET_DEFAULTS.preChatAskEmail,
     preChatAskPhone:
       row?.preChatAskPhone ?? WHATSAPP_WIDGET_DEFAULTS.preChatAskPhone,
-    offlineEnabled: row?.offlineEnabled ?? WHATSAPP_WIDGET_DEFAULTS.offlineEnabled,
-    offlineMessage: row?.offlineMessage ?? WHATSAPP_WIDGET_DEFAULTS.offlineMessage,
+    offlineEnabled:
+      row?.offlineEnabled ?? WHATSAPP_WIDGET_DEFAULTS.offlineEnabled,
+    offlineMessage:
+      row?.offlineMessage ?? WHATSAPP_WIDGET_DEFAULTS.offlineMessage,
     teamId: row?.teamId ?? WHATSAPP_WIDGET_DEFAULTS.teamId,
     showPortal: row?.showPortal ?? WHATSAPP_WIDGET_DEFAULTS.showPortal,
     showSurvey: row?.showSurvey ?? WHATSAPP_WIDGET_DEFAULTS.showSurvey,

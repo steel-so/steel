@@ -15,7 +15,6 @@ configure({ asyncUtilTimeout: 10_000 })
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
 
-
 // Base UI only commits a mouse selection that started on the item itself, so a
 // pointerdown must precede the click (without it the test passes only by luck).
 async function chooseOption(name: string | RegExp) {

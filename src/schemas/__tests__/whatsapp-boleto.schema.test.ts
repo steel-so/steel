@@ -28,8 +28,10 @@ describe('CreateWhatsAppBoletoChargeSchema', () => {
       }).success,
     ).toBe(true)
     expect(
-      CreateWhatsAppBoletoChargeSchema.safeParse({ ...valid, payerTaxId: '123' })
-        .success,
+      CreateWhatsAppBoletoChargeSchema.safeParse({
+        ...valid,
+        payerTaxId: '123',
+      }).success,
     ).toBe(false)
   })
 
@@ -44,7 +46,8 @@ describe('CreateWhatsAppBoletoChargeSchema', () => {
       { dueInDays: 91 },
     ]) {
       expect(
-        CreateWhatsAppBoletoChargeSchema.safeParse({ ...valid, ...bad }).success,
+        CreateWhatsAppBoletoChargeSchema.safeParse({ ...valid, ...bad })
+          .success,
       ).toBe(false)
     }
   })
@@ -53,9 +56,11 @@ describe('CreateWhatsAppBoletoChargeSchema', () => {
 describe('UpdateWhatsAppBoletoSettingsSchema', () => {
   it('takes an optional switch', () => {
     expect(UpdateWhatsAppBoletoSettingsSchema.parse({})).toEqual({})
-    expect(UpdateWhatsAppBoletoSettingsSchema.parse({ enabled: true })).toEqual({
-      enabled: true,
-    })
+    expect(UpdateWhatsAppBoletoSettingsSchema.parse({ enabled: true })).toEqual(
+      {
+        enabled: true,
+      },
+    )
     expect(
       UpdateWhatsAppBoletoSettingsSchema.safeParse({ enabled: 'yes' }).success,
     ).toBe(false)

@@ -1,8 +1,5 @@
 import { createId } from '@paralleldrive/cuid2'
-import type {
-  CrmDuplicateCandidate,
-  CrmMergeLog,
-} from '@prisma/client'
+import type { CrmDuplicateCandidate, CrmMergeLog } from '@prisma/client'
 import type { MergeSnapshot } from '@/src/repositories/crm-duplicate.repository'
 
 export function createFakeDuplicateCandidate(

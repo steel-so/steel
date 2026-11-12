@@ -16,7 +16,11 @@ export const PATCH = withAxiom(async (request: NextRequest, ctx: Params) => {
   const body = await parseBody(request, ToggleDealRoomActionSchema)
   if (!body.ok) return handleError(body.error)
 
-  const result = await CrmDealRoomService.toggleAction(token, actionId, body.value)
+  const result = await CrmDealRoomService.toggleAction(
+    token,
+    actionId,
+    body.value,
+  )
   if (!result.ok) return handleError(result.error)
 
   return successResponse(result.value)

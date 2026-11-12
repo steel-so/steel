@@ -15,16 +15,16 @@ import {
   submitValue,
 } from '@/src/lib/ai/procedures/engine'
 import {
-  activeSection,
   type AvailableProcedure,
+  activeSection,
   catalogSection,
   HANDOFF_TOOL_SPEC,
   PROCEDURE_HANDOFF_TOOL,
   PROCEDURE_START_TOOL,
   PROCEDURE_TOOL_NAMES,
+  SUBMIT_TOOL_SPEC,
   startToolSpec,
   stepDirective,
-  SUBMIT_TOOL_SPEC,
 } from '@/src/lib/ai/procedures/prompt'
 import type {
   ProcedureDefinition,
@@ -207,13 +207,12 @@ export const AiProcedureRuntime = {
             active.value.procedureId,
             subject.workspaceId,
           )
-      const version =
-        loaded?.ok
-          ? await AiProcedureRepository.findVersionByNumber(
-              active.value.procedureId,
-              active.value.versionNumber,
-            )
-          : null
+      const version = loaded?.ok
+        ? await AiProcedureRepository.findVersionByNumber(
+            active.value.procedureId,
+            active.value.versionNumber,
+          )
+        : null
       if (loaded?.ok && version?.ok && version.value) {
         run = active.value
         procedure = loaded.value
@@ -224,7 +223,9 @@ export const AiProcedureRuntime = {
           {
             state: asJson(active.value.state),
             status: 'CANCELED',
-            failureReason: stale ? 'Sem atividade por 24 horas' : 'Procedimento removido',
+            failureReason: stale
+              ? 'Sem atividade por 24 horas'
+              : 'Procedimento removido',
             finishedAt: new Date(),
           },
           [],
@@ -240,7 +241,8 @@ export const AiProcedureRuntime = {
       if (available.length === 0) return ok(null)
     }
 
-    let state: ProcedureState | null = run && def ? parseState(run.state, def) : null
+    let state: ProcedureState | null =
+      run && def ? parseState(run.state, def) : null
     let position = run
       ? await (async () => {
           const n = await AiProcedureRunRepository.countSteps(run.id)
@@ -290,7 +292,10 @@ export const AiProcedureRuntime = {
       }
     }
 
-    const apply = async (result: SettleResult, extra: ProcedureEvent[] = []) => {
+    const apply = async (
+      result: SettleResult,
+      extra: ProcedureEvent[] = [],
+    ) => {
       state = result.state
       messages = [...messages, ...result.messages]
       const outcome = result.outcome
@@ -416,11 +421,17 @@ export const AiProcedureRuntime = {
             await settle(def, state, makeExecutors(subject, chosen.ownerId)),
             [startEvent],
           )
-          return json({ status: ended ? 'encerrado' : 'iniciado', ...directive() })
+          return json({
+            status: ended ? 'encerrado' : 'iniciado',
+            ...directive(),
+          })
         }
 
         if (!run || !def || !state || ended) {
-          return json({ status: 'erro', erro: 'Nenhum procedimento em andamento.' })
+          return json({
+            status: 'erro',
+            erro: 'Nenhum procedimento em andamento.',
+          })
         }
 
         if (call.name === PROCEDURE_HANDOFF_TOOL) {
@@ -465,7 +476,11 @@ export const AiProcedureRuntime = {
         }
         state = submitted.state
         await apply(
-          await settle(def, state, makeExecutors(subject, procedure?.ownerId ?? null)),
+          await settle(
+            def,
+            state,
+            makeExecutors(subject, procedure?.ownerId ?? null),
+          ),
           submitted.events,
         )
         return json({
@@ -508,7 +523,12 @@ export const AiProcedureRuntime = {
 
         const handedOff = status === 'FAILED' || status === 'HANDED_OFF'
         if (!run) {
-          return { reply: text, handoff: false, handoffReason: null, ended: false }
+          return {
+            reply: text,
+            handoff: false,
+            handoffReason: null,
+            ended: false,
+          }
         }
         if (handedOff) {
           const reply =

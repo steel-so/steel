@@ -3,7 +3,6 @@ import { CRM_SALES_AGENT_TEMPLATES } from '@/src/lib/ai/templates/crm-sales-agen
 import { toSteelAgentTemplateDTO } from '@/src/mappers/ai-template.mapper'
 import { CreateSteelAgentSchema } from '@/src/schemas/steel-agent.schema'
 import { findTool } from '../ai/tools/registry'
-import { isValidCron } from '../steel-agents/schedule'
 import {
   buildGuidedAgentInput,
   DEFAULT_GUIDED_ANSWERS,
@@ -11,6 +10,7 @@ import {
   guidedAnswersProblems,
   guidedSummary,
 } from '../steel-agents/guided'
+import { isValidCron } from '../steel-agents/schedule'
 
 const dtos = CRM_SALES_AGENT_TEMPLATES.map((template) =>
   toSteelAgentTemplateDTO(template, ['CRM'], findTool),
@@ -39,9 +39,9 @@ describe('guidedAnswersProblems', () => {
     expect(guidedAnswersProblems({ ...ok, name: '  ' })).toEqual([
       'Dê um nome ao agente.',
     ])
-    expect(
-      guidedAnswersProblems({ ...ok, name: 'x'.repeat(121) }).length,
-    ).toBe(1)
+    expect(guidedAnswersProblems({ ...ok, name: 'x'.repeat(121) }).length).toBe(
+      1,
+    )
     expect(
       guidedAnswersProblems({ ...ok, context: 'x'.repeat(1501) }).length,
     ).toBe(1)

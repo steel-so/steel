@@ -102,7 +102,10 @@ describe('WhatsAppBoletoChargeRepository', () => {
     ).toBeNull()
 
     const byProvider = expectOk(
-      await WhatsAppBoletoChargeRepository.findByProviderCharge('mock', 'bol_1'),
+      await WhatsAppBoletoChargeRepository.findByProviderCharge(
+        'mock',
+        'bol_1',
+      ),
     )
     expect(byProvider?.id).toBe(first.id)
 
@@ -177,13 +180,19 @@ describe('WhatsAppBoletoChargeRepository', () => {
     vi.spyOn(prisma.whatsAppBoletoSettings, 'findUnique').mockRejectedValueOnce(
       boom,
     )
-    vi.spyOn(prisma.whatsAppBoletoSettings, 'upsert').mockRejectedValueOnce(boom)
+    vi.spyOn(prisma.whatsAppBoletoSettings, 'upsert').mockRejectedValueOnce(
+      boom,
+    )
     vi.spyOn(prisma.whatsAppBoletoCharge, 'create').mockRejectedValueOnce(boom)
-    vi.spyOn(prisma.whatsAppBoletoCharge, 'findFirst').mockRejectedValueOnce(boom)
+    vi.spyOn(prisma.whatsAppBoletoCharge, 'findFirst').mockRejectedValueOnce(
+      boom,
+    )
     vi.spyOn(prisma.whatsAppBoletoCharge, 'findUnique').mockRejectedValueOnce(
       boom,
     )
-    vi.spyOn(prisma.whatsAppBoletoCharge, 'findMany').mockRejectedValueOnce(boom)
+    vi.spyOn(prisma.whatsAppBoletoCharge, 'findMany').mockRejectedValueOnce(
+      boom,
+    )
     vi.spyOn(prisma.whatsAppBoletoCharge, 'updateMany').mockRejectedValueOnce(
       boom,
     )

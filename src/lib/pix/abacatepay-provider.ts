@@ -11,7 +11,8 @@ export const ABACATEPAY_PAID_EVENT = 'transparent.completed'
 /** AbacatePay's minimum charge, in cents. */
 const MIN_AMOUNT_CENTS = 100
 
-const PROVIDER_DOWN = 'O provedor de Pix não respondeu. Tente de novo em instantes.'
+const PROVIDER_DOWN =
+  'O provedor de Pix não respondeu. Tente de novo em instantes.'
 
 function toStatus(status: string): PixChargeStatus {
   if (status === 'PAID') return 'PAID'
@@ -28,7 +29,9 @@ function toStatus(status: string): PixChargeStatus {
  * AbacatePay documents no cancel route: `cancelCharge` is a no-op and the
  * charge simply expires at `expiresIn`.
  */
-export function createAbacatePayPixProvider(webhookSecret?: string): PixProvider {
+export function createAbacatePayPixProvider(
+  webhookSecret?: string,
+): PixProvider {
   return {
     id: ABACATEPAY_PIX_PROVIDER_ID,
     isTest: false,
@@ -82,7 +85,12 @@ export function createAbacatePayPixProvider(webhookSecret?: string): PixProvider
     },
 
     parseWebhook(headers, rawBody, query) {
-      const event = readAbacatePayWebhook(webhookSecret, headers, rawBody, query)
+      const event = readAbacatePayWebhook(
+        webhookSecret,
+        headers,
+        rawBody,
+        query,
+      )
       if (!event) return err(pixWebhookInvalid())
       // Authenticated but not a Pix payment (refund, dispute...): nothing to settle.
       if (event.event !== ABACATEPAY_PAID_EVENT) return ok([])

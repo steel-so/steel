@@ -264,11 +264,7 @@ export async function fetchMetaSpend(
     }
   } catch (costError) {
     const body = await readPricing(credentials, window, digits, ['VOLUME'])
-    const summary = summarizePricing(
-      pricingPoints(body),
-      'META_VOLUME',
-      prices,
-    )
+    const summary = summarizePricing(pricingPoints(body), 'META_VOLUME', prices)
     return {
       ...base,
       ...summary,

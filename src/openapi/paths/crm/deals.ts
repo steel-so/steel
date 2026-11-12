@@ -130,7 +130,10 @@ export const crmDealsRoutes: RouteConfig[] = [
       example: { proposalPaymentEnabled: true, renewalLeadDays: 45 },
     },
     responses: {
-      200: { description: 'Configurações salvas.', schema: CrmDealsSettingsDTO },
+      200: {
+        description: 'Configurações salvas.',
+        schema: CrmDealsSettingsDTO,
+      },
     },
     errors: CRM_PRIVILEGED_ERRORS,
   },
@@ -147,7 +150,10 @@ export const crmDealsRoutes: RouteConfig[] = [
     ),
     params: { proposalId: PROPOSAL_ID },
     responses: {
-      200: { description: 'Cobranças e assinaturas.', schema: CrmProposalCheckoutDTO },
+      200: {
+        description: 'Cobranças e assinaturas.',
+        schema: CrmProposalCheckoutDTO,
+      },
     },
     errors: [...CRM_ERRORS, PROPOSAL_NOT_FOUND],
   },
@@ -169,7 +175,12 @@ export const crmDealsRoutes: RouteConfig[] = [
     responses: {
       201: { description: 'Cobrança criada.', schema: CrmProposalChargeDTO },
     },
-    errors: [...CRM_ERRORS, PAYMENT_DISABLED, CHARGE_INVALID, PROPOSAL_NOT_FOUND],
+    errors: [
+      ...CRM_ERRORS,
+      PAYMENT_DISABLED,
+      CHARGE_INVALID,
+      PROPOSAL_NOT_FOUND,
+    ],
   },
   {
     method: 'delete',
@@ -274,10 +285,16 @@ export const crmDealsRoutes: RouteConfig[] = [
     rateLimit: 'ip',
     params: { provider: 'Id do provedor (`mock`).' },
     body: {
-      schema: z.object({ providerChargeId: z.string(), paidAmount: z.number() }),
+      schema: z.object({
+        providerChargeId: z.string(),
+        paidAmount: z.number(),
+      }),
     },
     responses: {
-      200: { description: 'Avisos processados.', schema: z.object({ processed: z.number().int() }) },
+      200: {
+        description: 'Avisos processados.',
+        schema: z.object({ processed: z.number().int() }),
+      },
     },
     errors: [
       { code: 'PIX_WEBHOOK_INVALID', when: 'Assinatura inválida' },
@@ -297,7 +314,10 @@ export const crmDealsRoutes: RouteConfig[] = [
     ),
     params: { opportunityId: OPPORTUNITY_ID },
     responses: {
-      200: { description: 'Sala ou `null`.', schema: CrmDealRoomDTO.nullable() },
+      200: {
+        description: 'Sala ou `null`.',
+        schema: CrmDealRoomDTO.nullable(),
+      },
     },
     errors: [...CRM_ERRORS, OPPORTUNITY_NOT_FOUND],
   },
@@ -381,7 +401,9 @@ export const crmDealsRoutes: RouteConfig[] = [
     consent: true,
     params: { opportunityId: OPPORTUNITY_ID },
     body: { schema: CreateDealRoomMessageSchema },
-    responses: { 201: { description: 'Mensagem.', schema: DealRoomMessageDTO } },
+    responses: {
+      201: { description: 'Mensagem.', schema: DealRoomMessageDTO },
+    },
     errors: [...CRM_ERRORS, ROOM_NOT_FOUND],
   },
 
@@ -427,7 +449,10 @@ export const crmDealsRoutes: RouteConfig[] = [
     params: { token: TOKEN },
     body: { schema: RecordDealRoomEventSchema },
     responses: {
-      201: { description: 'Registrado.', schema: z.object({ recorded: z.literal(true) }) },
+      201: {
+        description: 'Registrado.',
+        schema: z.object({ recorded: z.literal(true) }),
+      },
     },
     errors: [ROOM_NOT_FOUND, ROOM_INVALID],
   },
@@ -442,7 +467,9 @@ export const crmDealsRoutes: RouteConfig[] = [
     rateLimit: 'ip',
     params: { token: TOKEN },
     body: { schema: PostDealRoomMessageSchema },
-    responses: { 201: { description: 'Mensagem.', schema: DealRoomMessageDTO } },
+    responses: {
+      201: { description: 'Mensagem.', schema: DealRoomMessageDTO },
+    },
     errors: [ROOM_NOT_FOUND, ROOM_INVALID],
   },
   {
@@ -476,7 +503,9 @@ export const crmDealsRoutes: RouteConfig[] = [
       crmAccess('companies', 'VIEW'),
     ),
     query: ListCrmContractsQuerySchema,
-    responses: { 200: { description: 'Contratos.', schema: z.array(CrmContractDTO) } },
+    responses: {
+      200: { description: 'Contratos.', schema: z.array(CrmContractDTO) },
+    },
     errors: CRM_ERRORS,
   },
   {
@@ -502,7 +531,10 @@ export const crmDealsRoutes: RouteConfig[] = [
     responses: { 201: { description: 'Contrato.', schema: CrmContractDTO } },
     errors: [
       ...CRM_ERRORS,
-      { code: 'RESOURCE_NOT_FOUND', when: 'Empresa ou oportunidade inexistente' },
+      {
+        code: 'RESOURCE_NOT_FOUND',
+        when: 'Empresa ou oportunidade inexistente',
+      },
     ],
   },
   {
@@ -539,7 +571,10 @@ export const crmDealsRoutes: RouteConfig[] = [
     consent: true,
     params: { contractId: CONTRACT_ID },
     responses: {
-      200: { description: 'Removido.', schema: z.object({ deleted: z.literal(true) }) },
+      200: {
+        description: 'Removido.',
+        schema: z.object({ deleted: z.literal(true) }),
+      },
     },
     errors: [...CRM_ERRORS, CONTRACT_NOT_FOUND],
   },
@@ -554,7 +589,9 @@ export const crmDealsRoutes: RouteConfig[] = [
     ),
     consent: true,
     params: { contractId: CONTRACT_ID },
-    responses: { 201: { description: 'Contrato com a renovação.', schema: CrmContractDTO } },
+    responses: {
+      201: { description: 'Contrato com a renovação.', schema: CrmContractDTO },
+    },
     errors: [...CRM_ERRORS, CONTRACT_NOT_FOUND, CONTRACT_INVALID],
   },
   {

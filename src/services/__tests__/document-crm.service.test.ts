@@ -145,7 +145,11 @@ describe('createProposal', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ entity: 'document', action: 'create' }),
     )
-    expect(indexSearchDocument).toHaveBeenCalledWith('crm-document', 'ws', 'doc1')
+    expect(indexSearchDocument).toHaveBeenCalledWith(
+      'crm-document',
+      'ws',
+      'doc1',
+    )
   })
 
   it('prices the proposal with the opportunity line items', async () => {
@@ -201,9 +205,9 @@ describe('createProposal', () => {
         { id: 'item-2', productId: null, recurrence: 'once' },
       ],
     })
-    expect(pricing && 'items' in pricing && pricing.items[1]).not.toHaveProperty(
-      'discountPct',
-    )
+    expect(
+      pricing && 'items' in pricing && pricing.items[1],
+    ).not.toHaveProperty('discountPct')
     expect(docs.create.mock.calls[0]?.[0]).toMatchObject({
       totalValue: 1400,
       validUntil,
@@ -247,10 +251,15 @@ describe('createProposal', () => {
     })
 
     docs.findById.mockResolvedValue(
-      ok(createFakeDocument({ id: 'tpl1', isTemplate: true, totalValue: null })),
+      ok(
+        createFakeDocument({ id: 'tpl1', isTemplate: true, totalValue: null }),
+      ),
     )
     expectOk(
-      await Service.createProposal('u1', 'ws', { title: 'X', templateId: 'tpl1' }),
+      await Service.createProposal('u1', 'ws', {
+        title: 'X',
+        templateId: 'tpl1',
+      }),
     )
     expect(docs.create.mock.calls[1]?.[0].totalValue).toBeNull()
   })
@@ -317,7 +326,10 @@ describe('createProposal', () => {
 
   it('denies a VIEWER and a disabled CRM module', async () => {
     asRole('VIEWER')
-    expectErr(await Service.createProposal('u1', 'ws', { title: 'X' }), 'FORBIDDEN')
+    expectErr(
+      await Service.createProposal('u1', 'ws', { title: 'X' }),
+      'FORBIDDEN',
+    )
     asRole('MEMBER')
     access.isEnabled.mockResolvedValue(ok(false))
     expectErr(
@@ -404,7 +416,10 @@ describe('createForOpportunity', () => {
 
   it('checks the permission and the deal', async () => {
     asRole('VIEWER')
-    expectErr(await Service.createForOpportunity('u1', 'ws', 'op1'), 'FORBIDDEN')
+    expectErr(
+      await Service.createForOpportunity('u1', 'ws', 'op1'),
+      'FORBIDDEN',
+    )
     asRole('MEMBER')
     deals.findById.mockResolvedValue(err(notFound('Oportunidade')))
     expectErr(

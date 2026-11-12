@@ -105,7 +105,10 @@ export async function loadZapAiTools(
         return (await runReadTool(tool, ctx, toolCall.arguments)).content
       }
 
-      const mode = effectiveToolMode(tool.kind, modeOf.get(tool.name) ?? 'APPROVAL')
+      const mode = effectiveToolMode(
+        tool.kind,
+        modeOf.get(tool.name) ?? 'APPROVAL',
+      )
       if (mode === 'AUTO' && !tainted) {
         const result = await runTool(tool, ctx, toolCall.arguments)
         const target = result.ok ? result.output.target : undefined

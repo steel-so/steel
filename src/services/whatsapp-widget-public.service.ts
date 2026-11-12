@@ -12,7 +12,11 @@ import {
   widgetOriginNotAllowed,
   widgetVisitorInvalid,
 } from '@/src/errors'
-import { consume, widgetSendLimiter, widgetSessionLimiter } from '@/src/lib/rate-limit'
+import {
+  consume,
+  widgetSendLimiter,
+  widgetSessionLimiter,
+} from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   generateVisitorToken,
@@ -58,7 +62,11 @@ export interface WidgetContext {
 }
 
 function describeVisitor(
-  visitor: { name?: string | null; email?: string | null; phone?: string | null },
+  visitor: {
+    name?: string | null
+    email?: string | null
+    phone?: string | null
+  },
   origin: string | null,
   pageUrl: string | undefined,
 ): string {
@@ -83,7 +91,8 @@ async function loadVisitor(
   )
   if (!found.ok) return found
   // A token of another workspace is just an unknown token.
-  if (!found.value || found.value.workspaceId !== ctx.workspaceId) return ok(null)
+  if (!found.value || found.value.workspaceId !== ctx.workspaceId)
+    return ok(null)
   return ok(found.value)
 }
 
@@ -237,10 +246,11 @@ export const WhatsAppWidgetPublicService = {
       if (!created.ok) return created
       visitor = created.value
 
-      const described = await WhatsAppWidgetVisitorRepository.setContactDescription(
-        contact.value.id,
-        describeVisitor(visitor, meta.origin, dto.pageUrl),
-      )
+      const described =
+        await WhatsAppWidgetVisitorRepository.setContactDescription(
+          contact.value.id,
+          describeVisitor(visitor, meta.origin, dto.pageUrl),
+        )
       if (!described.ok) {
         logger.warn('whatsapp.widget.describe_failed', {
           workspaceId: ctx.workspaceId,

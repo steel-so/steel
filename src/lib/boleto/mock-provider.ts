@@ -19,7 +19,9 @@ const MockWebhookSchema = z.object({
 })
 
 /** Test provider: well-formed fake digitable line, no network. */
-export function createMockBoletoProvider(webhookSecret?: string): BoletoProvider {
+export function createMockBoletoProvider(
+  webhookSecret?: string,
+): BoletoProvider {
   return {
     id: MOCK_BOLETO_PROVIDER_ID,
     isTest: true,
@@ -31,7 +33,9 @@ export function createMockBoletoProvider(webhookSecret?: string): BoletoProvider
         barCode: `00000.00000 00000.000000 ${digits.slice(0, 5)}.${digits.slice(5, 10)} 0 00000000000000`,
         url: null,
         brCode: null,
-        dueAt: input.dueDate ? new Date(`${input.dueDate}T23:59:59.999Z`) : null,
+        dueAt: input.dueDate
+          ? new Date(`${input.dueDate}T23:59:59.999Z`)
+          : null,
       })
     },
 
