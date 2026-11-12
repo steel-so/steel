@@ -53,6 +53,8 @@ export type AuditEntity =
   | 'whatsapp_cost_settings'
   // zap-spend-cap: monthly spending cap per WhatsApp number (ADR 0064)
   | 'whatsapp_spend_cap'
+  // zap-block-contacts: contact blocked on a WhatsApp number
+  | 'whatsapp_contact_block'
   | 'whatsapp_ad_settings'
   | 'whatsapp_ad_spend'
   | 'notification'
@@ -424,6 +426,9 @@ export type AuditAction =
   // crm-ops: duplicate merge and its undo
   | 'merge'
   | 'undo'
+  // zap-block-contacts: block / unblock a contact on a WhatsApp number
+  | 'block'
+  | 'unblock'
 
 type AuditOutcome = 'success' | 'failure'
 

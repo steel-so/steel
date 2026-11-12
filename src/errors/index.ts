@@ -423,6 +423,7 @@ export {
   whatsappCloseStatusSelectionInvalid,
   whatsappConnectionConflict,
   whatsappConnectionNotFound,
+  whatsappContactBlocked,
   whatsappContactNotFound,
   whatsappContactPhotoUnavailable,
   whatsappContactSyncUnavailable,

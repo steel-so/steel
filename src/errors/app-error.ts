@@ -969,6 +969,13 @@ export const whatsappSpendCapReached = (cap: number, spent: number): AppError =>
     { cap, spent },
   )
 
+/** zap-block-contacts: send refused, the recipient is blocked on the number. */
+export const whatsappContactBlocked = (): AppError =>
+  appError(
+    'WHATSAPP_CONTACT_BLOCKED',
+    'Este contato está bloqueado neste número do WhatsApp, então nenhuma mensagem é enviada a ele. Para voltar a falar com ele, um administrador ou líder de equipe precisa desbloqueá-lo.',
+  )
+
 export const aiModelNotEnabled = (): AppError =>
   appError(
     'AI_MODEL_NOT_ENABLED',

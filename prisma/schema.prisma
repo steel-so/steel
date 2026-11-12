@@ -1256,6 +1256,8 @@ model WhatsAppConnection {
   // zap-spend-cap: monthly spending cap and Meta spend snapshots (ADR 0064)
   spendCap           WhatsAppSpendCap?
   metaSpendSnapshots WhatsAppMetaSpendSnapshot[]
+  // zap-block-contacts: contacts blocked on this number
+  contactBlocks      WhatsAppContactBlock[]
 
   @@unique([workspaceId, provider, phoneNumber])
   @@index([workspaceId])
@@ -1298,6 +1300,8 @@ model WhatsAppContact {
   flowResponses        WhatsAppFlowResponse[]
   schedAppointments    WhatsAppSchedAppointment[]
   widgetVisitors       WhatsAppWidgetVisitor[]
+  // zap-block-contacts: numbers this contact is blocked on
+  blocks               WhatsAppContactBlock[]
 
   @@unique([workspaceId, waId])
   @@unique([workspaceId, bsuid])
@@ -13809,4 +13813,57 @@ model WhatsAppMetaSpendSnapshot {
   @@unique([connectionId, month])
   @@index([workspaceId])
   @@map("whatsapp_meta_spend_snapshots")
+}
+
+// zap-block-contacts: a contact blocked on a WhatsApp number (Comunicação)
+
+/// Where the provider stands on a block. The internal block (inbound
+/// dropped, outbound refused) holds whatever this says.
+enum WhatsAppContactBlockStatus {
+  /// Blocked at Meta / Z-API too.
+  APPLIED
+  /// Meta only accepts blocking someone who wrote in the last 24 h: applied
+  /// as soon as the person writes again.
+  PENDING
+  /// The provider refused it (see `providerError`).
+  FAILED
+}
+
+enum WhatsAppContactBlockOrigin {
+  /// Blocked by a member in Steel.
+  STEEL
+  /// Imported by the sync from the provider's block list.
+  PROVIDER
+}
+
+/// A contact blocked on one WhatsApp number (connection). Unblocking deletes
+/// the row; the audit log keeps the history. `waId` is the normalized phone
+/// digits (or the BSUID of a username-only contact).
+model WhatsAppContactBlock {
+  id             String                     @id @default(cuid())
+  workspaceId    String                     @map("workspace_id")
+  connectionId   String                     @map("connection_id")
+  contactId      String?                    @map("contact_id")
+  waId           String                     @map("wa_id")
+  reason         String?                    @db.VarChar(500)
+  providerStatus WhatsAppContactBlockStatus @default(PENDING) @map("provider_status")
+  providerError  String?                    @map("provider_error")
+  appliedAt      DateTime?                  @map("applied_at")
+  lastAttemptAt  DateTime?                  @map("last_attempt_at")
+  origin         WhatsAppContactBlockOrigin @default(STEEL)
+  /// Inbound messages of the contact ignored since the block.
+  droppedCount   Int                        @default(0) @map("dropped_count")
+  lastDroppedAt  DateTime?                  @map("last_dropped_at")
+  blockedById    String?                    @map("blocked_by_id")
+  blockedAt      DateTime                   @default(now()) @map("blocked_at")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+  connection WhatsAppConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  contact    WhatsAppContact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@unique([connectionId, waId])
+  @@index([workspaceId])
+  @@index([contactId])
+  @@map("whatsapp_contact_blocks")
 }

@@ -204,6 +204,9 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_SPEND_CAP_REACHED',
     status: 402,
   },
+  // zap-block-contacts: the recipient is blocked on this number, so every
+  // send to them is refused until a manager unblocks the contact.
+  WHATSAPP_CONTACT_BLOCKED: { code: 'WHATSAPP_CONTACT_BLOCKED', status: 409 },
   // Click-to-call: the actor has no PABX extension/device in the profile.
   PABX_EXTENSION_REQUIRED: { code: 'PABX_EXTENSION_REQUIRED', status: 422 },
   // Browser calling: the extension/device of the profile was not approved by an
