@@ -966,7 +966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -6804,7 +6804,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -6926,7 +6926,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_58"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_59"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -10170,7 +10170,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28406,7 +28406,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -32898,7 +32898,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_58"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -33050,7 +33050,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -34208,7 +34208,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -37910,7 +37910,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_DOCUMENT_NOT_FOUND"
@@ -39841,7 +39841,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40033,7 +40033,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -40249,7 +40249,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -41104,7 +41104,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -45175,7 +45175,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -49574,7 +49574,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -60676,7 +60676,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38"
           }
         },
         "security": [
@@ -60964,7 +60964,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -61042,7 +61042,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -61105,10 +61105,10 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -62652,7 +62652,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
           }
         },
         "security": [
@@ -62712,7 +62712,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -66088,7 +66088,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_PROPOSAL_NOT_FOUND"
@@ -70017,7 +70017,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "409": {
             "$ref": "#/components/responses/409_SITE_LIMIT_REACHED"
@@ -80454,7 +80454,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_SOCIAL_CONNECTION_NOT_FOUND"
@@ -80549,7 +80549,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -89966,7 +89966,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -90176,7 +90176,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
           },
           "404": {
             "$ref": "#/components/responses/404_QA_SUBJECT_NOT_FOUND"
@@ -108597,7 +108597,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -110806,7 +110806,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_33"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_KB_ARTICLE_NOT_FOUND"
@@ -110892,7 +110892,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_33"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_KB_ARTICLE_NOT_FOUND"
@@ -115497,7 +115497,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -137162,7 +137162,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -137929,7 +137929,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -138921,6 +138921,298 @@
           },
           "403": {
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/blocks": {
+      "get": {
+        "tags": ["Comunicação · Contatos"],
+        "summary": "Contatos bloqueados",
+        "operationId": "getWorkspacesByIdWhatsappBlocks",
+        "description": "Bloqueios de todos os números do workspace (ou de um), do mais recente ao mais antigo, com quem bloqueou, motivo, situação no provedor e quantas mensagens foram ignoradas. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN e líderes de equipe.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "connectionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bloqueios.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppContactBlock"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_29"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Comunicação · Contatos"],
+        "summary": "Bloquear contato",
+        "operationId": "postWorkspacesByIdWhatsappBlocks",
+        "description": "Bloqueia o contato num número. Pela conversa (`conversationId`): quem pode responder a conversa (permissão `conversations` × `CREATE` e acesso a ela pelas Equipes). Por número + contato (`connectionId` + `contactId`): só OWNER/ADMIN e líderes. Z-API: bloqueio no aparelho (`modify-blocked`). Meta: Block Users API — a Meta só bloqueia quem escreveu nas últimas 24 h; fora disso o bloqueio fica `PENDING` e vai para a Meta quando a pessoa escrever de novo. Outra recusa: `FAILED` com o motivo. O bloqueio vale no Steel na hora, qualquer que seja a resposta do provedor: mensagens do contato naquele número são descartadas antes de criar conversa, notificação, IA, chatbot ou SLA, e todo envio a ele é recusado com `WHATSAPP_CONTACT_BLOCKED` (transmissões e campanhas pulam o destinatário). Bloquear de novo devolve o bloqueio existente. Auditado (sem conteúdo de mensagem).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conversationId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "connectionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "contactId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contato bloqueado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppContactBlockResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_11"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/blocks/sync": {
+      "post": {
+        "tags": ["Comunicação · Contatos"],
+        "summary": "Sincronizar bloqueios com a Meta/Z-API",
+        "operationId": "postWorkspacesByIdWhatsappBlocksSync",
+        "description": "Importa como `APPLIED` os bloqueios feitos fora do Steel (lista da Meta; a Z-API não tem endpoint que liste os bloqueados) e reenvia ao provedor os bloqueios `PENDING`/`FAILED` (até 200 por número a cada sincronização). Corpo opcional: `connectionId` para um número só. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN e líderes de equipe.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "connectionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado por número.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppContactBlockSync"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_29"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/blocks/{blockId}": {
+      "delete": {
+        "tags": ["Comunicação · Contatos"],
+        "summary": "Desbloquear contato",
+        "operationId": "deleteWorkspacesByIdWhatsappBlocksByBlockId",
+        "description": "Desbloqueia no provedor (quando o bloqueio está lá — Meta `DELETE block_users`, Z-API `action: unblock`) e remove o bloqueio do Steel. Se o provedor recusar, o Steel desbloqueia mesmo assim e devolve `providerWarning`. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN e líderes de equipe.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "blockId",
+            "in": "path",
+            "required": true,
+            "description": "Id do bloqueio.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contato desbloqueado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppContactUnblockResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_29"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -142554,7 +142846,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35"
           },
           "409": {
             "$ref": "#/components/responses/409_CONFLICT_2"
@@ -142635,7 +142927,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -142713,7 +143005,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_29"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -142767,7 +143059,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_29"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "422": {
             "$ref": "#/components/responses/422_WHATSAPP_CONTACT_SYNC_UNAVAILABLE"
@@ -142964,7 +143256,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONTACT_NOT_FOUND"
@@ -143277,7 +143569,7 @@
             "$ref": "#/components/responses/402_WHATSAPP_CONVERSATION_LIMIT_REACHED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND"
@@ -143343,7 +143635,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -143712,13 +144004,76 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/conversations/{conversationId}/block": {
+      "get": {
+        "tags": ["Comunicação · Conversas"],
+        "summary": "Bloqueio do contato da conversa",
+        "operationId": "getWorkspacesByIdWhatsappConversationsByConversationIdBlock",
+        "description": "Se o contato da conversa está bloqueado no número dela, e se quem pergunta pode bloquear (quem responde a conversa) ou desbloquear (OWNER/ADMIN e líderes). Uma conversa que o membro não vê responde 404.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "conversationId",
+            "in": "path",
+            "required": true,
+            "description": "Id da conversa.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Situação do bloqueio.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppConversationBlockState"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -144807,7 +145162,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND"
@@ -145505,7 +145860,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -145597,7 +145952,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -145704,7 +146059,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -145807,7 +146162,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_QUICK_REPLY_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_BUTTONS_UNSUPPORTED"
@@ -145908,7 +146263,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -146484,7 +146839,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65"
           },
           "404": {
             "$ref": "#/components/responses/404_PIX_CHARGE_NOT_FOUND"
@@ -146703,7 +147058,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONVERSATION_NOT_FOUND_WHATSAPP_TEAM_NOT_FOUND"
@@ -147384,7 +147739,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -147441,7 +147796,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -147508,7 +147863,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_31"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -147610,7 +147965,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_32"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_33"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -147679,7 +148034,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_31"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_32"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -147745,7 +148100,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -148351,7 +148706,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_31"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -148476,7 +148831,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_12"
@@ -148589,7 +148944,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_32"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_33"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
@@ -148667,7 +149022,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_31"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_32"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
@@ -150517,7 +150872,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_GROUP_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS"
+            "$ref": "#/components/responses/409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONTACT_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_GROUP_PROVIDER_UNSUPPORTED_2"
@@ -151290,7 +151645,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -151464,7 +151819,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -151718,7 +152073,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
           },
           "409": {
             "$ref": "#/components/responses/409_WHATSAPP_QUICK_REPLY_CONFLICT"
@@ -151995,7 +152350,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -152067,7 +152422,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_QUICK_REPLY_NOT_FOUND"
@@ -152596,7 +152951,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_40"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_41"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -153256,7 +153611,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_42"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
@@ -153325,7 +153680,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_41"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_42"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_13"
@@ -155990,7 +156345,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -156275,7 +156630,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_40"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -156356,7 +156711,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -156606,7 +156961,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -161388,7 +161743,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_66"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -166112,18 +166467,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `contacts` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro, ou não é OWNER/ADMIN nem líder de equipe",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166179,7 +166523,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `contacts` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166235,7 +166579,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `DELETE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166291,7 +166635,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `DELETE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166347,6 +166691,62 @@
                 }
               },
               "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `dashboards` × `EDIT`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
                 "value": {
                   "success": false,
@@ -166383,7 +166783,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166428,7 +166828,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_35": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166473,7 +166873,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_36": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166518,7 +166918,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_37": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166563,51 +166963,6 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_38": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Usuário não é membro ou não é OWNER/ADMIN",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
@@ -166617,18 +166972,7 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
+                "summary": "FORBIDDEN — Usuário não é membro ou não é OWNER/ADMIN",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166684,7 +167028,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `CREATE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `message-templates` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166740,7 +167084,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `DELETE`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `CREATE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166796,7 +167140,7 @@
                 }
               },
               "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `EDIT`",
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `DELETE`",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -166833,6 +167177,62 @@
         }
       },
       "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_43": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `reports` × `EDIT`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166899,7 +167299,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_44": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -166966,7 +167366,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_45": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167033,7 +167433,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_46": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167089,7 +167489,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_47": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167134,7 +167534,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_48": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167179,7 +167579,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_49": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167224,7 +167624,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_50": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167280,7 +167680,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_51": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167336,7 +167736,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_52": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167392,7 +167792,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_53": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167448,7 +167848,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_54": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167493,7 +167893,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_55": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167538,7 +167938,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_56": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167583,7 +167983,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_57": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167628,7 +168028,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_58": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167673,7 +168073,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_59": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167718,7 +168118,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_60": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167763,7 +168163,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_61": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167808,7 +168208,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_62": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167853,7 +168253,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_63": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167909,7 +168309,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_64": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -167954,7 +168354,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_65": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_66": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -178912,6 +179312,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Bloqueio não encontrado",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_39": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Chave inexistente no workspace",
                 "value": {
                   "success": false,
@@ -178926,7 +179349,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_39": {
+      "404_RESOURCE_NOT_FOUND_40": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178949,7 +179372,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_40": {
+      "404_RESOURCE_NOT_FOUND_41": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178972,7 +179395,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_41": {
+      "404_RESOURCE_NOT_FOUND_42": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178995,7 +179418,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_42": {
+      "404_RESOURCE_NOT_FOUND_43": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179018,7 +179441,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_43": {
+      "404_RESOURCE_NOT_FOUND_44": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179041,7 +179464,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_44": {
+      "404_RESOURCE_NOT_FOUND_45": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179064,7 +179487,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_45": {
+      "404_RESOURCE_NOT_FOUND_46": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179087,7 +179510,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_46": {
+      "404_RESOURCE_NOT_FOUND_47": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179110,7 +179533,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_47": {
+      "404_RESOURCE_NOT_FOUND_48": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179133,7 +179556,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179156,7 +179579,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179179,7 +179602,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179202,7 +179625,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_51": {
+      "404_RESOURCE_NOT_FOUND_52": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179247,7 +179670,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_52": {
+      "404_RESOURCE_NOT_FOUND_53": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179281,7 +179704,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_53": {
+      "404_RESOURCE_NOT_FOUND_54": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179304,7 +179727,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_54": {
+      "404_RESOURCE_NOT_FOUND_55": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179327,7 +179750,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_55": {
+      "404_RESOURCE_NOT_FOUND_56": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179350,7 +179773,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_56": {
+      "404_RESOURCE_NOT_FOUND_57": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179373,7 +179796,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_57": {
+      "404_RESOURCE_NOT_FOUND_58": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179396,7 +179819,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_58": {
+      "404_RESOURCE_NOT_FOUND_59": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -184568,6 +184991,51 @@
                   "message": "Contato não encontrado",
                   "error": {
                     "code": "WHATSAPP_CONTACT_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_CONTACT_NOT_FOUND_WHATSAPP_CONVERSATION_NOT_FOUND_2": {
+        "description": "Não encontrado: `WHATSAPP_CONNECTION_NOT_FOUND`, `WHATSAPP_CONTACT_NOT_FOUND`, `WHATSAPP_CONVERSATION_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_CONVERSATION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONVERSATION_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conversa não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONVERSATION_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_CONTACT_NOT_FOUND": {
+                "summary": "WHATSAPP_CONTACT_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Contato não encontrado",
+                  "error": {
+                    "code": "WHATSAPP_CONTACT_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_CONNECTION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONNECTION_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conexão do WhatsApp não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONNECTION_NOT_FOUND"
                   }
                 }
               }
@@ -190132,8 +190600,8 @@
           }
         }
       },
-      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS": {
-        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`",
+      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONTACT_BLOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`, `WHATSAPP_CONTACT_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190150,13 +190618,24 @@
                     "code": "WHATSAPP_OUTSIDE_BUSINESS_HOURS"
                   }
                 }
+              },
+              "WHATSAPP_CONTACT_BLOCKED": {
+                "summary": "WHATSAPP_CONTACT_BLOCKED — O contato está bloqueado neste número (Comunicação › Configurações › Contatos bloqueados)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este contato está bloqueado neste número do WhatsApp, então nenhuma mensagem é enviada a ele. Para voltar a falar com ele, um administrador ou líder de equipe precisa desbloqueá-lo.",
+                  "error": {
+                    "code": "WHATSAPP_CONTACT_BLOCKED"
+                  }
+                }
               }
             }
           }
         }
       },
-      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING": {
-        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`, `WHATSAPP_CONVERSATION_AI_HANDLING`",
+      "409_WHATSAPP_OUTSIDE_BUSINESS_HOURS_WHATSAPP_CONVERSATION_AI_HANDLING_WHATSAPP_CONTACT_BLOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_OUTSIDE_BUSINESS_HOURS`, `WHATSAPP_CONVERSATION_AI_HANDLING`, `WHATSAPP_CONTACT_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190182,6 +190661,17 @@
                   "message": "Fora do horário de atendimento: os envios estão travados",
                   "error": {
                     "code": "WHATSAPP_OUTSIDE_BUSINESS_HOURS"
+                  }
+                }
+              },
+              "WHATSAPP_CONTACT_BLOCKED": {
+                "summary": "WHATSAPP_CONTACT_BLOCKED — O contato está bloqueado neste número (Comunicação › Configurações › Contatos bloqueados)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Este contato está bloqueado neste número do WhatsApp, então nenhuma mensagem é enviada a ele. Para voltar a falar com ele, um administrador ou líder de equipe precisa desbloqueá-lo.",
+                  "error": {
+                    "code": "WHATSAPP_CONTACT_BLOCKED"
                   }
                 }
               }
@@ -232771,6 +233261,7 @@
           "WHATSAPP_CONVERSATION_LIMIT_REACHED",
           "WHATSAPP_MESSAGE_LIMIT_REACHED",
           "WHATSAPP_SPEND_CAP_REACHED",
+          "WHATSAPP_CONTACT_BLOCKED",
           "PABX_EXTENSION_REQUIRED",
           "PABX_WEBPHONE_NOT_ENABLED",
           "PABX_NOT_CONFIGURED",
@@ -233320,7 +233811,7 @@
           "DOCUMENT_IMPORT_UNSUPPORTED",
           "DOCUMENT_IMPORT_FAILED"
         ],
-        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `WHATSAPP_SPEND_CAP_REACHED` | 402 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_CONTACT_SYNC_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `WHATSAPP_AGENT_REPORT_DISABLED` | 404 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `QA_REVIEW_NOT_FOUND` | 404 |\n| `QA_SUBJECT_NOT_FOUND` | 404 |\n| `QA_CRITERIA_INVALID` | 422 |\n| `QA_DISABLED` | 409 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `BOLETO_PROVIDER_ERROR` | 502 |\n| `BOLETO_WEBHOOK_INVALID` | 401 |\n| `BOLETO_DISABLED` | 422 |\n| `BOLETO_CHARGE_NOT_FOUND` | 404 |\n| `BOLETO_CHARGE_NOT_PENDING` | 409 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |\n| `CRM_HEALTH_NOT_APPLICABLE` | 409 |\n| `SD_LICENSE_NOT_FOUND` | 404 |\n| `SD_LICENSE_INVALID` | 422 |\n| `SD_NL_CONFIG_FAILED` | 502 |\n| `SD_NL_CONFIG_INVALID` | 422 |\n| `SD_WFM_SETTINGS_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_NOT_FOUND` | 404 |\n| `AI_ACTION_CONNECTOR_LIMIT_REACHED` | 409 |\n| `AI_ACTION_CONNECTOR_KEY_TAKEN` | 409 |\n| `AI_ACTION_CONNECTOR_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_FAILED` | 502 |\n| `AI_ACTIONS_DISABLED` | 403 |\n| `AI_ACTION_IN_PROGRESS` | 409 |\n| `CRM_DEALS_PAYMENT_DISABLED` | 422 |\n| `CRM_PROPOSAL_CHARGE_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_CHARGE_INVALID` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_REQUIRED` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_INVALID` | 422 |\n| `CRM_CONTRACT_NOT_FOUND` | 404 |\n| `CRM_CONTRACT_INVALID` | 422 |\n| `WIDGET_NOT_AVAILABLE` | 404 |\n| `WIDGET_ORIGIN_NOT_ALLOWED` | 403 |\n| `WIDGET_VISITOR_INVALID` | 401 |\n| `WHATSAPP_SCHED_DISABLED` | 409 |\n| `WHATSAPP_SCHED_SERVICE_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_SLOT_TAKEN` | 409 |\n| `WHATSAPP_SCHED_INVALID` | 422 |\n| `WHATSAPP_SCHED_STATE_CONFLICT` | 409 |\n| `AI_PROCEDURE_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_RUN_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_VERSION_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_INVALID` | 422 |\n| `AI_PROCEDURE_LIMIT_REACHED` | 409 |\n| `DOCUMENT_NOT_FOUND` | 404 |\n| `DOCUMENT_FORBIDDEN` | 403 |\n| `DOCUMENT_CONTENT_INVALID` | 422 |\n| `DOCUMENT_SAVE_CONFLICT` | 409 |\n| `DOCUMENT_TEMPLATE_NOT_FOUND` | 404 |\n| `DOCUMENT_RECIPIENT_NOT_FOUND` | 404 |\n| `DOCUMENT_VERSION_NOT_FOUND` | 404 |\n| `DOCUMENT_VERSION_STALE` | 409 |\n| `DOCUMENT_LINK_UNAVAILABLE` | 410 |\n| `DOCUMENT_EXPIRED` | 410 |\n| `DOCUMENT_ALREADY_ANSWERED` | 409 |\n| `DOCUMENT_ACCEPT_NOT_ALLOWED` | 403 |\n| `DOCUMENT_FIELDS_INVALID` | 422 |\n| `DOCUMENT_EMPTY` | 422 |\n| `DOCUMENT_DOWNLOAD_DISABLED` | 403 |\n| `DOCUMENT_EXPORT_NOT_FOUND` | 404 |\n| `DOCUMENT_EXPORT_FAILED` | 502 |\n| `DOCUMENT_IMPORT_NOT_FOUND` | 404 |\n| `DOCUMENT_IMPORT_UNSUPPORTED` | 422 |\n| `DOCUMENT_IMPORT_FAILED` | 502 |"
+        "description": "Código estável do erro (fonte: `src/errors/codes.ts`). Use o código — não a mensagem — para tratar erros no cliente.\n\n| Código | Status HTTP |\n| ------ | ----------- |\n| `UNAUTHORIZED` | 401 |\n| `INVALID_TOKEN` | 401 |\n| `TOKEN_EXPIRED` | 401 |\n| `INVALID_CREDENTIALS` | 401 |\n| `FORBIDDEN` | 403 |\n| `INSUFFICIENT_PERMISSIONS` | 403 |\n| `PROJECT_FORBIDDEN` | 403 |\n| `SEAT_LIMIT_REACHED` | 403 |\n| `FEATURE_NOT_IN_PLAN` | 403 |\n| `CONNECTION_FORBIDDEN` | 403 |\n| `MODULE_DISABLED` | 403 |\n| `WORKSPACE_SUSPENDED` | 403 |\n| `WORKSPACE_IP_NOT_ALLOWED` | 403 |\n| `BACKUP_DOWNLOAD_LINK_INVALID` | 403 |\n| `BAD_REQUEST` | 400 |\n| `VALIDATION_ERROR` | 422 |\n| `RESOURCE_NOT_FOUND` | 404 |\n| `CONFLICT` | 409 |\n| `USERNAME_CONFLICT` | 409 |\n| `RATE_LIMITED` | 429 |\n| `PROJECT_NOT_FOUND` | 404 |\n| `PROJECT_SLUG_CONFLICT` | 409 |\n| `INVITATION_NOT_FOUND` | 404 |\n| `INVITATION_NOT_PENDING` | 409 |\n| `INVITATION_EXPIRED` | 410 |\n| `INVITATION_EMAIL_MISMATCH` | 403 |\n| `INVITATION_DUPLICATE` | 409 |\n| `INVITATION_ALREADY_MEMBER` | 409 |\n| `MEMBER_NOT_FOUND` | 404 |\n| `MEMBER_PROTECTED` | 403 |\n| `PROJECT_MEMBER_ALREADY_EXISTS` | 409 |\n| `PROJECT_MEMBER_NOT_FOUND` | 404 |\n| `PROJECT_MEMBER_NOT_IN_WORKSPACE` | 409 |\n| `COUPON_INVALID` | 422 |\n| `CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_NOT_FOUND` | 404 |\n| `WHATSAPP_CONNECTION_CONFLICT` | 409 |\n| `WHATSAPP_CONTACT_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `WHATSAPP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_CONVERSATION_ALREADY_CLOSED` | 409 |\n| `WHATSAPP_CONVERSATION_NOT_CLOSED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_NOT_FOUND` | 404 |\n| `WHATSAPP_CLOSE_STATUS_LIMIT_REACHED` | 409 |\n| `WHATSAPP_CLOSE_STATUS_SELECTION_INVALID` | 422 |\n| `WHATSAPP_SLA_POLICY_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CAMPAIGN_NOT_READY` | 422 |\n| `WHATSAPP_AI_CAMPAIGN_RUNNING` | 409 |\n| `WHATSAPP_OUTSIDE_BUSINESS_HOURS` | 409 |\n| `WHATSAPP_CONVERSATION_AI_HANDLING` | 409 |\n| `WHATSAPP_QUICK_REPLY_NOT_FOUND` | 404 |\n| `WHATSAPP_QUICK_REPLY_CONFLICT` | 409 |\n| `WHATSAPP_TEAM_NOT_FOUND` | 404 |\n| `WHATSAPP_TEAM_CONFLICT` | 409 |\n| `WHATSAPP_BUTTONS_UNSUPPORTED` | 422 |\n| `WHATSAPP_TEMPLATE_NOT_FOUND` | 404 |\n| `WHATSAPP_TEMPLATE_NOT_APPROVED` | 422 |\n| `WHATSAPP_BROADCAST_NOT_FOUND` | 404 |\n| `WHATSAPP_BROADCAST_LOCKED` | 409 |\n| `WHATSAPP_BROADCAST_MEDIA_INVALID` | 422 |\n| `WHATSAPP_BROADCAST_NO_RECIPIENTS` | 422 |\n| `WHATSAPP_VALIDATION_UNAVAILABLE` | 422 |\n| `WHATSAPP_VALIDATION_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_CONFIG_NOT_FOUND` | 404 |\n| `WHATSAPP_PROVIDER_ERROR` | 502 |\n| `WHATSAPP_SIGNUP_PAYMENT_REQUIRED` | 422 |\n| `WHATSAPP_SIGNUP_NAME_NOT_APPROVED` | 422 |\n| `WHATSAPP_SIGNUP_PERMISSION_DENIED` | 422 |\n| `WHATSAPP_CONVERSATION_LIMIT_REACHED` | 402 |\n| `WHATSAPP_MESSAGE_LIMIT_REACHED` | 402 |\n| `WHATSAPP_SPEND_CAP_REACHED` | 402 |\n| `WHATSAPP_CONTACT_BLOCKED` | 409 |\n| `PABX_EXTENSION_REQUIRED` | 422 |\n| `PABX_WEBPHONE_NOT_ENABLED` | 403 |\n| `PABX_NOT_CONFIGURED` | 503 |\n| `PABX_DEVICE_NOT_FOUND` | 422 |\n| `PABX_CALLBACK_INVALID` | 401 |\n| `PABX_CALL_FAILED` | 502 |\n| `PABX_RECORDING_NOT_ACCEPTED` | 409 |\n| `PABX_RECORDING_DUPLICATE` | 409 |\n| `PABX_RECORDING_TOO_LARGE` | 413 |\n| `PABX_RECORDING_UNSUPPORTED` | 415 |\n| `PHONE_CALL_NOT_FOUND` | 404 |\n| `PHONE_CALL_RECORDING_NOT_FOUND` | 404 |\n| `VOICE_AGENT_SECRET_INVALID` | 401 |\n| `VOICE_AGENT_NOT_READY` | 422 |\n| `VOICE_AGENT_ROUTE_NOT_FOUND` | 404 |\n| `VOICE_AGENT_ROUTE_DUPLICATE` | 409 |\n| `WHATSAPP_WEBHOOK_UNAUTHORIZED` | 401 |\n| `WHATSAPP_GROUP_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_MESSAGE_NOT_FOUND` | 404 |\n| `WHATSAPP_GROUP_PROVIDER_UNSUPPORTED` | 422 |\n| `WHATSAPP_CONTACT_PHOTO_UNAVAILABLE` | 422 |\n| `WHATSAPP_CONTACT_SYNC_UNAVAILABLE` | 422 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE` | 422 |\n| `WHATSAPP_CONTACT_OPTED_OUT` | 422 |\n| `WHATSAPP_SESSION_WINDOW_CLOSED` | 422 |\n| `CRM_COMPANY_NOT_FOUND` | 404 |\n| `CRM_COMPANY_CONFLICT` | 409 |\n| `CRM_PERSON_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_NOT_FOUND` | 404 |\n| `CRM_PIPELINE_STAGE_IN_USE` | 409 |\n| `CRM_PRODUCT_NOT_FOUND` | 404 |\n| `CRM_PRODUCT_CONFLICT` | 409 |\n| `CRM_OPPORTUNITY_NOT_FOUND` | 404 |\n| `CRM_OPPORTUNITY_LINE_ITEM_NOT_FOUND` | 404 |\n| `CRM_LEAD_NOT_FOUND` | 404 |\n| `CRM_LEAD_ALREADY_CONVERTED` | 409 |\n| `CRM_LEAD_SCORING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_ROUTING_RULE_NOT_FOUND` | 404 |\n| `CRM_LEAD_STAGE_TRANSITION_INVALID` | 409 |\n| `CRM_LEAD_STAGE_REQUIREMENTS_NOT_MET` | 422 |\n| `CRM_LEAD_ALREADY_CLOSED` | 409 |\n| `CRM_LEAD_QUALIFICATION_NOT_FOUND` | 404 |\n| `CRM_LEAD_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_LEAD_DUPLICATE` | 409 |\n| `CRM_LEAD_REOPEN_NOT_ALLOWED` | 409 |\n| `CRM_CUSTOM_FIELD_NOT_FOUND` | 404 |\n| `CRM_CUSTOM_FIELD_CONFLICT` | 409 |\n| `CRM_CUSTOM_FIELD_INVALID` | 422 |\n| `CRM_TASK_NOT_FOUND` | 404 |\n| `CRM_NOTE_NOT_FOUND` | 404 |\n| `CRM_QUOTA_NOT_FOUND` | 404 |\n| `CRM_QUOTA_CONFLICT` | 409 |\n| `CRM_REPORT_NOT_FOUND` | 404 |\n| `CRM_REPORT_INVALID_SOURCE` | 422 |\n| `CRM_DASHBOARD_NOT_FOUND` | 404 |\n| `CRM_DASHBOARD_WIDGET_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_EXPIRED` | 409 |\n| `CRM_PROPOSAL_NOT_ACCEPTABLE` | 409 |\n| `CRM_PROPOSAL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_FOUND` | 404 |\n| `CRM_FORM_NOT_PUBLISHED` | 422 |\n| `CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `CRM_AI_NOT_CONFIGURED` | 503 |\n| `CRM_INTEGRATION_KEY_NOT_FOUND` | 404 |\n| `CRM_INTEGRATION_KEY_INVALID` | 401 |\n| `CRM_EMAIL_TEMPLATE_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_EMAIL_CAMPAIGN_ALREADY_SENT` | 409 |\n| `CRM_EMAIL_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_EMAIL_UNSUBSCRIBE_INVALID` | 400 |\n| `CRM_EMAIL_TEMPLATE_NOT_BUILDER` | 409 |\n| `CRM_EMAIL_BUILDER_STRUCTURE_LOCKED` | 422 |\n| `CRM_EMAIL_CANVAS_INVALID` | 422 |\n| `CRM_EMAIL_CANVAS_HTML_FORBIDDEN` | 403 |\n| `CRM_EMAIL_SAVED_BLOCK_NOT_FOUND` | 404 |\n| `CRM_EMAIL_SAVED_BLOCK_INVALID` | 422 |\n| `CRM_EMAIL_SAVED_BLOCK_LIMIT_REACHED` | 422 |\n| `CRM_EMAIL_TEMPLATE_VERSION_NOT_FOUND` | 404 |\n| `CRM_EMAIL_AI_FAILED` | 502 |\n| `CRM_CAMPAIGN_NOT_FOUND` | 404 |\n| `CRM_CAMPAIGN_LOCKED` | 409 |\n| `CRM_CAMPAIGN_INCOMPLETE` | 422 |\n| `CRM_CAMPAIGN_NO_RECIPIENTS` | 422 |\n| `CRM_CAMPAIGN_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_CAMPAIGN_LINK_INVALID` | 404 |\n| `CRM_CAMPAIGN_WEBHOOK_NOT_CONFIGURED` | 503 |\n| `CRM_MAILING_LIST_NOT_FOUND` | 404 |\n| `CRM_MAILING_LIST_MEMBER_CONFLICT` | 409 |\n| `CRM_WORKFLOW_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_NOT_ACTIVE` | 409 |\n| `CRM_WORKFLOW_VERSION_NOT_FOUND` | 404 |\n| `CRM_WORKFLOW_VERSION_NOT_DRAFT` | 409 |\n| `CRM_WORKFLOW_INVALID_DEFINITION` | 422 |\n| `CRM_WORKFLOW_EXECUTION_FAILED` | 500 |\n| `CRM_WORKFLOW_WEBHOOK_INVALID` | 404 |\n| `CRM_LANDING_PAGE_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_NOT_FOUND` | 404 |\n| `CRM_SOCIAL_CONNECTION_CONFLICT` | 409 |\n| `CRM_SOCIAL_OAUTH_FAILED` | 502 |\n| `CRM_SOCIAL_STATE_INVALID` | 400 |\n| `CRM_SOCIAL_NOT_CONFIGURED` | 503 |\n| `CRM_SOCIAL_NO_PAGE` | 422 |\n| `CRM_SOCIAL_IG_NOT_LINKED` | 422 |\n| `CRM_SOCIAL_TOKEN_EXPIRED` | 409 |\n| `CRM_SOCIAL_SCOPE_MISSING` | 409 |\n| `CRM_SOCIAL_VIDEO_INVALID` | 422 |\n| `CRM_COMPETITOR_PROFILE_NOT_FOUND` | 404 |\n| `CRM_COMPETITOR_NO_POSTS` | 422 |\n| `CRM_TEXT_AI_FAILED` | 502 |\n| `CRM_NL_SEARCH_FAILED` | 502 |\n| `CRM_COMPETITOR_IDEAS_FAILED` | 502 |\n| `CRM_APOLLO_NOT_CONNECTED` | 409 |\n| `CRM_APOLLO_INVALID_KEY` | 422 |\n| `CRM_APOLLO_FORBIDDEN` | 403 |\n| `CRM_APOLLO_RATE_LIMITED` | 429 |\n| `CRM_APOLLO_REQUEST_FAILED` | 502 |\n| `CRM_APOLLO_IMPORT_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_NOT_FOUND` | 404 |\n| `CRM_SCHEDULED_POST_ALREADY_PUBLISHED` | 409 |\n| `CRM_SCHEDULED_POST_INVALID` | 400 |\n| `CRM_EMAIL_ACCOUNT_NOT_FOUND` | 404 |\n| `CRM_EMAIL_ACCOUNT_CONFLICT` | 409 |\n| `CRM_EMAIL_MESSAGE_NOT_FOUND` | 404 |\n| `CRM_CALENDAR_EVENT_NOT_FOUND` | 404 |\n| `CRM_AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `PROFILE_NOT_FOUND` | 404 |\n| `PROFILE_NAME_TAKEN` | 409 |\n| `PROFILE_SYSTEM_PROTECTED` | 409 |\n| `PROFILE_IN_USE` | 409 |\n| `CRM_HOOK_VAULT_ITEM_NOT_FOUND` | 404 |\n| `CRM_TRACKED_COMPETITOR_NOT_FOUND` | 404 |\n| `CHANGELOG_NOT_FOUND` | 404 |\n| `CHANGELOG_LOCKED` | 409 |\n| `BACKUP_NOT_FOUND` | 404 |\n| `BACKUP_NOT_RESTORABLE` | 409 |\n| `WORKSPACE_STATUS_CONFLICT` | 409 |\n| `WORKSPACE_OPERATION_IN_PROGRESS` | 409 |\n| `WORKSPACE_CONFIRMATION_MISMATCH` | 422 |\n| `AI_QUOTA_EXCEEDED` | 402 |\n| `AI_MODEL_NOT_ENABLED` | 422 |\n| `AI_PROVIDER_UNAVAILABLE` | 503 |\n| `AI_KNOWLEDGE_EMBEDDING_FAILED` | 502 |\n| `FEATURE_NOT_ENABLED` | 403 |\n| `AI_CONVERSATION_NOT_FOUND` | 404 |\n| `AI_AGENT_MODE_DISABLED` | 403 |\n| `AI_TOOL_NOT_ALLOWED` | 403 |\n| `AI_PENDING_ACTION_NOT_FOUND` | 404 |\n| `AI_PENDING_ACTION_NOT_PENDING` | 409 |\n| `AI_PENDING_ACTION_EXPIRED` | 410 |\n| `AI_PENDING_ACTION_CHANGED` | 409 |\n| `AI_DOUBLE_CONFIRMATION_REQUIRED` | 422 |\n| `AI_DISABLED` | 403 |\n| `AI_AUTOPILOT_DISABLED` | 403 |\n| `AI_ATTACHMENT_NOT_FOUND` | 404 |\n| `AI_ATTACHMENT_UNSUPPORTED` | 415 |\n| `AI_ATTACHMENT_TOO_LARGE` | 413 |\n| `AI_SKILL_NOT_FOUND` | 404 |\n| `AI_SKILL_SLUG_TAKEN` | 409 |\n| `AI_MEMORY_NOT_FOUND` | 404 |\n| `AI_MEMORY_DISABLED` | 403 |\n| `AI_INSIGHT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_NOT_FOUND` | 404 |\n| `STEEL_AGENT_RUN_NOT_FOUND` | 404 |\n| `STEEL_AGENT_INVALID_TOOL` | 422 |\n| `STEEL_AGENT_INVALID_TRIGGER` | 422 |\n| `STEEL_AGENT_INVALID_OWNER` | 422 |\n| `STEEL_AGENT_DISABLED` | 409 |\n| `STEEL_AGENT_SIMULATION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_SIMULATION_IN_PROGRESS` | 409 |\n| `STEEL_AGENT_SIMULATION_GENERATION_FAILED` | 502 |\n| `STEEL_AGENT_VERSION_NOT_FOUND` | 404 |\n| `STEEL_AGENT_VERSION_PENDING` | 409 |\n| `STEEL_AGENT_VERSION_INVALID_STATE` | 409 |\n| `STEEL_AGENT_EVAL_SET_INVALID` | 422 |\n| `AI_FEEDBACK_NOT_FOUND` | 404 |\n| `AI_FEEDBACK_TARGET_NOT_FOUND` | 404 |\n| `AI_EVAL_SET_NOT_FOUND` | 404 |\n| `AI_EVAL_CASE_NOT_FOUND` | 404 |\n| `AI_EVAL_RUN_NOT_FOUND` | 404 |\n| `AI_EVAL_LIMIT_REACHED` | 409 |\n| `AI_EVAL_SET_EMPTY` | 422 |\n| `AI_EVAL_RUN_IN_PROGRESS` | 409 |\n| `SD_TICKET_NOT_FOUND` | 404 |\n| `SD_TICKET_FORBIDDEN` | 403 |\n| `SD_NOT_AGENT` | 403 |\n| `SD_TICKET_CLOSED` | 409 |\n| `SD_PHASE_NOT_FOUND` | 404 |\n| `SD_PHASE_TRANSITION_NOT_ALLOWED` | 422 |\n| `SD_PHASE_REQUIREMENTS_UNMET` | 422 |\n| `SD_APPROVAL_REQUIRED` | 422 |\n| `SD_APPROVAL_NOT_FOUND` | 404 |\n| `SD_APPROVAL_NOT_PENDING` | 409 |\n| `SD_APPROVAL_EXPIRED` | 410 |\n| `SD_SIGNATURE_REQUIRED` | 422 |\n| `SD_CATEGORY_NOT_FOUND` | 404 |\n| `SD_CATEGORY_LEVEL_INVALID` | 422 |\n| `SD_DEPARTMENT_NOT_FOUND` | 404 |\n| `SD_DEPARTMENT_DEPTH_EXCEEDED` | 422 |\n| `SD_CUSTOMER_NOT_FOUND` | 404 |\n| `SD_CUSTOMER_DOCUMENT_CONFLICT` | 409 |\n| `SD_DOCUMENT_INVALID` | 422 |\n| `SD_CONTACT_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_TYPE_NOT_FOUND` | 404 |\n| `SD_CONFIG_ITEM_CYCLE` | 422 |\n| `SD_CONFIG_NOT_FOUND` | 404 |\n| `SD_CONFIG_CONFLICT` | 409 |\n| `SD_CUSTOM_FIELD_INVALID` | 422 |\n| `SD_KB_ARTICLE_NOT_FOUND` | 404 |\n| `SD_KB_ARTICLE_FORBIDDEN` | 403 |\n| `SD_KB_ARTICLE_MOVE_INVALID` | 422 |\n| `SD_KB_COMMENT_NOT_FOUND` | 404 |\n| `SD_KB_COMMENT_FORBIDDEN` | 403 |\n| `SD_KB_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `SD_ATTACHMENT_NOT_FOUND` | 404 |\n| `SD_ATTACHMENT_INVALID` | 422 |\n| `SD_CEP_NOT_FOUND` | 404 |\n| `SD_CEP_LOOKUP_FAILED` | 502 |\n| `SD_PORTAL_DISABLED` | 403 |\n| `SD_WHATSAPP_NOT_CONFIGURED` | 422 |\n| `SD_AI_DISABLED` | 403 |\n| `SD_MESSAGE_NOT_FOUND` | 404 |\n| `SD_MESSAGE_FORBIDDEN` | 403 |\n| `SD_TASK_NOT_FOUND` | 404 |\n| `SD_COST_NOT_FOUND` | 404 |\n| `SD_TICKET_PART_NOT_FOUND` | 404 |\n| `SD_PART_STATUS_INVALID` | 422 |\n| `SD_PART_OUT_OF_STOCK` | 409 |\n| `SD_SIGNATURE_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_AI_CONVERSATION_CLOSED` | 409 |\n| `SD_WHATSAPP_CONVERSATION_NOT_FOUND` | 404 |\n| `SD_WHATSAPP_WINDOW_CLOSED` | 422 |\n| `SD_CSAT_ALREADY_SUBMITTED` | 409 |\n| `SD_CSAT_NOT_AVAILABLE` | 422 |\n| `SD_MAILBOX_NOT_FOUND` | 404 |\n| `SD_MAILBOX_CONFLICT` | 409 |\n| `SD_MAILBOX_CONNECTION_FAILED` | 502 |\n| `SD_MONITOR_SOURCE_NOT_FOUND` | 404 |\n| `SD_MONITOR_ALERT_NOT_FOUND` | 404 |\n| `SD_MONITOR_TOKEN_INVALID` | 401 |\n| `SD_MONITOR_PAYLOAD_INVALID` | 422 |\n| `SD_INVENTORY_TARGET_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_RANGE_INVALID` | 422 |\n| `SD_INVENTORY_DISCOVERY_RANGE_NOT_FOUND` | 404 |\n| `SD_INVENTORY_DEVICE_STATE_INVALID` | 409 |\n| `SD_INVENTORY_SNMP_CREDENTIALS_INVALID` | 422 |\n| `SD_PORTAL_LINK_INVALID` | 401 |\n| `SD_PORTAL_LINK_EXPIRED` | 410 |\n| `SD_PORTAL_SESSION_EXPIRED` | 401 |\n| `SD_PORTAL_CONTACT_INACTIVE` | 403 |\n| `SD_NOTIFICATION_EVENT_UNKNOWN` | 422 |\n| `SD_CONTRACT_NOT_FOUND` | 404 |\n| `SD_CONTRACT_INACTIVE` | 422 |\n| `SD_CONTRACT_OVERLAP` | 409 |\n| `SD_CONTRACT_PERIOD_NOT_FOUND` | 404 |\n| `SD_CONTRACT_PERIOD_CLOSED` | 409 |\n| `SD_TIME_ENTRY_NOT_FOUND` | 404 |\n| `SD_TIME_ENTRY_RUNNING` | 409 |\n| `SD_TIME_ENTRY_INVALID` | 422 |\n| `SD_CHANGE_WINDOW_NOT_FOUND` | 404 |\n| `SD_CHANGE_WINDOW_INVALID` | 422 |\n| `SD_CHANGE_FROZEN` | 409 |\n| `SD_CHANGE_CONFLICT` | 409 |\n| `SD_CAB_BOARD_NOT_FOUND` | 404 |\n| `SD_CAB_QUORUM_INVALID` | 422 |\n| `SD_APPROVAL_ROUND_NOT_FOUND` | 404 |\n| `SD_APPROVAL_ROUND_CLOSED` | 409 |\n| `SD_ONCALL_SCHEDULE_NOT_FOUND` | 404 |\n| `SD_ONCALL_LAYER_INVALID` | 422 |\n| `SD_ONCALL_OVERRIDE_OVERLAP` | 409 |\n| `SD_RECURRING_NOT_FOUND` | 404 |\n| `SD_RECURRING_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_NOT_FOUND` | 404 |\n| `SD_REPORT_SCHEDULE_INVALID` | 422 |\n| `SD_REPORT_RECIPIENTS_REQUIRED` | 422 |\n| `SD_REPORT_RUN_NOT_FOUND` | 404 |\n| `SD_REPORT_GENERATION_FAILED` | 500 |\n| `SD_KB_REVIEW_NOT_FOUND` | 404 |\n| `SD_KB_REVIEW_CLOSED` | 409 |\n| `SD_KB_REVIEW_FORBIDDEN` | 403 |\n| `SD_RISK_PREDICTION_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_NOT_FOUND` | 404 |\n| `SD_INCIDENT_CLUSTER_CLOSED` | 409 |\n| `SD_INTEGRATION_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_EXISTS` | 409 |\n| `SD_INTEGRATION_NOT_CONFIGURED` | 503 |\n| `SD_INTEGRATION_LINK_NOT_FOUND` | 404 |\n| `SD_INTEGRATION_LINK_EXISTS` | 409 |\n| `SD_INTEGRATION_SIGNATURE_INVALID` | 401 |\n| `SD_INTEGRATION_REQUEST_FAILED` | 502 |\n| `TOTP_NOT_ENABLED` | 409 |\n| `TOTP_INVALID_CODE` | 401 |\n| `WIKI_DISABLED` | 403 |\n| `WIKI_PAGE_FORBIDDEN` | 403 |\n| `WIKI_PAGE_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_NOT_FOUND` | 404 |\n| `WIKI_COMMENT_FORBIDDEN` | 403 |\n| `WIKI_COMMENT_NESTING_TOO_DEEP` | 422 |\n| `WIKI_LABEL_NOT_FOUND` | 404 |\n| `WIKI_LABEL_CONFLICT` | 409 |\n| `WIKI_PAGE_LOCKED` | 423 |\n| `WIKI_LOCK_FORBIDDEN` | 403 |\n| `WIKI_AI_FAILED` | 502 |\n| `WHITEBOARD_DISABLED` | 403 |\n| `WHITEBOARD_NOT_FOUND` | 404 |\n| `WHITEBOARD_FORBIDDEN` | 403 |\n| `WHITEBOARD_VERSION_NOT_FOUND` | 404 |\n| `WHITEBOARD_LOCKED` | 409 |\n| `WHITEBOARD_REVISION_CONFLICT` | 409 |\n| `WHITEBOARD_FILE_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_NOT_FOUND` | 404 |\n| `WORKSPACE_EXPORT_LIMIT_REACHED` | 429 |\n| `WORKSPACE_EXPORT_NOT_READY` | 409 |\n| `WORKSPACE_EXPORT_LOGS_UNAVAILABLE` | 503 |\n| `SITE_NOT_FOUND` | 404 |\n| `SITE_SLUG_TAKEN` | 409 |\n| `SITE_PAGE_NOT_FOUND` | 404 |\n| `SITE_PAGE_PATH_TAKEN` | 409 |\n| `SITE_PAGE_PROTECTED` | 409 |\n| `SITE_GLOBAL_NOT_FOUND` | 404 |\n| `SITE_GLOBAL_KIND_TAKEN` | 409 |\n| `SITE_VERSION_NOT_FOUND` | 404 |\n| `SITE_DOCUMENT_INVALID` | 422 |\n| `SITE_LIMIT_REACHED` | 409 |\n| `SITE_REDIRECT_NOT_FOUND` | 404 |\n| `SITE_REDIRECT_PATH_TAKEN` | 409 |\n| `SITE_REDIRECT_LOOP` | 422 |\n| `SITE_POST_NOT_FOUND` | 404 |\n| `SITE_POST_SLUG_TAKEN` | 409 |\n| `SITE_BLOG_TERM_NOT_FOUND` | 404 |\n| `SITE_BLOG_TERM_SLUG_TAKEN` | 409 |\n| `SITE_AUTHOR_NOT_FOUND` | 404 |\n| `SITE_AUTHOR_TAKEN` | 409 |\n| `SITE_COLLECTION_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_NOT_FOUND` | 404 |\n| `SITE_COLLECTION_ITEM_SLUG_TAKEN` | 409 |\n| `SITE_COLLECTION_ITEM_INVALID` | 422 |\n| `SITE_BLOG_AI_FAILED` | 502 |\n| `CANVAS_COLLAB_NOT_FOUND` | 404 |\n| `SITE_AI_FAILED` | 502 |\n| `SITE_SEARCH_AI_FAILED` | 502 |\n| `SITE_EXPERIMENT_NOT_FOUND` | 404 |\n| `SITE_EXPERIMENT_RUNNING` | 409 |\n| `SITE_EXPERIMENT_INVALID_STATE` | 409 |\n| `SITE_EXPERIMENT_CONFLICT` | 409 |\n| `SITE_EXPERIMENT_NOT_PUBLISHED` | 422 |\n| `CRM_TV_LINK_NOT_FOUND` | 404 |\n| `CRM_SALES_WIDGET_UNSUPPORTED` | 422 |\n| `INTEGRATION_GRANT_NOT_FOUND` | 404 |\n| `OAUTH_REQUEST_INVALID` | 400 |\n| `MCP_WRITE_DISABLED` | 403 |\n| `MCP_IDEMPOTENCY_IN_PROGRESS` | 409 |\n| `MCP_IDEMPOTENCY_KEY_REUSED` | 422 |\n| `API_TOKEN_NOT_FOUND` | 404 |\n| `API_TOKEN_LIMIT_REACHED` | 422 |\n| `AUTHORIZATION_PENDING` | 428 |\n| `SLOW_DOWN` | 429 |\n| `EXPIRED_TOKEN` | 410 |\n| `ACCESS_DENIED` | 403 |\n| `DEVICE_CODE_INVALID` | 404 |\n| `API_TOKEN_SCOPE_REQUIRED` | 403 |\n| `API_TOKEN_MODULE_NOT_ALLOWED` | 403 |\n| `WEBHOOK_ENDPOINT_NOT_FOUND` | 404 |\n| `WEBHOOK_DELIVERY_NOT_FOUND` | 404 |\n| `WEBHOOK_ENDPOINT_LIMIT_REACHED` | 409 |\n| `WEBHOOK_URL_NOT_ALLOWED` | 422 |\n| `WEBHOOK_EVENT_UNKNOWN` | 422 |\n| `INTERNAL_SERVER_ERROR` | 500 |\n| `DATABASE_ERROR` | 500 |\n| `STORAGE_ERROR` | 500 |\n| `PAYMENT_ERROR` | 502 |\n| `SUBSCRIPTION_CANCEL_FAILED` | 502 |\n| `MAIL_ERROR` | 502 |\n| `CONNECTION_TEST_FAILED` | 502 |\n| `RELEASE_NOTES_UNAVAILABLE` | 502 |\n| `ANALYTICS_QUERY_FAILED` | 502 |\n| `BACKUP_FAILED` | 500 |\n| `BILLING_DISABLED` | 503 |\n| `WHATSAPP_PRICE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_FOUND` | 404 |\n| `WHATSAPP_ARCHIVE_NOT_READY` | 409 |\n| `WHATSAPP_ARCHIVE_DISABLED` | 409 |\n| `WHATSAPP_ARCHIVE_IN_PROGRESS` | 409 |\n| `WHATSAPP_AGENT_REPORT_DISABLED` | 404 |\n| `SENDING_DOMAIN_NOT_FOUND` | 404 |\n| `SENDING_DOMAIN_TAKEN` | 409 |\n| `SENDING_DOMAIN_INVALID` | 422 |\n| `SENDING_DOMAIN_NOT_VERIFIED` | 422 |\n| `SENDING_DOMAIN_IN_USE` | 409 |\n| `SENDING_DOMAIN_PROVIDER_ERROR` | 502 |\n| `CRM_NEWSLETTER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SLUG_TAKEN` | 409 |\n| `CRM_NEWSLETTER_ARCHIVED` | 409 |\n| `CRM_NEWSLETTER_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SUBSCRIBER_EXISTS` | 409 |\n| `CRM_NEWSLETTER_TOKEN_INVALID` | 404 |\n| `CRM_NEWSLETTER_IMPORT_INVALID` | 422 |\n| `CRM_NEWSLETTER_ISSUE_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_ISSUE_LOCKED` | 409 |\n| `CRM_NEWSLETTER_ISSUE_INCOMPLETE` | 422 |\n| `CRM_NEWSLETTER_NO_SUBSCRIBERS` | 422 |\n| `CRM_NEWSLETTER_LIMIT_REACHED` | 402 |\n| `CRM_NEWSLETTER_SEGMENT_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_SEGMENT_NAME_TAKEN` | 409 |\n| `CRM_NEWSLETTER_SEGMENT_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_SEGMENT_INVALID` | 422 |\n| `CRM_NEWSLETTER_POLL_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE` | 422 |\n| `CRM_NEWSLETTER_WELCOME_STEP_NOT_FOUND` | 404 |\n| `CRM_NEWSLETTER_WELCOME_STEP_LIMIT_REACHED` | 422 |\n| `CRM_NEWSLETTER_DIGEST_SOURCE_INVALID` | 422 |\n| `CRM_NEWSLETTER_AI_FAILED` | 502 |\n| `CRM_NEWSLETTER_AB_AUDIENCE_TOO_SMALL` | 422 |\n| `WHATSAPP_AD_SPEND_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_NOT_FOUND` | 404 |\n| `WHATSAPP_CHATBOT_INVALID_FLOW` | 422 |\n| `WHATSAPP_CHATBOT_NOT_PUBLISHED` | 409 |\n| `WHATSAPP_CHATBOT_LIMIT_REACHED` | 409 |\n| `WHATSAPP_FLOW_NOT_FOUND` | 404 |\n| `WHATSAPP_FLOW_INVALID` | 422 |\n| `WHATSAPP_FLOW_NOT_SENDABLE` | 409 |\n| `WHATSAPP_FLOW_META_REJECTED` | 422 |\n| `WHATSAPP_FLOW_LIMIT_REACHED` | 409 |\n| `CRM_CNPJ_INVALID` | 422 |\n| `CRM_CNPJ_NOT_FOUND` | 404 |\n| `CRM_CNPJ_LOOKUP_FAILED` | 502 |\n| `CRM_CNPJ_RATE_LIMITED` | 429 |\n| `CRM_CNPJ_RUN_NOT_FOUND` | 404 |\n| `CRM_CNPJ_RUN_ACTIVE` | 409 |\n| `SURVEY_NOT_FOUND` | 404 |\n| `SURVEY_EXPIRED` | 410 |\n| `SURVEY_ALREADY_ANSWERED` | 409 |\n| `SURVEY_INVALID_SCORE` | 422 |\n| `SURVEY_NO_RECIPIENT` | 422 |\n| `QA_REVIEW_NOT_FOUND` | 404 |\n| `QA_SUBJECT_NOT_FOUND` | 404 |\n| `QA_CRITERIA_INVALID` | 422 |\n| `QA_DISABLED` | 409 |\n| `WHATSAPP_COPILOT_FAILED` | 502 |\n| `WHATSAPP_COPILOT_NO_CONTEXT` | 422 |\n| `SD_SWARM_NOT_FOUND` | 404 |\n| `SD_SWARM_ALREADY_OPEN` | 409 |\n| `SD_SWARM_CLOSED` | 409 |\n| `SD_SWARM_NOT_INVITED` | 403 |\n| `SD_SWARM_LIMIT_REACHED` | 422 |\n| `PIX_DISABLED` | 422 |\n| `PIX_CHARGE_NOT_FOUND` | 404 |\n| `PIX_CHARGE_NOT_PENDING` | 409 |\n| `PIX_PROVIDER_ERROR` | 502 |\n| `PIX_WEBHOOK_INVALID` | 401 |\n| `BOLETO_PROVIDER_ERROR` | 502 |\n| `BOLETO_WEBHOOK_INVALID` | 401 |\n| `BOLETO_DISABLED` | 422 |\n| `BOLETO_CHARGE_NOT_FOUND` | 404 |\n| `BOLETO_CHARGE_NOT_PENDING` | 409 |\n| `SD_MAJOR_INCIDENT_NOT_FOUND` | 404 |\n| `SD_MAJOR_INCIDENT_ALREADY_ACTIVE` | 409 |\n| `SD_MAJOR_INCIDENT_RESOLVED` | 409 |\n| `SD_MAJOR_INCIDENT_INVALID_TICKET` | 422 |\n| `SD_STATUS_PAGE_NOT_FOUND` | 404 |\n| `SD_STATUS_PAGE_SLUG_TAKEN` | 409 |\n| `SD_STATUS_SUBSCRIPTIONS_CLOSED` | 403 |\n| `SD_STATUS_SUBSCRIBER_NOT_FOUND` | 404 |\n| `CRM_CADENCE_NOT_FOUND` | 404 |\n| `CRM_CADENCE_ENROLLMENT_NOT_FOUND` | 404 |\n| `CRM_CADENCE_INVALID` | 422 |\n| `CRM_CADENCE_STATE_CONFLICT` | 409 |\n| `CRM_CNPJ_RUN_NOT_CANCELABLE` | 409 |\n| `STEEL_AGENT_SIM_GATE_INVALID` | 422 |\n| `CRM_DUPLICATE_NOT_FOUND` | 404 |\n| `CRM_DUPLICATE_INVALID` | 422 |\n| `CRM_MERGE_NOT_FOUND` | 404 |\n| `CRM_MERGE_UNDO_EXPIRED` | 409 |\n| `SD_STATUS_COMPONENT_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_NOT_FOUND` | 404 |\n| `SD_MAINTENANCE_CLOSED` | 409 |\n| `SD_MAINTENANCE_INVALID` | 422 |\n| `STEEL_AGENTS_PAUSED` | 409 |\n| `STEEL_AGENT_CREATE_FORBIDDEN` | 403 |\n| `STEEL_AGENT_AUTO_NOT_ALLOWED` | 403 |\n| `STEEL_AGENT_DELEGATE_INVALID` | 422 |\n| `STEEL_MCP_SERVER_NOT_FOUND` | 404 |\n| `STEEL_MCP_SERVER_INVALID` | 422 |\n| `STEEL_MCP_SERVER_UNREACHABLE` | 502 |\n| `CRM_HEALTH_NOT_APPLICABLE` | 409 |\n| `SD_LICENSE_NOT_FOUND` | 404 |\n| `SD_LICENSE_INVALID` | 422 |\n| `SD_NL_CONFIG_FAILED` | 502 |\n| `SD_NL_CONFIG_INVALID` | 422 |\n| `SD_WFM_SETTINGS_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_NOT_FOUND` | 404 |\n| `AI_ACTION_CONNECTOR_LIMIT_REACHED` | 409 |\n| `AI_ACTION_CONNECTOR_KEY_TAKEN` | 409 |\n| `AI_ACTION_CONNECTOR_INVALID` | 422 |\n| `AI_ACTION_CONNECTOR_FAILED` | 502 |\n| `AI_ACTIONS_DISABLED` | 403 |\n| `AI_ACTION_IN_PROGRESS` | 409 |\n| `CRM_DEALS_PAYMENT_DISABLED` | 422 |\n| `CRM_PROPOSAL_CHARGE_NOT_FOUND` | 404 |\n| `CRM_PROPOSAL_CHARGE_INVALID` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_REQUIRED` | 422 |\n| `CRM_PROPOSAL_SIGNATURE_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_NOT_FOUND` | 404 |\n| `CRM_DEAL_ROOM_INVALID` | 422 |\n| `CRM_CONTRACT_NOT_FOUND` | 404 |\n| `CRM_CONTRACT_INVALID` | 422 |\n| `WIDGET_NOT_AVAILABLE` | 404 |\n| `WIDGET_ORIGIN_NOT_ALLOWED` | 403 |\n| `WIDGET_VISITOR_INVALID` | 401 |\n| `WHATSAPP_SCHED_DISABLED` | 409 |\n| `WHATSAPP_SCHED_SERVICE_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_PROFESSIONAL_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_APPOINTMENT_NOT_FOUND` | 404 |\n| `WHATSAPP_SCHED_SLOT_TAKEN` | 409 |\n| `WHATSAPP_SCHED_INVALID` | 422 |\n| `WHATSAPP_SCHED_STATE_CONFLICT` | 409 |\n| `AI_PROCEDURE_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_RUN_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_VERSION_NOT_FOUND` | 404 |\n| `AI_PROCEDURE_INVALID` | 422 |\n| `AI_PROCEDURE_LIMIT_REACHED` | 409 |\n| `DOCUMENT_NOT_FOUND` | 404 |\n| `DOCUMENT_FORBIDDEN` | 403 |\n| `DOCUMENT_CONTENT_INVALID` | 422 |\n| `DOCUMENT_SAVE_CONFLICT` | 409 |\n| `DOCUMENT_TEMPLATE_NOT_FOUND` | 404 |\n| `DOCUMENT_RECIPIENT_NOT_FOUND` | 404 |\n| `DOCUMENT_VERSION_NOT_FOUND` | 404 |\n| `DOCUMENT_VERSION_STALE` | 409 |\n| `DOCUMENT_LINK_UNAVAILABLE` | 410 |\n| `DOCUMENT_EXPIRED` | 410 |\n| `DOCUMENT_ALREADY_ANSWERED` | 409 |\n| `DOCUMENT_ACCEPT_NOT_ALLOWED` | 403 |\n| `DOCUMENT_FIELDS_INVALID` | 422 |\n| `DOCUMENT_EMPTY` | 422 |\n| `DOCUMENT_DOWNLOAD_DISABLED` | 403 |\n| `DOCUMENT_EXPORT_NOT_FOUND` | 404 |\n| `DOCUMENT_EXPORT_FAILED` | 502 |\n| `DOCUMENT_IMPORT_NOT_FOUND` | 404 |\n| `DOCUMENT_IMPORT_UNSUPPORTED` | 422 |\n| `DOCUMENT_IMPORT_FAILED` | 502 |"
       },
       "ErrorResponse": {
         "type": "object",
@@ -268519,6 +269010,233 @@
           "updatedAt"
         ]
       },
+      "WhatsAppContactBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "connectionId": {
+            "type": "string"
+          },
+          "connectionLabel": {
+            "type": "string"
+          },
+          "connectionPhoneNumber": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["META", "ZAPI", "WIDGET"]
+          },
+          "contactId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "waId": {
+            "type": "string",
+            "description": "Telefone (só dígitos) ou, para contato só com username, o BSUID.",
+            "example": "5511999990000"
+          },
+          "hasPhone": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Até 500 caracteres."
+          },
+          "providerStatus": {
+            "type": "string",
+            "enum": ["APPLIED", "PENDING", "FAILED"],
+            "description": "`APPLIED`: bloqueado também na Meta/Z-API. `PENDING`: a Meta só bloqueia quem escreveu nas últimas 24 h — vai para a Meta quando a pessoa escrever. `FAILED`: o provedor recusou (`providerError`). Em todos os casos o bloqueio vale no Steel."
+          },
+          "providerError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "appliedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "enum": ["STEEL", "PROVIDER"],
+            "description": "`PROVIDER`: importado pela sincronização da lista de bloqueio da Meta."
+          },
+          "droppedCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Mensagens do contato ignoradas desde o bloqueio."
+          },
+          "lastDroppedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blockedBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["id", "name"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blockedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "connectionId",
+          "connectionLabel",
+          "connectionPhoneNumber",
+          "provider",
+          "contactId",
+          "contactName",
+          "waId",
+          "hasPhone",
+          "reason",
+          "providerStatus",
+          "providerError",
+          "appliedAt",
+          "origin",
+          "droppedCount",
+          "lastDroppedAt",
+          "blockedBy",
+          "blockedAt"
+        ]
+      },
+      "WhatsAppContactBlockResult": {
+        "type": "object",
+        "properties": {
+          "block": {
+            "$ref": "#/components/schemas/WhatsAppContactBlock"
+          },
+          "notice": {
+            "type": "string",
+            "description": "Resumo em pt-BR do que aconteceu no provedor."
+          }
+        },
+        "required": ["block", "notice"]
+      },
+      "WhatsAppContactBlockSync": {
+        "type": "object",
+        "properties": {
+          "connections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "connectionId": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": ["META", "ZAPI", "WIDGET"]
+                },
+                "imported": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "retried": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "applied": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "listSupported": {
+                  "type": "boolean",
+                  "description": "Falso na Z-API: ela não tem endpoint que liste os bloqueados."
+                },
+                "error": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "connectionId",
+                "label",
+                "provider",
+                "imported",
+                "retried",
+                "applied",
+                "listSupported",
+                "error"
+              ]
+            }
+          }
+        },
+        "required": ["connections"]
+      },
       "WhatsAppContactField": {
         "type": "object",
         "properties": {
@@ -268651,6 +269369,26 @@
           }
         },
         "required": ["created", "updated", "skipped"]
+      },
+      "WhatsAppContactUnblockResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "providerWarning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preenchido quando o Steel desbloqueou mas o provedor recusou: a pessoa pode continuar bloqueada no app/na Meta."
+          }
+        },
+        "required": ["id", "providerWarning"]
       },
       "WhatsAppConversation": {
         "type": "object",
@@ -268893,6 +269631,50 @@
           "contactSince",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "WhatsAppConversationBlockState": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "connectionId": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["META", "ZAPI", "WIDGET"]
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "Falso no chat do site (não há número para bloquear)."
+          },
+          "block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhatsAppContactBlock"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "canBlock": {
+            "type": "boolean"
+          },
+          "canUnblock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conversationId",
+          "connectionId",
+          "provider",
+          "supported",
+          "block",
+          "canBlock",
+          "canUnblock"
         ]
       },
       "WhatsAppConversationEvent": {
