@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { NEXT_PUBLIC_URL } from '@/lib/env/env'
 import { notify } from '@/lib/notify'
@@ -183,13 +184,12 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
           </div>
 
           <div className='flex flex-col gap-1.5'>
-            <Label htmlFor='sd-wa-phone'>Número (DDI + DDD + número)</Label>
-            <Input
+            <Label htmlFor='sd-wa-phone'>Número (DDD + número)</Label>
+            <PhoneInput
               id='sd-wa-phone'
               required
-              placeholder='5511999999999'
               value={form.phoneNumber}
-              onChange={(event) => set('phoneNumber', event.target.value)}
+              onValueChange={(value) => set('phoneNumber', value)}
             />
           </div>
 

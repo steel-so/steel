@@ -199,7 +199,7 @@ describe('SiteWhatsappPicker', () => {
     fireEvent.change(screen.getByLabelText('Número do WhatsApp'), {
       target: { value: '+55 (11) 9abc1234' },
     })
-    expect(onChange).toHaveBeenCalledWith('+55 (11) 91234')
+    expect(onChange).toHaveBeenCalledWith('551191234')
   })
 
   it('fills the number from a Comunicação connection', async () => {
@@ -264,7 +264,7 @@ describe('SiteWhatsappPicker', () => {
     })
     expect(onChange).not.toHaveBeenCalled()
     const props = getNode(store.getState().doc, node.id)?.props
-    expect(props?.phone).toBe('+55 11 3333-0000')
+    expect(props?.phone).toBe('551133330000')
     expect(props?.connectionId).toBeUndefined()
   })
 })

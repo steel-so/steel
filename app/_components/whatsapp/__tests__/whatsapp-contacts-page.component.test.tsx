@@ -100,10 +100,9 @@ describe('<WhatsappContactsPage />', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Novo contato' }))
     const dialog = await screen.findByRole('dialog')
-    fireEvent.change(
-      within(dialog).getByLabelText('Número (DDI + DDD + número)'),
-      { target: { value: '5511977776666' } },
-    )
+    fireEvent.change(within(dialog).getByLabelText('Número (DDD + número)'), {
+      target: { value: '5511977776666' },
+    })
     fireEvent.change(within(dialog).getByLabelText('Nome'), {
       target: { value: 'Bruno' },
     })
@@ -144,9 +143,9 @@ describe('<WhatsappContactsPage />', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0])
     const dialog = await screen.findByRole('dialog')
     const number = within(dialog).getByLabelText(
-      'Número (DDI + DDD + número)',
+      'Número (DDD + número)',
     ) as HTMLInputElement
-    expect(number.value).toBe('5511911111111')
+    expect(number.value).toBe('(11) 91111-1111')
     expect(number.disabled).toBe(true)
 
     fireEvent.change(within(dialog).getByLabelText('Descrição / recado'), {

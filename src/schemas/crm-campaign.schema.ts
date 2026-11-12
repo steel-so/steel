@@ -1,4 +1,5 @@
 import z from 'zod'
+import { PhoneField } from '@/src/schemas/phone.schema'
 import { CrmLeadStageEnum } from './crm-lead.schema'
 
 export const CRM_CAMPAIGN_LEGAL_BASES = [
@@ -148,7 +149,7 @@ export type CrmCampaignAudiencePreviewInput = z.infer<
 export const CrmCampaignTestSendSchema = z
   .object({
     email: z.email('E-mail inválido').optional(),
-    phone: z.string().trim().min(8).max(20).optional(),
+    phone: PhoneField.optional(),
   })
   .refine((v) => Boolean(v.email || v.phone), {
     message: 'Informe um e-mail ou um WhatsApp para o teste',

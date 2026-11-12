@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import {
   Select,
   SelectContent,
@@ -165,15 +166,12 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
           </div>
 
           <div className='space-y-1.5'>
-            <Label htmlFor='phoneNumber'>Número (DDI + DDD + número)</Label>
-            <Input
+            <Label htmlFor='phoneNumber'>Número (DDD + número)</Label>
+            <PhoneInput
               id='phoneNumber'
               required
-              placeholder='5511999999999'
               value={form.phoneNumber}
-              onChange={(event) =>
-                updateField('phoneNumber', event.target.value)
-              }
+              onValueChange={(value) => updateField('phoneNumber', value)}
             />
           </div>
 

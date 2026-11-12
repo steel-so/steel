@@ -1,12 +1,7 @@
 import { z } from 'zod'
 import { clearableText, clearableUrl } from '@/src/schemas/clearable.schema'
+import { WaIdField } from '@/src/schemas/phone.schema'
 import { ContactCustomFieldsInputSchema } from '@/src/schemas/whatsapp-contact-field.schema'
-
-const WaIdField = z
-  .string()
-  .min(8, 'Número inválido')
-  .max(20)
-  .regex(/^\d+$/, 'Informe apenas dígitos, com DDI e DDD')
 
 export const CreateWhatsAppContactSchema = z.object({
   waId: WaIdField,

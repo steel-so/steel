@@ -86,7 +86,7 @@ describe('<SdTicketWhatsappTab />', () => {
     const input = (await screen.findByLabelText(
       'Número do WhatsApp',
     )) as HTMLInputElement
-    expect(input.value).toBe('5511999998888')
+    expect(input.value).toBe('(11) 99999-8888')
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar' }))
 
     await waitFor(() =>

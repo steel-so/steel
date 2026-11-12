@@ -9,6 +9,7 @@
  * calculados com o valor de cada caractere = código ASCII − 48 (logo os
  * dígitos valem 0–9 e `A` vale 17), com os mesmos pesos do CNPJ numérico.
  */
+import { toStoredPhone } from '@/src/lib/phone-br'
 
 export type SdDocumentKind = 'CPF' | 'CNPJ'
 export type SdDocumentPersonType = 'INDIVIDUAL' | 'LEGAL'
@@ -134,10 +135,7 @@ export function normalizePhone(
   value: string | null | undefined,
 ): string | null {
   if (value == null) return null
-  const digits = value.replace(/\D/g, '')
-  if (!digits) return null
-  if (digits.length === 10 || digits.length === 11) return `55${digits}`
-  return digits
+  return toStoredPhone(value)
 }
 
 /** Exibição de telefone BR: `5511987654321` → `+55 (11) 98765-4321`. */

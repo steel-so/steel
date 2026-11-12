@@ -1,10 +1,5 @@
 import { z } from 'zod'
-
-const WaIdField = z
-  .string()
-  .min(8, 'Número inválido')
-  .max(20)
-  .regex(/^\d+$/, 'Informe apenas dígitos, com DDI e DDD')
+import { WaIdField } from '@/src/schemas/phone.schema'
 
 export const CreateWhatsAppGroupSchema = z.object({
   connectionId: z.string().min(1, 'Conexão é obrigatória'),

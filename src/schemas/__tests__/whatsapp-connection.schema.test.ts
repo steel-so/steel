@@ -69,11 +69,20 @@ describe('CreateWhatsAppConnectionSchema', () => {
     ).toBe(false)
   })
 
-  it('should reject a phone number with non-digit characters', () => {
+  it('should accept a masked phone number and store it with 55', () => {
+    const parsed = CreateWhatsAppConnectionSchema.safeParse({
+      ...zapiInput,
+      phoneNumber: '(11) 99999-9999',
+    })
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.phoneNumber).toBe('5511999999999')
+  })
+
+  it('should reject a phone number with letters', () => {
     expect(
       CreateWhatsAppConnectionSchema.safeParse({
         ...zapiInput,
-        phoneNumber: '+55 11 99999-9999',
+        phoneNumber: '1199999abc',
       }).success,
     ).toBe(false)
   })

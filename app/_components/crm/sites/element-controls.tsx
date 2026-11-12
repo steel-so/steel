@@ -8,6 +8,7 @@ import {
 } from '@/app/_components/canvas/use-canvas'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { PhoneInput } from '@/components/ui/phone-input'
 import {
   Select,
   SelectContent,
@@ -251,14 +252,12 @@ export function SiteWhatsappPicker({
           </SelectContent>
         </Select>
       )}
-      <input
+      <PhoneInput
         aria-label='Número do WhatsApp'
         value={phone}
-        placeholder='+55 11 91234-5678'
-        maxLength={30}
-        inputMode='tel'
-        onChange={(event) => {
-          const next = event.target.value.replace(/[^\d\s()+-]/g, '')
+        maxLength={20}
+        className='h-8 text-xs'
+        onValueChange={(next) => {
           if (current !== NONE) {
             store.dispatch({
               kind: 'update',
@@ -269,10 +268,9 @@ export function SiteWhatsappPicker({
             onChange(next)
           }
         }}
-        className='h-8 w-full rounded-md border border-input bg-transparent px-2.5 text-xs shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30'
       />
       <p className='text-[11px] leading-relaxed text-muted-foreground'>
-        Com DDI e DDD. Quem clicar abre uma conversa com esse número.
+        Só DDD e número. Quem clicar abre uma conversa com esse número.
       </p>
     </div>
   )

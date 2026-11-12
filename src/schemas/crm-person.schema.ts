@@ -1,11 +1,12 @@
 import z from 'zod'
 import { clearableText } from '@/src/schemas/clearable.schema'
 import { CustomFieldsInputSchema } from '@/src/schemas/crm-custom-field.schema'
+import { PhoneField } from '@/src/schemas/phone.schema'
 
 export const CreateCrmPersonSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200),
   emails: z.array(z.email()).default([]),
-  phones: z.array(z.string().max(30)).default([]),
+  phones: z.array(PhoneField).default([]),
   city: z.string().max(100).optional(),
   jobTitle: z.string().max(150).optional(),
   linkedin: z.string().max(300).optional(),
@@ -19,7 +20,7 @@ export type CreateCrmPersonDTO = z.infer<typeof CreateCrmPersonSchema>
 export const UpdateCrmPersonSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(200).optional(),
   emails: z.array(z.email()).optional(),
-  phones: z.array(z.string().max(30)).optional(),
+  phones: z.array(PhoneField).optional(),
   // Opcionais limpáveis: null (ou '') apaga o valor.
   city: clearableText(100),
   jobTitle: clearableText(150),

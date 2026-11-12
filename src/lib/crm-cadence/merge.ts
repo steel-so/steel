@@ -2,6 +2,7 @@
  * Pure helpers of the sales cadences: merge fields, delays, phone/e-mail
  * matching and the plain-text → HTML conversion of the e-mail steps.
  */
+import { toStoredPhone } from '@/src/lib/phone-br'
 import type { CrmCadenceDelayUnitDTO } from '@/types/crm-cadence'
 
 export interface CadenceMergeContext {
@@ -67,8 +68,7 @@ export function digitsOnly(value: string): string {
 export function leadPhoneToWaId(raw: string): string | null {
   const digits = digitsOnly(raw)
   if (digits.length < 10 || digits.length > 15) return null
-  if (digits.length <= 11) return `55${digits}`
-  return digits
+  return toStoredPhone(digits)
 }
 
 /**

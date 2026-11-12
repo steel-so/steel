@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import {
   Select,
   SelectContent,
@@ -122,14 +123,13 @@ function ContactFormFields({
   return (
     <div className='space-y-3'>
       <div className='space-y-1.5'>
-        <Label htmlFor='contactWaId'>Número (DDI + DDD + número)</Label>
-        <Input
+        <Label htmlFor='contactWaId'>Número (DDD + número)</Label>
+        <PhoneInput
           id='contactWaId'
           required
           disabled={lockWaId}
-          placeholder='5511999999999'
           value={form.waId}
-          onChange={(event) => onChange({ ...form, waId: event.target.value })}
+          onValueChange={(waId) => onChange({ ...form, waId })}
         />
       </div>
       <div className='space-y-1.5'>

@@ -150,7 +150,7 @@ describe('<WhatsappSettingsConnections />', () => {
     ).toBe(false)
 
     type(dialog, 'Nome', 'Suporte')
-    type(dialog, 'Número (DDI + DDD + número)', '5511999999999')
+    type(dialog, 'Número (DDD + número)', '5511999999999')
     type(dialog, 'ID da instância', 'inst')
     type(dialog, 'Token', 'tok')
     fireEvent.click(
@@ -185,7 +185,7 @@ describe('<WhatsappSettingsConnections />', () => {
     )
 
     type(dialog, 'Nome', 'Vendas')
-    type(dialog, 'Número (DDI + DDD + número)', '5511888888888')
+    type(dialog, 'Número (DDD + número)', '5511888888888')
     type(dialog, 'Phone Number ID', 'pn')
     type(dialog, 'WhatsApp Business Account ID', 'waba')
     type(dialog, 'Access Token', 'secret')
@@ -228,7 +228,7 @@ describe('<WhatsappSettingsConnections />', () => {
     await screen.findByText('Nenhuma conexão cadastrada ainda.')
     const dialog = await openCreateDialog()
     type(dialog, 'Nome', 'X')
-    type(dialog, 'Número (DDI + DDD + número)', '1')
+    type(dialog, 'Número (DDD + número)', '1')
     type(dialog, 'ID da instância', 'inst')
     type(dialog, 'Token', 'tok')
     fireEvent.click(

@@ -30,14 +30,15 @@ describe('CreateWhatsAppGroupSchema', () => {
     )
   })
 
-  it('should reject formatted or too short numbers', () => {
-    expect(
-      CreateWhatsAppGroupSchema.safeParse({
-        connectionId: 'conn-1',
-        name: 'Suporte',
-        participantWaIds: ['+55 (11) 99999-8888'],
-      }).error?.issues[0]?.message,
-    ).toBe('Informe apenas dígitos, com DDI e DDD')
+  it('should normalize formatted numbers and reject too short ones', () => {
+    const formatted = CreateWhatsAppGroupSchema.safeParse({
+      connectionId: 'conn-1',
+      name: 'Suporte',
+      participantWaIds: ['(11) 99999-8888'],
+    })
+    expect(formatted.success && formatted.data.participantWaIds).toEqual([
+      '5511999998888',
+    ])
     expect(
       CreateWhatsAppGroupSchema.safeParse({
         connectionId: 'conn-1',

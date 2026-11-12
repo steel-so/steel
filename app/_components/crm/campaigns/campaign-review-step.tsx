@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
@@ -315,11 +316,10 @@ export function ReviewStep({
               onChange={(e) => setTestEmail(e.target.value)}
             />
             {draft.whatsappEnabled ? (
-              <Input
+              <PhoneInput
                 aria-label='WhatsApp de teste'
-                placeholder='(11) 99999-0000'
                 value={testPhone}
-                onChange={(e) => setTestPhone(e.target.value)}
+                onValueChange={setTestPhone}
               />
             ) : null}
           </div>

@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MessageBubble } from '@/components/ui/chat/message-bubble'
 import { Input } from '@/components/ui/input'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
@@ -224,10 +225,9 @@ function NoConversation({
             })
           }}
         >
-          <Input
+          <PhoneInput
             value={waId}
-            onChange={(event) => setWaId(event.target.value)}
-            placeholder='5511999999999'
+            onValueChange={setWaId}
             aria-label='Número do WhatsApp'
           />
           <Button type='submit' size='sm' disabled={start.isPending}>

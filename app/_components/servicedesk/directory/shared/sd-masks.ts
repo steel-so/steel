@@ -1,25 +1,9 @@
+import { toDisplayPhone } from '@/src/lib/phone-br'
+
 /** Máscaras de digitação dos cadastros (a API normaliza para dígitos). */
 
-/**
- * `(11) 98765-4321` progressivo. Números salvos com DDI (`5511…`) aparecem
- * como `+55 (11) …`; outros formatos internacionais ficam só com dígitos.
- */
-export function maskPhone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 13)
-  const withDdi =
-    digits.startsWith('55') && digits.length > 11 ? digits.slice(2) : null
-  const local = withDdi ?? digits
-  if (local.length > 11) return `+${digits}`
-  let out = ''
-  if (local.length > 0) out = `(${local.slice(0, 2)}`
-  if (local.length >= 2) out += ') '
-  if (local.length > 2) {
-    const cut = local.length > 10 ? 7 : 6
-    out += local.slice(2, cut)
-    if (local.length > cut) out += `-${local.slice(cut)}`
-  }
-  return withDdi ? `+55 ${out}` : out
-}
+/** `(11) 98765-4321` progressivo; o DDI 55 é nosso e não aparece. */
+export const maskPhone = toDisplayPhone
 
 /** `00000-000` progressivo. */
 export function maskCep(value: string): string {

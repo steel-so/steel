@@ -1,12 +1,9 @@
 import { z } from 'zod'
+import { WaIdField } from '@/src/schemas/phone.schema'
 
 export const WhatsAppProviderSchema = z.enum(['ZAPI', 'META'])
 
-const PhoneNumberField = z
-  .string()
-  .min(8, 'Número inválido')
-  .max(20)
-  .regex(/^\d+$/, 'Informe apenas dígitos, com DDI e DDD')
+const PhoneNumberField = WaIdField
 
 const LabelField = z.string().min(1, 'Nome é obrigatório').max(120)
 

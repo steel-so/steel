@@ -200,7 +200,7 @@ describe('<SdWhatsappSettingsTab />', () => {
     fireEvent.change(await screen.findByLabelText('Nome'), {
       target: { value: 'Central' },
     })
-    fireEvent.change(screen.getByLabelText('Número (DDI + DDD + número)'), {
+    fireEvent.change(screen.getByLabelText('Número (DDD + número)'), {
       target: { value: '5511988887777' },
     })
     fireEvent.change(screen.getByLabelText('ID da instância'), {
@@ -243,7 +243,7 @@ describe('<SdWhatsappSettingsTab />', () => {
     fireEvent.change(screen.getByLabelText('Nome'), {
       target: { value: 'Oficial' },
     })
-    fireEvent.change(screen.getByLabelText('Número (DDI + DDD + número)'), {
+    fireEvent.change(screen.getByLabelText('Número (DDD + número)'), {
       target: { value: '5511988887777' },
     })
     fireEvent.change(screen.getByLabelText('Phone Number ID'), {

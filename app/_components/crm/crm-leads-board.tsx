@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import {
   Popover,
   PopoverContent,
@@ -1882,7 +1883,7 @@ function CreateLeadDialog({
             </div>
             <div className='grid gap-1.5'>
               <Label className='text-muted-foreground text-xs'>Telefone</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <PhoneInput value={phone} onValueChange={setPhone} />
             </div>
           </div>
           <div className='grid gap-1.5'>

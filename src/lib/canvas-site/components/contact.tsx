@@ -7,6 +7,7 @@ import {
   defineComponent,
   type InspectorField,
 } from '@/src/lib/canvas/registry'
+import { toStoredPhone } from '@/src/lib/phone-br'
 import { SITE_TYPES } from '../constants'
 import type { SiteRenderContext } from '../context'
 import { classNames } from '../css'
@@ -154,7 +155,7 @@ export const mapDefinition = defineComponent<SiteMapProps>({
 /** `https://wa.me/<digits>` with the starting message; `null` without a
  * number. */
 export function whatsappHref(phone: string, message: string): string | null {
-  const digits = phone.replace(/\D/g, '')
+  const digits = toStoredPhone(phone)
   if (!digits) return null
   const text = message.trim()
   return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ''}`

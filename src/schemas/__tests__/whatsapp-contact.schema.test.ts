@@ -23,8 +23,16 @@ describe('CreateWhatsAppContactSchema', () => {
 
   it('should reject a waId with letters', () => {
     expect(
-      CreateWhatsAppContactSchema.safeParse({ waId: '55119888-7777' }).success,
+      CreateWhatsAppContactSchema.safeParse({ waId: '5511abc87777' }).success,
     ).toBe(false)
+  })
+
+  it('should add 55 to a masked DDD + number', () => {
+    const parsed = CreateWhatsAppContactSchema.safeParse({
+      waId: '(11) 98888-7777',
+    })
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.waId).toBe('5511988887777')
   })
 
   it('should reject a waId shorter than 8 digits', () => {
