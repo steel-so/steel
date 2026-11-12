@@ -67231,6 +67231,7 @@
                       "note",
                       "product",
                       "whatsapp_conversation",
+                      "whatsapp_ai_campaign",
                       "whatsapp_broadcast"
                     ]
                   },
@@ -67321,6 +67322,7 @@
                                     "note",
                                     "product",
                                     "whatsapp_conversation",
+                                    "whatsapp_ai_campaign",
                                     "whatsapp_broadcast"
                                   ]
                                 },
@@ -67490,6 +67492,7 @@
                                     "note",
                                     "product",
                                     "whatsapp_conversation",
+                                    "whatsapp_ai_campaign",
                                     "whatsapp_broadcast"
                                   ]
                                 },
@@ -67882,6 +67885,7 @@
                                         "note",
                                         "product",
                                         "whatsapp_conversation",
+                                        "whatsapp_ai_campaign",
                                         "whatsapp_broadcast"
                                       ]
                                     },
@@ -68051,6 +68055,7 @@
                                         "note",
                                         "product",
                                         "whatsapp_conversation",
+                                        "whatsapp_ai_campaign",
                                         "whatsapp_broadcast"
                                       ]
                                     },
@@ -152164,6 +152169,7 @@
                       "note",
                       "product",
                       "whatsapp_conversation",
+                      "whatsapp_ai_campaign",
                       "whatsapp_broadcast"
                     ]
                   },
@@ -152254,6 +152260,7 @@
                                     "note",
                                     "product",
                                     "whatsapp_conversation",
+                                    "whatsapp_ai_campaign",
                                     "whatsapp_broadcast"
                                   ]
                                 },
@@ -152423,6 +152430,7 @@
                                     "note",
                                     "product",
                                     "whatsapp_conversation",
+                                    "whatsapp_ai_campaign",
                                     "whatsapp_broadcast"
                                   ]
                                 },
@@ -152908,6 +152916,7 @@
                                         "note",
                                         "product",
                                         "whatsapp_conversation",
+                                        "whatsapp_ai_campaign",
                                         "whatsapp_broadcast"
                                       ]
                                     },
@@ -153077,6 +153086,7 @@
                                         "note",
                                         "product",
                                         "whatsapp_conversation",
+                                        "whatsapp_ai_campaign",
                                         "whatsapp_broadcast"
                                       ]
                                     },
@@ -226239,6 +226249,7 @@
               "note",
               "product",
               "whatsapp_conversation",
+              "whatsapp_ai_campaign",
               "whatsapp_broadcast"
             ],
             "description": "Fonte legada (fonte do primeiro dataset)."
@@ -226331,6 +226342,7 @@
                             "note",
                             "product",
                             "whatsapp_conversation",
+                            "whatsapp_ai_campaign",
                             "whatsapp_broadcast"
                           ]
                         },
@@ -226500,6 +226512,7 @@
                             "note",
                             "product",
                             "whatsapp_conversation",
+                            "whatsapp_ai_campaign",
                             "whatsapp_broadcast"
                           ]
                         },
