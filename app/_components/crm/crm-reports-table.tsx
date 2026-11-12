@@ -52,6 +52,7 @@ const SOURCE_STYLES: Record<CrmReportSource, string> = {
   note: 'bg-rose-500/15 text-rose-600',
   product: 'bg-teal-500/15 text-teal-600',
   whatsapp_conversation: 'bg-green-500/15 text-green-600',
+  whatsapp_ai_campaign: 'bg-cyan-500/15 text-cyan-600',
   whatsapp_broadcast: 'bg-lime-500/15 text-lime-600',
 }
 
