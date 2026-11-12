@@ -101,7 +101,6 @@ describe('<SendDocumentDialog />', () => {
           email: 'carlos@acme.com.br',
           personId: 'p2',
           role: 'APPROVER',
-          channel: 'EMAIL',
         },
       ],
       message: 'Segue a proposta.',
@@ -116,7 +115,7 @@ describe('<SendDocumentDialog />', () => {
     ).toBeTruthy()
   })
 
-  it('refuses an e-mail recipient without an address', async () => {
+  it('refuses an invalid WhatsApp number', async () => {
     const { spy } = setup(
       fakeDocument({ currentVersion: null, person: null, recipients: [] }),
     )
@@ -126,13 +125,28 @@ describe('<SendDocumentDialog />', () => {
     fireEvent.change(screen.getByLabelText('Nome'), {
       target: { value: 'Ana' },
     })
+    fireEvent.change(screen.getByLabelText('WhatsApp'), {
+      target: { value: '12' },
+    })
     fireEvent.click(screen.getByTestId('send-document-submit'))
     await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith(
-        'Informe o e-mail para enviar por e-mail',
-      ),
+      expect(notify.error).toHaveBeenCalledWith('Telefone inválido'),
     )
     expect(fetchBody(spy, `${BASE}/doc_1/send`)).toBeUndefined()
+  })
+
+  it('locks the e-mail once a WhatsApp number is typed', async () => {
+    setup(fakeDocument({ currentVersion: null, person: null, recipients: [] }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Adicionar manualmente' }),
+    )
+    fireEvent.change(screen.getByLabelText('WhatsApp'), {
+      target: { value: '11988887777' },
+    })
+    expect((screen.getByLabelText('E-mail') as HTMLInputElement).disabled).toBe(
+      true,
+    )
+    expect(screen.getByText('Será enviado por WhatsApp.')).toBeTruthy()
   })
 
   it('updates the version of a sent document', async () => {

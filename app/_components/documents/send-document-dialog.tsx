@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
@@ -47,7 +48,6 @@ import {
 import { OptionSelect } from './option-select'
 
 type Role = DocumentRecipientDTO['role']
-type Channel = DocumentRecipientDTO['channel']
 
 interface RecipientRow {
   key: number
@@ -56,7 +56,6 @@ interface RecipientRow {
   phone: string
   personId?: string
   role: Role
-  channel: Channel
 }
 
 const ROLE_OPTIONS = (['APPROVER', 'VIEWER'] as const).map((value) => ({
@@ -64,20 +63,16 @@ const ROLE_OPTIONS = (['APPROVER', 'VIEWER'] as const).map((value) => ({
   label: RECIPIENT_ROLE_LABELS[value],
 }))
 
-const CHANNEL_OPTIONS = (['LINK', 'EMAIL', 'WHATSAPP'] as const).map(
-  (value) => ({ value, label: RECIPIENT_CHANNEL_LABELS[value] }),
-)
-
 const MAX_MATCHES = 6
 
 function normalize(value: string): string {
   return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/** A CRM person as a recipient: e-mail when there is one, else WhatsApp. */
+/** A CRM person as a recipient: e-mail when there is one, else WhatsApp (never both). */
 function rowFromPerson(person: CrmPersonDTO, key: number): RecipientRow {
   const email = person.emails[0] ?? ''
-  const phone = person.phones[0] ?? ''
+  const phone = email ? '' : (person.phones[0] ?? '')
   return {
     key,
     name: person.name,
@@ -85,7 +80,6 @@ function rowFromPerson(person: CrmPersonDTO, key: number): RecipientRow {
     phone,
     personId: person.id,
     role: 'APPROVER',
-    channel: email ? 'EMAIL' : phone ? 'WHATSAPP' : 'LINK',
   }
 }
 
@@ -96,7 +90,6 @@ function toBody(row: RecipientRow): DocumentRecipientBody {
     phone: row.phone.trim() || undefined,
     personId: row.personId,
     role: row.role,
-    channel: row.channel,
   }
 }
 
@@ -226,19 +219,20 @@ function RecipientEditor({
           type='email'
           value={row.email}
           maxLength={320}
+          disabled={Boolean(row.phone)}
+          placeholder={row.phone ? 'Já vai por WhatsApp' : undefined}
           onChange={(event) => onChange({ email: event.target.value })}
         />
       </div>
       <div className='grid gap-1'>
         <Label htmlFor={`${id}-phone`}>WhatsApp</Label>
-        <Input
+        <PhoneInput
           id={`${id}-phone`}
-          type='tel'
-          inputMode='tel'
           value={row.phone}
-          maxLength={32}
-          placeholder='(11) 98888-7777'
-          onChange={(event) => onChange({ phone: event.target.value })}
+          maxLength={20}
+          disabled={Boolean(row.email)}
+          placeholder={row.email ? 'Já vai por e-mail' : '(11) 98888-7777'}
+          onValueChange={(phone) => onChange({ phone })}
         />
       </div>
       <div className='grid gap-1'>
@@ -250,15 +244,13 @@ function RecipientEditor({
           onChange={(value) => onChange({ role: value as Role })}
         />
       </div>
-      <div className='grid gap-1'>
-        <Label htmlFor={`${id}-channel`}>Enviar por</Label>
-        <OptionSelect
-          id={`${id}-channel`}
-          value={row.channel}
-          options={CHANNEL_OPTIONS}
-          onChange={(value) => onChange({ channel: value as Channel })}
-        />
-      </div>
+      <p className='text-muted-foreground text-xs sm:col-span-2'>
+        {row.phone
+          ? 'Será enviado por WhatsApp.'
+          : row.email
+            ? 'Será enviado por e-mail.'
+            : 'Preencha o e-mail ou o WhatsApp (só um). Sem nenhum, fica só o link pessoal.'}
+      </p>
     </li>
   )
 }
@@ -358,7 +350,6 @@ export function SendDocumentDialog({
               phone: '',
               personId: linked.id,
               role: 'APPROVER',
-              channel: 'LINK',
             },
           ]
         : [],
@@ -388,7 +379,6 @@ export function SendDocumentDialog({
         email: '',
         phone: '',
         role: 'APPROVER',
-        channel: 'EMAIL',
       },
     ])
   }

@@ -49,15 +49,21 @@ describe('document schemas', () => {
     expect(query).toMatchObject({ isTemplate: true, page: 1, pageSize: 25 })
   })
 
-  it('requires e-mail or phone by delivery channel', () => {
+  it('derives the channel from the filled contact (only one allowed)', () => {
     const base = { name: 'Maria' }
     const parse = (input: object) =>
-      DocumentRecipientInputSchema.safeParse(input).success
-    expect(parse(base)).toBe(true)
-    expect(parse({ ...base, channel: 'EMAIL' })).toBe(false)
-    expect(parse({ ...base, channel: 'WHATSAPP' })).toBe(false)
-    const recipient = { ...base, channel: 'EMAIL', email: 'm@x.com' }
-    const sent = SendDocumentSchema.parse({ recipients: [recipient] })
+      DocumentRecipientInputSchema.safeParse(input)
+    expect(parse(base).data?.channel).toBe('LINK')
+    expect(parse({ ...base, email: 'm@x.com' }).data?.channel).toBe('EMAIL')
+    expect(parse({ ...base, phone: '11988887777' }).data?.channel).toBe(
+      'WHATSAPP',
+    )
+    expect(
+      parse({ ...base, email: 'm@x.com', phone: '11988887777' }).success,
+    ).toBe(false)
+    const sent = SendDocumentSchema.parse({
+      recipients: [{ ...base, email: 'm@x.com' }],
+    })
     expect(sent.recipients).toHaveLength(1)
   })
 

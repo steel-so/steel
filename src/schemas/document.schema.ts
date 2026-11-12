@@ -1,4 +1,5 @@
 import z from 'zod'
+import { PhoneField } from '@/src/schemas/phone.schema'
 
 /**
  * CRM > Documentos (ADR 0063, docs/documents/README.md). Contract shared by
@@ -150,20 +151,40 @@ export type ListDocumentsQuery = z.infer<typeof ListDocumentsQuerySchema>
 export const DocumentRecipientInputSchema = z
   .object({
     name: z.string().trim().min(1, 'Informe o nome').max(200),
-    email: z.email('E-mail inválido').max(320).optional(),
-    phone: z.string().trim().max(32).optional(),
+    email: z
+      .string()
+      .trim()
+      .max(320)
+      .optional()
+      .transform((value) => value || undefined)
+      .pipe(z.email('E-mail inválido').optional()),
+    phone: z
+      .string()
+      .trim()
+      .max(32)
+      .optional()
+      .transform((value) => value || undefined)
+      .pipe(PhoneField.optional()),
     personId: z.string().min(1).optional(),
     role: z.enum(['VIEWER', 'APPROVER']).default('APPROVER'),
-    channel: z.enum(['LINK', 'EMAIL', 'WHATSAPP']).default('LINK'),
   })
-  .refine((r) => r.channel !== 'EMAIL' || Boolean(r.email), {
-    message: 'Informe o e-mail para enviar por e-mail',
-    path: ['email'],
-  })
-  .refine((r) => r.channel !== 'WHATSAPP' || Boolean(r.phone), {
-    message: 'Informe o telefone para enviar por WhatsApp',
+  .refine((r) => !(r.email && r.phone), {
+    message: 'Preencha só o e-mail ou só o WhatsApp',
     path: ['phone'],
   })
+  // The channel follows what was filled: phone → WhatsApp, e-mail → e-mail,
+  // neither → personal link only.
+  .transform((r) => ({
+    ...r,
+    channel: r.phone
+      ? ('WHATSAPP' as const)
+      : r.email
+        ? ('EMAIL' as const)
+        : ('LINK' as const),
+  }))
+export type DocumentRecipientInputBody = z.input<
+  typeof DocumentRecipientInputSchema
+>
 export type DocumentRecipientInput = z.infer<
   typeof DocumentRecipientInputSchema
 >

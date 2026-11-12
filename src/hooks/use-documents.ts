@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-query'
 import type {
   DocumentKindDTO,
-  DocumentRecipientInput,
+  DocumentRecipientInputBody,
   DocumentSettingsDTO,
   DocumentStatusDTO,
 } from '@/src/schemas/document.schema'
@@ -90,12 +90,8 @@ export interface SaveDocumentContentBody {
   baseUpdatedAt?: string
 }
 
-/** A recipient as the send dialog builds it (`DocumentRecipientInput`). */
-export type DocumentRecipientBody = Omit<
-  DocumentRecipientInput,
-  'role' | 'channel'
-> &
-  Partial<Pick<DocumentRecipientInput, 'role' | 'channel'>>
+/** A recipient as the send dialog builds it (the channel is derived by the server). */
+export type DocumentRecipientBody = DocumentRecipientInputBody
 
 /** Body of `POST /[documentId]/send` (`SendDocumentSchema`). */
 export interface SendDocumentBody {
