@@ -204,6 +204,7 @@ export function layoutDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
       let className = 'd-section'
       if (variant !== 'default') className += ` d-section--${variant}`
       if (styled) className += ' d-section--styled'
+      if (p.background?.kind === 'image') className += ' d-section--image'
       const style: CSSProperties = {
         ...backgroundCss(p.background),
         padding: spacingToCss(p.padding),

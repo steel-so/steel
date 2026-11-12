@@ -357,6 +357,18 @@ describe('document theme', () => {
     expect(print).not.toContain('.d-layout-paged .d-doc{width')
     expect(print).not.toContain('@page :first')
   })
+
+  it('keeps every paged cover a full sheet at any width', () => {
+    const settings = { ...DEFAULT_DOCUMENT_SETTINGS, layout: 'paged' as const }
+    const css = documentCss(defaultDocumentTheme(), {
+      mode: 'public',
+      settings,
+    })
+    const sheet = '.d-layout-paged .d-section--cover{min-height:auto;'
+    const rule = `${sheet}aspect-ratio:210 / 297}`
+    expect(css.split(rule)).toHaveLength(3)
+    expect(css).toContain('.d-section--image:has(> .d-section-inner:empty)')
+  })
 })
 
 describe('merge tags', () => {

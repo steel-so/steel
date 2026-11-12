@@ -340,6 +340,7 @@ const BASE_CSS = `
 .d-root .d-logos-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .d-root .d-toc ol{grid-template-columns:minmax(0,1fr)}
 .d-root .d-section--cover{min-height:auto}
+.d-root .d-section--image:has(> .d-section-inner:empty){min-height:auto;aspect-ratio:210 / 297}
 }
 @media (max-width:560px){
 .d-root .d-pricing-table thead{display:none}
@@ -370,13 +371,14 @@ function pagedCss(page: { width: number; height: number }): string {
 .d-layout-paged .d-doc{width:${page.width}mm;max-width:100%;min-height:${page.height}mm;margin:0 auto;box-shadow:0 1px 3px rgba(15,23,42,.08),0 24px 48px -24px rgba(15,23,42,.28);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(${page.height}mm - 1px),rgba(15,23,42,.16) calc(${page.height}mm - 1px),rgba(15,23,42,.16) ${page.height}mm)}
 .d-layout-paged .d-section{padding-left:var(--d-margin);padding-right:var(--d-margin)}
 .d-layout-paged .d-section-inner{max-width:none}
-.d-layout-paged .d-section--cover{min-height:${page.height}mm}
+.d-layout-paged .d-section--cover{min-height:auto;aspect-ratio:${page.width} / ${page.height}}
+.d-layout-paged .d-section--image{background-size:cover;background-position:center top}
 .d-layout-paged.d-mode-public .d-pagebreak{display:block;height:0;margin:var(--d-gap) calc(-1 * var(--d-margin));border-top:14px solid var(--canvas-background)}
 @media (max-width:640px){
 .d-layout-paged{padding:0}
 .d-layout-paged .d-doc{width:auto;min-height:0;box-shadow:none;background-image:none}
 .d-layout-paged .d-section{padding-left:20px;padding-right:20px}
-.d-layout-paged .d-section--cover{min-height:auto}
+.d-layout-paged .d-section--cover{min-height:auto;aspect-ratio:${page.width} / ${page.height}}
 .d-layout-paged.d-mode-public .d-pagebreak{margin-left:-20px;margin-right:-20px}
 }
 `
