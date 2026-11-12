@@ -1,8 +1,8 @@
 import {
-  CRM_REPORT_FIELDS,
   CRM_REPORT_RELATIONS,
   CRM_REPORT_SOURCE_LABELS,
   type CrmReportFieldType,
+  reportFields,
 } from '@/src/config/crm-report-fields'
 import type {
   CrmJoinQuery,
@@ -29,7 +29,7 @@ export function makeAlias(source: CrmReportSource, taken: Set<string>): string {
 export function joinFields(q: CrmJoinQuery): OutField[] {
   const multi = q.datasets.length > 1
   return q.datasets.flatMap((ds) =>
-    CRM_REPORT_FIELDS[ds.source].map((f) => ({
+    reportFields(ds.source).map((f) => ({
       key: `${ds.alias}.${f.key}`,
       label: multi
         ? `${CRM_REPORT_SOURCE_LABELS[ds.source]} · ${f.label}`

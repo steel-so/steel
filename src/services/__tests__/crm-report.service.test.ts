@@ -8,6 +8,7 @@ import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/repositories/membership.repository')
+vi.mock('@/src/repositories/crm-custom-field.repository')
 vi.mock('@/src/repositories/crm-report.repository')
 vi.mock('@/src/services/crm-company.service')
 vi.mock('@/src/services/crm-opportunity.service')
@@ -20,6 +21,10 @@ vi.mock('@/src/services/whatsapp-conversation.service')
 vi.mock('@/src/services/whatsapp-broadcast.service')
 
 import { auditMutation } from '@/lib/axiom/audit'
+import {
+  CrmCustomFieldDefinitionRepository,
+  CrmCustomFieldValueRepository,
+} from '@/src/repositories/crm-custom-field.repository'
 import { CrmReportRepository } from '@/src/repositories/crm-report.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
@@ -54,6 +59,12 @@ const report = (overrides?: Parameters<typeof createFakeCrmReport>[0]) =>
 
 beforeEach(() => {
   mockedModuleAccess.isEnabled.mockResolvedValue(ok(true))
+  vi.mocked(
+    CrmCustomFieldDefinitionRepository.listByWorkspace,
+  ).mockResolvedValue(ok([]))
+  vi.mocked(CrmCustomFieldValueRepository.listByRecords).mockResolvedValue(
+    ok([]),
+  )
 })
 
 describe('CrmReportService', () => {
@@ -553,6 +564,51 @@ describe('CrmReportService — authz, persistence and data sources', () => {
         { 'whatsapp_conversation.assignedUserName': 'Ana Souza' },
         { 'whatsapp_conversation.assignedUserName': 'Ex-membro' },
         { 'whatsapp_conversation.assignedUserName': 'Sem atendente' },
+      ])
+    })
+
+    it('should add the team name and the contact custom fields to WhatsApp conversations', async () => {
+      asRole('VIEWER')
+      mockedReportRepo.findById.mockResolvedValue(
+        ok(
+          report({
+            source: 'whatsapp_conversation',
+            columns: ['teamName', 'cf:ID do cliente'],
+            query: null,
+          }),
+        ),
+      )
+      mockedMembershipRepo.listWithUserByWorkspace.mockResolvedValue(ok([]))
+      vi.mocked(
+        CrmCustomFieldDefinitionRepository.listByWorkspace,
+      ).mockResolvedValue(
+        ok([{ id: 'd1', label: 'ID do cliente', type: 'TEXT' }] as never),
+      )
+      vi.mocked(CrmCustomFieldValueRepository.listByRecords).mockResolvedValue(
+        ok([{ definitionId: 'd1', recordId: 'k1', value: 'A-77' }] as never),
+      )
+      vi.mocked(WhatsAppConversationService.list).mockResolvedValue(
+        ok([
+          {
+            id: 'c1',
+            contactId: 'k1',
+            assignedUserId: null,
+            team: { name: 'Vendas' },
+          },
+          { id: 'c2', contactId: 'k2', assignedUserId: null, team: null },
+        ] as never),
+      )
+
+      const data = expectOk(await CrmReportService.runData('u1', 'ws1', 'r1'))
+      expect(data.rows).toEqual([
+        {
+          'whatsapp_conversation.teamName': 'Vendas',
+          'whatsapp_conversation.cf:ID do cliente': 'A-77',
+        },
+        {
+          'whatsapp_conversation.teamName': 'Sem equipe',
+          'whatsapp_conversation.cf:ID do cliente': '',
+        },
       ])
     })
 

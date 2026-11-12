@@ -30,8 +30,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import {
-  CRM_REPORT_FIELDS,
   CRM_REPORT_SOURCE_LABELS,
+  reportFields,
+  setContactReportFields,
 } from '@/src/config/crm-report-fields'
 import {
   crmReportExportUrl,
@@ -40,6 +41,7 @@ import {
   useDeleteCrmReport,
   useUpdateCrmReport,
 } from '@/src/hooks/use-crm-report'
+import { useWhatsAppContactFields } from '@/src/hooks/use-whatsapp-contacts'
 import {
   CRM_REPORT_AGGREGATION_FNS,
   CRM_REPORT_SOURCES,
@@ -79,6 +81,12 @@ export function CrmReportBuilder({
     isLoading,
     error,
   } = useCrmReport(workspaceId, reportId, basePath)
+  // WhatsApp reports offer the workspace's contact fields as extra columns.
+  // Set during render (idempotent) so every child reads the up-to-date list.
+  const contactFields = useWhatsAppContactFields(
+    basePath === 'whatsapp' ? workspaceId : '',
+  )
+  setContactReportFields((contactFields.data ?? []).map((f) => f.label))
 
   if (isLoading) {
     return (
@@ -451,7 +459,7 @@ function ColumnsSection({ query, setQuery }: SectionProps) {
             </span>
           )}
           <div className='flex flex-wrap gap-1.5'>
-            {CRM_REPORT_FIELDS[ds.source].map((f) => {
+            {reportFields(ds.source).map((f) => {
               const key = `${ds.alias}.${f.key}`
               const selected = query.columns.includes(key)
               return (
@@ -556,7 +564,7 @@ function UnionColumns({
                   <SelectTrigger className='h-8 flex-1'>
                     <span>
                       {col.fields[ds.alias]
-                        ? (CRM_REPORT_FIELDS[ds.source].find(
+                        ? (reportFields(ds.source).find(
                             (f) => f.key === col.fields[ds.alias],
                           )?.label ?? col.fields[ds.alias])
                         : '—'}
@@ -564,7 +572,7 @@ function UnionColumns({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value='__none__'>—</SelectItem>
-                    {CRM_REPORT_FIELDS[ds.source].map((f) => (
+                    {reportFields(ds.source).map((f) => (
                       <SelectItem key={f.key} value={f.key}>
                         {f.label}
                       </SelectItem>
@@ -876,7 +884,7 @@ function isSavable(query: CrmReportQuery): boolean {
 function toJoin(q: CrmReportQuery): CrmJoinQuery {
   if (q.mode === 'join') return q
   const base = q.datasets[0]
-  const first = CRM_REPORT_FIELDS[base.source][0]?.key
+  const first = reportFields(base.source)[0]?.key
   return {
     mode: 'join',
     datasets: q.datasets,
@@ -890,7 +898,7 @@ function toJoin(q: CrmReportQuery): CrmJoinQuery {
 function toUnion(q: CrmReportQuery): CrmUnionQuery {
   if (q.mode === 'union') return q
   const base = q.datasets[0]
-  const field = CRM_REPORT_FIELDS[base.source][0]
+  const field = reportFields(base.source)[0]
   return {
     mode: 'union',
     datasets: q.datasets,

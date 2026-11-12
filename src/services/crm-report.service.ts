@@ -1,11 +1,18 @@
 import type { ModuleKind, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { CUSTOM_REPORT_FIELD_PREFIX } from '@/src/config/crm-report-fields'
 import type { CrmReportRow } from '@/src/lib/crm-report-runner'
 import { runCrmReportQuery } from '@/src/lib/crm-report-runner'
+import { formatCustomFieldValue } from '@/src/lib/custom-field-value'
 import { err, ok, type Result } from '@/src/lib/result'
 import { toCrmReportDTO } from '@/src/mappers/crm-report.mapper'
+import {
+  CrmCustomFieldDefinitionRepository,
+  CrmCustomFieldValueRepository,
+} from '@/src/repositories/crm-custom-field.repository'
 import { CrmReportRepository } from '@/src/repositories/crm-report.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { WhatsAppAiCampaignRepository } from '@/src/repositories/whatsapp-ai-campaign.repository'
 import type {
   CreateCrmReportDTO,
   CrmReportData,
@@ -25,14 +32,59 @@ import type { CrmReportDTO } from '@/types/crm-report'
 import { assertMember, assertModuleEnabled, assertModuleMember } from './authz'
 
 /**
- * Conversation rows carry only `assignedUserId`; a report (and its CSV/Excel
- * export) must show the agent's name, so each row gets `assignedUserName`
- * from the workspace members. An agent who left the workspace keeps a label
- * instead of a raw id.
+ * Adds the workspace's contact fields to report rows: one `cf:<label>` column
+ * per field, filled with the contact's value formatted for reading.
  */
-async function withAssigneeNames(
+async function withContactFieldColumns<T extends { contactId: string }>(
   workspaceId: string,
-  conversations: Result<{ assignedUserId: string | null }[]>,
+  rows: T[],
+): Promise<Result<(T & Record<string, string>)[]>> {
+  const definitions = await CrmCustomFieldDefinitionRepository.listByWorkspace(
+    workspaceId,
+    { entity: 'WHATSAPP_CONTACT' },
+  )
+  if (!definitions.ok) return definitions
+  if (definitions.value.length === 0) return ok(rows as never)
+  const values = await CrmCustomFieldValueRepository.listByRecords([
+    ...new Set(rows.map((row) => row.contactId)),
+  ])
+  if (!values.ok) return values
+  const byContact = new Map<string, Map<string, unknown>>()
+  for (const value of values.value) {
+    const map = byContact.get(value.recordId) ?? new Map<string, unknown>()
+    map.set(value.definitionId, value.value)
+    byContact.set(value.recordId, map)
+  }
+  return ok(
+    rows.map((row) => {
+      const extra: Record<string, string> = {}
+      for (const definition of definitions.value) {
+        extra[`${CUSTOM_REPORT_FIELD_PREFIX}${definition.label}`] =
+          formatCustomFieldValue(
+            definition.type,
+            byContact.get(row.contactId)?.get(definition.id),
+          )
+      }
+      return { ...row, ...extra }
+    }),
+  )
+}
+
+/**
+ * Conversation rows carry only `assignedUserId`; a report (and its CSV/Excel
+ * export) must show the agent's name, the team's name and the contact's custom
+ * fields, so each row gets `assignedUserName`, `teamName` and the `cf:` columns.
+ * An agent who left the workspace keeps a label instead of a raw id.
+ */
+async function withConversationColumns(
+  workspaceId: string,
+  conversations: Result<
+    {
+      assignedUserId: string | null
+      contactId: string
+      team: { name: string } | null
+    }[]
+  >,
 ): Promise<Result<CrmReportRow[]>> {
   if (!conversations.ok) return conversations
   const members =
@@ -41,14 +93,42 @@ async function withAssigneeNames(
   const names = new Map(
     members.value.map((member) => [member.userId, member.user.name]),
   )
-  return ok(
-    conversations.value.map((conversation) => ({
-      ...conversation,
-      assignedUserName: conversation.assignedUserId
-        ? (names.get(conversation.assignedUserId) ?? 'Ex-membro')
-        : 'Sem atendente',
-    })) as unknown as CrmReportRow[],
+  const named = conversations.value.map((conversation) => ({
+    ...conversation,
+    assignedUserName: conversation.assignedUserId
+      ? (names.get(conversation.assignedUserId) ?? 'Ex-membro')
+      : 'Sem atendente',
+    teamName: conversation.team?.name ?? 'Sem equipe',
+  }))
+  const withFields = await withContactFieldColumns(workspaceId, named)
+  return withFields.ok
+    ? ok(withFields.value as unknown as CrmReportRow[])
+    : withFields
+}
+
+async function campaignRecipientRows(
+  actorId: string,
+  workspaceId: string,
+): Promise<Result<CrmReportRow[]>> {
+  const membership = await assertModuleMember(
+    actorId,
+    workspaceId,
+    'COMMUNICATION',
+    { resource: 'broadcasts', action: 'VIEW' },
   )
+  if (!membership.ok) return membership
+  const recipients =
+    await WhatsAppAiCampaignRepository.listRecipientsForReport(workspaceId)
+  if (!recipients.ok) return recipients
+  const rows = recipients.value.map((recipient) => ({
+    ...recipient,
+    teamName: recipient.teamName ?? 'Sem equipe',
+    replied: recipient.repliedAt ? 'Sim' : 'Não',
+  }))
+  const withFields = await withContactFieldColumns(workspaceId, rows)
+  return withFields.ok
+    ? ok(withFields.value as unknown as CrmReportRow[])
+    : withFields
 }
 
 /** Busca as linhas brutas da fonte via o service correspondente (com VIEW). */
@@ -87,10 +167,12 @@ async function fetchSourceRows(
         active: undefined,
       }) as Promise<Result<CrmReportRow[]>>
     case 'whatsapp_conversation':
-      return withAssigneeNames(
+      return withConversationColumns(
         workspaceId,
         await WhatsAppConversationService.list(actorId, workspaceId),
       )
+    case 'whatsapp_ai_campaign':
+      return campaignRecipientRows(actorId, workspaceId)
     case 'whatsapp_broadcast':
       return WhatsAppBroadcastService.list(actorId, workspaceId) as Promise<
         Result<CrmReportRow[]>

@@ -382,6 +382,71 @@ export const WhatsAppAiCampaignRepository = {
     }
   },
 
+  /** Every recipient of the workspace's campaigns, flat, for the reports. */
+  async listRecipientsForReport(workspaceId: string): Promise<
+    Result<
+      {
+        id: string
+        campaignName: string
+        contactId: string
+        contactName: string | null
+        contactWaId: string
+        contactDescription: string | null
+        status: WhatsAppAiCampaignRecipientStatus
+        sentAt: Date | null
+        repliedAt: Date | null
+        errorMessage: string | null
+        createdAt: Date
+        teamName: string | null
+      }[]
+    >
+  > {
+    try {
+      const rows = await prisma.whatsAppAiCampaignRecipient.findMany({
+        where: { campaign: { workspaceId } },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        include: {
+          campaign: { select: { name: true } },
+          contact: {
+            select: { id: true, name: true, waId: true, description: true },
+          },
+        },
+      })
+      const conversationIds = rows
+        .map((row) => row.conversationId)
+        .filter((id): id is string => Boolean(id))
+      const conversations = conversationIds.length
+        ? await prisma.whatsAppConversation.findMany({
+            where: { id: { in: conversationIds } },
+            select: { id: true, team: { select: { name: true } } },
+          })
+        : []
+      const teamByConversation = new Map(
+        conversations.map((c) => [c.id, c.team?.name ?? null]),
+      )
+      return ok(
+        rows.map((row) => ({
+          id: row.id,
+          campaignName: row.campaign.name,
+          contactId: row.contact.id,
+          contactName: row.contact.name,
+          contactWaId: row.contact.waId,
+          contactDescription: row.contact.description,
+          status: row.status,
+          sentAt: row.sentAt,
+          repliedAt: row.repliedAt,
+          errorMessage: row.errorMessage,
+          createdAt: row.createdAt,
+          teamName: row.conversationId
+            ? (teamByConversation.get(row.conversationId) ?? null)
+            : null,
+        })),
+      )
+    } catch (error) {
+      return err(dbError('Failed to list AI campaign recipients', error))
+    }
+  },
+
   /** A page of the campaign's contacts, with how their conversation is. */
   async listRecipients(
     campaignId: string,

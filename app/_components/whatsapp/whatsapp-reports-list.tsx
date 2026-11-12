@@ -38,6 +38,7 @@ import type { CrmReportSource } from '@/src/schemas/crm-report.schema'
 
 const WHATSAPP_REPORT_SOURCES: CrmReportSource[] = [
   'whatsapp_conversation',
+  'whatsapp_ai_campaign',
   'whatsapp_broadcast',
 ]
 
