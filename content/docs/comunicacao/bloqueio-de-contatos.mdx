@@ -1,0 +1,70 @@
+---
+title: Bloqueio de contatos
+description: Bloqueie um contato em um número do WhatsApp para parar de receber as mensagens dele e de enviar qualquer coisa a ele, com o bloqueio aplicado também na Meta ou na Z-API.
+section: comunicacao
+order: 3
+---
+
+Bloquear um contato faz o Steel **ignorar as mensagens dele** e **parar de
+enviar qualquer coisa a ele** por um número do WhatsApp. O bloqueio vale só
+para o número em que foi feito: o mesmo contato continua normal nos outros
+números do workspace.
+
+## Como bloquear
+
+1. Abra a conversa com o contato.
+2. Clique nos **três pontinhos** do topo da conversa (ou no nome do contato,
+   para abrir o painel dele).
+3. Escolha **Bloquear contato**.
+4. Se quiser, escreva o **motivo** (até 500 caracteres) e confirme.
+
+Pode bloquear quem pode responder a conversa: donos, administradores, líderes
+de equipe e atendentes com acesso a ela.
+
+## O que acontece
+
+- As mensagens do contato **param de chegar**: não abrem conversa, não geram
+  notificação e não acionam a IA nem o chatbot.
+- **Nada é enviado** a ele por esse número: respostas, templates,
+  transmissões, campanhas de IA, newsletters e documentos. Em transmissões e
+  campanhas, ele aparece como pulado, com o motivo "Contato bloqueado neste
+  número".
+- A conversa mostra a faixa **Contato bloqueado** e o campo de mensagem fica
+  travado.
+- Na lista de **Contatos**, ele ganha o selo **Bloqueado**.
+
+## Bloqueio na Meta e na Z-API
+
+O Steel também bloqueia o contato no WhatsApp:
+
+- **Z-API:** o contato fica bloqueado no próprio aparelho conectado.
+- **Meta (API oficial):** a Meta só aceita bloquear quem mandou mensagem para o
+  número nas **últimas 24 horas**. Se já passou disso, o contato fica
+  bloqueado no Steel na hora, com a situação **Aguardando a pessoa escrever**,
+  e o bloqueio vai para a Meta assim que a pessoa escrever de novo. A mensagem
+  dela não chega ao atendimento.
+
+<Callout type='nota'>
+  Se a Meta ou a Z-API recusar o bloqueio, a situação fica **Falhou**, com o
+  motivo. Mesmo assim o contato continua bloqueado no Steel: nada chega e nada
+  sai.
+</Callout>
+
+## Contatos bloqueados
+
+Em **Comunicação › Configurações › Contatos bloqueados** você vê, para cada
+número, quem está bloqueado, quem bloqueou e quando, o motivo, a situação na
+Meta ou na Z-API e quantas mensagens foram ignoradas.
+
+- **Desbloquear:** o contato volta a receber e a mandar mensagens por aquele
+  número. O Steel desbloqueia também na Meta ou na Z-API; se o provedor
+  recusar, você recebe um aviso para conferir direto lá.
+- **Sincronizar com a Meta/Z-API:** traz para o Steel os bloqueios feitos
+  direto na Meta e tenta de novo os que estão aguardando ou falharam. A Z-API
+  não informa a lista de bloqueados do aparelho, então nela só os pendentes
+  são reenviados.
+
+<Callout type='admin'>
+  Desbloquear e sincronizar é só para donos, administradores e líderes de
+  equipe. Atendentes podem bloquear, mas não desbloquear.
+</Callout>
