@@ -5,6 +5,7 @@ import {
 import {
   csvToRecords,
   normalizeCsvHeader,
+  parseCsv,
   pickCsvValue,
 } from '@/src/lib/servicedesk/csv'
 
@@ -65,6 +66,34 @@ function detectHeaderFormat(headers: string[]): HeaderFormat | null {
         normalized.has(format.description),
     ) ?? null
   )
+}
+
+/**
+ * Headers of the sheet that are not one of the three fixed columns nor an
+ * existing field: each becomes a new contact field on import. Blank and
+ * repeated headers are ignored.
+ */
+export function extraContactImportHeaders(
+  csv: string,
+  fields: { label: string }[],
+): string[] {
+  const rawHeaders = parseCsv(csv)[0] ?? []
+  const format = detectHeaderFormat(rawHeaders)
+  if (!format) return []
+  const known = new Set<string>([
+    format.name,
+    format.phone,
+    format.description,
+    ...fields.map((field) => normalizeCsvHeader(field.label)),
+  ])
+  const extra: string[] = []
+  for (const header of rawHeaders) {
+    const key = normalizeCsvHeader(header)
+    if (!key || known.has(key)) continue
+    known.add(key)
+    extra.push(header.trim())
+  }
+  return extra
 }
 
 const PHONE_PATTERN = /^\d{10,15}$/

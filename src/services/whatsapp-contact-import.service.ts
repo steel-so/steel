@@ -1,13 +1,19 @@
 import { auditMutation } from '@/lib/axiom/audit'
 import { badRequest } from '@/src/errors'
+import { customFieldKeyFromLabel } from '@/src/lib/custom-field-value'
 import { err, ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
-import { parseContactImportCsv } from '@/src/lib/whatsapp/contact-import'
+import { normalizeCsvHeader } from '@/src/lib/servicedesk/csv'
+import {
+  extraContactImportHeaders,
+  parseContactImportCsv,
+} from '@/src/lib/whatsapp/contact-import'
 import {
   CrmCustomFieldDefinitionRepository,
   CrmCustomFieldValueRepository,
 } from '@/src/repositories/crm-custom-field.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
+import { WHATSAPP_CONTACT_FIELD_LIMIT } from '@/src/schemas/whatsapp-contact-field.schema'
 import type { ImportWhatsAppContactsDTO } from '@/src/schemas/whatsapp-contact-import.schema'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
 import { assertModuleMember } from './authz'
@@ -34,9 +40,31 @@ export const WhatsAppContactImportService = {
       })
     if (!definitions.ok) return definitions
 
+    // Any extra column becomes a contact field (text, or CPF/CNPJ by name), so
+    // the table shows it right after the import.
+    const known = [...definitions.value]
+    for (const header of extraContactImportHeaders(dto.csv, known)) {
+      if (known.length >= WHATSAPP_CONTACT_FIELD_LIMIT) break
+      const normalized = normalizeCsvHeader(header)
+      const made = await CrmCustomFieldDefinitionRepository.create({
+        workspaceId,
+        createdById: actorId,
+        entity: 'WHATSAPP_CONTACT',
+        key: customFieldKeyFromLabel(header),
+        label: header.slice(0, 80),
+        type:
+          normalized === 'cpf'
+            ? 'CPF'
+            : normalized === 'cnpj'
+              ? 'CNPJ'
+              : 'TEXT',
+      })
+      if (made.ok) known.push(made.value)
+    }
+
     const parsed = parseContactImportCsv(
       dto.csv,
-      definitions.value.map((definition) => ({
+      known.map((definition) => ({
         id: definition.id,
         label: definition.label,
         type: definition.type,

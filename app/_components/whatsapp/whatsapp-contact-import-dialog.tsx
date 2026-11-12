@@ -128,8 +128,10 @@ export function WhatsAppContactImportDialog({
             + DDD (ex.: 5511999998888). Contatos que já existem são atualizados,
             sem duplicar.
             {fieldLabels.length > 0
-              ? ` Colunas extras reconhecidas pelo nome do campo: ${fieldLabels.join(', ')}. Valores inválidos (ex.: CPF) recusam só aquela linha, e célula em branco não apaga o dado salvo.`
-              : ''}
+              ? ` Campos já existentes: ${fieldLabels.join(', ')}. Valores inválidos (ex.: CPF) recusam só aquela linha, e célula em branco não apaga o dado salvo.`
+              : ''}{' '}
+            Qualquer outra coluna da planilha vira um campo novo e aparece na
+            tabela de contatos.
           </DialogDescription>
         </DialogHeader>
 

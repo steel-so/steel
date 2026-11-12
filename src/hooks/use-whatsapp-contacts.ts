@@ -231,6 +231,10 @@ export function useImportWhatsAppContacts(workspaceId: string) {
       queryClient.invalidateQueries({
         queryKey: ['whatsapp-contacts', workspaceId],
       })
+      // Extra sheet columns become contact fields: refresh the table columns.
+      queryClient.invalidateQueries({
+        queryKey: ['whatsapp-contact-fields', workspaceId],
+      })
     },
   })
 }

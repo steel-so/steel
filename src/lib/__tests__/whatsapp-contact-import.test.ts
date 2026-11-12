@@ -3,6 +3,7 @@ import {
   CONTACT_IMPORT_MAX_ROWS,
   CONTACT_IMPORT_TEMPLATE_CSV,
   contactImportTemplateCsv,
+  extraContactImportHeaders,
   normalizeContactPhone,
   parseContactImportCsv,
 } from '../whatsapp/contact-import'
@@ -147,5 +148,20 @@ describe('parseContactImportCsv with contact fields', () => {
     expect(contactImportTemplateCsv(['CPF', 'CNPJ'])).toContain(
       'Nome;Telefone;Descrição;CPF;CNPJ',
     )
+  })
+})
+
+describe('extraContactImportHeaders', () => {
+  it('returns the columns that are neither fixed nor existing fields', () => {
+    const csv =
+      'Nome;Número;Detalhes;ID do cliente;CPF;Bla Bla\r\nA;5511999990001;x;1;2;3\r\n'
+    expect(extraContactImportHeaders(csv, [{ label: 'CPF' }])).toEqual([
+      'ID do cliente',
+      'Bla Bla',
+    ])
+  })
+
+  it('returns nothing for an unknown header set', () => {
+    expect(extraContactImportHeaders('a;b\r\n1;2\r\n', [])).toEqual([])
   })
 })
