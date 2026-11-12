@@ -119,7 +119,11 @@ describe('DocumentVariablesService.forDocument()', () => {
       await DocumentVariablesService.forDocument('d1', 'r1'),
     )
     expect(fromRecipient['contato.nome']).toBe('Ana')
-    expect(fromRecipient['empresa.nome']).toBeUndefined()
+    // No company: the contact names the client.
+    expect(fromRecipient['empresa.nome']).toBe('Ana')
+    expect(fromRecipient['oportunidade.titulo']).toBe(
+      fromRecipient['documento.titulo'],
+    )
     expect(fromRecipient['documento.validade']).toBeUndefined()
     expect(fromRecipient['documento.total']).toBeUndefined()
     expect(fromRecipient['oportunidade.valor']).toBeUndefined()
@@ -137,7 +141,7 @@ describe('DocumentVariablesService.forDocument()', () => {
     const values = expectOk(
       await DocumentVariablesService.forDocument('d1', null),
     )
-    expect(values['empresa.nome']).toBeUndefined()
+    expect(values['empresa.nome']).toBe(values['contato.nome'])
     expect(values['empresa.cnpj']).toBeUndefined()
     expect(values['oportunidade.valor']).toBeUndefined()
   })

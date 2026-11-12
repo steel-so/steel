@@ -538,6 +538,7 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
       const header = p.headerRow ? first : null
       const body = p.headerRow ? rest : rows
       let className = 'd-table'
+      if (header) className += ' d-table--labeled'
       if (p.striped) className += ' d-table--striped'
       if (p.compact) className += ' d-table--compact'
       return (
@@ -556,7 +557,12 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
               {body.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   {pad(row).map((cell, index) => (
-                    <td key={index}>{renderVars(cell, ctx)}</td>
+                    <td
+                      key={index}
+                      data-label={header ? plainLabel(header[index]) : undefined}
+                    >
+                      {renderVars(cell, ctx)}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -1442,4 +1448,10 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     toc,
     contactCard,
   ]
+}
+
+/** Header text as the stacked label of a cell on phones (no tags). */
+function plainLabel(value: string | undefined): string | undefined {
+  const text = (value ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
+  return text.trim() || undefined
 }

@@ -77,9 +77,30 @@ export function substituteVariables(
 ): string {
   if (!text.includes('{{')) return text
   const apply = format ?? ((value: string) => value)
-  const replace = (tag: string, key: string) =>
-    isDocumentVariableKey(key) ? apply(values[key] ?? '', key) : tag
-  return text.replace(new RegExp(PATTERN.source, 'g'), replace)
+  let emptied = false
+  const replace = (tag: string, key: string) => {
+    if (!isDocumentVariableKey(key)) return tag
+    const value = values[key] ?? ''
+    if (!value) emptied = true
+    return apply(value, key)
+  }
+  const out = text.replace(new RegExp(PATTERN.source, 'g'), replace)
+  return emptied ? tidySeparators(out) : out
+}
+
+const LEADING_SEPARATORS = /(^|>)(\s*[·•|,]\s*)+/g
+const TRAILING_SEPARATORS = /(\s*[·•|,]\s*)+(<|$)/g
+
+/**
+ * A tag that resolved to nothing leaves its separator behind
+ * ("· preparada por…"): drop separators left at the edges of a text or of
+ * an HTML text run, and the double spaces.
+ */
+export function tidySeparators(text: string): string {
+  return text
+    .replace(LEADING_SEPARATORS, '$1')
+    .replace(TRAILING_SEPARATORS, '$2')
+    .replace(/ {2,}/g, ' ')
 }
 
 function collectStrings(value: unknown, out: string[], depth = 0): void {

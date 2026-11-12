@@ -72,11 +72,12 @@ export const DocumentVariablesService = {
         'contato.nome': contactName,
         'contato.email': contactEmail,
         'contato.telefone': contactPhone,
-        'empresa.nome': doc.company?.name,
+        // Without a company the client is the contact: "Proposta para Ana".
+        'empresa.nome': doc.company?.name || contactName,
         'empresa.cnpj': doc.company?.cnpj
           ? formatCustomFieldValue('CNPJ', doc.company.cnpj)
           : undefined,
-        'oportunidade.titulo': doc.opportunity?.name,
+        'oportunidade.titulo': doc.opportunity?.name || doc.title,
         'oportunidade.valor':
           amount === null ? undefined : formatDocumentMoney(amount),
         'responsavel.nome': doc.owner.name,

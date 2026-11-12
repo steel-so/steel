@@ -47,6 +47,7 @@ import {
   documentVariableSamples,
   splitVariables,
   substituteVariables,
+  tidySeparators,
 } from '@/src/lib/canvas-document/variables'
 import {
   appendToHtml,
@@ -376,6 +377,12 @@ describe('merge tags', () => {
     const values = { 'contato.nome': 'Ana' }
     expect(substituteVariables('Oi {{ contato.nome }}', values)).toBe('Oi Ana')
     expect(substituteVariables('{{empresa.nome}}!', values)).toBe('!')
+    const tidy = substituteVariables(
+      '<p>{{empresa.nome}} · preparada por {{contato.nome}}</p>',
+      values,
+    )
+    expect(tidy).toBe('<p>preparada por Ana</p>')
+    expect(tidySeparators('a, b ·  c')).toBe('a, b · c')
     const unknown = substituteVariables('{{outra.coisa}}', values)
     expect(unknown).toBe('{{outra.coisa}}')
     expect(substituteVariables('sem tags', values)).toBe('sem tags')
