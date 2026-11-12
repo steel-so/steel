@@ -8,8 +8,10 @@ import {
   Download01Icon,
   Invoice01Icon,
   MoneyReceive01Icon,
+  MoreVerticalIcon,
   RefreshIcon,
   StarIcon,
+  UserBlock01Icon,
   UserGroup03Icon,
   UserSwitchIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
@@ -60,6 +62,10 @@ import {
   useWhatsAppBoletoSettings,
 } from '@/src/hooks/use-whatsapp-boleto'
 import { useWhatsAppBusinessHours } from '@/src/hooks/use-whatsapp-business-hours'
+import {
+  useUnblockWhatsAppContact,
+  useWhatsAppConversationBlock,
+} from '@/src/hooks/use-whatsapp-contact-blocks'
 import { useFindOrCreateWhatsAppContact } from '@/src/hooks/use-whatsapp-contacts'
 import {
   useAssignWhatsAppConversation,
@@ -99,6 +105,8 @@ import type { PhoneCallRecordDTO } from '@/types/whatsapp-phone-call'
 import type { WhatsAppPixChargeDTO } from '@/types/whatsapp-pix'
 import { WhatsappBoletoChargeCard } from './boleto/whatsapp-boleto-charge-card'
 import { WhatsappBoletoChargeDialog } from './boleto/whatsapp-boleto-charge-dialog'
+import { WhatsappBlockContactDialog } from './contact-block/whatsapp-block-contact-dialog'
+import { WhatsappContactBlockedBanner } from './contact-block/whatsapp-contact-blocked-banner'
 import { WhatsappPixChargeCard } from './pix/whatsapp-pix-charge-card'
 import { WhatsappPixChargeDialog } from './pix/whatsapp-pix-charge-dialog'
 import { SendSurveyDialog } from './surveys/send-survey-dialog'
@@ -213,6 +221,7 @@ export function WhatsappConversationView({
   const [boletoOpen, setBoletoOpen] = useState(false)
   const [surveyOpen, setSurveyOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
+  const [blockOpen, setBlockOpen] = useState(false)
   const [replyTarget, setReplyTarget] = useState<WhatsAppMessageDTO | null>(
     null,
   )
@@ -251,6 +260,13 @@ export function WhatsappConversationView({
     currentUser.data?.pabxExtension && currentUser.data?.pabxDeviceId,
   )
   const isClosed = conversation.status === 'CLOSED'
+  // zap-block-contacts: a blocked contact gets nothing and sends nothing.
+  const blockState = useWhatsAppConversationBlock(workspaceId, conversation.id)
+  const unblockContact = useUnblockWhatsAppContact(workspaceId)
+  const contactBlock = blockState.data?.block ?? null
+  const isBlocked = contactBlock !== null
+  const canBlock = Boolean(blockState.data?.canBlock) && !isBlocked
+  const canUnblock = Boolean(blockState.data?.canUnblock) && isBlocked
   const businessHours = useWhatsAppBusinessHours(workspaceId)
   const outsideHours = businessHours.data?.open === false
 
@@ -309,6 +325,18 @@ export function WhatsappConversationView({
       },
       onError: (error) =>
         notify.error(error, 'Não foi possível transferir a conversa'),
+    })
+  }
+
+  function handleUnblock() {
+    if (!contactBlock) return
+    unblockContact.mutate(contactBlock.id, {
+      onSuccess: (result) => {
+        if (result.providerWarning) notify.warning(result.providerWarning)
+        else notify.success('Contato desbloqueado')
+      },
+      onError: (error) =>
+        notify.error(error, 'Não foi possível desbloquear o contato'),
     })
   }
 
@@ -561,7 +589,38 @@ export function WhatsappConversationView({
                 <span className='text-muted-foreground'>Status</span>
                 <span>{STATUS_LABEL[conversation.status]}</span>
               </div>
+              {isBlocked ? (
+                <div className='flex justify-between'>
+                  <span className='text-muted-foreground'>Bloqueio</span>
+                  <span className='text-destructive'>Bloqueado</span>
+                </div>
+              ) : null}
             </div>
+            {canBlock || canUnblock ? (
+              <div className='mt-3 border-t pt-3'>
+                {canBlock ? (
+                  <Button
+                    variant='destructive'
+                    size='sm'
+                    className='w-full'
+                    onClick={() => setBlockOpen(true)}
+                  >
+                    <SteelIcon icon={UserBlock01Icon} size={14} />
+                    Bloquear contato
+                  </Button>
+                ) : (
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='w-full'
+                    disabled={unblockContact.isPending}
+                    onClick={handleUnblock}
+                  >
+                    Desbloquear contato
+                  </Button>
+                )}
+              </div>
+            ) : null}
           </PopoverContent>
         </Popover>
         <div className='flex items-center gap-1'>
@@ -790,8 +849,50 @@ export function WhatsappConversationView({
               ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
+          {canBlock || canUnblock ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label='Mais ações da conversa'
+                    title='Mais ações'
+                  >
+                    <SteelIcon icon={MoreVerticalIcon} size={18} />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align='end'>
+                {canBlock ? (
+                  <DropdownMenuItem
+                    variant='destructive'
+                    onClick={() => setBlockOpen(true)}
+                  >
+                    <SteelIcon icon={UserBlock01Icon} size={16} />
+                    Bloquear contato
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    disabled={unblockContact.isPending}
+                    onClick={handleUnblock}
+                  >
+                    Desbloquear contato
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </div>
+      {contactBlock ? (
+        <WhatsappContactBlockedBanner
+          block={contactBlock}
+          canUnblock={canUnblock}
+          isUnblocking={unblockContact.isPending}
+          onUnblock={handleUnblock}
+        />
+      ) : null}
       {isClosed && (
         <div className='border-b bg-muted px-4 py-2 text-muted-foreground text-sm'>
           Conversa fechada
@@ -886,7 +987,9 @@ export function WhatsappConversationView({
         workspaceId={workspaceId}
         conversationId={conversation.id}
         contactName={contactTitle(conversation)}
-        disabled={conversation.aiActive || isClosed || outsideHours}
+        disabled={
+          conversation.aiActive || isClosed || outsideHours || isBlocked
+        }
         replyTarget={replyTarget}
         onClearReply={() => setReplyTarget(null)}
       />
@@ -924,6 +1027,16 @@ export function WhatsappConversationView({
           defaultPayerName={conversation.contactName ?? undefined}
           open={boletoOpen}
           onOpenChange={setBoletoOpen}
+        />
+      ) : null}
+      {blockOpen && blockState.data ? (
+        <WhatsappBlockContactDialog
+          workspaceId={workspaceId}
+          open
+          onOpenChange={setBlockOpen}
+          target={{ conversationId: conversation.id }}
+          contactName={contactTitle(conversation)}
+          provider={blockState.data.provider}
         />
       ) : null}
       <WhatsappVideoCallDialog

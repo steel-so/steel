@@ -7,9 +7,11 @@ import {
   ContactBookIcon,
   Invoice01Icon,
   MessageMultiple01Icon,
+  UserBlock01Icon,
   WebDesign01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ReactNode } from 'react'
+import { WhatsappBlockedContactsSettings } from '../contact-block/whatsapp-blocked-contacts-settings'
 import { WhatsappSettingsAi } from './whatsapp-settings-ai'
 import { WhatsappSettingsAiKnowledge } from './whatsapp-settings-ai-knowledge'
 import { WhatsappSettingsArchive } from './whatsapp-settings-archive'
@@ -106,6 +108,15 @@ export const ZAP_SETTINGS_SECTIONS: ZapSettingsSection[] = [
         <WhatsappSettingsArchive workspaceId={id} />
       </div>
     ),
+  },
+  {
+    id: 'blocked-contacts',
+    label: 'Contatos bloqueados',
+    group: 'Atendimento',
+    icon: UserBlock01Icon,
+    description:
+      'Contatos bloqueados em cada número, desbloqueio e sincronização com a Meta e a Z-API.',
+    render: (id) => <WhatsappBlockedContactsSettings workspaceId={id} />,
   },
   {
     id: 'ai',

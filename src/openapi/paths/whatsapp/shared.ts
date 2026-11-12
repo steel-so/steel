@@ -82,6 +82,11 @@ export const SEND_ERRORS: ErrorEntry[] = [
     code: 'WHATSAPP_SPEND_CAP_REACHED',
     when: 'Só templates (pagos) da Meta: o número atingiu o limite de gasto mensal no modo bloquear',
   },
+  // zap-block-contacts
+  {
+    code: 'WHATSAPP_CONTACT_BLOCKED',
+    when: 'O contato está bloqueado neste número (Comunicação › Configurações › Contatos bloqueados)',
+  },
 ]
 
 export const SEND_NOTE =

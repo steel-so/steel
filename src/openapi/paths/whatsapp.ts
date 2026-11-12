@@ -7,6 +7,7 @@ import { broadcastRoutes } from './whatsapp/broadcasts'
 import { buttonRoutes } from './whatsapp/buttons'
 import { chatbotRoutes } from './whatsapp/chatbots'
 import { connectionRoutes } from './whatsapp/connections'
+import { contactBlockRoutes } from './whatsapp/contact-blocks'
 import { contactRoutes } from './whatsapp/contacts'
 import { conversationRoutes } from './whatsapp/conversations'
 import { dashboardRoutes } from './whatsapp/dashboards'
@@ -61,6 +62,8 @@ const routes: RouteConfig[] = [
   ...schedulingRoutes,
   // zap-spend-cap (ADR 0064)
   ...spendCapRoutes,
+  // zap-block-contacts
+  ...contactBlockRoutes,
 ]
 
 export function registerWhatsAppPaths(registry: OpenApiRegistry): void {

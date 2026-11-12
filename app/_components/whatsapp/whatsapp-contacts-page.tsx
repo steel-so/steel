@@ -621,7 +621,19 @@ export function WhatsappContactsPage({ workspaceId }: { workspaceId: string }) {
                     </button>
                   </div>
                 </TableCell>
-                <TableCell>{contact.name ?? '—'}</TableCell>
+                <TableCell>
+                  <span className='inline-flex items-center gap-1.5'>
+                    {contact.name ?? '—'}
+                    {contact.blocked ? (
+                      <Badge
+                        variant='destructive'
+                        title='Bloqueado em pelo menos um número do WhatsApp'
+                      >
+                        Bloqueado
+                      </Badge>
+                    ) : null}
+                  </span>
+                </TableCell>
                 <TableCell>{contactRecordPhone(contact)}</TableCell>
                 <TableCell>
                   <WhatsappNumberBadge
