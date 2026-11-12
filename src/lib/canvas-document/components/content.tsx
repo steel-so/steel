@@ -243,9 +243,7 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     category: 'Texto',
     keywords: ['parágrafo', 'paragrafo', 'texto', 'conteúdo', 'cláusula'],
     propsSchema: documentTextSchema,
-    defaultProps: () => ({
-      html: '<p>Escreva o texto aqui. Clique duas vezes para editar.</p>',
-    }),
+    defaultProps: () => ({ html: `<p>${TEXT_PLACEHOLDER}</p>` }),
     accepts: false,
     inlineText: { path: 'html', rich: true },
     inspector: [
@@ -298,6 +296,8 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     ],
     render: ({ node, attributes }) => {
       const p = node.props
+      // The editor's hint never reaches the reader or the PDF.
+      if (ctx.mode !== 'editor' && isPlaceholderText(p.html)) return null
       const size = p.size && p.size !== 'md' ? ` d-text--${p.size}` : ''
       return (
         <div
@@ -1454,4 +1454,13 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
 function plainLabel(value: string | undefined): string | undefined {
   const text = (value ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
   return text.trim() || undefined
+}
+
+/** Default text of a new text block: a hint for the author, not content. */
+export const TEXT_PLACEHOLDER =
+  'Escreva o texto aqui. Clique duas vezes para editar.'
+
+export function isPlaceholderText(html: string | undefined): boolean {
+  const text = (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
+  return text.trim() === TEXT_PLACEHOLDER
 }

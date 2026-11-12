@@ -92,9 +92,9 @@ export function substituteVariables(
   return tidySeparators(bare)
 }
 
-const EMPTY_MARK = '\u0000'
+const EMPTY_MARK = '\uE000'
 const DANGLING_WORD =
-  /\s+(?:para|de|da|do|das|dos|por|com|ao|à|em|no|na)\s*(?=\u0000)/gi
+  /\s+(?:para|de|da|do|das|dos|por|com|ao|à|em|no|na)\s*(?=\uE000)/gi
 
 const LEADING_SEPARATORS = /(^|>)(\s*[·•|,]\s*)+/g
 const TRAILING_SEPARATORS = /(\s*[·•|,]\s*)+(<|$)/g

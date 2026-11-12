@@ -38,14 +38,10 @@ export default async function SettingsWhatsappPage({
       description='Conexões do WhatsApp (Meta Cloud API e Z-API) usadas pela Comunicação.'
       icon={WhatsappIcon}
     >
-      <>
-        <WhatsappSettingsConnections
-          workspaceId={membership.value.workspaceId}
-        />
-        <WhatsappSettingsMetaChannels
-          workspaceId={membership.value.workspaceId}
-        />
-      </>
+      <WhatsappSettingsConnections workspaceId={membership.value.workspaceId} />
+      <WhatsappSettingsMetaChannels
+        workspaceId={membership.value.workspaceId}
+      />
     </SettingsPageFrame>
   )
 }

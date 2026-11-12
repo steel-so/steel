@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
 import { connection } from 'next/server'
 import { cache } from 'react'
@@ -20,6 +20,13 @@ const loadDocument = cache(async (token: string) => {
     userAgent,
   })
 })
+
+/**
+ * Documents are designed on light paper: opt out of the browsers' forced
+ * dark mode (Chrome/Samsung on Android), which inverted covers and revealed
+ * text meant to sit on a background image.
+ */
+export const viewport: Viewport = { colorScheme: 'only light' }
 
 export async function generateMetadata({
   params,

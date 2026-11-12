@@ -78,7 +78,7 @@ const CHECK_ICON =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E\")"
 
 const BASE_CSS = `
-.d-root{box-sizing:border-box;color:var(--canvas-text);background:var(--canvas-surface);font-family:var(--d-font-body);font-size:var(--d-base);line-height:var(--d-lh);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;--d-heading-color:var(--canvas-heading);--d-muted:var(--canvas-muted)}
+.d-root{box-sizing:border-box;color-scheme:only light;color:var(--canvas-text);background:var(--canvas-surface);font-family:var(--d-font-body);font-size:var(--d-base);line-height:var(--d-lh);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;--d-heading-color:var(--canvas-heading);--d-muted:var(--canvas-muted)}
 .d-root *,.d-root *::before,.d-root *::after{box-sizing:border-box}
 .d-root img{max-width:100%;height:auto}
 .d-root .d-doc{position:relative;display:flow-root;background:var(--canvas-surface)}
