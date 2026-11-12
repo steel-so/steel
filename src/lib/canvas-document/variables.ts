@@ -81,12 +81,20 @@ export function substituteVariables(
   const replace = (tag: string, key: string) => {
     if (!isDocumentVariableKey(key)) return tag
     const value = values[key] ?? ''
-    if (!value) emptied = true
-    return apply(value, key)
+    if (value) return apply(value, key)
+    emptied = true
+    return EMPTY_MARK
   }
   const out = text.replace(new RegExp(PATTERN.source, 'g'), replace)
-  return emptied ? tidySeparators(out) : out
+  if (!emptied) return out
+  // "Proposta para {{empresa.nome}}" without a company reads "Proposta".
+  const bare = out.replace(DANGLING_WORD, '').replaceAll(EMPTY_MARK, '')
+  return tidySeparators(bare)
 }
+
+const EMPTY_MARK = '\u0000'
+const DANGLING_WORD =
+  /\s+(?:para|de|da|do|das|dos|por|com|ao|à|em|no|na)\s*(?=\u0000)/gi
 
 const LEADING_SEPARATORS = /(^|>)(\s*[·•|,]\s*)+/g
 const TRAILING_SEPARATORS = /(\s*[·•|,]\s*)+(<|$)/g

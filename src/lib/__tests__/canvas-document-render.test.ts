@@ -383,6 +383,8 @@ describe('merge tags', () => {
     )
     expect(tidy).toBe('<p>preparada por Ana</p>')
     expect(tidySeparators('a, b ·  c')).toBe('a, b · c')
+    const cover = substituteVariables('Proposta para {{empresa.nome}}', values)
+    expect(cover).toBe('Proposta')
     const unknown = substituteVariables('{{outra.coisa}}', values)
     expect(unknown).toBe('{{outra.coisa}}')
     expect(substituteVariables('sem tags', values)).toBe('sem tags')
