@@ -69,6 +69,42 @@ describe('WhatsAppContactService', () => {
       )
     })
 
+    it('should flag the contacts blocked on some number (zap-block-contacts)', async () => {
+      const { WhatsAppContactBlockRepository } = await import(
+        '@/src/repositories/whatsapp-contact-block.repository'
+      )
+      const blocks = vi.mocked(WhatsAppContactBlockRepository)
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      mockedContactRepo.listByWorkspace.mockResolvedValue(
+        ok([
+          createFakeWhatsAppContact({ id: 'blocked', workspaceId: 'ws1' }),
+          createFakeWhatsAppContact({ id: 'free', workspaceId: 'ws1' }),
+        ]),
+      )
+      blocks.listBlockedContactIds.mockResolvedValueOnce(
+        ok(new Set(['blocked'])),
+      )
+
+      const dtos = expectOk(await WhatsAppContactService.list('u1', 'ws1', {}))
+
+      expect(blocks.listBlockedContactIds).toHaveBeenCalledWith('ws1', [
+        'blocked',
+        'free',
+      ])
+      expect(dtos.map((dto) => [dto.id, dto.blocked])).toEqual([
+        ['blocked', true],
+        ['free', false],
+      ])
+
+      blocks.listBlockedContactIds.mockResolvedValueOnce(err(databaseError()))
+      expectErr(
+        await WhatsAppContactService.list('u1', 'ws1', {}),
+        'DATABASE_ERROR',
+      )
+    })
+
     it('should pass the description filter to the repository', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
         ok(createFakeMembership({ role: 'MEMBER' })),

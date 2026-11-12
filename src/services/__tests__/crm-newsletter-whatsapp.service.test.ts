@@ -18,6 +18,7 @@ import {
   rateLimited,
   whatsappMessageLimitReached,
   whatsappProviderError,
+  whatsappContactBlocked,
   whatsappSpendCapReached,
 } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
@@ -702,6 +703,19 @@ describe('CrmNewsletterWhatsAppService', () => {
       expect(expectOk(await Service.dispatch('is1', NOW)).status).toBe(
         'limit_reached',
       )
+
+      // zap-block-contacts: a blocked contact is skipped, the batch goes on.
+      repo.markSkipped.mockClear()
+      send.text.mockResolvedValueOnce(err(whatsappContactBlocked()))
+      expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({
+        status: 'sent',
+        skipped: 1,
+        sent: 0,
+      })
+      expect(repo.markSkipped).toHaveBeenCalledWith(['w1'], 'BLOCKED')
+      repo.markSkipped.mockResolvedValueOnce(err(databaseError()))
+      send.text.mockResolvedValueOnce(err(whatsappContactBlocked()))
+      expectErr(await Service.dispatch('is1', NOW), 'DATABASE_ERROR')
 
       send.text.mockResolvedValueOnce(err(rateLimited(5)))
       expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({

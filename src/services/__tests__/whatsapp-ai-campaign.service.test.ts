@@ -561,6 +561,45 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     expect(send.template).not.toHaveBeenCalled()
   })
 
+  it('should skip a contact blocked on the number (zap-block-contacts)', async () => {
+    const { WhatsAppContactBlockRepository } = await import(
+      '@/src/repositories/whatsapp-contact-block.repository'
+    )
+    const blocks = vi.mocked(WhatsAppContactBlockRepository)
+    repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+    repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+    blocks.findActive.mockResolvedValueOnce(ok({ id: 'blk1' } as never))
+
+    expect(
+      expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok')),
+    ).toEqual({ status: 'skipped', nextDelayMs: 1000 })
+    expect(blocks.findActive).toHaveBeenCalledWith('c1', [
+      '5511999990000',
+      '551199990000',
+    ])
+    expect(repo.updateRecipient).toHaveBeenCalledWith('r1', {
+      status: 'SKIPPED',
+      errorMessage: 'Contato bloqueado neste número',
+    })
+    expect(send.template).not.toHaveBeenCalled()
+  })
+
+  it('should propagate a failed block lookup (zap-block-contacts)', async () => {
+    const { WhatsAppContactBlockRepository } = await import(
+      '@/src/repositories/whatsapp-contact-block.repository'
+    )
+    repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+    repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+    vi.mocked(WhatsAppContactBlockRepository).findActive.mockResolvedValueOnce(
+      err(appError('DATABASE_ERROR', 'db')),
+    )
+
+    expect(
+      (await WhatsAppAiCampaignService.sendNext('cp1', 'tok')).ok,
+    ).toBe(false)
+    expect(send.template).not.toHaveBeenCalled()
+  })
+
   it('should keep sending to unverified contacts even when the campaign skips numbers without WhatsApp', async () => {
     repo.findByIdRaw.mockResolvedValue(ok(campaign({ skipNoWhatsapp: true })))
     repo.findNextPending.mockResolvedValue(
