@@ -16,6 +16,8 @@ export interface WhatsAppContactDTO {
   hasWhatsapp: boolean | null
   whatsappCheckedAt: string | null
   conversationCount: number
+  /** zap-block-contacts: blocked on at least one number (list only). */
+  blocked?: boolean
   /** `definitionId -> value` of the workspace's contact fields (list/update). */
   customFields?: Record<string, string | number | boolean | null>
   createdAt: string

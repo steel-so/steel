@@ -116,6 +116,28 @@ vi.mock('@/src/repositories/whatsapp-spend-cap.repository', () => ({
   },
 }))
 
+// zap-block-contacts: every send and every inbound message looks the
+// recipient up in the number's block list. Unit default = nobody blocked;
+// `whatsapp-contact-block*.test.ts` drive these mocks in the file.
+vi.mock('@/src/repositories/whatsapp-contact-block.repository', () => ({
+  WhatsAppContactBlockRepository: {
+    findActive: vi.fn(async () => ok(null)),
+    findById: vi.fn(async () => ok(null)),
+    findWithRefs: vi.fn(async () => ok(null)),
+    listByWorkspace: vi.fn(async () => ok([])),
+    listBlockedContactIds: vi.fn(async () => ok(new Set())),
+    listUnapplied: vi.fn(async () => ok([])),
+    listWaIds: vi.fn(async () => ok(new Set())),
+    create: vi.fn(),
+    createMany: vi.fn(async () => ok(0)),
+    updateProviderStatus: vi.fn(),
+    recordDropped: vi.fn(async () => ok(undefined)),
+    delete: vi.fn(async () => ok(true)),
+    listBlockableConnections: vi.fn(async () => ok([])),
+    findUserNames: vi.fn(async () => ok(new Map())),
+  },
+}))
+
 afterEach(() => {
   vi.restoreAllMocks()
   vi.clearAllMocks()

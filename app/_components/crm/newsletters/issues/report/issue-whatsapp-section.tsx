@@ -33,6 +33,7 @@ export const WA_SKIP_REASON_LABEL: Record<string, string> = {
   LIMIT_REACHED: 'Limite mensal da Comunicação atingido',
   UNAVAILABLE: 'WhatsApp indisponível no envio',
   STOPPED: 'Envio interrompido',
+  BLOCKED: 'Contato bloqueado no número do WhatsApp',
 }
 
 const ALL = 'all'

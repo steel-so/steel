@@ -677,6 +677,17 @@ export const CrmNewsletterWhatsAppService = {
             skipped: skipped + rest.length + pending.value,
           })
         }
+        // zap-block-contacts: blocked on the number — skipped, the rest
+        // of the batch keeps going.
+        if (result.error.code === 'WHATSAPP_CONTACT_BLOCKED') {
+          const marked = await CrmNewsletterWhatsAppRepository.markSkipped(
+            [row.id],
+            'BLOCKED',
+          )
+          if (!marked.ok) return marked
+          skipped += 1
+          continue
+        }
         if (result.error.code === 'RATE_LIMITED') {
           await CrmNewsletterWhatsAppRepository.release(rest)
           const retryAt = new Date(

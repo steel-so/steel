@@ -49,6 +49,10 @@ import type { WhatsAppBroadcastMarketingMetricsDTO } from '@/types/whatsapp-broa
 import { assertModuleMember } from './authz'
 import { assertFeature } from './feature-flag.service'
 import {
+  CONTACT_BLOCKED_SKIP,
+  WhatsAppContactBlockService,
+} from './whatsapp-contact-block.service'
+import {
   type PreparedTemplateFlow,
   WhatsAppFlowDispatchService,
 } from './whatsapp-flow-dispatch.service'
@@ -77,6 +81,8 @@ export type WhatsAppBroadcastSendOutcome =
         | 'opted_out'
         | 'no_whatsapp'
         | 'no_phone'
+        // zap-block-contacts: the contact is blocked on the list's number.
+        | 'blocked'
     }
   | { status: 'failed'; reason: string }
   | { status: 'sent'; providerMessageId: string }
@@ -548,6 +554,23 @@ export const WhatsAppBroadcastService = {
       )
       if (!failed.ok) return failed
       return ok({ status: 'failed', reason: 'connection_missing' })
+    }
+
+    // Contact blocked on this number (zap-block-contacts): skipped with the
+    // reason, the rest of the list keeps going.
+    const blocked = await WhatsAppContactBlockService.isBlocked(
+      connection.value,
+      recipient.contact.waId,
+    )
+    if (!blocked.ok) return blocked
+    if (blocked.value) {
+      const skipped = await WhatsAppBroadcastRepository.updateRecipientStatus(
+        recipientId,
+        { status: 'SKIPPED', errorMessage: CONTACT_BLOCKED_SKIP },
+      )
+      if (!skipped.ok) return skipped
+      await completeIfDrained(broadcastListId)
+      return ok({ status: 'skipped', reason: 'blocked' })
     }
 
     let sendResult: Result<WhatsAppSendResult>

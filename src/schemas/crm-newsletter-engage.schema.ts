@@ -160,6 +160,8 @@ export const CRM_NEWSLETTER_WA_SKIP_REASONS = [
   'LIMIT_REACHED',
   'UNAVAILABLE',
   'STOPPED',
+  // zap-block-contacts: the contact is blocked on the WhatsApp number.
+  'BLOCKED',
 ] as const
 
 export type CrmNewsletterWhatsAppStatsDTO = {

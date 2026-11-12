@@ -56,6 +56,7 @@ import { emitWebhookEvent } from './webhook-emitter'
 import { WhatsAppAdAttributionService } from './whatsapp-ad-attribution.service'
 import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.service'
+import { WhatsAppContactBlockService } from './whatsapp-contact-block.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppFlowResponseService } from './whatsapp-flow-response.service'
@@ -238,6 +239,14 @@ export const WhatsAppWebhookService = {
     )
     if (!dedupe.ok) return dedupe
     if (dedupe.value) return ok(undefined)
+
+    // Contact blocked on this number (zap-block-contacts): dropped before a
+    // contact, conversation, notification, AI, chatbot or SLA is touched.
+    const screened = await WhatsAppContactBlockService.screenInbound(
+      connection,
+      { waId: input.waId, bsuid: input.bsuid },
+    )
+    if (screened.blocked) return ok(undefined)
 
     const contact = await WhatsAppContactRepository.upsertByWaId({
       workspaceId,

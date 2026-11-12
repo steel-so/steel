@@ -4,6 +4,7 @@ import { whatsappProviderError } from '@/src/errors'
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { consume, whatsappSendLimiter } from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
+import { WhatsAppContactBlockService } from '@/src/services/whatsapp-contact-block.service'
 import { WhatsAppCostService } from '@/src/services/whatsapp-cost.service'
 import {
   type SpendCapCheck,
@@ -95,6 +96,16 @@ async function withProvider<T>(
     cost?: WhatsAppCostContext
   },
 ): Promise<Result<T>> {
+  // A contact blocked on this number never gets anything, whatever the path
+  // (inbox, template, broadcast, campaign, chatbot, AI) — zap-block-contacts.
+  if (options.to) {
+    const allowed = await WhatsAppContactBlockService.assertCanSend(
+      connection,
+      options.to,
+    )
+    if (!allowed.ok) return allowed
+  }
+
   const limit = await consume(whatsappSendLimiter, connection.id)
   if (!limit.ok) return limit
 
@@ -277,6 +288,7 @@ export const WhatsAppSend = {
     // Reactions are not messages: never metered.
     return withProvider(connection, (client) => client.sendReaction(input), {
       metered: false,
+      to: input.to,
     })
   },
 }

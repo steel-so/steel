@@ -67,6 +67,10 @@ import type {
 } from '@/types/whatsapp-ai-campaign'
 import { assertModuleMember } from './authz'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
+import {
+  CONTACT_BLOCKED_SKIP,
+  WhatsAppContactBlockService,
+} from './whatsapp-contact-block.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
 import { WhatsAppUsageService } from './whatsapp-usage.service'
 
@@ -933,6 +937,13 @@ export const WhatsAppAiCampaignService = {
     if (!resolved.ok) {
       return skip(`Sem valor para ${resolved.missing.label}`)
     }
+    // zap-block-contacts: never message a contact blocked on the number.
+    const blocked = await WhatsAppContactBlockService.isBlocked(
+      connection,
+      recipient.contact.waId,
+    )
+    if (!blocked.ok) return blocked
+    if (blocked.value) return skip(CONTACT_BLOCKED_SKIP)
 
     const conversation = await conversationFor(campaign, recipient, connection)
     if (!conversation.ok) {

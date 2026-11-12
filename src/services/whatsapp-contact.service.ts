@@ -14,6 +14,7 @@ import { toWhatsAppContactDTO } from '@/src/mappers/whatsapp-contact.mapper'
 import { CrmCustomFieldValueRepository } from '@/src/repositories/crm-custom-field.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
+import { WhatsAppContactBlockRepository } from '@/src/repositories/whatsapp-contact-block.repository'
 import type {
   CreateWhatsAppContactDTO,
   FindOrCreateWhatsAppContactDTO,
@@ -112,7 +113,19 @@ export const WhatsAppContactService = {
     )
     if (!result.ok) return result
 
-    return withContactFields(result.value.map(toWhatsAppContactDTO))
+    // zap-block-contacts: the "Bloqueado" badge of the list.
+    const blocked = await WhatsAppContactBlockRepository.listBlockedContactIds(
+      workspaceId,
+      result.value.map((contact) => contact.id),
+    )
+    if (!blocked.ok) return blocked
+
+    return withContactFields(
+      result.value.map((contact) => ({
+        ...toWhatsAppContactDTO(contact),
+        blocked: blocked.value.has(contact.id),
+      })),
+    )
   },
 
   async create(
