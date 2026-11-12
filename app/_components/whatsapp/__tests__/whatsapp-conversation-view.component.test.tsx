@@ -1509,4 +1509,111 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       expect((button as HTMLButtonElement).disabled).toBe(true)
     })
   })
+
+  describe('blocked contacts (zap-block-contacts)', () => {
+    const BLOCK = `${API}/conversations/cv_1/block`
+    const blockDto = {
+      id: 'blk1',
+      connectionId: 'conn_1',
+      connectionLabel: 'Oficial',
+      connectionPhoneNumber: '551130000000',
+      provider: 'META',
+      contactId: 'c1',
+      contactName: 'Ana Souza',
+      waId: '5511911111111',
+      hasPhone: true,
+      reason: null,
+      providerStatus: 'APPLIED',
+      providerError: null,
+      appliedAt: '2026-11-12T15:00:00.000Z',
+      origin: 'STEEL',
+      droppedCount: 0,
+      lastDroppedAt: null,
+      blockedBy: null,
+      blockedAt: '2026-11-12T15:00:00.000Z',
+    }
+    function state(overrides: Record<string, unknown> = {}) {
+      return {
+        conversationId: 'cv_1',
+        connectionId: 'conn_1',
+        provider: 'META',
+        supported: true,
+        block: null,
+        canBlock: true,
+        canUnblock: true,
+        ...overrides,
+      }
+    }
+
+    it('shows the banner, locks the composer and unblocks', async () => {
+      const fetchSpy = setup([
+        { match: BLOCK, data: state({ block: blockDto }) },
+        {
+          method: 'DELETE',
+          match: '/whatsapp/blocks/blk1',
+          data: { id: 'blk1', providerWarning: null },
+        },
+      ])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+        />,
+      )
+      expect(
+        await screen.findByText('Contato bloqueado neste número'),
+      ).toBeTruthy()
+      expect(screen.getByTestId('composer').dataset.disabled).toBe('true')
+
+      fireEvent.click(screen.getByRole('button', { name: 'Desbloquear' }))
+      await waitFor(() =>
+        expect(notify.success).toHaveBeenCalledWith('Contato desbloqueado'),
+      )
+      expect(
+        fetchSpy.mock.calls.some(
+          ([url, init]) =>
+            String(url).endsWith('/whatsapp/blocks/blk1') &&
+            init?.method === 'DELETE',
+        ),
+      ).toBe(true)
+    })
+
+    it('opens the block dialog from the header menu', async () => {
+      setup([{ match: BLOCK, data: state() }])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+        />,
+      )
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Mais ações da conversa' }),
+      )
+      fireEvent.click(
+        await screen.findByRole('menuitem', { name: 'Bloquear contato' }),
+      )
+      expect(await screen.findByText('Bloquear Ana Souza?')).toBeTruthy()
+      expect(screen.getByText(/nas últimas 24 horas/)).toBeTruthy()
+      expect(screen.getByTestId('composer').dataset.disabled).toBe('false')
+    })
+
+    it('offers nothing when the viewer can neither block nor unblock', async () => {
+      setup([
+        {
+          match: BLOCK,
+          data: state({ canBlock: false, canUnblock: false }),
+        },
+      ])
+      renderWithQuery(
+        <WhatsappConversationView
+          workspaceId='ws_1'
+          conversation={conversation()}
+        />,
+      )
+      await screen.findByText('Preciso de ajuda com meu pedido')
+      expect(
+        screen.queryByRole('button', { name: 'Mais ações da conversa' }),
+      ).toBeNull()
+    })
+  })
 })
