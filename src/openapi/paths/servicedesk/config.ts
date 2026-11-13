@@ -351,7 +351,7 @@ export const sdConfigRoutes: RouteConfig[] = [
     tags: [TAG],
     summary: 'Atualizar configuração geral',
     description: describe(
-      'Atualização parcial. `ticketPrefixes` é mesclado com os atuais; `defaultSlaPolicyId` também marca a política como padrão; `whatsappConnectionId` precisa ser uma conexão do módulo ServiceDesk.',
+      'Atualização parcial. `ticketPrefixes` é mesclado com os atuais; `defaultSlaPolicyId` também marca a política como padrão; `whatsappConnectionId` precisa ser uma conexão do módulo ServiceDesk. `requesterWhatsappTemplates` substitui o mapa inteiro de modelos de aviso ao solicitante.',
       ADMIN,
     ),
     consent: true,

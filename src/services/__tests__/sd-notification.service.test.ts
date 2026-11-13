@@ -16,11 +16,12 @@ vi.mock('@/src/lib/mail/servicedesk/send-sd-ticket-notification', () => ({
   sendSdTicketNotificationEmail: vi.fn(),
 }))
 vi.mock('@/src/lib/whatsapp/send', () => ({
-  WhatsAppSend: { text: vi.fn() },
+  WhatsAppSend: { text: vi.fn(), template: vi.fn() },
 }))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/sd-access.repository')
 vi.mock('@/src/repositories/sd-notification.repository')
+vi.mock('@/src/repositories/sd-requester-whatsapp.repository')
 vi.mock('@/src/repositories/sd-integration.repository')
 vi.mock('@/src/repositories/sd-ticket-context.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
@@ -33,6 +34,7 @@ import { sendSdTicketNotificationEmail } from '@/src/lib/mail/servicedesk/send-s
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 import { SdNotificationRepository } from '@/src/repositories/sd-notification.repository'
+import { SdRequesterWhatsappRepository } from '@/src/repositories/sd-requester-whatsapp.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { NotificationService } from '../notification.service'
@@ -48,6 +50,8 @@ const notifications = vi.mocked(NotificationService)
 const sendEmail = vi.mocked(sendSdTicketNotificationEmail)
 const sendWhatsapp = vi.mocked(WhatsAppSend.text)
 const optOut = vi.mocked(checkWhatsAppOptOut)
+const sendTemplate = vi.mocked(WhatsAppSend.template)
+const requesterRepo = vi.mocked(SdRequesterWhatsappRepository)
 
 const WS = 'ws1'
 
@@ -98,6 +102,11 @@ beforeEach(() => {
   notifications.notifyUsers.mockResolvedValue(ok(1))
   sendEmail.mockResolvedValue({ id: 'mail' } as never)
   sendWhatsapp.mockResolvedValue(ok({ providerMessageId: 'wam' }) as never)
+  sendTemplate.mockResolvedValue(ok({ providerMessageId: 'wat' }) as never)
+  requesterRepo.contactState.mockResolvedValue(
+    ok({ optedOut: false, lastInboundAt: null }),
+  )
+  requesterRepo.isTemplateApproved.mockResolvedValue(ok(true))
 })
 
 describe('notifySdEvent — catálogo e público', () => {
@@ -889,5 +898,177 @@ describe('notifySdEvent — outbound webhooks (ADR 0036)', () => {
       payload,
     })
     expect(vi.mocked(emitWebhookEvent)).not.toHaveBeenCalled()
+  })
+})
+
+describe('notifySdEvent — aviso ao solicitante por modelo', () => {
+  const templates = {
+    'ticket.resolved': {
+      templateName: 'chamado_resolvido',
+      language: 'pt_BR',
+      variables: ['code', 'headline'],
+    },
+  }
+
+  function configure(provider: 'META' | 'ZAPI' = 'META') {
+    repo.findContactChannels.mockResolvedValue(
+      ok({ email: null, whatsapp: '(11) 99999-8888' }),
+    )
+    connections.findById.mockResolvedValue(
+      ok({ id: 'conn', status: 'CONNECTED', provider } as never),
+    )
+    ctxRepo.ensureSettings.mockResolvedValue(
+      ok(
+        createFakeSdSettings({
+          whatsappConnectionId: 'conn',
+          requesterWhatsappTemplates: templates,
+        }),
+      ),
+    )
+  }
+
+  const run = (event = 'ticket.resolved') =>
+    notifySdEvent({
+      workspaceId: WS,
+      event,
+      ticket: ticket({
+        assigneeId: null,
+        requesterId: null,
+        contact: { id: 'c1', name: 'Cliente', userId: null },
+      }),
+      payload,
+    })
+
+  it('envia o modelo aprovado ao contato externo, sem texto livre', async () => {
+    configure()
+    const out = expectOk(await run())
+    expect(out.whatsapp).toBe(1)
+    expect(sendTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'conn' }),
+      {
+        to: '5511999998888',
+        templateName: 'chamado_resolvido',
+        language: 'pt_BR',
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: 'INC-000007' },
+              { type: 'text', text: 'Atribuído' },
+            ],
+          },
+        ],
+      },
+    )
+    expect(sendWhatsapp).not.toHaveBeenCalled()
+  })
+
+  it('não avisa o contato de um evento sem modelo configurado', async () => {
+    configure()
+    const out = expectOk(await run('ticket.phase_changed'))
+    expect(out.whatsapp).toBe(0)
+    expect(sendTemplate).not.toHaveBeenCalled()
+    expect(sendWhatsapp).not.toHaveBeenCalled()
+    expect(requesterRepo.contactState).not.toHaveBeenCalled()
+  })
+
+  it('respeita o descadastro (LGPD)', async () => {
+    configure()
+    requesterRepo.contactState.mockResolvedValue(
+      ok({ optedOut: true, lastInboundAt: null }),
+    )
+    expect(expectOk(await run()).whatsapp).toBe(0)
+    expect(sendTemplate).not.toHaveBeenCalled()
+    expect(logger.info).toHaveBeenCalledWith(
+      'servicedesk.notify.requester_whatsapp_skipped',
+      expect.objectContaining({ reason: 'opted_out' }),
+    )
+  })
+
+  it('não envia se o estado do contato não pôde ser lido', async () => {
+    configure()
+    requesterRepo.contactState.mockResolvedValue(err(databaseError()))
+    expect(expectOk(await run()).whatsapp).toBe(0)
+    expect(sendTemplate).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(
+      'servicedesk.notify.requester_whatsapp_state_failed',
+      expect.objectContaining({ event: 'ticket.resolved' }),
+    )
+  })
+
+  it('não envia texto fora da janela se o modelo não está aprovado', async () => {
+    configure()
+    requesterRepo.isTemplateApproved.mockResolvedValue(ok(false))
+    expect(expectOk(await run()).whatsapp).toBe(0)
+    expect(sendTemplate).not.toHaveBeenCalled()
+    expect(sendWhatsapp).not.toHaveBeenCalled()
+  })
+
+  it('trata falha na consulta do modelo como não aprovado', async () => {
+    configure()
+    requesterRepo.isTemplateApproved.mockResolvedValue(err(databaseError()))
+    expect(expectOk(await run()).whatsapp).toBe(0)
+    expect(sendTemplate).not.toHaveBeenCalled()
+  })
+
+  it('conta só o que o provedor aceitou e loga a falha', async () => {
+    configure()
+    sendTemplate.mockResolvedValue(err(databaseError()) as never)
+    expect(expectOk(await run()).whatsapp).toBe(0)
+    expect(logger.warn).toHaveBeenCalledWith(
+      'servicedesk.notify.whatsapp_failed',
+      expect.objectContaining({ requester: true }),
+    )
+  })
+
+  it('na Z-API manda texto, sem modelo nem janela', async () => {
+    configure('ZAPI')
+    expect(expectOk(await run()).whatsapp).toBe(1)
+    expect(requesterRepo.isTemplateApproved).not.toHaveBeenCalled()
+    expect(sendTemplate).not.toHaveBeenCalled()
+    expect(sendWhatsapp).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'conn' }),
+      {
+        to: '5511999998888',
+        text: '*INC-000007* — Atribuído\ncorpo',
+      },
+    )
+  })
+
+  it('solicitante da plataforma com WhatsApp ligado segue a janela de 24 h', async () => {
+    configure()
+    repo.listPreferencesForEvent.mockResolvedValue(
+      ok([
+        createFakeSdNotificationPreference({
+          userId: 'req',
+          event: 'ticket.message',
+          channel: 'WHATSAPP',
+          enabled: true,
+        }),
+      ]),
+    )
+    repo.findWhatsappNumbers.mockResolvedValue(
+      ok(new Map([['req', '11999998888']])),
+    )
+    ctxRepo.ensureSettings.mockResolvedValue(
+      ok(createFakeSdSettings({ whatsappConnectionId: 'conn' })),
+    )
+    const input = {
+      workspaceId: WS,
+      event: 'ticket.message',
+      ticket: ticket({ assigneeId: null }),
+      payload,
+    }
+
+    // Fora da janela e sem modelo: nada sai.
+    expect(expectOk(await notifySdEvent(input)).whatsapp).toBe(0)
+    expect(sendWhatsapp).not.toHaveBeenCalled()
+
+    // Dentro da janela: texto livre, como o usuário escolheu.
+    requesterRepo.contactState.mockResolvedValue(
+      ok({ optedOut: false, lastInboundAt: new Date() }),
+    )
+    expect(expectOk(await notifySdEvent(input)).whatsapp).toBe(1)
+    expect(sendWhatsapp).toHaveBeenCalledTimes(1)
   })
 })

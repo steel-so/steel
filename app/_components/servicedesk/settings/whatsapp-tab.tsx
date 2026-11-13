@@ -38,6 +38,7 @@ import type { CreateWhatsAppConnectionDTO } from '@/src/schemas/whatsapp-connect
 import type { SdWhatsappConnectionDTO } from '@/types/sd-whatsapp'
 import type { WhatsAppProviderDTO } from '@/types/whatsapp-connection'
 import { SD_TONE } from '../sd-tone'
+import { SdRequesterWhatsappSection } from './requester-whatsapp-section'
 import {
   ConfirmDeleteButton,
   EmptyState,
@@ -575,6 +576,24 @@ export function SdWhatsappSettingsTab() {
           <Skeleton className='h-10 w-full' />
         )}
       </SettingsSection>
+
+      {settings.data ? (
+        <SdRequesterWhatsappSection
+          key={JSON.stringify(settings.data.requesterWhatsappTemplates)}
+          saved={settings.data.requesterWhatsappTemplates ?? {}}
+          canEdit={canEdit}
+          pending={updateSettings.isPending}
+          onSave={(templates) =>
+            updateSettings.mutate(
+              { requesterWhatsappTemplates: templates },
+              {
+                onSuccess: () => notify.success('Avisos ao solicitante salvos'),
+                onError: (error) => notify.error(error),
+              },
+            )
+          }
+        />
+      ) : null}
 
       <SettingsSection
         title='Como funciona'

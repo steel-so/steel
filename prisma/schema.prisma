@@ -6015,6 +6015,9 @@ model SdSettings {
   /// Chamado aberto pelo WhatsApp: responde ao contato com o código. O
   /// equivalente do e-mail é por caixa (`SdMailbox.sendAcknowledgement`).
   whatsappSendAcknowledgement Boolean        @default(true) @map("whatsapp_send_acknowledgement")
+  /// Avisos ao solicitante por modelo aprovado da Meta, por evento do catálogo:
+  /// {"ticket.resolved":{"templateName":"...","language":"pt_BR","variables":["code"]}}.
+  requesterWhatsappTemplates  Json           @default("{}") @map("requester_whatsapp_templates")
   portalEnabled               Boolean        @default(true) @map("portal_enabled")
   /// Tipos que o solicitante pode abrir pelo portal.
   portalTicketTypes           SdTicketType[] @default([INCIDENT, SERVICE_REQUEST]) @map("portal_ticket_types")
