@@ -131,7 +131,8 @@ describe('CampaignAudienceStep', () => {
       leadStages: [],
     })
     await waitFor(() => expect(spy.mock.calls.length).toBeGreaterThan(1))
-    // WhatsApp on → its legal basis is asked too.
-    expect(screen.getByText('WhatsApp', { selector: 'label' })).toBeTruthy()
+    // One legal basis covers every channel, WhatsApp included.
+    expect(screen.getByLabelText('Base legal (LGPD)')).toBeTruthy()
+    expect(screen.queryByText('WhatsApp', { selector: 'label' })).toBeNull()
   })
 })

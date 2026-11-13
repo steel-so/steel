@@ -1,6 +1,6 @@
 ---
 title: Campanhas
-description: Campanha completa por e-mail, com WhatsApp opcional, levando o contato a uma landing page ou formulário — com links rastreados, público por LGPD e resultados até a conversão.
+description: Campanha completa por e-mail, com WhatsApp opcional, levando o contato a um site ou formulário quando há um link — com links rastreados, público por LGPD e resultados até a conversão.
 section: crm
 order: 6
 ---
@@ -9,34 +9,24 @@ Em **Marketing › Campanhas** você monta a campanha em quatro passos e acompan
 o resultado até a conversão. Pode salvar o rascunho a qualquer momento e voltar
 depois.
 
-## 1. Destino
+## 1. Conteúdo
 
-Escolha para onde o contato vai ao clicar: uma **landing page** ou um
-**formulário** do CRM. Se ainda não existe, use **Criar página** /
-**Criar formulário** (abre em outra aba) e depois **Atualizar lista**.
-
-O destino precisa estar **publicado** para a campanha ser enviada.
-
-A campanha gera os links com os parâmetros de origem já preenchidos
-(`utm_source=email` ou `whatsapp`, `utm_medium` e `utm_campaign` com o nome
-da campanha). Use **Copiar** para levar o link a outros lugares — quem chegar
-por ele também conta nas conversões. Nos envios, cada contato recebe a própria
-versão rastreada do link.
-
-## 2. Conteúdo
+A campanha começa pelo que você vai enviar.
 
 - **Remetente**: escreva o começo do endereço (por exemplo, `marketing`) e
   escolha um dos **domínios verificados** do workspace ou o domínio do Steel,
   **stratustelecom.com.br**, que funciona sem domínio próprio. Só aparecem domínios verificados em **Ajustes › Domínios de
-  e-mail** (quem cadastra é o dono ou um administrador do workspace).
-- **Assunto** e **Pré-cabeçalho** (o texto que aparece ao lado do assunto na
-  caixa de entrada).
-- **Visual do e-mail**: escolha um dos visuais de **Templates**, ou use
-  **Criar visual** / **Abrir no editor** para montar no editor visual (abre em
-  outra aba). No botão, escolha **Link da campanha** (`{{campaign_link}}`) para
-  levar ao destino; `{{primeiro_nome}}` personaliza o texto. O rodapé de
-  descadastro entra sozinho.
+  e-mail** (quem cadastra é o dono ou um administrador do workspace). Uma
+  campanha nova já vem com o remetente da campanha anterior.
+- **Assunto**: o título do e-mail na caixa de entrada.
+- **Visual do e-mail**: escolha um dos seus templates. Se ainda não tem nenhum,
+  clique em **Criar meu primeiro e-mail**: o editor abre, você monta o e-mail a
+  partir de um modelo e volta para a campanha com ele já escolhido. Para mudar
+  um template existente, use **Abrir no editor**. O rodapé de descadastro entra
+  sozinho.
 - A **Prévia** mostra o e-mail como um contato vai recebê-lo.
+- Em **Opções avançadas** fica o **Pré-cabeçalho** (o texto que aparece ao lado
+  do assunto na caixa de entrada).
 
 ### WhatsApp (opcional)
 
@@ -47,32 +37,59 @@ conexão de WhatsApp conectada.
 - **Conexão oficial (Meta)**: escolha um **template aprovado** e diga de onde
   vem cada variável — nome, primeiro nome, link da campanha, código do link
   (para botão de URL) ou um texto fixo. A Meta só aceita template na primeira
-  mensagem para o contato.
-- **Z-API**: escreva a mensagem com `{nome}`, `{primeiro_nome}` e `{link}`
-  (obrigatório) e, se quiser, um link de imagem, vídeo ou PDF.
+  mensagem para o contato. Se o número ainda não tem template aprovado, use
+  **Criar template do WhatsApp**: ele abre a tela de templates em outra aba;
+  depois da aprovação da Meta, volte para a campanha e o template aparece.
+- **Z-API**: escreva a mensagem com `{nome}` e `{primeiro_nome}` e, se quiser,
+  um link de imagem, vídeo ou PDF. Quando a campanha tem um link (passo 3),
+  inclua `{link}` no texto ou num botão.
 
 Quem responder vira uma conversa na **Comunicação**, ligada ao contato da
 campanha, e a resposta aparece na linha do tempo da pessoa no CRM.
 
-## 3. Público
+## 2. Público
 
 Combine **listas de e-mail**, **todas as pessoas do CRM** e **leads por
 etapa**. Cada contato entra uma vez só. O quadro ao lado mostra quantos são
 alcançáveis por e-mail e por WhatsApp, quantos se **descadastraram** e quantos
 não têm o canal.
 
-Informe a **base legal (LGPD)** de cada canal: consentimento, legítimo
-interesse ou execução de contrato. Ela fica registrada na campanha, com quem
-confirmou o envio e quando.
+Informe a **base legal (LGPD)**: consentimento, legítimo interesse ou execução
+de contrato. Ela vale para todos os canais da campanha e fica registrada, com
+quem confirmou o envio e quando. Uma campanha nova já vem com a base legal da
+campanha anterior — confira se ainda é a certa para este público.
+
+## 3. Link (opcional)
+
+Este passo só é necessário quando a mensagem tem um botão ou link. Se a
+campanha é só um aviso, clique em **Continuar** sem escolher nada (ou em
+**Enviar sem link**, se já havia um destino escolhido).
+
+Para levar o contato a algum lugar, escolha uma **página de um site** ou um
+**formulário** do CRM. Se ainda não existe, use **Criar meu site** /
+**Criar meu formulário** (abre em outra aba): crie, publique e volte para a
+campanha — a lista se atualiza sozinha, ou clique em **Atualizar lista**.
+
+O destino precisa estar **publicado** para a campanha ser enviada. Se o e-mail
+ou o WhatsApp usa o link da campanha (`{{campaign_link}}` ou `{link}`) e nenhum
+destino foi escolhido, a revisão avisa e o envio fica bloqueado até você
+escolher um.
+
+A campanha gera os links com os parâmetros de origem já preenchidos. Use
+**Copiar** para levar o link a outros lugares — quem chegar por ele também
+conta nas conversões. Nos envios, cada contato recebe a própria versão
+rastreada do link. O `utm_medium` fica em **Opções avançadas de
+rastreamento**.
 
 ## 4. Revisar e enviar
 
 - **Enviar agora** ou **Agendar** (horário de Brasília).
-- **Janela de envio**: limite os envios a um horário (ex.: das 8h às 18h) e, se
-  quiser, só a dias úteis. Fora da janela, os envios esperam o próximo horário.
 - **Envio de teste**: manda o e-mail (com "[Teste]" no assunto) e o WhatsApp
   para você.
 - A lista **Antes de enviar** mostra o que falta em cada passo.
+- Em **Opções avançadas de envio** fica a **Janela de envio**: limite os envios
+  a um horário (ex.: das 8h às 18h) e, se quiser, só a dias úteis. Fora da
+  janela, os envios esperam o próximo horário.
 
 Marque a confirmação da base legal e clique em **Enviar campanha** (ou
 **Agendar campanha**).

@@ -46,6 +46,9 @@ export interface CampaignWhatsAppConfig {
   /** Z-API quick reply sent as the content (its buttons go along);
    * `undefined` = none chosen, `null` = chosen but deleted since. */
   quickReply?: { buttons: { type: string; url?: string }[] } | null
+  /** A campaign without a destination has no link to carry: the Z-API
+   * text is then free of the `{link}` requirement. */
+  linkOptional?: boolean
 }
 
 /**
@@ -115,7 +118,11 @@ export function validateCampaignWhatsApp(
     const text = config.text?.trim() ?? ''
     if (!text) return ['Escreva a mensagem do WhatsApp']
     const linkInButton = quickReplyCarriesLink(config.quickReply?.buttons ?? [])
-    if (!text.includes(ZAPI_TEXT_TOKENS.link) && !linkInButton) {
+    if (
+      !config.linkOptional &&
+      !text.includes(ZAPI_TEXT_TOKENS.link) &&
+      !linkInButton
+    ) {
       return ['Inclua {link} na mensagem para levar o contato ao destino']
     }
     return []
@@ -136,6 +143,31 @@ export function validateCampaignWhatsApp(
     return [`Preencha as ${missing} variável(is) do template`]
   }
   return []
+}
+
+/**
+ * The WhatsApp content points at the campaign link: `{link}` in the Z-API
+ * text or in a quick reply button, or a Meta variable mapped to it.
+ */
+export function campaignWhatsAppUsesLink(
+  config: Pick<
+    CampaignWhatsAppConfig,
+    'provider' | 'variables' | 'text' | 'quickReply'
+  >,
+): boolean {
+  if (config.provider === 'ZAPI') {
+    return (
+      Boolean(config.text?.includes(ZAPI_TEXT_TOKENS.link)) ||
+      quickReplyCarriesLink(config.quickReply?.buttons ?? [])
+    )
+  }
+  const { variables } = config
+  if (!variables) return false
+  return [variables.header, variables.body, variables.buttons].some((map) =>
+    Object.values(map ?? {}).some(
+      (item) => item.source === 'link' || item.source === 'link_code',
+    ),
+  )
 }
 
 export interface CampaignMessageContext {

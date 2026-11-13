@@ -83,13 +83,14 @@ export const VARIABLE_SOURCE_LABEL: Record<
   static: 'Texto fixo',
 }
 
+/** What to send comes first; the link is optional, so it comes last. */
 export const WIZARD_STEPS: {
   key: CrmCampaignWizardStep | 'review'
   label: string
 }[] = [
-  { key: 'destination', label: 'Destino' },
   { key: 'content', label: 'Conteúdo' },
   { key: 'audience', label: 'Público' },
+  { key: 'destination', label: 'Link (opcional)' },
   { key: 'review', label: 'Revisar e enviar' },
 ]
 

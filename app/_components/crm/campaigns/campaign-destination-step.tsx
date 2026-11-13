@@ -29,9 +29,14 @@ import type {
   CrmCampaignOptionsDTO,
   CrmCampaignSiteOptionDTO,
 } from '@/types/crm-campaign'
+import { CreateCallout, CreateLinkButton } from './campaign-create-callout'
 import type { CampaignDraft, DraftChange } from './campaign-draft'
 import { CampaignSiteThumbnail } from './campaign-site-thumbnail'
-import { CopyLinkRow, campaignLinks } from './campaign-steps'
+import {
+  AdvancedOptions,
+  CopyLinkRow,
+  campaignLinks,
+} from './campaign-steps'
 
 type Tab = 'sites' | 'forms' | 'legacy'
 type StatusFilter = 'all' | 'published' | 'draft'
@@ -188,15 +193,17 @@ function SitesTab({
   )
   if (options.sites.length === 0) {
     return (
-      <Empty>
-        Nenhum site criado ainda.{' '}
-        <Link
+      <CreateCallout
+        title='Você ainda não tem um site'
+        description='O site é a página que abre quando o contato clica no link da campanha. Crie um, publique e volte para esta aba: ele aparece aqui.'
+      >
+        <CreateLinkButton
           href={`/${workspaceSlug}/crm/sites`}
-          className='font-medium text-foreground underline-offset-4 hover:underline'
+          variant='default'
         >
-          Criar um site
-        </Link>
-      </Empty>
+          Criar meu site
+        </CreateLinkButton>
+      </CreateCallout>
     )
   }
   if (sites.length === 0) return <Empty>Nenhum site encontrado.</Empty>
@@ -250,15 +257,17 @@ function FormsTab({
   )
   if (options.forms.length === 0) {
     return (
-      <Empty>
-        Nenhum formulário criado ainda.{' '}
-        <Link
+      <CreateCallout
+        title='Você ainda não tem um formulário'
+        description='O formulário recebe os dados de quem clica no link da campanha e cria o lead no CRM. Crie um, publique e volte para esta aba.'
+      >
+        <CreateLinkButton
           href={`/${workspaceSlug}/crm/forms`}
-          className='font-medium text-foreground underline-offset-4 hover:underline'
+          variant='default'
         >
-          Criar um formulário
-        </Link>
-      </Empty>
+          Criar meu formulário
+        </CreateLinkButton>
+      </CreateCallout>
     )
   }
   if (forms.length === 0) return <Empty>Nenhum formulário encontrado.</Empty>
@@ -591,6 +600,35 @@ export function DestinationStep({
 
   return (
     <div className='flex flex-col gap-6'>
+      <div className='flex flex-col gap-3 rounded-xl border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between'>
+        <p className='text-sm'>
+          <span className='block font-medium'>
+            Este passo é opcional: para onde o link da campanha leva?
+          </span>
+          <span className='text-muted-foreground'>
+            Escolha um site ou um formulário se a mensagem tiver um botão ou
+            link. Se for só um aviso, siga sem escolher nada.
+          </span>
+        </p>
+        {draft.destinationType ? (
+          <Button
+            type='button'
+            variant='outline'
+            className='shrink-0 self-start sm:self-auto'
+            onClick={() =>
+              onChange({
+                destinationType: null,
+                landingPageId: null,
+                formId: null,
+                siteId: null,
+                sitePageId: null,
+              })
+            }
+          >
+            Enviar sem link
+          </Button>
+        ) : null}
+      </div>
       <div className='flex flex-col gap-3'>
         <div
           role='tablist'
@@ -661,6 +699,16 @@ export function DestinationStep({
           >
             <SteelIcon icon={RefreshIcon} />
           </Button>
+          {tab === 'sites' && options.sites.length > 0 ? (
+            <CreateLinkButton href={`/${workspaceSlug}/crm/sites`}>
+              Criar site
+            </CreateLinkButton>
+          ) : null}
+          {tab === 'forms' && options.forms.length > 0 ? (
+            <CreateLinkButton href={`/${workspaceSlug}/crm/forms`}>
+              Criar formulário
+            </CreateLinkButton>
+          ) : null}
         </div>
       </div>
 
@@ -710,21 +758,25 @@ export function DestinationStep({
         </aside>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        <Label htmlFor='utm-medium'>utm_medium</Label>
-        <Input
-          id='utm-medium'
-          className='sm:w-64'
-          value={draft.utmMedium}
-          onChange={(e) =>
-            onChange({ utmMedium: e.target.value.replace(/[^a-z0-9_-]/gi, '') })
-          }
-        />
-        <p className='text-muted-foreground text-xs'>
-          utm_source é o canal (email ou whatsapp) e utm_campaign é{' '}
-          <code>{campaign.slug}</code>.
-        </p>
-      </div>
+      <AdvancedOptions label='Opções avançadas de rastreamento'>
+        <div className='flex flex-col gap-2'>
+          <Label htmlFor='utm-medium'>utm_medium</Label>
+          <Input
+            id='utm-medium'
+            className='sm:w-64'
+            value={draft.utmMedium}
+            onChange={(e) =>
+              onChange({
+                utmMedium: e.target.value.replace(/[^a-z0-9_-]/gi, ''),
+              })
+            }
+          />
+          <p className='text-muted-foreground text-xs'>
+            utm_source é o canal (email ou whatsapp) e utm_campaign é{' '}
+            <code>{campaign.slug}</code>.
+          </p>
+        </div>
+      </AdvancedOptions>
 
       {links ? (
         <div className='flex flex-col gap-3 rounded-xl border bg-muted/30 p-4'>

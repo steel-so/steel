@@ -20,6 +20,7 @@ import { renderCampaignEmail } from '@/src/lib/crm-campaign/email-renderer'
 import { toCampaignWaId } from '@/src/lib/crm-campaign/phone'
 import { publishedSitePages } from '@/src/lib/crm-campaign/site-destination'
 import {
+  campaignWhatsAppUsesLink,
   templateBlockedReason,
   templateFields,
   validateCampaignWhatsApp,
@@ -95,6 +96,9 @@ function authorize(actorId: string, workspaceId: string, action: Action) {
 }
 
 const RECENT_CONVERSIONS = 50
+
+/** Name of the e-mail variable that renders the tracked campaign link. */
+const CAMPAIGN_LINK_VARIABLE = 'campaign_link'
 
 async function toDetail(
   campaign: CrmCampaign,
@@ -180,13 +184,11 @@ export async function computeCampaignIssues(
 ): Promise<Result<CrmCampaignIssueDTO[]>> {
   const issues: CrmCampaignIssueDTO[] = []
 
-  // Destino
-  if (!campaign.destinationType) {
-    issues.push({
-      step: 'destination',
-      message: 'Escolha o site, o formulário ou a landing page de destino',
-    })
-  } else {
+  // Link (opcional): a campaign can go out as a plain announcement. A
+  // destination is only required when the content points at the link.
+  const hasDestination = campaign.destinationType !== null
+  let usesLink = false
+  if (campaign.destinationType) {
     const destination = await resolveCampaignDestination(campaign)
     if (!destination.ok) return destination
     if (!destination.value) {
@@ -234,6 +236,11 @@ export async function computeCampaignIssues(
         message: 'O visual escolhido não existe mais',
       })
     } else {
+      if (!hasDestination) {
+        const linked = await emailUsesCampaignLink(campaign)
+        if (!linked.ok) return linked
+        usesLink = linked.value
+      }
       // Hard errors of the e-mail checklist block the launch.
       const checklist = await emailChecklistOf(campaign)
       if (!checklist.ok) return checklist
@@ -247,14 +254,23 @@ export async function computeCampaignIssues(
 
   // Conteúdo — WhatsApp (opcional)
   if (campaign.whatsappEnabled) {
-    const whatsapp = await whatsappIssues(campaign)
+    const whatsapp = await whatsappIssues(campaign, !hasDestination)
     if (!whatsapp.ok) return whatsapp
     issues.push(
-      ...whatsapp.value.map((message) => ({
+      ...whatsapp.value.issues.map((message) => ({
         step: 'content' as const,
         message,
       })),
     )
+    usesLink = usesLink || whatsapp.value.usesLink
+  }
+
+  if (!hasDestination && usesLink) {
+    issues.unshift({
+      step: 'destination',
+      message:
+        'O conteúdo usa o link da campanha: escolha para onde ele leva, no passo Link',
+    })
   }
 
   // Público
@@ -282,16 +298,40 @@ export async function computeCampaignIssues(
   return ok(issues)
 }
 
+/** The chosen e-mail template carries the campaign link variable. */
+async function emailUsesCampaignLink(
+  campaign: CrmCampaign,
+): Promise<Result<boolean>> {
+  const template = await CrmCampaignLookupRepository.findEmailTemplateContent(
+    campaign.workspaceId,
+    campaign.emailTemplateId as string,
+  )
+  if (!template.ok) return template
+  if (!template.value) return ok(false)
+  const content = `${template.value.contentHtml}${JSON.stringify(
+    template.value.builderDocument ?? null,
+  )}`
+  return ok(content.includes(CAMPAIGN_LINK_VARIABLE))
+}
+
+/**
+ * Problems of the WhatsApp add-on, and whether its content points at the
+ * campaign link. `linkOptional` drops the Z-API `{link}` requirement (a
+ * campaign without a destination).
+ */
 async function whatsappIssues(
   campaign: CrmCampaign,
-): Promise<Result<string[]>> {
+  linkOptional: boolean,
+): Promise<Result<{ issues: string[]; usesLink: boolean }>> {
+  const blocked = (message: string) =>
+    ok({ issues: [message], usesLink: false })
   const availability = await whatsappAvailability(campaign.workspaceId)
   if (!availability.ok) return availability
   if (!availability.value.available) {
-    return ok([availability.value.reason as string])
+    return blocked(availability.value.reason as string)
   }
   if (!campaign.whatsappConnectionId) {
-    return ok(['Escolha a conexão de WhatsApp'])
+    return blocked('Escolha a conexão de WhatsApp')
   }
   const connection = await CrmCampaignLookupRepository.findConnection(
     campaign.workspaceId,
@@ -299,7 +339,7 @@ async function whatsappIssues(
   )
   if (!connection.ok) return connection
   if (connection.value?.status !== 'CONNECTED') {
-    return ok(['A conexão de WhatsApp escolhida não está conectada'])
+    return blocked('A conexão de WhatsApp escolhida não está conectada')
   }
   let template: {
     status: string
@@ -330,18 +370,24 @@ async function whatsappIssues(
       ? { buttons: parseStoredButtons(found.value.buttons) }
       : null
   }
-  return ok(
-    validateCampaignWhatsApp({
-      provider: connection.value.provider === 'META' ? 'META' : 'ZAPI',
-      template,
-      quickReply,
-      variables:
-        (campaign.whatsappVariables as CrmCampaignWhatsAppVariables | null) ??
-        null,
-      text: campaign.whatsappText,
-      mediaUrl: campaign.whatsappMediaUrl,
-    }),
-  )
+  const config = {
+    provider:
+      connection.value.provider === 'META'
+        ? ('META' as const)
+        : ('ZAPI' as const),
+    template,
+    quickReply,
+    variables:
+      (campaign.whatsappVariables as CrmCampaignWhatsAppVariables | null) ??
+      null,
+    text: campaign.whatsappText,
+    mediaUrl: campaign.whatsappMediaUrl,
+    linkOptional,
+  }
+  return ok({
+    issues: validateCampaignWhatsApp(config),
+    usesLink: campaignWhatsAppUsesLink(config),
+  })
 }
 
 async function resolveAudience(
@@ -627,11 +673,20 @@ export const CrmCampaignService = {
     const slug = await uniqueSlug(workspaceId, dto.name)
     if (!slug.ok) return slug
 
+    // A new draft starts from the sender and the legal basis of the latest
+    // campaign; the launch still asks to confirm the basis (LGPD).
+    const defaults = await CrmCampaignRepository.findLatestDefaults(workspaceId)
+    if (!defaults.ok) return defaults
+    const legalBasis = defaults.value?.emailLegalBasis ?? null
+
     const created = await CrmCampaignRepository.create({
       workspaceId,
       createdById: actorId,
       name: dto.name,
       slug: slug.value,
+      emailFrom: defaults.value?.emailFrom ?? null,
+      emailLegalBasis: legalBasis,
+      whatsappLegalBasis: defaults.value?.whatsappLegalBasis ?? legalBasis,
     })
     if (!created.ok) return created
 
@@ -974,16 +1029,22 @@ export const CrmCampaignService = {
 
     if (dto.phone) {
       const waId = toCampaignWaId(dto.phone)
-      const problems = campaign.value.whatsappEnabled
-        ? await whatsappIssues(campaign.value)
-        : ok(['Ative o WhatsApp na campanha para testar'])
-      if (!problems.ok) return problems
+      const checked = campaign.value.whatsappEnabled
+        ? await whatsappIssues(
+            campaign.value,
+            campaign.value.destinationType === null,
+          )
+        : null
+      if (checked && !checked.ok) return checked
+      const problems = checked
+        ? checked.value.issues
+        : ['Ative o WhatsApp na campanha para testar']
       if (!waId) {
         result.whatsapp = 'failed'
         result.errors.push('Número de WhatsApp inválido')
-      } else if (problems.value.length > 0) {
+      } else if (problems.length > 0) {
         result.whatsapp = 'failed'
-        result.errors.push(...problems.value)
+        result.errors.push(...problems)
       } else {
         const sent = await sendCampaignWhatsApp(campaign.value, {
           waId,
