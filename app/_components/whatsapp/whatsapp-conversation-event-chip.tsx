@@ -42,6 +42,9 @@ function describeEvent(event: WhatsAppConversationEventDTO): string {
     // `reason` = the copilot summary (internal, never sent to the contact).
     case 'TRANSFER_SUMMARY':
       return 'Resumo da conversa para quem assume'
+    // `reason` says whether the quota ran out or the provider is down.
+    case 'AI_UNAVAILABLE':
+      return 'IA sem cota, assuma'
     // `reason` = "R$ valor · descrição" of the charge.
     case 'PIX_PAID':
       return `Pix recebido: ${event.reason ?? ''}`.trim()
@@ -88,6 +91,7 @@ function detailOf(event: WhatsAppConversationEventDTO): string | null {
   // The guardrail note says why the AI stopped.
   if (event.kind === 'AI_GUARDRAIL_HANDOFF') return event.reason
   if (event.kind === 'AI_ACTION') return event.reason
+  if (event.kind === 'AI_UNAVAILABLE') return event.reason
   if (event.kind === 'SLA_BREACHED') return event.reason
   // The assignee / team name is already in the headline.
   if (event.kind === 'ASSIGNED' || event.kind === 'TEAM_CHANGED') return null

@@ -344,6 +344,30 @@ describe('WhatsAppBroadcastService', () => {
       )
     }
 
+    it('should retry only the selected recipients when ids are given', async () => {
+      asAdmin()
+      addBulk.mockClear()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'DONE' },
+            2,
+          ),
+        ),
+      )
+      mockedBroadcastRepo.resetFailedRecipients.mockResolvedValue(ok(['r2']))
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+
+      expectOk(
+        await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'b1', ['r2']),
+      )
+
+      expect(mockedBroadcastRepo.resetFailedRecipients).toHaveBeenCalledWith(
+        'b1',
+        ['r2'],
+      )
+    })
+
     it('should re-enqueue the failed recipients and mark the list RUNNING', async () => {
       asAdmin()
       addBulk.mockClear()

@@ -184,6 +184,7 @@ export const WhatsAppConversationEventDTO = dto(
         'PIX_PAID',
         'CHATBOT_HANDOFF',
         'TRANSFER_SUMMARY',
+        'AI_UNAVAILABLE',
       ]),
       source: z.enum([
         'AGENT',
@@ -198,6 +199,7 @@ export const WhatsAppConversationEventDTO = dto(
         'PIX',
         'CHATBOT',
         'COPILOT',
+        'AI_REPLY',
       ]),
       actorUserId: z.string().nullable().meta({
         description: '`null` quando foi o sistema.',

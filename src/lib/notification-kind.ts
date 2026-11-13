@@ -557,6 +557,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'hourglass',
     color: 'rose',
   },
+  WHATSAPP_AI_UNAVAILABLE: {
+    module: 'COMMUNICATION',
+    label: 'IA do WhatsApp sem cota ou fora do ar',
+    icon: 'handoff',
+    color: 'rose',
+  },
   AGENT_APPROVAL_REQUESTED: {
     module: 'OTHER',
     label: 'Agente aguardando aprovação',

@@ -8,14 +8,29 @@ import type {
   WhatsAppBroadcastRecipientDTO,
 } from '@/types/whatsapp-broadcast'
 
-/** The reason of the first failed recipient, to show on the list row. */
+/**
+ * The most common failure reason of the list, to show on the row (a spend
+ * cap fails every pending recipient with the same text, so it wins over a
+ * one-off error). Ties go to the first one found.
+ */
 function failureReason(
   recipients: { status: string; errorMessage: string | null }[],
 ): string | null {
-  return (
-    recipients.find((r) => r.status === 'FAILED' && r.errorMessage)
-      ?.errorMessage ?? null
-  )
+  const counts = new Map<string, number>()
+  for (const r of recipients) {
+    if (r.status === 'FAILED' && r.errorMessage) {
+      counts.set(r.errorMessage, (counts.get(r.errorMessage) ?? 0) + 1)
+    }
+  }
+  let best: string | null = null
+  let bestCount = 0
+  for (const [message, count] of counts) {
+    if (count > bestCount) {
+      best = message
+      bestCount = count
+    }
+  }
+  return best
 }
 
 export function toWhatsAppBroadcastListDTO(

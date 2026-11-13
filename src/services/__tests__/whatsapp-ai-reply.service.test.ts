@@ -278,6 +278,49 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     expect(mockedSend.text).not.toHaveBeenCalled()
   })
 
+  it('should hand the conversation to a person and warn the admins when the quota is exhausted', async () => {
+    arrange()
+    mockedAiUsage.prepare.mockResolvedValue(err(aiQuotaExceeded(10, 10)))
+    const events = vi.mocked(WhatsAppConversationEventRepository)
+    events.create.mockResolvedValue(ok({} as never))
+
+    await WhatsAppAiReplyService.generateReply({
+      conversationId: CONV,
+      messageId: 'm1',
+    })
+
+    expect(mockedConversationRepo.update).toHaveBeenCalledWith(
+      CONV,
+      expect.objectContaining({ aiActive: false, aiHandoff: true }),
+    )
+    expect(events.create).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'AI_UNAVAILABLE', source: 'AI_REPLY' }),
+    )
+    expect(vi.mocked(notifyWhatsAppUsers)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'WHATSAPP_AI_UNAVAILABLE',
+        userIds: ['owner', 'admin'],
+      }),
+    )
+  })
+
+  it('should keep the skip outcome when the hand-off update fails', async () => {
+    arrange()
+    mockedAiUsage.prepare.mockResolvedValue(err(aiProviderUnavailable()))
+    mockedConversationRepo.update.mockResolvedValueOnce(err(databaseError()))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toEqual({
+      status: 'skipped',
+      reason: 'ai_provider_unavailable',
+    })
+  })
+
   it('should skip with ai_provider_unavailable when no provider is configured', async () => {
     arrange()
     mockedAiUsage.prepare.mockResolvedValue(err(aiProviderUnavailable()))

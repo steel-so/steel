@@ -287,6 +287,94 @@ function prepareFailureReason(
   return 'ai_prepare_failed'
 }
 
+const UNAVAILABLE_AI_TEXT: Record<
+  ReturnType<typeof prepareFailureReason>,
+  string
+> = {
+  ai_quota_exceeded:
+    'A cota mensal de IA do workspace acabou. A conversa precisa de um atendente.',
+  ai_provider_unavailable:
+    'O provedor de IA está indisponível ou sem chave configurada. A conversa precisa de um atendente.',
+  ai_prepare_failed:
+    'Não foi possível preparar a resposta da IA. A conversa precisa de um atendente.',
+}
+
+/**
+ * The AI could not answer (quota used up, provider down): a person must
+ * take over. Turns the AI off for the conversation (so the next message
+ * does not repeat this), leaves a timeline note "IA sem cota, assuma" and
+ * tells the admins once a day per reason. Best effort: a failure here is
+ * logged and never fails the job.
+ */
+async function handOffUnavailableAi(input: {
+  workspaceId: string
+  conversationId: string
+  assigned: boolean
+  reason: ReturnType<typeof prepareFailureReason>
+}): Promise<void> {
+  const { workspaceId, conversationId, reason } = input
+  const base = { component: 'WhatsappAiReply', workspaceId, conversationId }
+  const text = UNAVAILABLE_AI_TEXT[reason]
+  try {
+    const updated = await WhatsAppConversationRepository.update(
+      conversationId,
+      {
+        aiActive: false,
+        aiHandoff: true,
+        status: 'IN_PROGRESS',
+        ...(input.assigned ? {} : queueEntry()),
+      },
+    )
+    if (!updated.ok) {
+      logger.error('queue.whatsapp_ai_reply.unavailable_handoff_failed', {
+        ...base,
+        message: updated.error.message,
+      })
+      return
+    }
+    const event = await WhatsAppConversationEventRepository.create({
+      workspaceId,
+      conversationId,
+      kind: 'AI_UNAVAILABLE',
+      source: 'AI_REPLY',
+      actorUserId: null,
+      reason: text,
+    })
+    if (!event.ok) {
+      logger.error('queue.whatsapp_ai_reply.unavailable_event_failed', {
+        ...base,
+        message: event.error.message,
+      })
+    }
+    const day = new Date().toISOString().slice(0, 10)
+    await notifyWhatsAppUsers({
+      workspaceId,
+      kind: 'WHATSAPP_AI_UNAVAILABLE',
+      userIds: await whatsAppAdminIds(workspaceId),
+      title: 'A IA do WhatsApp parou de responder',
+      body: `${text} Confira a cota e o provedor em Ajustes > IA.`,
+      path: '/settings/whatsapp',
+      dedupeKey: `whatsapp-ai-unavailable:${workspaceId}:${reason}:${day}`,
+      meta: { conversationId, reason },
+    })
+    const fresh = await WhatsAppConversationRepository.findById(
+      conversationId,
+      workspaceId,
+    )
+    if (fresh.ok && fresh.value) {
+      await publishWhatsAppEvent(workspaceId, {
+        type: 'conversation.updated',
+        conversation: toWhatsAppConversationDTO(fresh.value),
+      })
+    }
+  } catch (error) {
+    logger.error('queue.whatsapp_ai_reply.unavailable_handoff_error', {
+      ...base,
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
+}
+
 export const WhatsAppAiReplyService = {
   /**
    * Resposta automática da IA a uma mensagem recebida. Fluxo de sistema
@@ -381,10 +469,14 @@ export const WhatsAppAiReplyService = {
     // disponível: não responde — a conversa fica para um atendente humano.
     const prepared = await AiUsageService.prepare(workspaceId, 'WHATSAPP_REPLY')
     if (!prepared.ok) {
-      return ok({
-        status: 'skipped',
-        reason: prepareFailureReason(prepared.error.code),
+      const reason = prepareFailureReason(prepared.error.code)
+      await handOffUnavailableAi({
+        workspaceId,
+        conversationId,
+        assigned: Boolean(conversation.assignedUserId),
+        reason,
       })
+      return ok({ status: 'skipped', reason })
     }
     const call = prepared.value
 

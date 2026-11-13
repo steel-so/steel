@@ -921,16 +921,32 @@ function StartBroadcastButton({
 function BroadcastFailuresDialog({
   workspaceId,
   broadcastId,
+  canRetry,
   onClose,
 }: {
   workspaceId: string
   broadcastId: string
+  canRetry: boolean
   onClose: () => void
 }) {
   const detail = useWhatsAppBroadcast(workspaceId, broadcastId)
+  const retryFailed = useRetryFailedWhatsAppBroadcast(workspaceId)
+  const [selected, setSelected] = useState<string[]>([])
   const failed = (detail.data?.recipients ?? []).filter(
     (recipient) => recipient.status === 'FAILED',
   )
+  // Only a finished list can be retried.
+  const finished =
+    detail.data?.status === 'DONE' || detail.data?.status === 'FAILED'
+  const selectable = canRetry && finished
+
+  function toggle(id: string) {
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id],
+    )
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -952,6 +968,14 @@ function BroadcastFailuresDialog({
           <ul className='max-h-80 space-y-2 overflow-y-auto text-sm'>
             {failed.map((recipient) => (
               <li key={recipient.id} className='rounded-md border p-2'>
+                {selectable ? (
+                  <Checkbox
+                    className='mr-2 align-middle'
+                    checked={selected.includes(recipient.id)}
+                    onCheckedChange={() => toggle(recipient.id)}
+                    aria-label={`Selecionar ${recipient.contactName ?? recipient.contactWaId}`}
+                  />
+                ) : null}
                 <span className='font-medium'>
                   {recipient.contactName ?? recipient.contactWaId}
                 </span>
@@ -967,6 +991,28 @@ function BroadcastFailuresDialog({
             ))}
           </ul>
         )}
+        {selectable && failed.length > 0 ? (
+          <DialogFooter>
+            <Button
+              size='sm'
+              variant='outline'
+              disabled={selected.length === 0 || retryFailed.isPending}
+              onClick={() =>
+                retryFailed
+                  .mutateAsync({ broadcastId, recipientIds: selected })
+                  .then(
+                    () => {
+                      notify.success('Reenvio iniciado')
+                      onClose()
+                    },
+                    (error) => notify.error(error, 'Não foi possível reenviar'),
+                  )
+              }
+            >
+              Reenviar selecionados ({selected.length})
+            </Button>
+          </DialogFooter>
+        ) : null}
       </DialogContent>
     </Dialog>
   )
@@ -1165,6 +1211,7 @@ export function WhatsappSettingsBroadcasts({
         <BroadcastFailuresDialog
           workspaceId={workspaceId}
           broadcastId={failuresId}
+          canRetry={canManage}
           onClose={() => setFailuresId(null)}
         />
       ) : null}
