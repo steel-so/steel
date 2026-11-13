@@ -56,7 +56,7 @@ async function open(extra: Parameters<typeof mockFetch>[0] = []) {
     'Meta Oficial',
   )
 
-  fireEvent.change(within(dialog).getByLabelText('Nome (snake_case)'), {
+  fireEvent.change(within(dialog).getByLabelText('Nome do template'), {
     target: { value: 'promo' },
   })
   fireEvent.change(within(dialog).getByLabelText('Corpo da mensagem'), {

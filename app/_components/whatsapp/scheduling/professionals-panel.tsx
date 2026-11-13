@@ -5,6 +5,7 @@ import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissio
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -115,19 +116,22 @@ function ProfessionalCard({
                 )
               }
             />
-            <Button
-              size='sm'
-              variant='outline'
-              disabled={remove.isPending}
-              onClick={() =>
-                remove.mutate(professional.id, {
-                  onError: (error) =>
-                    notify.error(error, 'Não foi possível excluir'),
-                })
+            <ConfirmAction
+              trigger={
+                <Button size='sm' variant='outline' disabled={remove.isPending}>
+                  Excluir
+                </Button>
               }
-            >
-              Excluir
-            </Button>
+              title={`Excluir ${professional.name}?`}
+              description='O profissional deixa de aparecer para agendamento. Os agendamentos já feitos não são apagados.'
+              pending={remove.isPending}
+              onConfirm={() =>
+                remove.mutateAsync(professional.id).then(
+                  () => undefined,
+                  (error) => notify.error(error, 'Não foi possível excluir'),
+                )
+              }
+            />
           </div>
         ) : null}
       </div>

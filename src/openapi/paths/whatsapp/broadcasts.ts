@@ -153,4 +153,53 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
       },
     ],
   },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/cancel',
+    tags: [TAG],
+    summary: 'Cancelar transmissão',
+    description: `Cancela uma transmissão agendada (\`QUEUED\`) ou em andamento (\`RUNNING\`): quem ainda estava \`PENDING\` vira \`SKIPPED\` ("Envio cancelado") e a lista fecha como \`DONE\`. O que já foi enviado não é afetado. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Transmissão cancelada.',
+        schema: WhatsAppBroadcastDetailDTO,
+      },
+    },
+    errors: [
+      ...permErrors('broadcasts', 'CREATE'),
+      'WHATSAPP_BROADCAST_NOT_FOUND',
+      {
+        code: 'WHATSAPP_BROADCAST_LOCKED',
+        when: 'A transmissão não está `QUEUED` nem `RUNNING`',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/retry-failed',
+    tags: [TAG],
+    summary: 'Reenviar os que falharam',
+    description: `Recoloca na fila os destinatários \`FAILED\` de uma transmissão já terminada (\`DONE\` ou \`FAILED\`), espaçados de 4 s, e a lista volta para \`RUNNING\`. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Transmissão em andamento.',
+        schema: WhatsAppBroadcastDetailDTO,
+      },
+    },
+    errors: [
+      ...permErrors('broadcasts', 'CREATE'),
+      FEATURE,
+      'WHATSAPP_BROADCAST_NOT_FOUND',
+      {
+        code: 'WHATSAPP_BROADCAST_LOCKED',
+        when: 'A transmissão ainda está em andamento ou é um rascunho',
+      },
+      {
+        code: 'WHATSAPP_BROADCAST_NO_RECIPIENTS',
+        when: 'Nenhum destinatário falhou',
+      },
+    ],
+  },
 ]

@@ -165,7 +165,9 @@ describe('refreshStatus()', () => {
     )
     repo.findById.mockResolvedValueOnce(err(databaseError()))
     expectErr(await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'c1'))
-    repo.findById.mockResolvedValueOnce(ok(createFakeWhatsAppConnection()))
+    repo.findById.mockResolvedValueOnce(
+      ok(createFakeWhatsAppConnection({ provider: 'WIDGET' })),
+    )
     expectErr(
       await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'c1'),
       'BAD_REQUEST',

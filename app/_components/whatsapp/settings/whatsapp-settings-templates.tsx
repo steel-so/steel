@@ -27,6 +27,7 @@ import {
   useSyncWhatsAppTemplates,
   useWhatsAppTemplates,
 } from '@/src/hooks/use-whatsapp-templates'
+import { translateTemplateRejection } from '@/src/lib/whatsapp/template-rejection'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { WhatsappButtonsSummary } from '../buttons/whatsapp-buttons-editor'
 import { CreateTemplateDialog } from '../create-template-dialog'
@@ -51,7 +52,14 @@ export function WhatsappSettingsTemplates({
   const metaConnections = (connections.data ?? []).filter(
     (connection) => connection.provider === 'META',
   )
-  const [selectedConnectionId, setSelectedConnectionId] = useState<string>()
+  const [pickedConnectionId, setSelectedConnectionId] = useState<string>()
+  // With a single Meta number there is nothing to choose.
+  const selectedConnectionId =
+    pickedConnectionId ??
+    (metaConnections.length === 1 ? metaConnections[0].id : undefined)
+  const hasZapi = (connections.data ?? []).some(
+    (connection) => connection.provider === 'ZAPI',
+  )
 
   const templates = useWhatsAppTemplates(workspaceId)
   const syncTemplates = useSyncWhatsAppTemplates(workspaceId)
@@ -59,6 +67,7 @@ export function WhatsappSettingsTemplates({
   const canManage = useCan('message-templates', 'CREATE')
   const [editingButtons, setEditingButtons] =
     useState<WhatsAppTemplateDTO | null>(null)
+  const [fixing, setFixing] = useState<WhatsAppTemplateDTO | null>(null)
 
   return (
     <div className='space-y-4'>
@@ -66,7 +75,9 @@ export function WhatsappSettingsTemplates({
         <div>
           <h3 className='font-medium text-sm'>Templates da Meta</h3>
           <p className='text-muted-foreground text-xs'>
-            Sincronize os templates aprovados na sua conta Meta
+            Modelos de mensagem aprovados pela Meta, usados para falar com
+            clientes fora da janela de 24 horas. Sincronize para trazer os da
+            sua conta.
           </p>
         </div>
         <div className='flex flex-wrap items-center gap-2'>
@@ -120,6 +131,14 @@ export function WhatsappSettingsTemplates({
         </div>
       </div>
 
+      {connections.data && metaConnections.length === 0 ? (
+        <p className='rounded-lg border bg-muted/40 p-3 text-muted-foreground text-sm'>
+          {hasZapi
+            ? 'Templates existem só na API oficial da Meta. Suas conexões Z-API enviam texto livre a qualquer hora e não usam templates.'
+            : 'Templates existem só na API oficial da Meta. Conecte um número da Meta em Ajustes › Conexões para criar e usar templates.'}
+        </p>
+      ) : null}
+
       <div className='max-h-[26rem] overflow-auto rounded-lg border border-border'>
         <Table containerClassName='overflow-x-visible'>
           <TableHeader className='sticky top-0 z-10 bg-card/85 backdrop-blur-md'>
@@ -152,14 +171,30 @@ export function WhatsappSettingsTemplates({
                   <TableCell>
                     <TemplateStatusBadge
                       status={template.status}
-                      reason={template.statusReason}
+                      reason={translateTemplateRejection(template.statusReason)}
                     />
+                    {template.status !== 'APPROVED' &&
+                    template.status !== 'PENDING' &&
+                    template.statusReason ? (
+                      <p className='mt-1 max-w-64 whitespace-normal text-destructive text-xs'>
+                        {translateTemplateRejection(template.statusReason)}
+                      </p>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <WhatsappButtonsSummary buttons={template.buttons} />
                   </TableCell>
                   {canManage ? (
-                    <TableCell className='text-right'>
+                    <TableCell className='space-x-1.5 text-right'>
+                      {template.status === 'REJECTED' ? (
+                        <Button
+                          size='xs'
+                          variant='outline'
+                          onClick={() => setFixing(template)}
+                        >
+                          Corrigir e reenviar
+                        </Button>
+                      ) : null}
                       {hasReply ? (
                         <Button
                           size='xs'
@@ -189,6 +224,17 @@ export function WhatsappSettingsTemplates({
           </TableBody>
         </Table>
       </div>
+
+      {canManage ? (
+        <CreateTemplateDialog
+          workspaceId={workspaceId}
+          prefill={fixing}
+          open={fixing !== null}
+          onOpenChange={(open) => {
+            if (!open) setFixing(null)
+          }}
+        />
+      ) : null}
 
       <TemplateButtonsSheet
         workspaceId={workspaceId}

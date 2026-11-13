@@ -467,6 +467,10 @@ const BroadcastBase = z.object({
     description:
       'Lista com "pular números sem WhatsApp" ligado. Só pula quem já foi verificado.',
   }),
+  failureReason: z.string().nullable().meta({
+    description:
+      'Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver.',
+  }),
   createdAt: dateTime(),
   updatedAt: dateTime(),
 })
@@ -536,6 +540,24 @@ export const WhatsAppBroadcastImportResultDTO = dto(
       description: '`null` quando nenhuma linha do CSV foi aceita.',
     }),
     createdCount: z.number().int(),
+    validCount: z.number().int().optional().meta({
+      description: 'Só em `dryRun`: quantas linhas seriam agendadas.',
+    }),
+    preview: z
+      .array(
+        z.object({
+          rowNumber: z.number().int(),
+          phone: z.string(),
+          contactName: z.string().nullable(),
+          scheduledAt: dateTime(),
+          appointmentAt: dateTime(),
+        }),
+      )
+      .optional()
+      .meta({
+        description:
+          'Só em `dryRun`: as primeiras linhas com a data de envio calculada.',
+      }),
     rejectedRows: z.array(
       z.object({
         rowNumber: z.number().int().meta({ example: 3 }),

@@ -56,7 +56,8 @@ export function createFakeWhatsAppBroadcastRecipient(
 
 export function createFakeWhatsAppBroadcastListWithCounts(
   overrides?: Partial<WhatsAppBroadcastList>,
-  recipients: Pick<WhatsAppBroadcastRecipient, 'status'>[] = [],
+  recipients: (Pick<WhatsAppBroadcastRecipient, 'status'> &
+    Partial<Pick<WhatsAppBroadcastRecipient, 'errorMessage'>>)[] = [],
 ): WhatsAppBroadcastListWithCounts {
   return {
     ...createFakeWhatsAppBroadcastList(overrides),

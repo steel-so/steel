@@ -10,7 +10,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
 
 const listInclude = {
-  recipients: { select: { status: true } },
+  recipients: { select: { status: true, errorMessage: true } },
 } satisfies Prisma.WhatsAppBroadcastListInclude
 
 export type WhatsAppBroadcastListWithCounts =
@@ -381,6 +381,43 @@ export const WhatsAppBroadcastRepository = {
       return ok(result.count)
     } catch (error) {
       return err(dbError('Failed to fail pending broadcast recipients', error))
+    }
+  },
+
+  /** Cancel: every recipient still PENDING is skipped with a reason. */
+  async cancelPendingRecipients(
+    broadcastListId: string,
+  ): Promise<Result<number>> {
+    try {
+      const result = await prisma.whatsAppBroadcastRecipient.updateMany({
+        where: { broadcastListId, status: 'PENDING' },
+        data: { status: 'SKIPPED', errorMessage: 'Envio cancelado' },
+      })
+      return ok(result.count)
+    } catch (error) {
+      return err(dbError('Failed to cancel pending broadcast recipients', error))
+    }
+  },
+
+  /** Puts every FAILED recipient back to PENDING; returns their ids. */
+  async resetFailedRecipients(
+    broadcastListId: string,
+  ): Promise<Result<string[]>> {
+    try {
+      const failed = await prisma.whatsAppBroadcastRecipient.findMany({
+        where: { broadcastListId, status: 'FAILED' },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+      if (failed.length === 0) return ok([])
+      const ids = failed.map((recipient) => recipient.id)
+      await prisma.whatsAppBroadcastRecipient.updateMany({
+        where: { id: { in: ids }, status: 'FAILED' },
+        data: { status: 'PENDING', errorMessage: null },
+      })
+      return ok(ids)
+    } catch (error) {
+      return err(dbError('Failed to reset failed broadcast recipients', error))
     }
   },
 

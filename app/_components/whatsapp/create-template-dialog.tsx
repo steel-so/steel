@@ -41,6 +41,8 @@ import {
   type TemplateHeaderChoice,
   validateButtons,
 } from '@/src/lib/whatsapp/button-editor'
+import { REFERENCE_PRICES } from '@/src/lib/whatsapp/cost'
+import { templateNameFromTitle } from '@/src/lib/whatsapp/template-name'
 import {
   countPlaceholders,
   renderTemplateText,
@@ -50,7 +52,9 @@ import {
   type WhatsAppTemplateCategory,
 } from '@/src/schemas/whatsapp-template.schema'
 import type { WhatsAppButtonDTO } from '@/types/whatsapp-button'
+import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { WhatsappButtonsEditor } from './buttons/whatsapp-buttons-editor'
+import { formatBrlPrice } from './costs/whatsapp-costs-format'
 import {
   type PreviewHeader,
   WhatsappBubblePreview,
@@ -61,6 +65,21 @@ const CATEGORY_LABEL: Record<WhatsAppTemplateCategory, string> = {
   MARKETING: 'Marketing',
   AUTHENTICATION: 'Autenticação',
 }
+
+const CATEGORY_HELP: Record<WhatsAppTemplateCategory, string> = {
+  UTILITY:
+    'Avisos sobre algo que o cliente já pediu ou contratou: confirmação, lembrete, andamento. É a opção mais barata.',
+  MARKETING:
+    'Promoções, novidades e ofertas. É a categoria mais cara e o cliente pode recusar receber.',
+  AUTHENTICATION:
+    'Só para códigos de verificação (senha de uso único). Não aceita outro tipo de texto.',
+}
+
+const LANGUAGE_OPTIONS = [
+  { value: 'pt_BR', label: 'Português (Brasil)' },
+  { value: 'en_US', label: 'Inglês (EUA)' },
+  { value: 'es', label: 'Espanhol' },
+]
 
 const MEDIA_ACTION_LABEL = {
   IMAGE: 'Enviar imagem',
@@ -75,10 +94,40 @@ interface HeaderMedia {
   url: string
 }
 
-export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
-  const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [connectionId, setConnectionId] = useState<string>()
+/** Reads the text of a component of a template as Meta returned it. */
+function componentText(
+  template: WhatsAppTemplateDTO,
+  type: 'BODY' | 'FOOTER',
+): string {
+  const found = (template.components as { type?: string; text?: string }[]).find(
+    (component) => component.type === type,
+  )
+  return found?.text ?? ''
+}
+
+export function CreateTemplateDialog({
+  workspaceId,
+  prefill,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  workspaceId: string
+  /** "Corrigir e reenviar": starts from a rejected template's content. */
+  prefill?: WhatsAppTemplateDTO | null
+  /** Controlled mode (no trigger button), used by "Corrigir e reenviar". */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [innerOpen, setInnerOpen] = useState(false)
+  const controlled = controlledOpen !== undefined
+  const open = controlled ? controlledOpen : innerOpen
+  const setOpen = (next: boolean) => {
+    if (controlled) onOpenChange?.(next)
+    else setInnerOpen(next)
+  }
+  const [title, setTitle] = useState('')
+  const name = templateNameFromTitle(title)
+  const [pickedConnectionId, setConnectionId] = useState<string>()
   const [language, setLanguage] = useState('pt_BR')
   const [category, setCategory] = useState<WhatsAppTemplateCategory>('UTILITY')
   const [headerChoice, setHeaderChoice] = useState<TemplateHeaderChoice>('NONE')
@@ -96,14 +145,39 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
   const metaConnections = (connections.data ?? []).filter(
     (connection) => connection.provider === 'META',
   )
+  // A single Meta number needs no choice.
+  const connectionId =
+    pickedConnectionId ??
+    (metaConnections.length === 1 ? metaConnections[0].id : undefined)
   const createTemplate = useCreateWhatsAppTemplate(workspaceId)
   const uploadMedia = useUploadWhatsAppMedia(workspaceId)
 
   const mediaFormat: MediaFormat | null =
     headerChoice === 'NONE' || headerChoice === 'TEXT' ? null : headerChoice
 
+  // Fills the form from the rejected template (once per template).
+  const [appliedPrefill, setAppliedPrefill] = useState<string | null>(null)
+  if (prefill && open && appliedPrefill !== prefill.id) {
+    setAppliedPrefill(prefill.id)
+    setTitle(`${prefill.name.replace(/_/g, ' ')} 2`)
+    setConnectionId(prefill.connectionId)
+    setLanguage(prefill.language)
+    setCategory(prefill.category as WhatsAppTemplateCategory)
+    setBody(componentText(prefill, 'BODY'))
+    setFooter(componentText(prefill, 'FOOTER'))
+    setButtons(prefill.buttons)
+    if (prefill.headerFormat === 'TEXT') {
+      setHeaderChoice('TEXT')
+      const header = (
+        prefill.components as { type?: string; text?: string }[]
+      ).find((component) => component.type === 'HEADER')
+      setHeaderText(header?.text ?? '')
+    }
+  }
+
   function reset() {
-    setName('')
+    setAppliedPrefill(null)
+    setTitle('')
     setConnectionId(undefined)
     setLanguage('pt_BR')
     setCategory('UTILITY')
@@ -144,7 +218,7 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
       notify.error('Selecione a conexão Meta.')
       return
     }
-    if (!name.trim() || !body.trim()) {
+    if (!name || !body.trim()) {
       notify.error('Informe o nome e o corpo da mensagem.')
       return
     }
@@ -173,7 +247,7 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
     try {
       await createTemplate.mutateAsync({
         connectionId,
-        name: name.trim(),
+        name,
         language,
         category,
         ...(headerChoice === 'TEXT'
@@ -220,19 +294,25 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
         setOpen(next)
       }}
     >
-      <DialogTrigger
-        render={
-          <Button size='sm'>
-            <SteelIcon icon={PlusSignIcon} strokeWidth={2} size={14} />
-            Novo template
-          </Button>
-        }
-      />
+      {controlled ? null : (
+        <DialogTrigger
+          render={
+            <Button size='sm'>
+              <SteelIcon icon={PlusSignIcon} strokeWidth={2} size={14} />
+              Novo template
+            </Button>
+          }
+        />
+      )}
       <DialogContent className='max-h-[92vh] overflow-y-auto sm:max-w-4xl'>
         <DialogHeader>
-          <DialogTitle>Novo template</DialogTitle>
+          <DialogTitle>
+            {prefill ? 'Corrigir e reenviar template' : 'Novo template'}
+          </DialogTitle>
           <DialogDescription>
-            Enviado para aprovação da Meta — normalmente leva algumas horas
+            {prefill
+              ? 'A Meta não permite editar um template rejeitado: ajuste o texto e envie uma nova versão para aprovação.'
+              : 'Enviado para aprovação da Meta — normalmente leva algumas horas'}
           </DialogDescription>
         </DialogHeader>
 
@@ -267,26 +347,49 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
               </Select>
             </div>
 
-            <div className='grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]'>
+            <div className='grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]'>
               <div className='space-y-1.5'>
-                <Label htmlFor='template-name'>Nome (snake_case)</Label>
+                <Label htmlFor='template-name'>Nome do template</Label>
                 <Input
                   id='template-name'
-                  value={name}
-                  onChange={(e) =>
-                    setName(e.target.value.toLowerCase().replace(/\s+/g, '_'))
-                  }
-                  placeholder='confirmacao_exame'
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder='Confirmação de exame'
+                  aria-describedby='template-name-hint'
                 />
+                <p
+                  id='template-name-hint'
+                  className='text-muted-foreground text-xs'
+                >
+                  {name
+                    ? `Identificador na Meta: ${name}`
+                    : 'O identificador é criado a partir do nome.'}
+                </p>
               </div>
               <div className='space-y-1.5'>
-                <Label htmlFor='template-language'>Idioma</Label>
-                <Input
-                  id='template-language'
+                <Label>Idioma</Label>
+                <Select
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  placeholder='pt_BR'
-                />
+                  onValueChange={(value) => value && setLanguage(value)}
+                >
+                  <SelectTrigger className='w-full' aria-label='Idioma'>
+                    <SelectValue>
+                      {(value: string) =>
+                        LANGUAGE_OPTIONS.find((o) => o.value === value)
+                          ?.label ?? value
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent alignItemWithTrigger={false}>
+                    <SelectGroup>
+                      {LANGUAGE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -313,6 +416,12 @@ export function CreateTemplateDialog({ workspaceId }: { workspaceId: string }) {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              <p className='text-muted-foreground text-xs'>
+                {CATEGORY_HELP[category]} Custo aproximado por mensagem
+                enviada: {formatBrlPrice(REFERENCE_PRICES[category])} (valor de
+                referência; confira a tabela da Meta). Se o texto parecer
+                promoção, a Meta pode trocar a categoria para Marketing.
+              </p>
             </div>
 
             <fieldset className='space-y-2'>

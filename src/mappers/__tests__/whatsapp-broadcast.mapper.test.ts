@@ -26,6 +26,26 @@ describe('toWhatsAppBroadcastListDTO()', () => {
     expect(dto.skippedCount).toBe(1)
   })
 
+  it('should surface the reason of the first failed recipient', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b4' }, [
+      { status: 'SENT', errorMessage: null },
+      { status: 'FAILED', errorMessage: 'Limite de gasto atingido' },
+      { status: 'FAILED', errorMessage: 'Outro motivo' },
+    ])
+
+    expect(toWhatsAppBroadcastListDTO(list).failureReason).toBe(
+      'Limite de gasto atingido',
+    )
+  })
+
+  it('should have no failure reason when nothing failed', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b5' }, [
+      { status: 'SENT' },
+    ])
+
+    expect(toWhatsAppBroadcastListDTO(list).failureReason).toBeNull()
+  })
+
   it('should default counts to zero for an empty broadcast', () => {
     const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b2' }, [])
 

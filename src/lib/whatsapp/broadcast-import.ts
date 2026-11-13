@@ -121,11 +121,93 @@ export function normalizePhone(raw: string): string {
   return raw.replace(/\D/g, '')
 }
 
+export const BROADCAST_IMPORT_TIME_ZONE = 'America/Sao_Paulo'
+
+const BR_DATE_PATTERN =
+  /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::\d{2})?)?$/
+
+/** Offset (ms) of `timeZone` from UTC at the given instant. */
+function zoneOffsetMs(instant: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(instant)
+  const get = (type: string) =>
+    Number(parts.find((part) => part.type === type)?.value)
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  )
+  return asUtc - instant.getTime()
+}
+
+/**
+ * Parses the reference date of a spreadsheet row. Accepts the Brazilian
+ * `dd/MM/yyyy` and `dd/MM/yyyy HH:mm` (read as wall time in `timeZone`) as
+ * well as ISO 8601. Returns `null` when the text is not a real date.
+ */
+export function parseReferenceDate(
+  raw: string,
+  timeZone = BROADCAST_IMPORT_TIME_ZONE,
+): Date | null {
+  const text = raw.trim()
+  const br = BR_DATE_PATTERN.exec(text)
+  if (!br) {
+    const iso = new Date(text)
+    return Number.isNaN(iso.getTime()) ? null : iso
+  }
+  const day = Number(br[1])
+  const month = Number(br[2])
+  const year = Number(br[3])
+  const hour = br[4] === undefined ? 0 : Number(br[4])
+  const minute = br[5] === undefined ? 0 : Number(br[5])
+  const wall = new Date(Date.UTC(year, month - 1, day, hour, minute))
+  // Rejects overflow such as 31/02 or 25:00 that Date.UTC would roll over.
+  if (
+    wall.getUTCFullYear() !== year ||
+    wall.getUTCMonth() !== month - 1 ||
+    wall.getUTCDate() !== day ||
+    wall.getUTCHours() !== hour
+  ) {
+    return null
+  }
+  // Two passes settle the offset around daylight-saving transitions.
+  const first = new Date(wall.getTime() - zoneOffsetMs(wall, timeZone))
+  return new Date(wall.getTime() - zoneOffsetMs(first, timeZone))
+}
+
+export interface ValidateBroadcastImportOptions {
+  /** Zone used to read `dd/MM/yyyy HH:mm` dates. Defaults to São Paulo. */
+  timeZone?: string
+  /** When set, rows whose send time already passed are rejected. */
+  now?: Date
+}
+
+function formatForUser(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone,
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 export function validateBroadcastImportRows(
   rows: BroadcastImportRow[],
   bodyVariableCount: number,
   sendOffsetHours: number,
+  options: ValidateBroadcastImportOptions = {},
 ): BroadcastImportValidationResult {
+  const timeZone = options.timeZone ?? BROADCAST_IMPORT_TIME_ZONE
   const valid: ValidatedBroadcastImportRow[] = []
   const rejected: RejectedBroadcastImportRow[] = []
 
@@ -141,11 +223,11 @@ export function validateBroadcastImportRows(
       return
     }
 
-    const referenceDate = new Date(row.referenceDate)
-    if (Number.isNaN(referenceDate.getTime())) {
+    const referenceDate = parseReferenceDate(row.referenceDate, timeZone)
+    if (!referenceDate) {
       rejected.push({
         rowNumber,
-        reason: `Data de referência inválida: "${row.referenceDate}"`,
+        reason: `Data de referência inválida: "${row.referenceDate}". Use dd/mm/aaaa hh:mm, por exemplo 15/12/2026 09:30.`,
       })
       return
     }
@@ -169,6 +251,14 @@ export function validateBroadcastImportRows(
     const scheduledAt = new Date(
       referenceDate.getTime() - sendOffsetHours * 60 * 60 * 1000,
     )
+    if (options.now && scheduledAt.getTime() < options.now.getTime()) {
+      rejected.push({
+        rowNumber,
+        reason: `O envio seria em ${formatForUser(scheduledAt, timeZone)}, que já passou. Use uma data de referência mais distante ou diminua as horas de antecedência.`,
+      })
+      return
+    }
+
     const body: Record<string, string> = {}
     row.variables.forEach((value, i) => {
       body[String(i + 1)] = value

@@ -86,6 +86,47 @@ async function applyMetaStatus(
   return ok({ ...connection, status, statusError: check.error ?? null })
 }
 
+/**
+ * "Testar conexão" for Z-API: asks the instance whether the phone is paired
+ * and stores the answer (and the provider's reason when it cannot answer).
+ */
+async function testZapiConnection(
+  connection: WhatsAppConnection,
+): Promise<Result<WhatsAppConnection>> {
+  if (!connection.zapiInstanceId || !connection.encryptedZapiToken) {
+    return err(badRequest('Conexão Z-API sem credenciais configuradas'))
+  }
+  const token = await decryptConnectionSecret(connection.encryptedZapiToken)
+  const clientToken = connection.encryptedZapiClientToken
+    ? await decryptConnectionSecret(connection.encryptedZapiClientToken)
+    : undefined
+  const client = createZapiClient({
+    instanceId: connection.zapiInstanceId,
+    token,
+    clientToken,
+  })
+
+  try {
+    const { connected } = await client.getConnectionStatus()
+    return WhatsAppConnectionRepository.update(connection.id, {
+      status: connected ? 'CONNECTED' : 'DISCONNECTED',
+      statusError: connected
+        ? null
+        : 'O celular não está pareado. Leia o QR Code para reconectar.',
+    })
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : 'Falha ao comunicar com a Z-API'
+    await WhatsAppConnectionRepository.update(connection.id, {
+      status: 'ERROR',
+      statusError: message,
+    })
+    return err(whatsappProviderError(message))
+  }
+}
+
 export const WhatsAppConnectionService = {
   async list(
     actorId: string,
@@ -203,6 +244,18 @@ export const WhatsAppConnectionService = {
     )
     if (!existing.ok) return existing
     if (!existing.value) return err(whatsappConnectionNotFound())
+    if (existing.value.provider === 'ZAPI') {
+      const zapi = await testZapiConnection(existing.value)
+      if (!zapi.ok) return zapi
+      auditMutation({
+        entity: 'whatsapp_connection',
+        action: 'update',
+        actorId,
+        targetId: id,
+        meta: { refreshedStatus: zapi.value.status },
+      })
+      return ok(toWhatsAppConnectionDTO(zapi.value))
+    }
     if (existing.value.provider !== 'META') {
       return err(
         badRequest('A verificação de status vale apenas para conexões Meta'),

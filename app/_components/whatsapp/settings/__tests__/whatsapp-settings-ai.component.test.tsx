@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   fetchBody,
@@ -114,6 +114,81 @@ describe('<WhatsappSettingsAi />', () => {
   })
 })
 
+describe('<WhatsappSettingsAi /> prerequisites and errors', () => {
+  const AI_SETTINGS = '/api/workspaces/ws_1/ai-settings'
+
+  function aiSettings(overrides: Record<string, unknown> = {}) {
+    return {
+      workspaceId: 'ws_1',
+      providers: [],
+      models: [
+        {
+          key: 'openai:gpt-4.1',
+          provider: 'openai',
+          model: 'gpt-4.1',
+          label: 'GPT-4.1',
+          available: true,
+          enabled: true,
+          inputUsdPer1M: 1,
+          outputUsdPer1M: 1,
+        },
+      ],
+      whatsappReplyModel: 'openai:gpt-4.1',
+      aiEnabled: true,
+      usage: { exceeded: false },
+      ...overrides,
+    }
+  }
+
+  it('warns when the AI is switched off for the workspace and blocks saving', async () => {
+    const fetchSpy = mockFetch([
+      { match: AI_SETTINGS, data: aiSettings({ aiEnabled: false }) },
+      { method: 'PATCH', match: CONFIG, data: savedConfig },
+      { match: CONFIG, data: savedConfig },
+    ])
+    renderWithQuery(<WhatsappSettingsAi workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText(/recursos de IA estão desligados/),
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar configuração' }))
+    expect(notify.error).toHaveBeenCalledWith(
+      'Antes de ligar a IA, resolva os avisos em vermelho nesta tela.',
+    )
+    expect(fetchBody(fetchSpy, CONFIG, 'PATCH')).toBeUndefined()
+  })
+
+  it('warns when the monthly quota is exhausted but still allows saving', async () => {
+    mockFetch([
+      {
+        match: AI_SETTINGS,
+        data: aiSettings({ usage: { exceeded: true } }),
+      },
+      { match: CONFIG, data: savedConfig },
+    ])
+    renderWithQuery(<WhatsappSettingsAi workspaceId='ws_1' />)
+
+    expect(await screen.findByText(/cota mensal de IA acabou/)).toBeTruthy()
+  })
+
+  it('shows the server reason instead of default values on a load error', async () => {
+    mockFetch([
+      {
+        match: CONFIG,
+        status: 403,
+        error: 'Só administradores configuram a IA',
+      },
+    ])
+    renderWithQuery(<WhatsappSettingsAi workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText(/Só administradores configuram a IA/),
+    ).toBeTruthy()
+    expect(screen.queryByLabelText('Instruções da IA')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  })
+})
+
 describe('<WhatsappSettingsAiKnowledge />', () => {
   it('lists documents with translated status labels', async () => {
     mockFetch([
@@ -132,6 +207,25 @@ describe('<WhatsappSettingsAiKnowledge />', () => {
     expect(screen.getByText('Pronto')).toBeTruthy()
     expect(screen.getByText('Processando')).toBeTruthy()
     expect(screen.getByText('Falhou')).toBeTruthy()
+  })
+
+  it('explains why a document failed', async () => {
+    mockFetch([
+      {
+        match: DOCS,
+        data: [
+          {
+            ...doc('d3', 'scan.pdf', 'FAILED'),
+            errorMessage: 'Nenhum texto encontrado no arquivo',
+          },
+        ],
+      },
+    ])
+    renderWithQuery(<WhatsappSettingsAiKnowledge workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText('Nenhum texto encontrado no arquivo'),
+    ).toBeTruthy()
   })
 
   it('shows the empty state', async () => {
@@ -203,9 +297,12 @@ describe('<WhatsappSettingsAiKnowledge />', () => {
     ])
     renderWithQuery(<WhatsappSettingsAiKnowledge workspaceId='ws_1' />)
 
-    const name = await screen.findByText('manual.pdf')
-    const row = name.parentElement as HTMLElement
-    fireEvent.click(row.querySelector('button') as HTMLButtonElement)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Remover manual.pdf' }),
+    )
+    const alert = await screen.findByRole('alertdialog')
+    expect(within(alert).getByText(/deixa de usar "manual.pdf"/)).toBeTruthy()
+    fireEvent.click(within(alert).getByRole('button', { name: 'Remover' }))
 
     await waitFor(() =>
       expect(

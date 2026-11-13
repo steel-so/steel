@@ -11,7 +11,11 @@ import { WhatsappSettingsConnections } from '../whatsapp-settings-connections'
 // the project default (5s) is too tight when the suite runs under load.
 vi.setConfig({ testTimeout: 20_000 })
 
-const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
+const notify = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  warning: vi.fn(),
+}))
 vi.mock('@/lib/notify', () => ({ notify }))
 
 const BASE = '/api/workspaces/ws_1/whatsapp/connections'
@@ -39,20 +43,15 @@ function type(scope: HTMLElement, label: string, value: string) {
   fireEvent.change(within(scope).getByLabelText(label), { target: { value } })
 }
 
-// Base UI only commits a selection on a click preceded by a pointerdown on
-// the item (a bare synthetic click is treated as an unhighlighted virtual one).
-async function pickOption(name: string) {
-  const option = within(await screen.findByRole('listbox')).getByRole(
-    'option',
-    { name },
-  )
-  fireEvent.pointerDown(option)
-  fireEvent.click(option)
-}
-
 async function openCreateDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Adicionar conexão' }))
   return screen.findByRole('dialog')
+}
+
+async function openZapiForm() {
+  const dialog = await openCreateDialog()
+  fireEvent.click(within(dialog).getByRole('radio', { name: /Z-API/ }))
+  return dialog
 }
 
 describe('<WhatsappSettingsConnections />', () => {
@@ -77,7 +76,7 @@ describe('<WhatsappSettingsConnections />', () => {
     expect(await screen.findByText('Suporte')).toBeTruthy()
     expect(screen.getByText('Vendas')).toBeTruthy()
     expect(screen.getByText('Token expirado')).toBeTruthy()
-    expect(screen.getByText('Status: CONNECTED')).toBeTruthy()
+    expect(screen.getByText(/Status: Conectado/)).toBeTruthy()
     // QR code pairing is only offered for Z-API numbers.
     expect(screen.getAllByRole('button', { name: /QR Code/ })).toHaveLength(1)
   })
@@ -141,7 +140,7 @@ describe('<WhatsappSettingsConnections />', () => {
     renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
     await screen.findByText('Nenhuma conexão cadastrada ainda.')
 
-    const dialog = await openCreateDialog()
+    const dialog = await openZapiForm()
     expect(
       within(dialog).getByLabelText('ID da instância').hasAttribute('required'),
     ).toBe(true)
@@ -178,11 +177,15 @@ describe('<WhatsappSettingsConnections />', () => {
     await screen.findByText('Nenhuma conexão cadastrada ainda.')
     const dialog = await openCreateDialog()
 
-    fireEvent.click(within(dialog).getByRole('combobox'))
-    await pickOption('Meta Cloud API')
-    await waitFor(() =>
-      expect(within(dialog).queryByLabelText('ID da instância')).toBeNull(),
+    // Meta is preselected, but the manual form is behind "Avançado".
+    expect(within(dialog).queryByLabelText('Phone Number ID')).toBeNull()
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: /Avançado/ }),
     )
+    expect(
+      await within(dialog).findByLabelText('Phone Number ID'),
+    ).toBeTruthy()
+    expect(within(dialog).queryByLabelText('ID da instância')).toBeNull()
 
     type(dialog, 'Nome', 'Vendas')
     type(dialog, 'Número (DDD + número)', '5511888888888')
@@ -208,7 +211,7 @@ describe('<WhatsappSettingsConnections />', () => {
     const fetchSpy = mockFetch([{ match: BASE, data: [] }])
     renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
     await screen.findByText('Nenhuma conexão cadastrada ainda.')
-    const dialog = await openCreateDialog()
+    const dialog = await openZapiForm()
     type(dialog, 'Nome', 'Suporte')
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Criar conexão' }),
@@ -226,7 +229,7 @@ describe('<WhatsappSettingsConnections />', () => {
     ])
     renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
     await screen.findByText('Nenhuma conexão cadastrada ainda.')
-    const dialog = await openCreateDialog()
+    const dialog = await openZapiForm()
     type(dialog, 'Nome', 'X')
     type(dialog, 'Número (DDD + número)', '1')
     type(dialog, 'ID da instância', 'inst')
@@ -240,6 +243,41 @@ describe('<WhatsappSettingsConnections />', () => {
       'Número inválido',
     )
     expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('lets admins test a Z-API connection', async () => {
+    mockFetch([
+      {
+        method: 'POST',
+        match: `${BASE}/conn_1/status`,
+        data: connection({ status: 'DISCONNECTED', statusError: 'Sem pareamento' }),
+      },
+      { match: BASE, data: [connection()] },
+    ])
+    renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Testar conexão' }),
+    )
+    await waitFor(() =>
+      expect(notify.warning).toHaveBeenCalledWith('Sem pareamento'),
+    )
+  })
+
+  it('explains when the QR code cannot be loaded and retries', async () => {
+    mockFetch([
+      {
+        match: `${BASE}/conn_1/qr-code`,
+        status: 502,
+        error: 'A Z-API recusou a chamada',
+      },
+      { match: BASE, data: [connection()] },
+    ])
+    renderWithQuery(<WhatsappSettingsConnections workspaceId='ws_1' />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /QR Code/ }))
+    expect(await screen.findByText(/A Z-API recusou a chamada/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
   })
 
   it('shows the QR code for pairing a Z-API number', async () => {

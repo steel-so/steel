@@ -39,7 +39,7 @@ beforeEach(() => {
 
 const validCsv = [
   'telefone,nome,data_referencia,var_1',
-  '11987654321,Maria,2026-08-15T09:00:00.000Z,Maria',
+  '11987654321,Maria,2099-08-15T09:00:00.000Z,Maria',
 ].join('\n')
 
 function mockHappyPathDeps() {
@@ -91,6 +91,37 @@ describe('WhatsAppBroadcastImportService.import()', () => {
         }),
       ],
     )
+  })
+
+  it('should only preview on a dry run, without touching contacts', async () => {
+    mockHappyPathDeps()
+    mockedContactRepo.upsertByWaId.mockClear()
+    mockedBroadcastRepo.createScheduled.mockClear()
+
+    const dto = expectOk(
+      await WhatsAppBroadcastImportService.import('u1', 'ws1', {
+        name: 'Lembretes',
+        connectionId: 'conn1',
+        templateId: 'tmpl1',
+        sendOffsetHours: 24,
+        csv: validCsv,
+        dryRun: true,
+      }),
+    )
+
+    expect(dto.validCount).toBe(1)
+    expect(dto.preview).toEqual([
+      expect.objectContaining({
+        rowNumber: 1,
+        phone: '11987654321',
+        contactName: 'Maria',
+        scheduledAt: '2099-08-14T09:00:00.000Z',
+        appointmentAt: '2099-08-15T09:00:00.000Z',
+      }),
+    ])
+    expect(dto.broadcastList).toBeNull()
+    expect(mockedContactRepo.upsertByWaId).not.toHaveBeenCalled()
+    expect(mockedBroadcastRepo.createScheduled).not.toHaveBeenCalled()
   })
 
   it('should reject rows whose contact opted out of broadcasts', async () => {
@@ -223,7 +254,7 @@ describe('WhatsAppBroadcastImportService.import()', () => {
 
     const invalidCsv = [
       'telefone,data_referencia,var_1',
-      'abc,2026-08-15,Maria',
+      'abc,2099-08-15,Maria',
     ].join('\n')
 
     const result = await WhatsAppBroadcastImportService.import('u1', 'ws1', {
@@ -326,9 +357,9 @@ describe('WhatsAppBroadcastImportService.import() failure paths', () => {
       .mockResolvedValueOnce(ok(createFakeWhatsAppContact({ id: 'contact3' })))
     const csv = [
       'telefone,nome,data_referencia,var_1',
-      '11987654321,Maria,2026-08-15T09:00:00.000Z,Maria',
-      'abc,Joao,2026-08-15T09:00:00.000Z,Joao',
-      '11912345678,Ana,2026-08-15T09:00:00.000Z,Ana',
+      '11987654321,Maria,2099-08-15T09:00:00.000Z,Maria',
+      'abc,Joao,2099-08-15T09:00:00.000Z,Joao',
+      '11912345678,Ana,2099-08-15T09:00:00.000Z,Ana',
     ].join('\n')
 
     const dto = expectOk(

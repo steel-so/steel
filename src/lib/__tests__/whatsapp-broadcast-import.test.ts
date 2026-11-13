@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   normalizePhone,
   parseBroadcastImportCsv,
+  parseReferenceDate,
   validateBroadcastImportRows,
 } from '../whatsapp/broadcast-import'
 
@@ -142,5 +143,56 @@ describe('validateBroadcastImportRows()', () => {
     expect(valid).toHaveLength(1)
     expect(rejected).toHaveLength(1)
     expect(rejected[0].rowNumber).toBe(2)
+  })
+})
+
+describe('parseReferenceDate()', () => {
+  it('reads dd/MM/yyyy HH:mm as São Paulo wall time', () => {
+    expect(parseReferenceDate('15/12/2026 09:30')?.toISOString()).toBe(
+      '2026-12-15T12:30:00.000Z',
+    )
+  })
+
+  it('reads a date without time as midnight in the given zone', () => {
+    expect(
+      parseReferenceDate('15/12/2026', 'America/Manaus')?.toISOString(),
+    ).toBe('2026-12-15T04:00:00.000Z')
+  })
+
+  it('keeps accepting ISO 8601', () => {
+    expect(parseReferenceDate('2026-08-15T09:00:00.000Z')?.toISOString()).toBe(
+      '2026-08-15T09:00:00.000Z',
+    )
+  })
+
+  it('rejects impossible calendar dates and garbage', () => {
+    expect(parseReferenceDate('31/02/2026 10:00')).toBeNull()
+    expect(parseReferenceDate('15/12/2026 25:00')).toBeNull()
+    expect(parseReferenceDate('amanhã')).toBeNull()
+  })
+})
+
+describe('validateBroadcastImportRows() with a clock', () => {
+  const row = {
+    phone: '11987654321',
+    referenceDate: '15/12/2026 09:30',
+    variables: ['Maria'],
+  }
+
+  it('accepts a row whose send time is still ahead', () => {
+    const { valid, rejected } = validateBroadcastImportRows([row], 1, 24, {
+      now: new Date('2026-12-01T00:00:00.000Z'),
+    })
+    expect(rejected).toEqual([])
+    expect(valid[0].scheduledAt.toISOString()).toBe('2026-12-14T12:30:00.000Z')
+  })
+
+  it('rejects a row whose send time already passed, naming the date', () => {
+    const { valid, rejected } = validateBroadcastImportRows([row], 1, 24, {
+      now: new Date('2026-12-20T00:00:00.000Z'),
+    })
+    expect(valid).toEqual([])
+    expect(rejected[0].reason).toMatch(/já passou/)
+    expect(rejected[0].reason).toMatch(/14\/12\/2026/)
   })
 })
