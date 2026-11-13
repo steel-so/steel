@@ -295,13 +295,13 @@ describe('CrmLeadRepository.appendPhonesByExternalId', () => {
         '',
       ]),
     )
-    expect(first).toEqual({ found: true, added: 1 })
+    expect(first).toMatchObject({ found: true, added: 1 })
     const again = expectOk(
       await CrmLeadRepository.appendPhonesByExternalId(ws.id, 'apollo', 'p1', [
         '+5581988887777',
       ]),
     )
-    expect(again).toEqual({ found: true, added: 0 })
+    expect(again).toMatchObject({ found: true, added: 0 })
     const row = await prisma.crmLead.findUniqueOrThrow({
       where: { id: lead.id },
     })

@@ -16,6 +16,10 @@ const notify = vi.hoisted(() => ({
   warning: vi.fn(),
 }))
 vi.mock('@/lib/notify', () => ({ notify }))
+vi.mock('next/navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/navigation')>()),
+  useRouter: () => ({ push: vi.fn() }),
+}))
 
 const LEAD_URL = '/api/workspaces/ws1/crm/leads'
 

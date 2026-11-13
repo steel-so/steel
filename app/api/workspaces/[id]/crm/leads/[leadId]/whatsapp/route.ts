@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server'
-import { z } from 'zod'
 import { withAxiom } from '@/lib/axiom/server'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { apiLimiter, consume } from '@/src/lib/rate-limit'
+import { OpenCrmLeadWhatsappSchema } from '@/src/schemas/crm-lead.schema'
 import { CrmLeadWhatsappService } from '@/src/services/crm-lead-whatsapp.service'
 import { readJsonBody } from '@/utils/http-request'
 import {
@@ -12,11 +12,6 @@ import {
 } from '@/utils/http-response'
 
 type Params = { params: Promise<{ id: string; leadId: string }> }
-
-const OpenLeadWhatsappSchema = z.object({
-  phone: z.string().trim().min(1).max(30).optional(),
-  connectionId: z.string().min(1).optional(),
-})
 
 /** Opens (or reuses) the WhatsApp conversation of a lead's phone. */
 export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
@@ -31,7 +26,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     readJsonBody(request, { allowEmpty: true }),
   ])
   if (!json.ok) return handleError(json.error)
-  const parsed = OpenLeadWhatsappSchema.safeParse(json.value ?? {})
+  const parsed = OpenCrmLeadWhatsappSchema.safeParse(json.value ?? {})
   if (!parsed.success) {
     return standardError(
       'VALIDATION_ERROR',

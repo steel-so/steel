@@ -7,6 +7,7 @@ import {
   CreateCrmLeadSchema,
   CreateCrmLeadScoringRuleSchema,
   ListCrmLeadsSchema,
+  OpenCrmLeadWhatsappSchema,
   RegisterCrmLeadContactAttemptSchema,
   RegisterCrmLeadMeetingSchema,
   RegisterCrmLeadProposalPresentationSchema,
@@ -18,6 +19,7 @@ import {
   UpdateCrmLeadScoringRuleSchema,
   UpsertCrmLeadQualificationSchema,
 } from '@/src/schemas/crm-lead.schema'
+import { dto } from '../../common'
 import type { ErrorSpec, RouteConfig } from '../../registry'
 import {
   CrmDocumentSummaryDTO,
@@ -164,6 +166,38 @@ export const crmLeadsRoutes: RouteConfig[] = [
     params: LEAD_ID,
     responses: { 200: { description: 'Lead excluído.', schema: null } },
     errors: [...CRM_ERRORS, LEAD_NOT_FOUND],
+  },
+
+  {
+    method: 'post',
+    path: '/workspaces/{id}/crm/leads/{leadId}/whatsapp',
+    tags: [TAG],
+    summary: 'Abrir a conversa de WhatsApp do lead',
+    description: describe(
+      'Devolve a conversa aberta do telefone do lead no módulo Comunicação ou, se não houver, abre uma nova. O telefone vira contato do WhatsApp ("Lead do CRM") quando ainda não é. Sem `phone`, usa o primeiro telefone do lead; sem `connectionId`, escolhe uma linha conectada (Z-API antes de Meta). Exige também o módulo Comunicação e a permissão de criar conversas.',
+      crmAccess('leads', 'VIEW'),
+    ),
+    params: LEAD_ID,
+    body: OpenCrmLeadWhatsappSchema,
+    responses: {
+      200: {
+        description: 'Conversa a abrir.',
+        schema: dto(
+          'CrmLeadWhatsappConversation',
+          z.object({ conversationId: z.string(), contactId: z.string() }),
+        ),
+      },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      LEAD_NOT_FOUND,
+      'MODULE_DISABLED',
+      'VALIDATION_ERROR',
+      {
+        code: 'WHATSAPP_CONNECTION_NOT_FOUND',
+        when: 'O workspace não tem conexão de WhatsApp',
+      },
+    ],
   },
 
   /* ------------------------- 01/02 · contato ------------------------------ */

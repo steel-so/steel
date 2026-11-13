@@ -302,3 +302,10 @@ export const UpdateCrmLeadRoutingRuleSchema = z.object({
 export type UpdateCrmLeadRoutingRuleDTO = z.infer<
   typeof UpdateCrmLeadRoutingRuleSchema
 >
+
+/** `POST .../leads/[leadId]/whatsapp`: opens the conversation of a lead phone. */
+export const OpenCrmLeadWhatsappSchema = z.object({
+  phone: z.string().trim().min(1).max(30).optional(),
+  connectionId: z.string().min(1).optional(),
+})
+export type OpenCrmLeadWhatsappDTO = z.infer<typeof OpenCrmLeadWhatsappSchema>
