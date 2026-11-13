@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { usePublishChecks } from '@/app/_components/canvas/checklist/use-publish-checks'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import { DocumentExportButton } from '@/app/_components/documents/export/document-export-button'
@@ -41,6 +42,7 @@ import {
 } from '@/src/hooks/use-documents'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import { type CanvasStore, createCanvasStore } from '@/src/lib/canvas/store'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   createDocumentCatalog,
@@ -51,6 +53,7 @@ import {
   parseDocumentTheme,
   validateDocumentContent,
 } from '@/src/lib/canvas-document'
+import { documentChecklist } from '@/src/lib/canvas-document/checklist'
 import { documentVariablesTab } from '@/src/lib/canvas-document/variables-tab'
 import {
   DEFAULT_DOCUMENT_SETTINGS,
@@ -197,6 +200,13 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
   const [preview, setPreview] = useState<CanvasDocument | null>(null)
   const [sending, setSending] = useState(false)
   const sent = Boolean(document.currentVersion)
+  const checks = usePublishChecks(documentChecklist)
+
+  function pickCheck(item: PublishCheckItem) {
+    if (!item.nodeId) return
+    store.select(item.nodeId)
+    setSending(false)
+  }
 
   return (
     <div className='flex items-center gap-1'>
@@ -246,6 +256,8 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         onOpenChange={setSending}
         beforeSend={async () => (await flushMeta()) && (await save())}
         onSent={setDocument}
+        checks={checks.items}
+        onPickCheck={pickCheck}
       />
     </div>
   )

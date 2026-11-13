@@ -4,6 +4,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { appError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { diffSiteSnapshots, type SiteChangesDTO } from '@/src/lib/sites/changes'
+import { siteSnapshotChecks } from '@/src/lib/sites/checks'
 import { siteSlugFromName } from '@/src/lib/sites/slug'
 import { parseSiteSnapshot } from '@/src/lib/sites/snapshot'
 import { buildSiteFromTemplate } from '@/src/lib/sites/templates'
@@ -237,20 +238,24 @@ export const SiteStudioService = {
     const draft = await snapshotDraft(site.value)
     if (!draft.ok) return draft
 
+    const checks = siteSnapshotChecks(draft.value)
     const versionId = site.value.publishedVersionId
-    if (!versionId) return ok(diffSiteSnapshots(null, draft.value))
+    if (!versionId) {
+      return ok({ ...diffSiteSnapshots(null, draft.value), checks })
+    }
 
     const version = await SiteRepository.findVersion(siteId, versionId)
     if (!version.ok) return version
     const live = parseSiteSnapshot(version.value.snapshot)
     // An unreadable live snapshot is replaced wholesale by the next publish.
-    return ok(
-      diffSiteSnapshots(
+    return ok({
+      ...diffSiteSnapshots(
         live.ok ? live.value : null,
         draft.value,
         version.value.createdAt.toISOString(),
       ),
-    )
+      checks,
+    })
   },
 
   /** Site a landing page was migrated into (old builder links), scoped to

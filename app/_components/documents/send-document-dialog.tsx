@@ -14,6 +14,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { PublishChecklist } from '@/app/_components/canvas/checklist/publish-checklist'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,6 +36,7 @@ import {
   type SendDocumentBody,
   useSendDocument,
 } from '@/src/hooks/use-documents'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import { SendDocumentSchema } from '@/src/schemas/document.schema'
 import type { CrmPersonDTO } from '@/types/crm-person'
 import type { DocumentDTO, DocumentRecipientDTO } from '@/types/document'
@@ -312,6 +314,8 @@ export function SendDocumentDialog({
   onOpenChange,
   beforeSend,
   onSent,
+  checks = [],
+  onPickCheck,
 }: {
   workspaceId: string
   document: DocumentDTO
@@ -320,6 +324,10 @@ export function SendDocumentDialog({
   /** Runs before sending (the editor saves pending changes); false aborts. */
   beforeSend?: () => Promise<boolean>
   onSent?: (document: DocumentDTO) => void
+  /** Pre-send checks of the content: errors block, warnings only warn. */
+  checks?: PublishCheckItem[]
+  /** Called when a check that points to a block is clicked. */
+  onPickCheck?: (item: PublishCheckItem) => void
 }) {
   const id = useId()
   const send = useSendDocument(workspaceId, document.id)
@@ -329,6 +337,7 @@ export function SendDocumentDialog({
   const [validUntil, setValidUntil] = useState('')
   const [sent, setSent] = useState<DocumentDTO | null>(null)
   const update = Boolean(document.currentVersion)
+  const blocked = checks.some((item) => item.level === 'error')
 
   // Fresh form each time it opens; a new document suggests its contact.
   useEffect(() => {
@@ -385,6 +394,10 @@ export function SendDocumentDialog({
 
   async function submit(event?: FormEvent) {
     event?.preventDefault()
+    if (blocked) {
+      notify.error('Corrija os itens que impedem o envio antes de enviar.')
+      return
+    }
     const body: SendDocumentBody = {
       recipients: rows.map(toBody),
       message: message.trim() || undefined,
@@ -436,6 +449,30 @@ export function SendDocumentDialog({
             onSubmit={(event) => void submit(event)}
             className='grid min-h-0 gap-4 overflow-y-auto'
           >
+            {checks.length > 0 ? (
+              <section className='grid gap-1.5' aria-label='Antes de enviar'>
+                <h3 className='font-medium text-sm'>Antes de enviar</h3>
+                <div className='max-h-40 overflow-y-auto rounded-md border p-1'>
+                  <PublishChecklist
+                    items={checks}
+                    onPick={onPickCheck}
+                    errorHint='Impede o envio'
+                  />
+                </div>
+                <p
+                  className={
+                    blocked
+                      ? 'text-destructive text-xs'
+                      : 'text-muted-foreground text-xs'
+                  }
+                >
+                  {blocked
+                    ? 'Corrija os itens que impedem o envio para continuar.'
+                    : 'Os avisos não impedem o envio.'}
+                </p>
+              </section>
+            ) : null}
+
             <fieldset className='grid gap-2'>
               <legend className='mb-2 font-medium text-sm'>
                 {update ? 'Novos destinatários (opcional)' : 'Destinatários'}
@@ -524,7 +561,10 @@ export function SendDocumentDialog({
               <Button
                 type='button'
                 onClick={() => void submit()}
-                disabled={send.isPending}
+                disabled={send.isPending || blocked}
+                title={
+                  blocked ? 'Corrija os itens que impedem o envio' : undefined
+                }
                 data-testid='send-document-submit'
               >
                 <SteelIcon icon={SentIcon} data-icon='inline-start' />
