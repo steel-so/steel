@@ -15,21 +15,21 @@ export default function Page() {
         className='mb-6'
       />
       <h1 className='text-2xl font-medium leading-8 mb-3 text-[#ededed]'>
-        This page couldn’t load
+        Não foi possível carregar esta página
       </h1>
       <p className='text-sm font-normal leading-5 mb-5 text-[#ededed]'>
-        A server error occurred. Reload to try again.
+        Ocorreu um erro no servidor. Recarregue a página para tentar de novo; se continuar, avise o administrador do seu workspace.
       </p>
       <div className='flex items-center gap-2'>
         <Button size={'sm'} onClick={() => (window.location.href = '/')}>
-          Home
+          Ir para o início
         </Button>
         <Button
           variant={'secondary'}
           size={'sm'}
           onClick={() => window.location.reload()}
         >
-          Reload
+          Recarregar
         </Button>
       </div>
     </div>

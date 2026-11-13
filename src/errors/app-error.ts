@@ -595,7 +595,7 @@ export const crmAiConversationNotFound = (): AppError =>
 export const crmAiNotConfigured = (): AppError =>
   appError(
     'CRM_AI_NOT_CONFIGURED',
-    'Assistente de IA não configurado neste ambiente (OPENAI_API_KEY ausente)',
+    'O assistente de IA ainda não foi configurado. Peça a um administrador para configurar um provedor de IA nos ajustes do workspace.',
   )
 
 export const crmIntegrationKeyNotFound = (): AppError =>

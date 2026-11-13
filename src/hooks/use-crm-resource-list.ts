@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { formatFieldErrors, readFieldErrors } from '@/src/lib/api-field-errors'
 
 type ApiResponse<T> = {
   success: boolean
@@ -60,17 +61,9 @@ export type MutationResult<T> = {
 }
 
 function readError(json: unknown): string {
-  const data = json as {
-    message?: string
-    error?: { details?: { fieldErrors?: Record<string, string[]> } }
-  }
-  const fieldErrors = data?.error?.details?.fieldErrors
-  if (fieldErrors) {
-    const parts = Object.entries(fieldErrors)
-      .filter(([, messages]) => messages?.length)
-      .map(([field, messages]) => `${field}: ${messages[0]}`)
-    if (parts.length > 0) return parts.join(' · ')
-  }
+  const data = json as { message?: string; error?: unknown }
+  const fieldErrors = readFieldErrors(data?.error)
+  if (fieldErrors) return formatFieldErrors(fieldErrors)
   return data?.message ?? 'Não foi possível salvar.'
 }
 

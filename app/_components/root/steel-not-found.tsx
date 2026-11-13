@@ -15,14 +15,14 @@ export default function Page() {
         className='mb-6'
       />
       <h1 className='text-2xl font-medium leading-8 mb-3 text-[#ededed]'>
-        Page not found
+        Página não encontrada
       </h1>
       <p className='text-sm font-normal leading-5 mb-5 text-[#ededed]'>
-        The page you’re looking for doesn’t exist or has been moved.
+        A página que você procura não existe ou foi movida. Confira o endereço ou volte para o início.
       </p>
       <div className='flex items-center gap-2'>
         <Button size={'sm'} onClick={() => (window.location.href = '/')}>
-          Home
+          Ir para o início
         </Button>
       </div>
     </div>

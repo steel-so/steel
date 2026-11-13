@@ -21,5 +21,7 @@ export interface ErrorResponse<T = unknown> extends HttpResponse<T> {
   error: {
     code: string
     details?: unknown
+    /** Validation issues grouped by field (`VALIDATION_ERROR` only). */
+    fieldErrors?: Record<string, string[]>
   }
 }
