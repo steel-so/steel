@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { forwardRef, useImperativeHandle } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -124,9 +124,10 @@ async function openComposer() {
 }
 
 async function confirmSend() {
-  const buttons = await screen.findAllByRole('button', { name: 'Enviar agora' })
-  expect(buttons.length).toBe(2)
-  fireEvent.click(buttons[1])
+  // While the confirmation is open the composer behind it is inert, so the
+  // only accessible "Enviar agora" is the dialog's own action.
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Enviar agora' }))
 }
 
 function fill(subject: string, from: string) {

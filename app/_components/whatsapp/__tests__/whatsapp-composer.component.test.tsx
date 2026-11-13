@@ -138,8 +138,9 @@ function renderComposer(
   return { ...utils, onClearReply }
 }
 
+// By accessible name: the placeholder changes when the 24h window is closed.
 const textarea = () =>
-  screen.getByPlaceholderText('Digite uma mensagem') as HTMLTextAreaElement
+  screen.getByRole('textbox', { name: 'Mensagem' }) as HTMLTextAreaElement
 const sendButton = () =>
   screen.getByRole('button', { name: 'Enviar' }) as HTMLButtonElement
 

@@ -1263,7 +1263,7 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ).toEqual({ teamId: null }),
     )
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe'),
+      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe.'),
     )
   })
 
