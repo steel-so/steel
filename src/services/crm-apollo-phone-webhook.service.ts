@@ -43,6 +43,31 @@ function clip(value: string | null | undefined, max: number) {
   return text ? text.slice(0, max) : undefined
 }
 
+interface WebhookStats {
+  status?: string
+  people: number
+  withNumbers: number
+  usable: number
+  leadFound: number
+  leadMissing: number
+  received: number
+  created: number
+}
+
+/** One line per delivery: tells "Apollo sent nothing" from "we dropped it". */
+function logWebhook(
+  row: { id: string; workspaceId: string },
+  stats: WebhookStats,
+) {
+  logger.info(
+    'crm.apollo.phone_webhook',
+    logFields(
+      { component: 'CrmApolloPhoneWebhook', workspaceId: row.workspaceId },
+      { importId: row.id, ...stats },
+    ),
+  )
+}
+
 export const CrmApolloPhoneWebhookService = {
   async handle(
     token: string,
@@ -62,16 +87,33 @@ export const CrmApolloPhoneWebhookService = {
 
     const result = payload.webhook_result
     if (!result || result.people.length === 0) {
+      logWebhook(row, {
+        status: payload.webhook_status,
+        people: 0,
+        withNumbers: 0,
+        usable: 0,
+        leadFound: 0,
+        leadMissing: 0,
+        received: 0,
+        created: 0,
+      })
       return ok({ received: 0, created: 0 })
     }
 
     const pending = phoneOnlyIndex(row.phoneOnlyPeople)
     let received = 0
     let created = 0
+    // Diagnostics only (never the numbers themselves — LGPD).
+    let withNumbers = 0
+    let usable = 0
+    let leadFound = 0
+    let leadMissing = 0
 
     for (const person of result.people) {
+      if (person.phone_numbers.length > 0) withNumbers += 1
       const phones = sanitizeApolloPhones(person.phone_numbers)
       if (phones.length === 0) continue
+      usable += 1
 
       const appended = await CrmLeadRepository.appendPhonesByExternalId(
         row.workspaceId,
@@ -93,9 +135,11 @@ export const CrmApolloPhoneWebhookService = {
         continue
       }
       if (appended.value.found) {
+        leadFound += 1
         if (appended.value.added > 0) received += 1
         continue
       }
+      leadMissing += 1
 
       const candidate = pending.get(person.id)
       if (!candidate) continue
@@ -134,6 +178,17 @@ export const CrmApolloPhoneWebhookService = {
         )
       }
     }
+
+    logWebhook(row, {
+      status: payload.webhook_status,
+      people: result.people.length,
+      withNumbers,
+      usable,
+      leadFound,
+      leadMissing,
+      received,
+      created,
+    })
 
     if (received > 0) {
       // Credits ride on the delivery that changed something, so a retry of

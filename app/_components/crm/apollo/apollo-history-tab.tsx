@@ -89,7 +89,7 @@ export function ApolloHistoryTab({ workspaceId }: { workspaceId: string }) {
               {item.creditsConsumed}
               {item.revealPhones ? (
                 <span className='block text-muted-foreground text-xs'>
-                  {item.phonesReceived}/{item.phonesRequested} com telefone
+                  {item.phonesReceived} com telefone · {item.phonesRequested} consultados
                 </span>
               ) : null}
             </TableCell>
