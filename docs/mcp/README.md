@@ -145,7 +145,7 @@ clientes externos:
   ou a alguém de fora da equipe (mensagem de WhatsApp, e-mail, resposta
   pública no chamado, link de aprovação, aviso com texto escrito por quem
   chamou). Na onda 2, escrita externa com `customerFacing` sempre passa por
-  confirmação humana. Hoje: `zap_message_send_text`, `sd_reply_to_requester`,
+  confirmação humana. Hoje: `zap_message_send_text`, `zap_template_send`, `sd_reply_to_requester`,
   `sd_request_approval`, `sd_move_ticket_phase` (o solicitante é avisado da
   fase e, ao resolver, recebe a solução) e `sd_cancel_ticket`.
 

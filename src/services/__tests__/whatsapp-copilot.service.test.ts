@@ -18,6 +18,12 @@ vi.mock('@/src/mappers/whatsapp-conversation.mapper', () => ({
 }))
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/services/authz')
+vi.mock('@/src/services/whatsapp-reply-knowledge.service', () => ({
+  WhatsAppReplyKnowledgeService: {
+    forCustomerReply: vi.fn(async () => []),
+    forAgent: vi.fn(async () => []),
+  },
+}))
 vi.mock('@/src/services/whatsapp-conversation-scope.service')
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({
@@ -47,6 +53,7 @@ import {
   loadVisibleConversation,
   resolveConversationScope,
 } from '@/src/services/whatsapp-conversation-scope.service'
+import { WhatsAppReplyKnowledgeService } from '@/src/services/whatsapp-reply-knowledge.service'
 import { WhatsAppCopilotService } from '../whatsapp-copilot.service'
 
 const mockedMessages = vi.mocked(WhatsAppMessageRepository)
@@ -133,6 +140,32 @@ describe('WhatsAppCopilotService.suggestReply', () => {
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ meta: { copilot: 'suggest' } }),
     )
+  })
+
+  it('adds the KB and Wiki sources found as the agent to the prompt', async () => {
+    const chat = setup()
+    vi.mocked(WhatsAppReplyKnowledgeService.forAgent).mockResolvedValueOnce([
+      {
+        sourceLabel: 'Artigo da base de conhecimento',
+        title: 'Como reagendar',
+        text: 'Reagende em até 24h antes.',
+      },
+    ])
+
+    expectOk(
+      await WhatsAppCopilotService.suggestReply('u1', 'ws1', 'conv1', {
+        hint: 'ofereça reagendar',
+      }),
+    )
+
+    expect(WhatsAppReplyKnowledgeService.forAgent).toHaveBeenCalledWith(
+      'u1',
+      'ws1',
+      expect.stringContaining('Quero reagendar'),
+    )
+    const call = vi.mocked(chat).mock.calls[0][0]
+    expect(call.system).toContain('Como reagendar')
+    expect(call.system).toContain('Reagende em até 24h antes.')
   })
 
   it('works without the agent name when the user lookup fails', async () => {
