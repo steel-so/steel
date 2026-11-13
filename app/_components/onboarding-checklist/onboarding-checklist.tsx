@@ -3,7 +3,7 @@
 import { CheckmarkCircle02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { SteelIcon } from '@/components/icon/icon'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export type OnboardingChecklistItem = {
@@ -88,14 +88,12 @@ export function OnboardingChecklist({
               </p>
             </div>
             {item.done || item.loading ? null : (
-              <Button
-                size='xs'
-                variant='outline'
-                nativeButton={false}
-                render={<Link href={item.href} />}
+              <Link
+                href={item.href}
+                className={buttonVariants({ size: 'xs', variant: 'outline' })}
               >
                 {item.actionLabel}
-              </Button>
+              </Link>
             )}
           </li>
         ))}
