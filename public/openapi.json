@@ -15,7 +15,7 @@
       "description": "Desenvolvimento local"
     },
     {
-      "url": "https://homologacao.stratustelecom.com.br/api",
+      "url": "https://steel.stratustelecom.com.br/api",
       "description": "Homologação"
     }
   ],
@@ -6558,7 +6558,7 @@
         "tags": ["CRM público · Integrações"],
         "summary": "Criar lead via API",
         "operationId": "postCrmIntegrationsLeads",
-        "description": "Entrada de leads para sistemas externos (site, ERP, automações). Autentique com a chave de API do workspace:\n\n```http\nPOST /api/crm/integrations/leads\nAuthorization: Bearer crm_live_...\nContent-Type: application/json\n```\n\nO lead passa pelo mesmo pipeline da criação manual: validação (informe **ao menos um e-mail ou telefone**), **dedupe** contra leads em aberto com o mesmo e-mail/telefone, pontuação pelas regras de score e dono pelas regras de roteamento. Sem `source`/`channel`, grava `integration`/`API`.\n\n- **201** — lead novo criado.\n- **200** — já existia um lead em aberto com o mesmo contato; devolve esse lead (nada é duplicado).\n\nExemplo com cURL:\n\n```bash\ncurl -X POST https://homologacao.stratustelecom.com.br/api/crm/integrations/leads \\\n  -H \"Authorization: Bearer $STEEL_CRM_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"Carlos Lima\",\"emails\":[\"carlos@empresa.com.br\"],\"company\":\"Empresa Exemplo Ltda\",\"source\":\"site\"}'\n```\n\nRate limit por chave de API; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Entrada de leads para sistemas externos (site, ERP, automações). Autentique com a chave de API do workspace:\n\n```http\nPOST /api/crm/integrations/leads\nAuthorization: Bearer crm_live_...\nContent-Type: application/json\n```\n\nO lead passa pelo mesmo pipeline da criação manual: validação (informe **ao menos um e-mail ou telefone**), **dedupe** contra leads em aberto com o mesmo e-mail/telefone, pontuação pelas regras de score e dono pelas regras de roteamento. Sem `source`/`channel`, grava `integration`/`API`.\n\n- **201** — lead novo criado.\n- **200** — já existia um lead em aberto com o mesmo contato; devolve esse lead (nada é duplicado).\n\nExemplo com cURL:\n\n```bash\ncurl -X POST https://steel.stratustelecom.com.br/api/crm/integrations/leads \\\n  -H \"Authorization: Bearer $STEEL_CRM_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\":\"Carlos Lima\",\"emails\":[\"carlos@empresa.com.br\"],\"company\":\"Empresa Exemplo Ltda\",\"source\":\"site\"}'\n```\n\nRate limit por chave de API; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -234124,7 +234124,7 @@
         "properties": {
           "url": {
             "type": "string",
-            "example": "https://homologacao.stratustelecom.com.br/media/avatars/users/abc/avatar.webp"
+            "example": "https://steel.stratustelecom.com.br/media/avatars/users/abc/avatar.webp"
           }
         },
         "required": ["url"],
@@ -256560,7 +256560,7 @@
           "url": {
             "type": "string",
             "format": "uri",
-            "example": "https://homologacao.stratustelecom.com.br/docs"
+            "example": "https://steel.stratustelecom.com.br/docs"
           },
           "userId": {
             "type": "string"

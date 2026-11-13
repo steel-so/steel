@@ -136,14 +136,14 @@ Troque o domínio pelo do ambiente.
 `"resource": "https://<domínio>/api/mcp"` (com `https` e o domínio público):
 
 ```bash
-curl -s https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource
+curl -s https://steel.stratustelecom.com.br/.well-known/oauth-protected-resource
 ```
 
 **b) 401 com `WWW-Authenticate`** — sem token, deve responder `401` e o header
 apontando para os metadados com `https`:
 
 ```bash
-curl -s -D - -o /dev/null -X POST https://homologacao.stratustelecom.com.br/api/mcp \
+curl -s -D - -o /dev/null -X POST https://steel.stratustelecom.com.br/api/mcp \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"ping"}' | grep -iE '^HTTP|www-authenticate'
@@ -153,11 +153,11 @@ Esperado:
 
 ```text
 HTTP/1.1 401 Unauthorized
-www-authenticate: Bearer resource_metadata="https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource"
+www-authenticate: Bearer resource_metadata="https://steel.stratustelecom.com.br/.well-known/oauth-protected-resource"
 ```
 
 **c) `GET` não serve página** — `curl -s -o /dev/null -w '%{http_code}\n'
-https://homologacao.stratustelecom.com.br/api/mcp` imprime `405` (ou `401`, a
+https://steel.stratustelecom.com.br/api/mcp` imprime `405` (ou `401`, a
 resposta de quem chega sem token). Um `200` com HTML ou um `404` significa que
 a regra não chegou no app.
 
@@ -166,7 +166,7 @@ conexão de teste, por exemplo com a conta de smoke), a resposta tem que começa
 a chegar antes do fim:
 
 ```bash
-curl -sN -X POST https://homologacao.stratustelecom.com.br/api/mcp \
+curl -sN -X POST https://steel.stratustelecom.com.br/api/mcp \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
@@ -174,7 +174,7 @@ curl -sN -X POST https://homologacao.stratustelecom.com.br/api/mcp \
 ```
 
 Para achar qual salto segura a resposta, repita (b) e (d) no .145 contra
-`http://127.0.0.1/api/mcp` (com `-H "Host: homologacao.stratustelecom.com.br"`)
+`http://127.0.0.1/api/mcp` (com `-H "Host: steel.stratustelecom.com.br"`)
 e contra `http://127.0.0.1:3000/api/mcp`. O primeiro salto que responde certo
 está bem configurado; o problema está no anterior.
 

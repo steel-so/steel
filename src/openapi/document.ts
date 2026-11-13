@@ -228,7 +228,7 @@ export function buildOpenApiDocument({ version }: BuildOptions): JsonSchema {
         description: 'Desenvolvimento local',
       },
       {
-        url: 'https://homologacao.stratustelecom.com.br/api',
+        url: 'https://steel.stratustelecom.com.br/api',
         description: 'Homologação',
       },
     ],

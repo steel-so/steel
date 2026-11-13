@@ -103,7 +103,7 @@ O Apache de borda (.31) **não muda**: ele já repassa `/`, `/api/mcp` e
 # as três respondem direto
 for p in 3000 3001 3002; do curl -s -o /dev/null -w "$p %{http_code}\n" http://127.0.0.1:$p/api/status/live; done
 # o nginx distribui (repita algumas vezes; o access log mostra o upstream)
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: homologacao.stratustelecom.com.br' http://127.0.0.1/sign-in
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: steel.stratustelecom.com.br' http://127.0.0.1/sign-in
 # MCP e SSE sem buffering, realtime com upgrade: ver os diagnósticos dos runbooks de MCP e realtime
 ```
 
@@ -222,7 +222,7 @@ rampa é uma carga real no host.
 
 ```bash
 # degraus de 1.000 VUs até 6.000 (padrão), budget remoto inferido do BASE_URL
-BASE_URL=https://homologacao.stratustelecom.com.br SITE_SLUG=<site publicado> \
+BASE_URL=https://steel.stratustelecom.com.br SITE_SLUG=<site publicado> \
   k6 run k6/capacity-test.js
 # platô
 PROFILE=hold VUS=3000 RAMP=5m HOLD=5m BASE_URL=... k6 run k6/capacity-test.js

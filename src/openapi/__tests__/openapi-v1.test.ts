@@ -72,7 +72,7 @@ describe('public/openapi.v1.json', () => {
       Object.keys(spec.paths).every((path) => path.startsWith('/api/v1/')),
     ).toBe(true)
     expect(spec.servers.map((server: { url: string }) => server.url)).toEqual([
-      'https://homologacao.stratustelecom.com.br',
+      'https://steel.stratustelecom.com.br',
       'http://localhost:3001',
     ])
   })

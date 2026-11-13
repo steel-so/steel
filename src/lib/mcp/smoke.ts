@@ -34,7 +34,7 @@ export const MCP_SMOKE_PREFERRED_TOOLS = [
 export const MCP_SMOKE_USAGE = `Uso: pnpm mcp:smoke [--oauth] [--keep] [--tools=a,b,c] [--url=<base>]
 
 Modo token (padrão):
-  MCP_SMOKE_URL     endereço do Steel (ex.: https://homologacao.stratustelecom.com.br)
+  MCP_SMOKE_URL     endereço do Steel (ex.: https://steel.stratustelecom.com.br)
   MCP_SMOKE_TOKEN   access token OAuth (stl_at_...)
 
 Modo --oauth (registro dinâmico + código com PKCE + consentimento por API):

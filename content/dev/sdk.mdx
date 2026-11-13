@@ -37,7 +37,7 @@ Você precisa de um token pessoal (`stl_pat_…`), criado em **Configurações �
 import { createSteelClient } from '@steel-so/sdk'
 
 const steel = createSteelClient({
-  baseUrl: 'https://homologacao.stratustelecom.com.br',
+  baseUrl: 'https://steel.stratustelecom.com.br',
   token: process.env.STEEL_TOKEN,
 })
 
@@ -249,7 +249,7 @@ token pessoal.
 import { createSteelClient, waitForDeviceToken } from '@steel-so/sdk'
 import { hostname } from 'node:os'
 
-const steel = createSteelClient({ baseUrl: 'https://homologacao.stratustelecom.com.br' })
+const steel = createSteelClient({ baseUrl: 'https://steel.stratustelecom.com.br' })
 
 const started = await steel.auth.startDevice({
   clientName: 'meu-script/1.0',
