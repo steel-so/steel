@@ -212,13 +212,20 @@ export const CrmCampaignLookupRepository = {
       id: string
       subject: string
       kind: 'LEGACY' | 'BUILDER'
+      contentHtml: string
       builderDocument: unknown
     } | null>
   > {
     try {
       const template = await prisma.crmEmailTemplate.findFirst({
         where: { id, workspaceId, deletedAt: null },
-        select: { id: true, subject: true, kind: true, builderDocument: true },
+        select: {
+          id: true,
+          subject: true,
+          kind: true,
+          contentHtml: true,
+          builderDocument: true,
+        },
       })
       return ok(template)
     } catch (error) {

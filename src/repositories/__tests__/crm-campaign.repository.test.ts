@@ -65,6 +65,46 @@ describe('CrmCampaignRepository', () => {
     expect(gone.code).toBe('CRM_CAMPAIGN_NOT_FOUND')
   })
 
+  it('should read the defaults from the latest campaign with a sender', async () => {
+    const { workspace, user } = await setup()
+    expect(
+      expectOk(await CrmCampaignRepository.findLatestDefaults(workspace.id)),
+    ).toBeNull()
+
+    await seedCrmCampaign(workspace.id, user.id, {
+      emailFrom: 'antiga@example.com',
+      emailLegalBasis: 'CONTRACT',
+      createdAt: new Date('2026-01-01T12:00:00Z'),
+    })
+    await seedCrmCampaign(workspace.id, user.id, {
+      emailFrom: 'marketing@example.com',
+      emailLegalBasis: 'CONSENT',
+      whatsappLegalBasis: 'LEGITIMATE_INTEREST',
+      createdAt: new Date('2026-02-01T12:00:00Z'),
+    })
+    // Newer, but without a sender and deleted ones are skipped.
+    await seedCrmCampaign(workspace.id, user.id, {
+      createdAt: new Date('2026-03-01T12:00:00Z'),
+    })
+    await seedCrmCampaign(workspace.id, user.id, {
+      emailFrom: 'apagada@example.com',
+      createdAt: new Date('2026-04-01T12:00:00Z'),
+      deletedAt: new Date('2026-04-02T12:00:00Z'),
+    })
+
+    expect(
+      expectOk(await CrmCampaignRepository.findLatestDefaults(workspace.id)),
+    ).toEqual({
+      emailFrom: 'marketing@example.com',
+      emailLegalBasis: 'CONSENT',
+      whatsappLegalBasis: 'LEGITIMATE_INTEREST',
+    })
+    const other = await seedWorkspace()
+    expect(
+      expectOk(await CrmCampaignRepository.findLatestDefaults(other.id)),
+    ).toBeNull()
+  })
+
   it('should not find a campaign of another workspace', async () => {
     const { workspace, user } = await setup()
     const other = await seedWorkspace()
@@ -185,6 +225,7 @@ describe('CrmCampaignRepository', () => {
     ]
     const calls = [
       CrmCampaignRepository.listByWorkspace('w'),
+      CrmCampaignRepository.findLatestDefaults('w'),
       CrmCampaignRepository.findById('c', 'w'),
       CrmCampaignRepository.findByIdUnscoped('c'),
       CrmCampaignRepository.findBySlug('w', 's'),

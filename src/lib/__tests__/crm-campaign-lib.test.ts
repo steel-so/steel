@@ -24,6 +24,7 @@ import {
   verifyCampaignUnsubscribeToken,
 } from '../crm-campaign/tokens'
 import {
+  campaignWhatsAppUsesLink,
   firstName,
   quickReplyCarriesLink,
   renderButtonUrl,
@@ -350,6 +351,63 @@ describe('WhatsApp provider rules', () => {
     expect(
       validateCampaignWhatsApp({ ...base, text: 'Oi {nome}, {link}' }),
     ).toEqual([])
+    // A campaign without a destination has no link to require.
+    expect(
+      validateCampaignWhatsApp({
+        ...base,
+        text: 'Oi {nome}',
+        linkOptional: true,
+      }),
+    ).toEqual([])
+  })
+
+  it('should tell when the WhatsApp content uses the campaign link', () => {
+    const zapi = { provider: 'ZAPI' as const, variables: null }
+    expect(campaignWhatsAppUsesLink({ ...zapi, text: 'Oi {nome}' })).toBe(false)
+    expect(campaignWhatsAppUsesLink({ ...zapi, text: null })).toBe(false)
+    expect(campaignWhatsAppUsesLink({ ...zapi, text: 'Veja {link}' })).toBe(
+      true,
+    )
+    expect(
+      campaignWhatsAppUsesLink({
+        ...zapi,
+        text: 'Oi',
+        quickReply: { buttons: [{ type: 'URL', url: '{link}' }] },
+      }),
+    ).toBe(true)
+
+    const meta = { provider: 'META' as const, text: null }
+    expect(campaignWhatsAppUsesLink({ ...meta, variables: null })).toBe(false)
+    expect(
+      campaignWhatsAppUsesLink({
+        ...meta,
+        variables: {
+          header: {},
+          body: { '1': { source: 'first_name' } },
+          buttons: {},
+        },
+      }),
+    ).toBe(false)
+    expect(
+      campaignWhatsAppUsesLink({
+        ...meta,
+        variables: {
+          header: {},
+          body: { '1': { source: 'link' } },
+          buttons: {},
+        },
+      }),
+    ).toBe(true)
+    expect(
+      campaignWhatsAppUsesLink({
+        ...meta,
+        variables: {
+          header: {},
+          body: {},
+          buttons: { '1': { source: 'link_code' } },
+        },
+      }),
+    ).toBe(true)
   })
 
   it('should require an approved template on Meta', () => {
