@@ -59,8 +59,13 @@ const COLUMNS: GridColumn[] = [
     placeholder: 'linkedin.com/company/acme',
   },
   { key: 'address', header: 'Endereço (CEP)', kind: 'address' },
-  { key: 'arr', header: 'ARR', kind: 'money', placeholder: '250000' },
-  { key: 'icp', header: 'ICP', kind: 'boolean' },
+  {
+    key: 'arr',
+    header: 'Receita anual (ARR)',
+    kind: 'money',
+    placeholder: '250000',
+  },
+  { key: 'icp', header: 'Cliente ideal (ICP)', kind: 'boolean' },
   {
     key: 'accountOwnerId',
     header: 'Responsável pela conta',
@@ -93,10 +98,8 @@ export function CrmCompaniesTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmCompanyDTO>(
-    workspaceId,
-    'companies',
-  )
+  const list = useCrmResourceList<CrmCompanyDTO>(workspaceId, 'companies')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'COMPANY')
   const canEdit = useCan('companies', 'EDIT')
@@ -135,6 +138,7 @@ export function CrmCompaniesTable({
           createTitle='empresa'
           lookups={lookups}
           isLoading={isLoading}
+          error={error}
           searchPlaceholder='Buscar empresas…'
           refetch={refetch}
           headerExtra={

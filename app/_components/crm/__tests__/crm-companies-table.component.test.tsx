@@ -87,7 +87,7 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
     expect(within(row).getByText('Varejo')).toBeTruthy()
   })
 
-  it('creates a company filling the required name so validation passes', async () => {
+  it('creates a company only after the required name is filled', async () => {
     const fetchSpy = mockFetch([
       ...baseRoutes([]),
       {
@@ -101,18 +101,30 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] empresa$/)[0])
 
+    const dialog = await screen.findByRole('dialog')
+    const submit = within(dialog).getByRole('button', {
+      name: 'Criar',
+    }) as HTMLButtonElement
+    expect(submit.disabled).toBe(true)
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
+    ).toBe(false)
+
+    fireEvent.change(within(dialog).getByLabelText('Nome'), {
+      target: { value: 'Acme Inc' },
+    })
+    await waitFor(() => expect(submit.disabled).toBe(false))
+    fireEvent.click(submit)
+
     await waitFor(() =>
       expect(fetchBody(fetchSpy, /\/crm\/companies$/)).toMatchObject({
         name: 'Acme Inc',
         icp: false,
       }),
     )
-    const body = fetchBody(fetchSpy, /\/crm\/companies$/)
-    expect(body).not.toHaveProperty('cnpj')
-    // The new row opens its primary field (CNPJ) for inline editing.
-    expect(
-      await screen.findByPlaceholderText('00.000.000/0000-00'),
-    ).toBeTruthy()
+    expect(fetchBody(fetchSpy, /\/crm\/companies$/)).not.toHaveProperty(
+      'cnpj',
+    )
   })
 
   it('rejects an invalid CNPJ without saving', async () => {

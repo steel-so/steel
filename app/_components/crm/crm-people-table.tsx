@@ -50,7 +50,7 @@ const COLUMNS: GridColumn[] = [
     key: 'jobTitle',
     header: 'Cargo',
     kind: 'text',
-    placeholder: 'Head of Sales',
+    placeholder: 'Gerente de vendas',
   },
   {
     key: 'linkedin',
@@ -90,10 +90,8 @@ export function CrmPeopleTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmPersonDTO>(
-    workspaceId,
-    'people',
-  )
+  const list = useCrmResourceList<CrmPersonDTO>(workspaceId, 'people')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'PERSON')
 
@@ -128,6 +126,7 @@ export function CrmPeopleTable({
           createTitle='pessoa'
           lookups={lookups}
           isLoading={isLoading}
+          error={error}
           searchPlaceholder='Buscar pessoas…'
           refetch={refetch}
           renderRecordExtra={(record) => (

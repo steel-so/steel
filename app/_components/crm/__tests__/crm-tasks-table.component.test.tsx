@@ -73,6 +73,18 @@ function storage(): Storage | undefined {
   }
 }
 
+/** Fills the required field of the create dialog and submits it. */
+async function createFromDialog(label: string, value: string) {
+  const dialog = await screen.findByRole('dialog')
+  const input = within(dialog).getByLabelText(label)
+  fireEvent.change(input, { target: { value } })
+  const submit = within(dialog).getByRole('button', {
+    name: 'Criar',
+  }) as HTMLButtonElement
+  await waitFor(() => expect(submit.disabled).toBe(false))
+  fireEvent.click(submit)
+}
+
 describe('<CrmTasksTable />', { timeout: 15_000 }, () => {
   beforeEach(() => {
     storage()?.clear?.()
@@ -103,10 +115,11 @@ describe('<CrmTasksTable />', { timeout: 15_000 }, () => {
     await screen.findByText('Nada por aqui ainda')
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] tarefa$/)[0])
+    await createFromDialog('Título', 'Ligar amanhã')
 
     await waitFor(() =>
       expect(fetchBody(fetchSpy, /\/crm\/tasks$/)).toEqual({
-        title: 'Sem título',
+        title: 'Ligar amanhã',
         status: 'TODO',
       }),
     )

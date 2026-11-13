@@ -66,6 +66,18 @@ function renderTable() {
   )
 }
 
+/** Fills the required field of the create dialog and submits it. */
+async function createFromDialog(label: string, value: string) {
+  const dialog = await screen.findByRole('dialog')
+  const input = within(dialog).getByLabelText(label)
+  fireEvent.change(input, { target: { value } })
+  const submit = within(dialog).getByRole('button', {
+    name: 'Criar',
+  }) as HTMLButtonElement
+  await waitFor(() => expect(submit.disabled).toBe(false))
+  fireEvent.click(submit)
+}
+
 describe('<CrmOpportunitiesTable />', { timeout: 15_000 }, () => {
   it('resolves pipeline, stage, company, contact and owner names', async () => {
     mockFetch(baseRoutes())
@@ -95,10 +107,11 @@ describe('<CrmOpportunitiesTable />', { timeout: 15_000 }, () => {
     await screen.findByText('Nada por aqui ainda')
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] oportunidade$/)[0])
+    await createFromDialog('Nome', 'Renovação Beta')
 
     await waitFor(() =>
       expect(fetchBody(fetchSpy, /\/crm\/opportunities$/)).toEqual({
-        name: 'Sem título',
+        name: 'Renovação Beta',
       }),
     )
   })

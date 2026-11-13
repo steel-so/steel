@@ -77,10 +77,8 @@ export function CrmNotesTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmNoteDTO>(
-    workspaceId,
-    'notes',
-  )
+  const list = useCrmResourceList<CrmNoteDTO>(workspaceId, 'notes')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
 
@@ -94,6 +92,7 @@ export function CrmNotesTable({
       createTitle='nota'
       lookups={lookups}
       isLoading={isLoading}
+      error={error}
       searchPlaceholder='Buscar notas…'
       refetch={refetch}
     />

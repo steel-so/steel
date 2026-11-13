@@ -52,10 +52,11 @@ export function CrmHookVaultTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmHookVaultItemDTO>(
+  const list = useCrmResourceList<CrmHookVaultItemDTO>(
     workspaceId,
     'hook-vault',
   )
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
 
@@ -69,6 +70,7 @@ export function CrmHookVaultTable({
       createTitle='hook'
       lookups={lookups}
       isLoading={isLoading}
+      error={error}
       searchPlaceholder='Buscar hooks…'
       refetch={refetch}
     />
