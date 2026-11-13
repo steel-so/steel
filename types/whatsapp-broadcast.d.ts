@@ -51,7 +51,7 @@ export interface WhatsAppBroadcastListDTO {
   noWhatsappCount: number
   /** "Pular sem WhatsApp" ligado na lista. */
   skipNoWhatsapp: boolean
-  /** Why the first failed recipient failed (e.g. spend cap), if any. */
+  /** The most common failure reason (e.g. spend cap), if any. */
   failureReason: string | null
   createdAt: string
   updatedAt: string

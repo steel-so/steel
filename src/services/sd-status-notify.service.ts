@@ -15,6 +15,7 @@ import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { SdMajorIncidentRepository } from '@/src/repositories/sd-major-incident.repository'
 import { SdStatusPageRepository } from '@/src/repositories/sd-status-page.repository'
 import { activeWhatsappConnection } from './sd-notification.service'
+import { checkWhatsAppOptOut } from './whatsapp-opt-out'
 
 export interface SdStatusNotifyResult {
   /** The update was not published, was already sent or has no audience. */
@@ -106,6 +107,19 @@ export const SdStatusNotifyService = {
           })
           sent += 1
         } else if (connection) {
+          // LGPD: a number that opted out (or whose opt-out we could not read)
+          // is not messaged; it counts as neither sent nor failed.
+          const optOut = await checkWhatsAppOptOut(
+            incident.workspaceId,
+            subscriber.address,
+          )
+          if (optOut !== 'allowed') {
+            logger.info('servicedesk.status.whatsapp_opted_out', {
+              updateId,
+              reason: optOut,
+            })
+            continue
+          }
           const result = await WhatsAppSend.text(connection, {
             to: subscriber.address,
             text: sdStatusUpdateText({

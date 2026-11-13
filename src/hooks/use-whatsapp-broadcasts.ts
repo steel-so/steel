@@ -137,17 +137,36 @@ export function useCancelWhatsAppBroadcast(workspaceId: string) {
   })
 }
 
+type RetryFailedInput =
+  | string
+  | { broadcastId: string; recipientIds?: string[] }
+
 export function useRetryFailedWhatsAppBroadcast(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (broadcastId: string) =>
-      apiFetch<WhatsAppBroadcastListDetailDTO>(
+    // A bare id retries every failed recipient; `recipientIds` only those.
+    mutationFn: (input: RetryFailedInput) => {
+      const { broadcastId, recipientIds } =
+        typeof input === 'string'
+          ? { broadcastId: input, recipientIds: undefined }
+          : input
+      return apiFetch<WhatsAppBroadcastListDetailDTO>(
         `/api/workspaces/${workspaceId}/whatsapp/broadcasts/${broadcastId}/retry-failed`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          ...(recipientIds
+            ? {
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ recipientIds }),
+              }
+            : {}),
+        },
         'Erro ao reenviar os que falharam',
-      ),
-    onSuccess: (_data, broadcastId) => {
+      )
+    },
+    onSuccess: (_data, input) => {
+      const broadcastId = typeof input === 'string' ? input : input.broadcastId
       queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
       queryClient.invalidateQueries({
         queryKey: ['whatsapp-broadcast', workspaceId, broadcastId],

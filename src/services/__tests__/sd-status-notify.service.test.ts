@@ -19,6 +19,7 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
 vi.mock('../sd-notification.service', () => ({
   activeWhatsappConnection: vi.fn(),
 }))
+vi.mock('../whatsapp-opt-out', () => ({ checkWhatsAppOptOut: vi.fn() }))
 
 import { sendSdStatusUpdateEmail } from '@/src/lib/mail/servicedesk/send-sd-status-update'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -26,6 +27,7 @@ import { SdMajorIncidentRepository } from '@/src/repositories/sd-major-incident.
 import { SdStatusPageRepository } from '@/src/repositories/sd-status-page.repository'
 import { activeWhatsappConnection } from '../sd-notification.service'
 import { SdStatusNotifyService } from '../sd-status-notify.service'
+import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
 const repo = vi.mocked(SdMajorIncidentRepository)
 const pages = vi.mocked(SdStatusPageRepository)
@@ -70,6 +72,7 @@ beforeEach(() => {
   pages.findWorkspaceName.mockResolvedValue(ok('Stratus'))
   vi.mocked(activeWhatsappConnection).mockResolvedValue({ id: 'c' } as never)
   vi.mocked(WhatsAppSend.text).mockResolvedValue(ok({} as never))
+  vi.mocked(checkWhatsAppOptOut).mockResolvedValue('allowed')
   vi.mocked(sendSdStatusUpdateEmail).mockResolvedValue({ id: 'm' })
 })
 
@@ -107,6 +110,17 @@ describe('SdStatusNotifyService.deliver', () => {
     vi.mocked(sendSdStatusUpdateEmail).mockRejectedValue('plain')
     expectOk(await SdStatusNotifyService.deliver('u1'))
   })
+
+  it.each(['opted_out', 'unverified'] as const)(
+    'does not message a WhatsApp subscriber that is %s',
+    async (status) => {
+      vi.mocked(checkWhatsAppOptOut).mockResolvedValue(status)
+      const out = expectOk(await SdStatusNotifyService.deliver('u1'))
+      expect(out).toMatchObject({ total: 2, sent: 1, failed: 0 })
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+      expect(checkWhatsAppOptOut).toHaveBeenCalledWith('ws1', '5511999990000')
+    },
+  )
 
   it('counts WhatsApp subscribers as failed without a connection', async () => {
     vi.mocked(activeWhatsappConnection).mockResolvedValue(null)

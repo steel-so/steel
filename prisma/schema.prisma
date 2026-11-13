@@ -1594,6 +1594,9 @@ enum WhatsAppConversationEventKind {
   /// Copilot summary written when the conversation changed hands; `reason`
   /// is the summary text (internal: never sent to the contact).
   TRANSFER_SUMMARY
+  /// The auto-reply could not run (quota used up or provider down) and a
+  /// person must take over; `reason` says which.
+  AI_UNAVAILABLE
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1621,6 +1624,8 @@ enum WhatsAppConversationEventSource {
   PIX
   /// Agent copilot (Z7), e.g. the summary on transfer.
   COPILOT
+  /// Automatic AI reply (quota/provider failure).
+  AI_REPLY
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -5699,6 +5704,8 @@ enum NotificationKind {
   WHATSAPP_COST_BUDGET_WARNING
   /// Comunicação: monthly cost reached the budget.
   WHATSAPP_COST_BUDGET_REACHED
+  /// Comunicação: the AI auto-reply stopped (quota used up or provider down).
+  WHATSAPP_AI_UNAVAILABLE
   /// CRM newsletter (ADR 0054): a sending domain became VERIFIED.
   CRM_SENDING_DOMAIN_VERIFIED
   /// CRM newsletter (ADR 0054): a VERIFIED sending domain stopped verifying.
@@ -13903,6 +13910,8 @@ enum CrmRetentionSource {
   SURVEY_DETRACTOR
   /// The churn risk of a company entered the high band or jumped.
   HEALTH_DROP
+  /// A ServiceDesk ticket of a customer breached its SLA.
+  SLA_BREACH
 }
 
 /// Per-workspace switches of the retention follow-up: what a detractor answer
@@ -13914,6 +13923,8 @@ model CrmRetentionSettings {
   onDetractor       Boolean  @default(true) @map("on_detractor")
   /// A customer-health drop creates a retention task.
   onHealthDrop      Boolean  @default(true) @map("on_health_drop")
+  /// A ServiceDesk SLA breach of a customer creates a task for the account owner.
+  onSlaBreach       Boolean  @default(false) @map("on_sla_breach")
   /// Also open a retention deal (first open stage of the default pipeline).
   createOpportunity Boolean  @default(false) @map("create_opportunity")
   /// Days until the retention task is due.

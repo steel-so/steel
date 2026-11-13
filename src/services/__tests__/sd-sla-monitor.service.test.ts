@@ -23,6 +23,12 @@ vi.mock('../sd-automation-engine', () => ({ runSdAutomations: vi.fn() }))
 vi.mock('../steel-agent-dispatcher', () => ({
   dispatchSteelAgentEvent: vi.fn(),
 }))
+vi.mock('../crm-retention.service', () => ({
+  CrmRetentionService: { onSlaBreach: vi.fn() },
+  runRetentionSafely: vi.fn(async (_label: string, run: () => Promise<unknown>) =>
+    run(),
+  ),
+}))
 vi.mock('../sd-ticket-escalator', () => ({ runSdEscalationRule: vi.fn() }))
 vi.mock('../sd-ticket-event-recorder', () => ({ recordSdTicketEvent: vi.fn() }))
 vi.mock('@/src/services/sd-notification.service', () => ({
@@ -37,6 +43,7 @@ import { logger } from '@/lib/axiom/logger'
 import { SdTicketRepository } from '@/src/repositories/sd-ticket.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { SdTicketEscalationRepository } from '@/src/repositories/sd-ticket-escalation.repository'
+import { CrmRetentionService } from '../crm-retention.service'
 import { runSdAutomations } from '../sd-automation-engine'
 import { notifySdEvent } from '../sd-notification.service'
 import { SdSlaMonitorService } from '../sd-sla-monitor.service'
@@ -154,6 +161,12 @@ describe('SdSlaMonitorService.runTick', () => {
         payload: expect.objectContaining({
           title: 'SLA em risco: INC-000009 (resolução)',
         }),
+      }),
+    )
+    expect(CrmRetentionService.onSlaBreach).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ticket: expect.objectContaining({ id: 't1', code: 'INC-000009' }),
+        what: '1ª resposta',
       }),
     )
     expect(automations).toHaveBeenCalledWith('SLA_BREACHED', 't1')

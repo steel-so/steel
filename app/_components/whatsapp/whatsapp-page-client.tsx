@@ -10,6 +10,35 @@ import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import { WhatsappConversationSidebar } from './whatsapp-conversation-sidebar'
 import { WhatsappConversationView } from './whatsapp-conversation-view'
 
+/** Why a `?conversa=` link did not open a conversation. */
+function UnavailableNotice({
+  onDismiss,
+  className,
+}: {
+  onDismiss: () => void
+  className?: string
+}) {
+  return (
+    <div
+      role='alert'
+      className={cn(
+        'max-w-md space-y-2 rounded-md border bg-muted px-4 py-3 text-foreground',
+        className,
+      )}
+    >
+      <p className='font-medium'>Essa conversa não está disponível para você.</p>
+      <p className='text-muted-foreground text-xs'>
+        Ela pode ter sido transferida para outra equipe ou outro atendente, ter
+        sido apagada, ou você não tem acesso a ela. Fale com quem enviou o link
+        ou com o administrador.
+      </p>
+      <Button size='sm' variant='outline' onClick={onDismiss}>
+        Entendi
+      </Button>
+    </div>
+  )
+}
+
 export function WhatsappPageClient({
   workspaceId,
   initialConversation = null,
@@ -42,6 +71,11 @@ export function WhatsappPageClient({
   )
 
   const realtime = useWhatsAppRealtimeEvents(workspaceId)
+  const selectedConnection =
+    connections.data?.find(
+      (connection) => connection.id === selected?.connectionId,
+    ) ?? null
+  const showUnavailable = conversationUnavailable && !unavailableDismissed
 
   return (
     // Below `lg` the module rail, the conversation list (w-80) and the chat
@@ -55,6 +89,16 @@ export function WhatsappPageClient({
         >
           Reconectando…
         </output>
+      ) : null}
+      {/* The empty state below is hidden under `lg`, so the notice gets its
+          own spot there: over the conversation list. */}
+      {showUnavailable && !selected ? (
+        <div className='absolute inset-x-3 top-3 z-10 lg:hidden'>
+          <UnavailableNotice
+            className='text-left shadow-md'
+            onDismiss={() => setUnavailableDismissed(true)}
+          />
+        </div>
       ) : null}
       <div
         className={cn(
@@ -77,35 +121,15 @@ export function WhatsappPageClient({
           key={selected.id}
           workspaceId={workspaceId}
           conversation={selected}
-          connection={
-            connections.data?.find(
-              (connection) => connection.id === selected.connectionId,
-            ) ?? null
-          }
+          connection={selectedConnection}
+          connectionMissing={connections.isSuccess && !selectedConnection}
           onSelectConversation={setSelected}
           onBack={() => setSelected(null)}
         />
       ) : (
         <div className='flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto p-6 text-center text-muted-foreground text-sm max-lg:hidden'>
-          {conversationUnavailable && !unavailableDismissed ? (
-            <div
-              role='alert'
-              className='max-w-md space-y-2 rounded-md border bg-muted px-4 py-3 text-foreground'
-            >
-              <p className='font-medium'>Essa conversa não está disponível para você.</p>
-              <p className='text-muted-foreground text-xs'>
-                Ela pode ter sido transferida para outra equipe ou outro
-                atendente, ter sido apagada, ou você não tem acesso a ela. Fale
-                com quem enviou o link ou com o administrador.
-              </p>
-              <Button
-                size='sm'
-                variant='outline'
-                onClick={() => setUnavailableDismissed(true)}
-              >
-                Entendi
-              </Button>
-            </div>
+          {showUnavailable ? (
+            <UnavailableNotice onDismiss={() => setUnavailableDismissed(true)} />
           ) : null}
           <ZapOnboardingChecklist workspaceId={workspaceId} />
           <p>Selecione uma conversa para começar</p>

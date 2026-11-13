@@ -213,6 +213,7 @@ export function WhatsappConversationView({
   workspaceId,
   conversation,
   connection = null,
+  connectionMissing = false,
   onSelectConversation,
   onBack,
 }: {
@@ -220,6 +221,8 @@ export function WhatsappConversationView({
   conversation: WhatsAppConversationDTO
   /** The number this conversation runs on (provider drives the 24h rule). */
   connection?: WhatsAppConnectionDTO | null
+  /** The connections loaded and none matches this conversation's number. */
+  connectionMissing?: boolean
   onSelectConversation?: (conversation: WhatsAppConversationDTO) => void
   /** `U`: close the conversation and go back to the list. */
   onBack?: () => void
@@ -1035,6 +1038,28 @@ export function WhatsappConversationView({
                 className='font-medium underline underline-offset-2'
               >
                 Reconectar
+              </Link>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {connectionMissing && !connection ? (
+        <div
+          role='alert'
+          className='border-b bg-muted px-4 py-2 text-destructive text-sm'
+        >
+          Conexão do WhatsApp não encontrada: o número desta conversa foi
+          removido ou você não tem acesso a ele, então o envio de mensagens
+          está indisponível.
+          {slug ? (
+            <>
+              {' '}
+              <Link
+                href={`/${slug}/settings/whatsapp`}
+                className='font-medium underline underline-offset-2'
+              >
+                Ver conexões
               </Link>
             </>
           ) : null}

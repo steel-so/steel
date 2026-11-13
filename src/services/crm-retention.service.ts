@@ -2,6 +2,7 @@ import type { CrmRetentionSource, SatisfactionSurvey } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { phoneMatchKey } from '@/src/lib/pabx/recording'
+import { normalizeDocument } from '@/src/lib/servicedesk/document'
 import { ok, type Result } from '@/src/lib/result'
 import { toCrmRetentionSettingsDTO } from '@/src/mappers/crm-retention.mapper'
 import { CrmOpportunityRepository } from '@/src/repositories/crm-opportunity.repository'
@@ -295,6 +296,67 @@ export const CrmRetentionService = {
       title: `Retenção: ligar para ${who} (nota ${score})`,
       body: `${who} respondeu a pesquisa ${survey.kind} com nota ${score}.${note} Entre em contato para entender o problema e tentar reverter.`,
       ...contextOf(context.value),
+      now: input.now ?? new Date(),
+    })
+  },
+
+  /**
+   * A ServiceDesk ticket breached its SLA: task for the owner of the CRM
+   * company that matches the ticket's customer (CNPJ, else exact name), one
+   * per ticket. Off by default (`onSlaBreach`). Internal - called by the SLA
+   * monitor, which already scoped the ticket to the workspace.
+   */
+  async onSlaBreach(input: {
+    workspaceId: string
+    ticket: {
+      id: string
+      code: string
+      title: string
+      customer: {
+        name: string
+        tradeName: string | null
+        document: string | null
+      } | null
+    }
+    /** What was breached, e.g. "1ª resposta e resolução". */
+    what: string
+    now?: Date
+  }): Promise<Result<RetentionOutcome>> {
+    const { workspaceId, ticket, what } = input
+    const stored = await CrmRetentionRepository.findSettings(workspaceId)
+    if (!stored.ok) return stored
+    const settings = toCrmRetentionSettingsDTO(workspaceId, stored.value)
+    if (!settings.onSlaBreach) {
+      return ok({ status: 'skipped', reason: 'disabled' })
+    }
+    if (!ticket.customer) return ok({ status: 'skipped', reason: 'no_record' })
+
+    const document = ticket.customer.document
+      ? normalizeDocument(ticket.customer.document)
+      : null
+    const company = await CrmRetentionRepository.findCompanyByIdentity(
+      workspaceId,
+      {
+        document,
+        names: [ticket.customer.name, ticket.customer.tradeName ?? ''],
+      },
+    )
+    if (!company.ok) return company
+    if (!company.value) {
+      return ok({ status: 'skipped', reason: 'no_record' })
+    }
+
+    return createFollowUp({
+      workspaceId,
+      source: 'SLA_BREACH',
+      dedupeKey: `sla:${ticket.id}`,
+      settings,
+      title: `SLA violado: ${ticket.code} de ${company.value.name}`,
+      body: `O chamado ${ticket.code} ("${ticket.title.slice(0, 200)}") violou o SLA (${what}). Fale com o cliente antes que a insatisfação cresça.`,
+      companyId: company.value.id,
+      companyName: company.value.name,
+      personId: null,
+      ownerId: company.value.accountOwnerId,
       now: input.now ?? new Date(),
     })
   },

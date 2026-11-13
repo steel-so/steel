@@ -36,6 +36,7 @@ describe('UpdateCrmRetentionSettingsSchema', () => {
     expect(CRM_RETENTION_DEFAULTS).toEqual({
       onDetractor: true,
       onHealthDrop: true,
+      onSlaBreach: false,
       createOpportunity: false,
       taskDueDays: 2,
     })

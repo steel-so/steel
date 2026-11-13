@@ -49,6 +49,7 @@ function settingsRow(overrides: Record<string, unknown> = {}) {
     workspaceId: 'ws-1',
     onDetractor: true,
     onHealthDrop: true,
+    onSlaBreach: true,
     createOpportunity: false,
     taskDueDays: 2,
     updatedById: null,
@@ -461,5 +462,107 @@ describe('runRetentionSafely', () => {
       await runRetentionSafely('x', () => Promise.reject('plain')),
     ).toBeNull()
     expect(logger.warn).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('CrmRetentionService.onSlaBreach', () => {
+  const ticket = {
+    id: 'tk1',
+    code: 'INC-000009',
+    title: 'VPN fora do ar',
+    customer: { name: 'Acme', tradeName: null, document: '12.345.678/0001-90' },
+  }
+  const company = { id: 'c1', name: 'Acme', accountOwnerId: 'owner1' }
+
+  it('should stay off by default', async () => {
+    const outcome = expectOk(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket,
+        what: 'resolução',
+        now,
+      }),
+    )
+    expect(outcome).toEqual({ status: 'skipped', reason: 'disabled' })
+  })
+
+  it('should open a task for the owner of the matching company', async () => {
+    vi.mocked(Repo.findSettings).mockResolvedValue(ok(settingsRow() as never))
+    vi.mocked(Repo.findCompanyByIdentity).mockResolvedValue(ok(company))
+
+    const outcome = expectOk(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket,
+        what: 'resolução',
+        now,
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'created', taskId: 't1' })
+    expect(Repo.findCompanyByIdentity).toHaveBeenCalledWith('ws-1', {
+      document: '12345678000190',
+      names: ['Acme', ''],
+    })
+    expect(Repo.claim).toHaveBeenCalledWith('ws-1', 'SLA_BREACH', 'sla:tk1')
+    expect(CrmTaskRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ assigneeId: 'owner1', companyId: 'c1' }),
+    )
+  })
+
+  it('should match by name when the customer has no document', async () => {
+    vi.mocked(Repo.findSettings).mockResolvedValue(ok(settingsRow() as never))
+    vi.mocked(Repo.findCompanyByIdentity).mockResolvedValue(ok(null))
+
+    const outcome = expectOk(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket: {
+          ...ticket,
+          customer: { name: 'Acme', tradeName: 'Acme SA', document: null },
+        },
+        what: 'resolução',
+      }),
+    )
+
+    expect(outcome).toEqual({ status: 'skipped', reason: 'no_record' })
+    expect(Repo.findCompanyByIdentity).toHaveBeenCalledWith('ws-1', {
+      document: null,
+      names: ['Acme', 'Acme SA'],
+    })
+  })
+
+  it('should skip a ticket without customer', async () => {
+    vi.mocked(Repo.findSettings).mockResolvedValue(ok(settingsRow() as never))
+    const outcome = expectOk(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket: { ...ticket, customer: null },
+        what: 'resolução',
+      }),
+    )
+    expect(outcome).toEqual({ status: 'skipped', reason: 'no_record' })
+  })
+
+  it('should propagate database errors', async () => {
+    vi.mocked(Repo.findSettings).mockResolvedValue(dbErr())
+    expectErr(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket,
+        what: 'resolução',
+      }),
+      'DATABASE_ERROR',
+    )
+    vi.mocked(Repo.findSettings).mockResolvedValue(ok(settingsRow() as never))
+    vi.mocked(Repo.findCompanyByIdentity).mockResolvedValue(dbErr())
+    expectErr(
+      await CrmRetentionService.onSlaBreach({
+        workspaceId: 'ws-1',
+        ticket,
+        what: 'resolução',
+      }),
+      'DATABASE_ERROR',
+    )
   })
 })

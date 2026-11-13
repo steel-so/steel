@@ -626,6 +626,24 @@ describe('sendTemplate()', () => {
     expect(message.id).toBe('wa-msg-1')
   })
 
+  it('recusa o modelo quando o contato pediu para não receber mensagens', async () => {
+    sdWa.findConversation.mockResolvedValue(
+      ok(
+        conversation({
+          contact: createFakeWhatsAppContactWithoutCount({
+            waId: '5511988887777',
+            broadcastOptedOutAt: new Date('2026-11-01T10:00:00Z'),
+          }),
+        }),
+      ),
+    )
+    expectErr(
+      await SdWhatsappService.sendTemplate(AGENT, WS, TICKET, dto),
+      'VALIDATION_ERROR',
+    )
+    expect(send.template).not.toHaveBeenCalled()
+  })
+
   it('propaga a falha do provedor', async () => {
     send.template.mockResolvedValue(err(databaseError()))
     expectErr(

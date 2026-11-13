@@ -51,6 +51,10 @@ export const CrmRetentionSettingsDTO = dto(
       description:
         'Uma queda de saúde do cliente cria uma tarefa de retenção para o responsável da conta.',
     }),
+    onSlaBreach: z.boolean().meta({
+      description:
+        'Um SLA violado no ServiceDesk, de um cliente que é uma empresa do CRM, cria uma tarefa de retenção para o responsável da conta.',
+    }),
     createOpportunity: z.boolean().meta({
       description: 'Abre também uma oportunidade de retenção.',
     }),

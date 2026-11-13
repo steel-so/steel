@@ -38,6 +38,7 @@ export const CrmRetentionRepository = {
     data: {
       onDetractor?: boolean
       onHealthDrop?: boolean
+      onSlaBreach?: boolean
       createOpportunity?: boolean
       taskDueDays?: number
       updatedById: string
@@ -191,6 +192,49 @@ export const CrmRetentionRepository = {
       return ok(company)
     } catch (error) {
       return err(dbError('Failed to find the CRM company', error))
+    }
+  },
+
+  /**
+   * The CRM company of a ServiceDesk customer: same CNPJ (digits and letters
+   * only) first, else the same name (case-insensitive). Plain text matching,
+   * as the two tables have no foreign key.
+   */
+  async findCompanyByIdentity(
+    workspaceId: string,
+    identity: { document: string | null; names: string[] },
+  ): Promise<
+    Result<{ id: string; name: string; accountOwnerId: string | null } | null>
+  > {
+    try {
+      if (identity.document) {
+        const rows = await prisma.$queryRaw<
+          { id: string; name: string; accountOwnerId: string | null }[]
+        >(Prisma.sql`
+          SELECT id, name, account_owner_id AS "accountOwnerId"
+          FROM crm_companies
+          WHERE workspace_id = ${workspaceId}
+            AND deleted_at IS NULL
+            AND regexp_replace(upper(coalesce(cnpj, '')), '[^0-9A-Z]', '', 'g') = ${identity.document}
+          LIMIT 1
+        `)
+        if (rows[0]) return ok(rows[0])
+      }
+      const names = identity.names.map((name) => name.trim()).filter(Boolean)
+      if (names.length === 0) return ok(null)
+      const company = await prisma.crmCompany.findFirst({
+        where: {
+          workspaceId,
+          deletedAt: null,
+          OR: names.map((name) => ({
+            name: { equals: name, mode: 'insensitive' as const },
+          })),
+        },
+        select: { id: true, name: true, accountOwnerId: true },
+      })
+      return ok(company)
+    } catch (error) {
+      return err(dbError('Failed to find the CRM company by identity', error))
     }
   },
 
