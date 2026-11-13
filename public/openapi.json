@@ -51063,6 +51063,93 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/leads/{leadId}/whatsapp": {
+      "post": {
+        "tags": ["CRM · Leads"],
+        "summary": "Abrir a conversa de WhatsApp do lead",
+        "operationId": "postWorkspacesByIdCrmLeadsByLeadIdWhatsapp",
+        "description": "Devolve a conversa aberta do telefone do lead no módulo Comunicação ou, se não houver, abre uma nova. O telefone vira contato do WhatsApp (\"Lead do CRM\") quando ainda não é. Sem `phone`, usa o primeiro telefone do lead; sem `connectionId`, escolhe uma linha conectada (Z-API antes de Meta). Exige também o módulo Comunicação e a permissão de criar conversas.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `leads` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "leadId",
+            "in": "path",
+            "required": true,
+            "description": "ID do lead.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "connectionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversa a abrir.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmLeadWhatsappConversation"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_WHATSAPP_CONNECTION_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/mailing-lists": {
       "get": {
         "tags": ["CRM · E-mail marketing"],
@@ -180643,6 +180730,40 @@
           }
         }
       },
+      "404_RESOURCE_NOT_FOUND_WHATSAPP_CONNECTION_NOT_FOUND": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `WHATSAPP_CONNECTION_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Lead inexistente no workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmLead not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_CONNECTION_NOT_FOUND": {
+                "summary": "WHATSAPP_CONNECTION_NOT_FOUND — O workspace não tem conexão de WhatsApp",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Conexão do WhatsApp não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_CONNECTION_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_SD_AI_CONVERSATION_NOT_FOUND": {
         "description": "Não encontrado: `SD_AI_CONVERSATION_NOT_FOUND`",
         "content": {
@@ -220400,6 +220521,18 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "CrmLeadWhatsappConversation": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "contactId": {
+            "type": "string"
+          }
+        },
+        "required": ["conversationId", "contactId"]
       },
       "CrmMailingList": {
         "type": "object",
