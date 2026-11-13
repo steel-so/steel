@@ -37,6 +37,9 @@ import { WIZARD_STEPS } from './campaign-labels'
 import { ReviewStep } from './campaign-review-step'
 import { ContentStep, campaignLinks } from './campaign-steps'
 
+/** Index of the Conteúdo step — where the e-mail editor comes back to. */
+const CONTENT_STEP = WIZARD_STEPS.findIndex((item) => item.key === 'content')
+
 export function CrmCampaignWizard({
   workspaceId,
   workspaceSlug,
@@ -51,7 +54,8 @@ export function CrmCampaignWizard({
   campaign: CrmCampaignDetailDTO
   options: CrmCampaignOptionsDTO
   onRefreshOptions: () => void
-  /** Opens on this step (0–3), e.g. from a `?passo=` deep link. */
+  /** Opens on this step (0–3, in `WIZARD_STEPS` order), e.g. from a
+   * `?passo=` deep link. */
   initialStep?: number
   /** Template created/edited in the e-mail editor (`?emailTemplate=`),
    * selected and saved on arrival. */
@@ -129,7 +133,7 @@ export function CrmCampaignWizard({
   async function openEmailEditor(templateId: string | null) {
     if (!(await save())) return
     const returnTo = encodeURIComponent(
-      `/${workspaceSlug}/crm/campaigns/${campaign.id}?passo=2`,
+      `/${workspaceSlug}/crm/campaigns/${campaign.id}?passo=${CONTENT_STEP + 1}`,
     )
     router.push(
       templateId
@@ -157,6 +161,7 @@ export function CrmCampaignWizard({
   const stepIssues = (key: string) =>
     campaign.issues.some((issue) => issue.step === key)
   const last = step === WIZARD_STEPS.length - 1
+  const current = WIZARD_STEPS[step].key
   const canLaunch = !dirty && campaign.issues.length === 0 && consent
 
   return (
@@ -240,7 +245,7 @@ export function CrmCampaignWizard({
       </nav>
 
       <div className='min-w-0'>
-        {step === 0 ? (
+        {current === 'destination' ? (
           <DestinationStep
             draft={draft}
             onChange={change}
@@ -250,7 +255,7 @@ export function CrmCampaignWizard({
             workspaceSlug={workspaceSlug}
             onRefreshOptions={onRefreshOptions}
           />
-        ) : step === 1 ? (
+        ) : current === 'content' ? (
           <ContentStep
             draft={draft}
             onChange={change}
@@ -264,7 +269,7 @@ export function CrmCampaignWizard({
             onOpenTemplate={(id) => void openEmailEditor(id)}
             sampleLink={campaignLinks(draft, campaign.slug, options)?.whatsapp}
           />
-        ) : step === 2 ? (
+        ) : current === 'audience' ? (
           <CampaignAudienceStep
             workspaceId={workspaceId}
             draft={draft}

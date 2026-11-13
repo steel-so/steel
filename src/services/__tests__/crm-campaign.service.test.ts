@@ -162,8 +162,15 @@ beforeEach(() => {
   )
   lookup.findEmailTemplate.mockResolvedValue(ok({ id: 't1', subject: 'Tpl' }))
   lookup.findEmailTemplateContent.mockResolvedValue(
-    ok({ id: 't1', subject: 'Tpl', kind: 'LEGACY', builderDocument: null }),
+    ok({
+      id: 't1',
+      subject: 'Tpl',
+      kind: 'LEGACY',
+      contentHtml: '<p>Oi</p>',
+      builderDocument: null,
+    }),
   )
+  campaigns.findLatestDefaults.mockResolvedValue(ok(null))
   lookup.findSites.mockResolvedValue(ok([]))
   lookup.findSite.mockResolvedValue(ok(null))
   lookup.findQuickReply.mockResolvedValue(ok(null))
@@ -351,7 +358,6 @@ describe('CrmCampaignService.get() and issues', () => {
       ),
     )
     expect(issues.map((i) => i.step)).toEqual([
-      'destination',
       'content',
       'content',
       'content',
@@ -360,6 +366,70 @@ describe('CrmCampaignService.get() and issues', () => {
       'audience',
       'audience',
     ])
+  })
+
+  it('should let a campaign without a link go out with no destination', async () => {
+    const plain = (o?: Partial<CrmCampaign>) =>
+      readyCampaign({ destinationType: null, formId: null, ...o })
+    expect(expectOk(await computeCampaignIssues(plain()))).toEqual([])
+
+    // Z-API text without `{link}` is fine when there is nowhere to go.
+    const wa = {
+      whatsappEnabled: true,
+      whatsappLegalBasis: 'CONSENT' as const,
+      whatsappConnectionId: 'conn1',
+    }
+    expect(
+      expectOk(
+        await computeCampaignIssues(plain({ ...wa, whatsappText: 'Oi {nome}' })),
+      ),
+    ).toEqual([])
+  })
+
+  it('should ask for a destination when the content uses the link', async () => {
+    const plain = (o?: Partial<CrmCampaign>) =>
+      readyCampaign({ destinationType: null, formId: null, ...o })
+    const needsLink = [
+      {
+        step: 'destination',
+        message: expect.stringContaining('O conteúdo usa o link da campanha'),
+      },
+    ]
+
+    lookup.findEmailTemplateContent.mockResolvedValueOnce(
+      ok({
+        id: 't1',
+        subject: 'Tpl',
+        kind: 'LEGACY',
+        contentHtml: '<a href="{{campaign_link}}">Ver</a>',
+        builderDocument: null,
+      }),
+    )
+    expect(expectOk(await computeCampaignIssues(plain()))).toEqual(needsLink)
+
+    expect(
+      expectOk(
+        await computeCampaignIssues(
+          plain({
+            whatsappEnabled: true,
+            whatsappLegalBasis: 'CONSENT',
+            whatsappConnectionId: 'conn1',
+            whatsappText: 'Veja: {link}',
+          }),
+        ),
+      ),
+    ).toEqual(needsLink)
+  })
+
+  it('should not ask for a destination when the template is gone or unreadable', async () => {
+    const plain = readyCampaign({ destinationType: null, formId: null })
+    lookup.findEmailTemplateContent.mockResolvedValueOnce(ok(null))
+    expect(expectOk(await computeCampaignIssues(plain))).toEqual([])
+
+    lookup.findEmailTemplateContent.mockResolvedValueOnce(
+      err(databaseError('x')),
+    )
+    expectErr(await computeCampaignIssues(plain), 'DATABASE_ERROR')
   })
 
   it('should block a From outside a verified domain (ADR 0055)', async () => {
@@ -555,6 +625,42 @@ describe('CrmCampaignService.create()', () => {
     expect(created.slug).toBe('black-friday-3')
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ entity: 'crm_campaign', action: 'create' }),
+    )
+  })
+
+  it('should start from the sender and legal basis of the latest campaign', async () => {
+    campaigns.listSlugsLike.mockResolvedValue(ok([]))
+    campaigns.create.mockImplementation(async (data) =>
+      ok(createFakeCrmCampaign({ ...data, id: 'c9' })),
+    )
+    campaigns.findLatestDefaults.mockResolvedValueOnce(
+      ok({
+        emailFrom: 'marketing@example.com',
+        emailLegalBasis: 'CONSENT',
+        whatsappLegalBasis: null,
+      }),
+    )
+    const created = expectOk(
+      await CrmCampaignService.create(ACTOR, WS, { name: 'Natal' }),
+    )
+    expect(created.emailFrom).toBe('marketing@example.com')
+    expect(created.emailLegalBasis).toBe('CONSENT')
+    // WhatsApp follows the e-mail basis when the last campaign had none.
+    expect(created.whatsappLegalBasis).toBe('CONSENT')
+
+    expectOk(await CrmCampaignService.create(ACTOR, WS, { name: 'Pascoa' }))
+    expect(campaigns.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        emailFrom: null,
+        emailLegalBasis: null,
+        whatsappLegalBasis: null,
+      }),
+    )
+
+    campaigns.findLatestDefaults.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(
+      await CrmCampaignService.create(ACTOR, WS, { name: 'x' }),
+      'DATABASE_ERROR',
     )
   })
 
@@ -1861,6 +1967,7 @@ describe('CrmCampaignService — e-mail checklist', () => {
       id: 't1',
       subject,
       kind: 'BUILDER' as const,
+      contentHtml: '',
       builderDocument: createBlankEmailDocument(),
     })
 
@@ -1899,6 +2006,7 @@ describe('CrmCampaignService — e-mail checklist', () => {
         id: 't1',
         subject: 'Oi',
         kind: 'BUILDER' as const,
+        contentHtml: '',
         builderDocument: { version: 1, layoutId: 'nope', sections: 'x' },
       }),
     )

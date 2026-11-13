@@ -68,28 +68,36 @@ function setup(
   return spy
 }
 
+/** The link is step 3 (optional); the wizard opens on Conteúdo. */
+function openLinkStep() {
+  fireEvent.click(screen.getByRole('button', { name: /Link \(opcional\)/ }))
+}
+
 describe('CrmCampaignWizard', () => {
-  it('should show the 4 steps with a progress bar', () => {
+  it('should show the 4 steps with a progress bar, content first', () => {
     setup()
     for (const label of [
-      'Destino',
       'Conteúdo',
       'Público',
+      /Link \(opcional\)/,
       'Revisar e enviar',
     ]) {
       expect(
         screen.getByRole('button', { name: new RegExp(label) }),
       ).toBeTruthy()
     }
+    // What to send comes first: the wizard opens on the e-mail.
+    expect(screen.getByLabelText('Assunto')).toBeTruthy()
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe(
       '1',
     )
   })
 
-  it('should show the tracked links per channel for the destination', () => {
+  it('should show the tracked links per channel for the destination', async () => {
     setup()
+    openLinkStep()
     expect(
-      screen.getByText(
+      await screen.findByText(
         /utm_source=email&utm_medium=campanha&utm_campaign=black-friday/,
       ),
     ).toBeTruthy()
@@ -101,7 +109,8 @@ describe('CrmCampaignWizard', () => {
 
   it('should switch to a site page, clearing the form, and save on continue', async () => {
     const spy = setup()
-    fireEvent.click(screen.getByRole('tab', { name: /Sites/ }))
+    openLinkStep()
+    fireEvent.click(await screen.findByRole('tab', { name: /Sites/ }))
     fireEvent.click(
       screen.getByRole('button', { name: 'Usar o site Clínica Sorriso' }),
     )
@@ -120,12 +129,52 @@ describe('CrmCampaignWizard', () => {
         landingPageId: null,
       }),
     )
-    await waitFor(() => expect(screen.getByLabelText('Remetente')).toBeTruthy())
+    // The link is the last choice: next comes the review.
+    await waitFor(() =>
+      expect(screen.getByText('Envio de teste')).toBeTruthy(),
+    )
   })
 
-  it('should warn about an unpublished destination', () => {
+  it('should warn about an unpublished destination', async () => {
     setup(campaign({ formId: 'f2' }))
-    expect(screen.getByText(/Publique antes de enviar/)).toBeTruthy()
+    openLinkStep()
+    expect(await screen.findByText(/Publique antes de enviar/)).toBeTruthy()
+  })
+
+  it('should let the campaign go without a link', async () => {
+    const spy = setup()
+    openLinkStep()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Enviar sem link' }),
+    )
+    expect(screen.queryByRole('button', { name: 'Enviar sem link' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    await waitFor(() =>
+      expect(fetchBody(spy, '/crm/campaigns/c1', 'PATCH')).toMatchObject({
+        destinationType: null,
+        formId: null,
+        siteId: null,
+      }),
+    )
+    expect(
+      await screen.findByText('Sem link: a campanha é só um aviso'),
+    ).toBeTruthy()
+  })
+
+  it('should send one legal basis for both channels', async () => {
+    const spy = setup(campaign({ emailLegalBasis: 'CONSENT' }))
+    fireEvent.change(screen.getByLabelText('Assunto'), {
+      target: { value: 'Novidade' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Continuar/ }))
+    await waitFor(() =>
+      expect(fetchBody(spy, '/crm/campaigns/c1', 'PATCH')).toMatchObject({
+        emailSubject: 'Novidade',
+        emailLegalBasis: 'CONSENT',
+        whatsappLegalBasis: 'CONSENT',
+      }),
+    )
+    expect(await screen.findByLabelText('Base legal (LGPD)')).toBeTruthy()
   })
 
   it('should keep WhatsApp off when Comunicação is unavailable', () => {
@@ -246,7 +295,9 @@ describe('CrmCampaignWizard', () => {
     expect(
       screen.getByRole('button', { name: /Agendar campanha/ }),
     ).toBeTruthy()
-    fireEvent.click(screen.getByRole('switch'))
+    // The send window sits under "Opções avançadas de envio".
+    expect(screen.getByText('Opções avançadas de envio')).toBeTruthy()
+    fireEvent.click(screen.getByRole('switch', { hidden: true }))
     expect((screen.getByLabelText('Das') as HTMLInputElement).value).toBe('8')
     expect((screen.getByLabelText('às') as HTMLInputElement).value).toBe('18')
   })

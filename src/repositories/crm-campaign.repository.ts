@@ -86,6 +86,11 @@ function emptyFunnel(): CampaignFunnelCounts {
   }
 }
 
+export type CrmCampaignDefaults = Pick<
+  CrmCampaign,
+  'emailFrom' | 'emailLegalBasis' | 'whatsappLegalBasis'
+>
+
 export const CrmCampaignRepository = {
   async listByWorkspace(workspaceId: string): Promise<Result<CrmCampaign[]>> {
     try {
@@ -96,6 +101,29 @@ export const CrmCampaignRepository = {
       return ok(campaigns)
     } catch (error) {
       return err(dbError('Failed to list CRM campaigns', error))
+    }
+  },
+
+  /**
+   * Sender and legal bases of the workspace's latest campaign that has a
+   * sender — what a new draft starts from, so nobody retypes them.
+   */
+  async findLatestDefaults(
+    workspaceId: string,
+  ): Promise<Result<CrmCampaignDefaults | null>> {
+    try {
+      const campaign = await prisma.crmCampaign.findFirst({
+        where: { workspaceId, deletedAt: null, emailFrom: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          emailFrom: true,
+          emailLegalBasis: true,
+          whatsappLegalBasis: true,
+        },
+      })
+      return ok(campaign)
+    } catch (error) {
+      return err(dbError('Failed to read CRM campaign defaults', error))
     }
   },
 
@@ -161,6 +189,9 @@ export const CrmCampaignRepository = {
     createdById: string
     name: string
     slug: string
+    emailFrom?: string | null
+    emailLegalBasis?: CrmCampaign['emailLegalBasis']
+    whatsappLegalBasis?: CrmCampaign['whatsappLegalBasis']
   }): Promise<Result<CrmCampaign>> {
     try {
       const campaign = await prisma.crmCampaign.create({ data })

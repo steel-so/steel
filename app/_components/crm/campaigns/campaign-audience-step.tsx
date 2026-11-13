@@ -184,62 +184,34 @@ export function CampaignAudienceStep({
           </div>
         </fieldset>
 
-        <fieldset className='flex flex-col gap-3'>
-          <legend className='mb-2 font-medium text-sm'>
-            Base legal (LGPD)
-          </legend>
-          <div className='flex flex-col gap-2'>
-            <Label htmlFor='legal-email'>E-mail</Label>
-            <Select
-              items={LEGAL_BASIS_ITEMS}
-              value={draft.emailLegalBasis}
-              onValueChange={(value) =>
-                onChange({
-                  emailLegalBasis: value as CrmCampaignLegalBasisDTO,
-                })
-              }
-            >
-              <SelectTrigger id='legal-email' className='w-full'>
-                <SelectValue placeholder='Escolha a base legal' />
-              </SelectTrigger>
-              <SelectContent>
-                {LEGAL_BASIS_ITEMS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {draft.whatsappEnabled ? (
-            <div className='flex flex-col gap-2'>
-              <Label htmlFor='legal-whatsapp'>WhatsApp</Label>
-              <Select
-                items={LEGAL_BASIS_ITEMS}
-                value={draft.whatsappLegalBasis}
-                onValueChange={(value) =>
-                  onChange({
-                    whatsappLegalBasis: value as CrmCampaignLegalBasisDTO,
-                  })
-                }
-              >
-                <SelectTrigger id='legal-whatsapp' className='w-full'>
-                  <SelectValue placeholder='Escolha a base legal' />
-                </SelectTrigger>
-                <SelectContent>
-                  {LEGAL_BASIS_ITEMS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
+        <div className='flex flex-col gap-2'>
+          <Label htmlFor='legal-basis'>Base legal (LGPD)</Label>
+          <Select
+            items={LEGAL_BASIS_ITEMS}
+            value={draft.emailLegalBasis}
+            onValueChange={(value) =>
+              onChange({
+                emailLegalBasis: value as CrmCampaignLegalBasisDTO,
+                whatsappLegalBasis: value as CrmCampaignLegalBasisDTO,
+              })
+            }
+          >
+            <SelectTrigger id='legal-basis' className='w-full'>
+              <SelectValue placeholder='Escolha a base legal' />
+            </SelectTrigger>
+            <SelectContent>
+              {LEGAL_BASIS_ITEMS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className='text-muted-foreground text-xs'>
-            Fica registrada na campanha, com quem confirmou e quando.
+            Por que você pode falar com estas pessoas. Vale para todos os
+            canais da campanha e fica registrada com quem confirmou e quando.
           </p>
-        </fieldset>
+        </div>
       </div>
 
       <CampaignAudienceCounts

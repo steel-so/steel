@@ -227,7 +227,7 @@ describe('Content step — e-mail editor round trip', () => {
         campaign={c}
         options={options()}
         onRefreshOptions={vi.fn()}
-        initialStep={1}
+        initialStep={0}
         initialEmailTemplateId={initialEmailTemplateId}
       />,
     )
@@ -239,13 +239,13 @@ describe('Content step — e-mail editor round trip', () => {
     fireEvent.click(screen.getByRole('button', { name: /Criar novo template/ }))
     await waitFor(() =>
       expect(router.push).toHaveBeenCalledWith(
-        `/acme/crm/email-templates/new?returnTo=${encodeURIComponent('/acme/crm/campaigns/c1?passo=2')}`,
+        `/acme/crm/email-templates/new?returnTo=${encodeURIComponent('/acme/crm/campaigns/c1?passo=1')}`,
       ),
     )
     fireEvent.click(screen.getByRole('button', { name: /Abrir no editor/ }))
     await waitFor(() =>
       expect(router.push).toHaveBeenLastCalledWith(
-        `/acme/crm/email-templates/t1?returnTo=${encodeURIComponent('/acme/crm/campaigns/c1?passo=2')}`,
+        `/acme/crm/email-templates/t1?returnTo=${encodeURIComponent('/acme/crm/campaigns/c1?passo=1')}`,
       ),
     )
   })
@@ -258,7 +258,7 @@ describe('Content step — e-mail editor round trip', () => {
       }),
     )
     expect(router.replace).toHaveBeenCalledWith(
-      '/acme/crm/campaigns/c1?passo=2',
+      '/acme/crm/campaigns/c1?passo=1',
       {
         scroll: false,
       },
