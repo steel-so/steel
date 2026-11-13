@@ -1659,6 +1659,15 @@ export const ERROR_CODES = {
     status: 422,
   },
   DOCUMENT_IMPORT_FAILED: { code: 'DOCUMENT_IMPORT_FAILED', status: 502 },
+  // cadastro-unico (ADR 0066): link between CRM and ServiceDesk/WhatsApp records
+  CUSTOMER_LINK_SOURCE_NOT_FOUND: {
+    code: 'CUSTOMER_LINK_SOURCE_NOT_FOUND',
+    status: 404,
+  },
+  CUSTOMER_LINK_TARGET_NOT_FOUND: {
+    code: 'CUSTOMER_LINK_TARGET_NOT_FOUND',
+    status: 404,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES

@@ -338,6 +338,8 @@ export type AuditEntity =
   // documents backend: CRM > Documentos (ADR 0063)
   | 'document'
   | 'document_recipient'
+  // cadastro-unico (ADR 0066): link/unlink between CRM and SD/WhatsApp records
+  | 'customer_link'
 
 export type AuditAction =
   | 'create'
