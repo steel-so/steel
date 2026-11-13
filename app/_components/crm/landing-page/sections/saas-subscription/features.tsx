@@ -28,22 +28,22 @@ const ICONS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'Everything you need to manage projects',
+    title: 'Tudo o que você precisa para gerenciar projetos',
     items: [
       {
-        title: 'Project management',
+        title: 'Gestão de projetos',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Time tracking',
+        title: 'Controle de horas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Beautiful mobile app',
+        title: 'Aplicativo mobile elegante',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
     ],
   }

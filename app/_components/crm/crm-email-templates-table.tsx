@@ -56,9 +56,9 @@ const COLUMNS: GridColumn[] = [
     kind: 'select',
     readonly: true,
     options: [
-      { value: CANVAS_KIND, label: 'Novo editor' },
-      { value: 'BUILDER', label: 'Editor visual' },
-      { value: 'LEGACY', label: 'HTML livre' },
+      { value: CANVAS_KIND, label: 'Arrastar e soltar' },
+      { value: 'BUILDER', label: 'Modelo antigo' },
+      { value: 'LEGACY', label: 'Código HTML' },
     ],
     optionStyles: { [CANVAS_KIND]: 'bg-primary/10 text-primary' },
   },
@@ -125,6 +125,8 @@ export function CrmEmailTemplatesTable({
           createTitle='template'
           lookups={lookups}
           isLoading={isLoading}
+          // Templates are created in the editor gallery, never as a blank row.
+          disableInlineCreate
           searchPlaceholder='Buscar templates…'
           refetch={refetch}
           // Visual-builder templates open the editor; free HTML keeps the

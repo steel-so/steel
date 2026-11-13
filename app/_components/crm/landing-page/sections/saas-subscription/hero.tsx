@@ -20,10 +20,10 @@ const DEFAULT_IMAGE =
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    title: 'Get things done by awesome remote team',
+    title: 'Entregue resultados com um time remoto incrível',
     subtitle:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
-    ctaLabel: 'Get started for free',
+      'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
+    ctaLabel: 'Comece grátis',
     ctaHref: '#footer',
     imageUrl: DEFAULT_IMAGE,
   }
@@ -101,7 +101,7 @@ export function SaasSubscriptionHero({
             className='inline-flex items-center px-4 py-4 font-bold text-[#161c2d] text-[17px] tracking-[-0.6px] hover:opacity-70'
           >
             <GhostInput
-              value={textOf(content, 'cta.secondary', 'Learn more')}
+              value={textOf(content, 'cta.secondary', 'Saiba mais')}
               onCommit={(v) =>
                 onChange?.(withText(content, 'cta.secondary', v))
               }

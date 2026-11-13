@@ -24,51 +24,51 @@ const STAR = `${BASE}/star-full.svg`
 export function productsDefaultContent(): ProductsContent {
   return {
     type: 'PRODUCTS',
-    title: 'Explore All Products',
+    title: 'Conheça todos os produtos',
     items: [
       {
-        title: 'Safavieh Couture',
-        price: '$899',
-        originalPrice: '$1,350',
+        title: 'Poltrona Couture',
+        price: 'R$ 899',
+        originalPrice: 'R$ 1.350',
         imageUrl: `${BASE}/product-safavieh-couture.png`,
       },
       {
-        title: 'Fair Trade Ghana',
-        price: '$34',
+        title: 'Pufe Artesanal',
+        price: 'R$ 34',
         imageUrl: `${BASE}/product-fair-trade-ghana.png`,
       },
       {
-        title: 'KingSo Round Table',
-        price: '$44.99',
+        title: 'Mesa Redonda',
+        price: 'R$ 44,99',
         imageUrl: `${BASE}/product-kingso-round-table.png`,
       },
       {
-        title: 'Porthos Dining Chair',
-        price: '$120',
-        originalPrice: '$350',
+        title: 'Cadeira de Jantar',
+        price: 'R$ 120',
+        originalPrice: 'R$ 350',
         imageUrl: `${BASE}/product-porthos-dining-chair.png`,
       },
       {
-        title: 'Trade Folding Stool',
-        price: '$31.49',
+        title: 'Banqueta Dobrável',
+        price: 'R$ 31,49',
         imageUrl: `${BASE}/product-trade-folding-stool.png`,
       },
       {
-        title: 'Rivet Accent Chair',
-        price: '$120',
-        originalPrice: '$350',
+        title: 'Poltrona Rivet',
+        price: 'R$ 120',
+        originalPrice: 'R$ 350',
         imageUrl: `${BASE}/product-rivet-accent-chair.png`,
       },
       {
-        title: 'Armen Living Chair',
-        price: '$110',
-        originalPrice: '$350',
+        title: 'Cadeira Living',
+        price: 'R$ 110',
+        originalPrice: 'R$ 350',
         imageUrl: `${BASE}/product-armen-living-chair.png`,
       },
       {
-        title: 'Knight Chair',
-        price: '$120',
-        originalPrice: '$350',
+        title: 'Cadeira Knight',
+        price: 'R$ 120',
+        originalPrice: 'R$ 350',
         imageUrl: `${BASE}/product-knight-chair.png`,
       },
     ],
@@ -120,7 +120,7 @@ export function EcommerceProducts({
   function addItem() {
     onChange?.({
       ...content,
-      items: [...content.items, { title: 'Novo produto', price: '$0' }],
+      items: [...content.items, { title: 'Novo produto', price: 'R$ 0' }],
     })
   }
 
@@ -185,7 +185,7 @@ export function EcommerceProducts({
                       value={textOf(
                         content,
                         `product.${index}.cta`,
-                        '+ Add to cart',
+                        '+ Adicionar ao carrinho',
                       )}
                       onCommit={(v) =>
                         onChange?.(withText(content, `product.${index}.cta`, v))

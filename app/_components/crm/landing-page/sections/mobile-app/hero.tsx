@@ -23,10 +23,10 @@ const DEFAULT_MOCKUP = `${BASE}/hero-app-mockup.png`
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    title: 'Manage your remote team work',
+    title: 'Gerencie o trabalho da sua equipe remota',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Explore more',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código. Publique seu site em poucos minutos.',
+    ctaLabel: 'Saiba mais',
     ctaHref: '#footer',
     imageUrl: DEFAULT_MOCKUP,
   }

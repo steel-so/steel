@@ -24,25 +24,25 @@ const VIDEO_PREVIEW =
 export function consultationStepsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Why you should choose us?',
+    title: 'Por que escolher a gente?',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
     imageUrl: VIDEO_PREVIEW,
     items: [
       {
-        title: 'Easy Booking',
+        title: 'Agendamento Fácil',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos prontos, você monta sua página sem escrever código.',
       },
       {
-        title: 'Free Expert Opinion',
+        title: 'Opinião Gratuita de Especialistas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos prontos, você monta sua página sem escrever código.',
       },
       {
-        title: 'Get Your Results',
+        title: 'Receba Seus Resultados',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos prontos, você monta sua página sem escrever código.',
       },
     ],
   }

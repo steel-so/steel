@@ -59,6 +59,8 @@ describe('<CrmIntegrationKeysPanel />', () => {
     const spy = setup()
     const row = (await screen.findByText('Zapier')).closest('tr') as HTMLElement
     fireEvent.click(row.querySelector('button') as HTMLElement)
+    expect(await screen.findByText('Revogar a chave "Zapier"?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Revogar chave' }))
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Chave revogada'),
     )

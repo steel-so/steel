@@ -96,7 +96,7 @@ const CrmFormFieldsSchema = z
         ctx.addIssue({
           code: 'custom',
           path: [index, 'key'],
-          message: `Chave duplicada: "${field.key}"`,
+          message: `Dois campos do formulário usam o mesmo identificador interno ("${field.key}"). Remova um deles e adicione de novo.`,
         })
       }
       seen.add(field.key)

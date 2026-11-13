@@ -143,17 +143,19 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     const submit = await screen.findByText('Criar lead')
 
     fireEvent.click(submit)
-    expect(notify.error).toHaveBeenLastCalledWith('Informe o nome')
+    expect(notify.error).toHaveBeenLastCalledWith('Informe o nome do lead.')
 
     type('Nome *', 'Diego Alves')
     fireEvent.click(submit)
     expect(notify.error).toHaveBeenLastCalledWith(
-      'Informe ao menos um email ou telefone',
+      'Informe o e-mail ou o telefone do lead.',
     )
 
     type('Telefone', '+55 81 99999-0000')
     fireEvent.click(submit)
-    expect(notify.error).toHaveBeenLastCalledWith('Informe a origem')
+    expect(notify.error).toHaveBeenLastCalledWith(
+      'Informe de onde veio o lead (origem).',
+    )
 
     expect(
       fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
@@ -183,7 +185,7 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
     await screen.findByText('Criar lead')
     type('Nome *', '  Diego Alves ')
-    type('Email', 'diego@alves.com ')
+    type('E-mail', 'diego@alves.com ')
     type('Origem *', 'Indicação')
     fireEvent.click(screen.getByText('Criar lead'))
 
@@ -216,7 +218,7 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
     await screen.findByText('Criar lead')
     type('Nome *', 'Diego')
-    type('Email', 'd@a.com')
+    type('E-mail', 'd@a.com')
     type('Origem *', 'Site')
     fireEvent.click(screen.getByText('Criar lead'))
 
@@ -300,8 +302,8 @@ describe('<CrmLeadsBoard /> stage panel', () => {
       'Informe o nome e o cargo do decisor',
     )
 
-    type('Nome do decisor', 'Paula')
-    type('Cargo do decisor', 'CFO')
+    type('Nome do decisor *', 'Paula')
+    type('Cargo do decisor *', 'CFO')
     type('Previsão de fechamento', '2026-12-01')
     fireEvent.click(screen.getByText('Confirmar qualificação'))
 

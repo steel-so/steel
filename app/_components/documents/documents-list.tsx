@@ -294,10 +294,13 @@ export function DocumentsList({
   workspaceId,
   slug,
   initialTab = 'documents',
+  initialKind = '',
 }: {
   workspaceId: string
   slug: string
   initialTab?: DocumentsTab
+  /** Pre-selected kind filter (e.g. `PROPOSAL` from the "Propostas" menu entry). */
+  initialKind?: string
 }) {
   const id = useId()
   const router = useRouter()
@@ -306,7 +309,7 @@ export function DocumentsList({
   const [tab, setTab] = useState<DocumentsTab>(initialTab)
   const [search, setSearch] = useState('')
   const [q, setQ] = useState('')
-  const [kind, setKind] = useState('')
+  const [kind, setKind] = useState(initialKind)
   const [status, setStatus] = useState('')
   const [ownerId, setOwnerId] = useState('')
   const [page, setPage] = useState(1)

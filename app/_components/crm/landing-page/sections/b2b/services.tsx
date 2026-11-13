@@ -32,26 +32,26 @@ const BASE = '/landing-page-templates/b2b'
 export function servicesDefaultContent(): ServicesContent {
   return {
     type: 'SERVICES',
-    title: 'Services we offer for you',
+    title: 'Serviços que oferecemos para você',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
     items: [
       {
-        title: 'Digital Marketing',
+        title: 'Marketing Digital',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: `${BASE}/services-digital-marketing.png`,
       },
       {
-        title: 'Business Growth',
+        title: 'Crescimento de Negócios',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: `${BASE}/services-business-growth.png`,
       },
       {
-        title: 'Content Marketing',
+        title: 'Marketing de Conteúdo',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: `${BASE}/services-content-marketing.png`,
       },
     ],
@@ -184,7 +184,7 @@ export function B2bServices({
               className='inline-flex items-center gap-2 font-bold text-[#473bf0] text-[17px] tracking-[-0.6px] hover:opacity-90'
             >
               <GhostInput
-                value={textOf(content, `item.${index}.cta`, 'Learn more')}
+                value={textOf(content, `item.${index}.cta`, 'Saiba mais')}
                 onCommit={(v) =>
                   onChange?.(withText(content, `item.${index}.cta`, v))
                 }
@@ -250,7 +250,7 @@ export function B2bServices({
             value={textOf(
               content,
               'video.title',
-              'How do we help you to grow?',
+              'Como ajudamos você a crescer?',
             )}
             onCommit={(v) => onChange?.(withText(content, 'video.title', v))}
             placeholder='Título do vídeo'
@@ -261,7 +261,7 @@ export function B2bServices({
             value={textOf(
               content,
               'video.description',
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
             )}
             onCommit={(v) =>
               onChange?.(withText(content, 'video.description', v))

@@ -6,7 +6,13 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Muted } from '@/components/typography/text/muted'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
@@ -433,10 +439,23 @@ function NewRoutingRuleDialog({
         </FieldGroup>
         <div className='mt-4 flex justify-end gap-2'>
           <DialogClose render={<Button variant='ghost'>Cancelar</Button>} />
-          <Button onClick={handleCreate} disabled={saving || !ownerId}>
+          <Button
+            onClick={handleCreate}
+            disabled={saving || !ownerId}
+            title={
+              ownerId
+                ? undefined
+                : 'Escolha quem vai atender os leads desta regra.'
+            }
+          >
             {saving ? 'Criando...' : 'Criar regra'}
           </Button>
         </div>
+        {ownerId ? null : (
+          <p className='mt-2 text-right text-muted-foreground text-xs'>
+            Escolha um responsável para poder criar a regra.
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -494,7 +513,14 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
     <div className='space-y-6'>
       <Card>
         <CardHeader className='flex flex-row items-center justify-between'>
-          <CardTitle>Pontuação de leads</CardTitle>
+          <div className='space-y-1'>
+            <CardTitle>Pontuação de leads</CardTitle>
+            <CardDescription>
+              A pontuação mostra quais leads estão mais quentes. Cada regra soma
+              (ou tira) pontos quando o lead bate com a condição. Exemplo: “Origem
+              é igual a Indicação” soma 20 pontos.
+            </CardDescription>
+          </div>
           <NewScoringRuleDialog
             workspaceId={workspaceId}
             onCreated={refetchScoring}
@@ -554,7 +580,14 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
 
       <Card>
         <CardHeader className='flex flex-row items-center justify-between'>
-          <CardTitle>Roteamento de leads</CardTitle>
+          <div className='space-y-1'>
+            <CardTitle>Roteamento de leads</CardTitle>
+            <CardDescription>
+              Define quem atende cada lead novo. Os leads que baterem com uma
+              regra vão automaticamente para o responsável escolhido. Exemplo:
+              “Origem é igual a Site” vai para a Ana.
+            </CardDescription>
+          </div>
           <NewRoutingRuleDialog
             workspaceId={workspaceId}
             onCreated={refetchRouting}

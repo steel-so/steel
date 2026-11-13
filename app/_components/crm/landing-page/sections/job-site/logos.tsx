@@ -17,7 +17,7 @@ const BASE = '/landing-page-templates/job-site'
 export function logosDefaultContent(): LogosContent {
   return {
     type: 'LOGOS',
-    title: 'Big companies are here',
+    title: 'Grandes empresas estão aqui',
     logos: [
       { name: 'MakeLess', imageUrl: `${BASE}/logo-makeless.png` },
       { name: 'coworks', imageUrl: `${BASE}/logo-coworks.png` },

@@ -9,6 +9,7 @@ import type * as React from 'react'
 import { useEffect, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SheetClose } from '@/components/ui/sheet'
@@ -126,15 +127,18 @@ function PanelShell({
       </div>
       {onDelete && (
         <div className='border-t p-3'>
-          <Button
-            size='sm'
-            variant='destructive'
-            className='w-full'
-            onClick={onDelete}
-          >
-            <SteelIcon icon={Delete01Icon} strokeWidth={2} />
-            {deleteLabel}
-          </Button>
+          <ConfirmAction
+            trigger={
+              <Button size='sm' variant='destructive' className='w-full'>
+                <SteelIcon icon={Delete01Icon} strokeWidth={2} />
+                {deleteLabel}
+              </Button>
+            }
+            title={`${deleteLabel}?`}
+            description='Esta etapa e as ligações dela com as outras etapas serão removidas do workflow.'
+            confirmLabel={deleteLabel}
+            onConfirm={onDelete}
+          />
         </div>
       )}
     </div>

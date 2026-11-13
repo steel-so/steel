@@ -12,21 +12,21 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const productTemplate: LandingPageTemplateDefinition = {
   key: 'product',
-  name: 'Product',
+  name: 'Lançamento de produto',
   description: 'Modelo para lançamento de um único produto, estilo AirPods.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         navLinks: [
-          { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Demonstrações', href: '#' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Buy now - Starting at $99',
+        ctaLabel: 'Compre agora - a partir de R$ 99',
         ctaHref: '#pricing',
       },
     },
@@ -34,11 +34,11 @@ export const productTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        eyebrow: 'Non-stop music for long time',
-        title: 'Sound, that sounds better!',
+        eyebrow: 'Música sem parar por muito tempo',
+        title: 'Um som que soa melhor!',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Buy now - Starting at $99',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie seu próximo site em poucos minutos.',
+        ctaLabel: 'Compre agora - a partir de R$ 99',
         ctaHref: '#pricing',
         imageUrl: '/landing-page-templates/product/hero-airpod.png',
       },
@@ -47,19 +47,19 @@ export const productTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'Listen music anytime, anywhere.',
+        title: 'Ouça música a qualquer hora, em qualquer lugar.',
         subtitle:
-          'We share common trends and strategies for improving your rental income.',
+          'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
         items: [
           {
-            title: 'Comfortable Buds',
+            title: 'Fones confortáveis',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código.',
           },
           {
-            title: 'Powerful Bass',
+            title: 'Graves potentes',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código.',
           },
         ],
       },
@@ -69,7 +69,7 @@ export const productTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'You made it so simple. My new site is so much faster and easier to work with than my old site.',
+          'Vocês deixaram tudo muito simples. Meu novo site é muito mais rápido e fácil de usar que o antigo.',
         authorName: 'Rhoda Brady',
         avatarUrl: '/landing-page-templates/product/testimonial-avatar.png',
         style: 'spotlight',
@@ -79,9 +79,9 @@ export const productTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Trendy designs with better sound quality.',
+        title: 'Design moderno com mais qualidade de som.',
         description:
-          'We share common trends and strategies for improving your rental income.',
+          'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
         imageUrl: '/landing-page-templates/product/about-earbuds-left.png',
         imageUrls: ['/landing-page-templates/product/about-earbuds-right.png'],
       },
@@ -90,24 +90,24 @@ export const productTemplate: LandingPageTemplateDefinition = {
       type: 'PRODUCTS',
       content: {
         type: 'PRODUCTS',
-        title: 'Get your airpod now.',
+        title: 'Garanta o seu agora.',
         subtitle:
-          'We share common trends and strategies for improving your rental income.',
+          'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
         items: [
           {
-            title: 'AirPods — Midnight Green',
-            price: '$99',
+            title: 'AirPods — Verde-meia-noite',
+            price: 'R$ 99',
             imageUrl:
               '/landing-page-templates/product/product-midnight-green.png',
           },
           {
-            title: 'AirPods — Silver',
-            price: '$99',
+            title: 'AirPods — Prata',
+            price: 'R$ 99',
             imageUrl: '/landing-page-templates/product/product-silver.png',
           },
           {
-            title: 'AirPods — Gold',
-            price: '$99',
+            title: 'AirPods — Dourado',
+            price: 'R$ 99',
             imageUrl: '/landing-page-templates/product/product-gold.png',
           },
         ],
@@ -117,14 +117,14 @@ export const productTemplate: LandingPageTemplateDefinition = {
       type: 'FOOTER',
       content: {
         type: 'FOOTER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         linkGroups: [
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
         ],

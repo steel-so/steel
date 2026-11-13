@@ -12,8 +12,8 @@ import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
-  title: 'E-mail e agenda | CRM | Steel',
-  description: 'Sincronização de e-mail e agenda',
+  title: 'Registro manual de e-mails | CRM | Steel',
+  description: 'Registro manual de e-mails e eventos de agenda',
 }
 
 export default async function CrmEmailSyncPage({
@@ -36,7 +36,7 @@ export default async function CrmEmailSyncPage({
     <div className='flex h-full w-full min-h-0 flex-col'>
       <HeaderInternalNavigation>
         <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='E-mail e agenda'>
+          <HeaderBreadcrumbCrumb title='Registro manual de e-mails'>
             <SteelIcon
               icon={Calendar01Icon}
               strokeWidth={2}

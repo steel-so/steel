@@ -121,7 +121,10 @@ describe('<CrmMailingListsTable /> detail', () => {
     expect(screen.getByText('Quem mais compra')).toBeTruthy()
     expect(screen.getByText('ana@acme.com')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remover ana@acme.com da lista' }),
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover' }))
     await waitFor(() =>
       expect(
         spy.mock.calls.some(
@@ -138,7 +141,7 @@ describe('<CrmMailingListsTable /> detail', () => {
       await screen.findByRole('button', { name: 'abrir Clientes VIP' }),
     )
     expect(
-      await screen.findByText('Nenhum membro ainda. Adicione emails acima.'),
+      await screen.findByText('Esta lista ainda não tem membros. Escolha leads existentes, cole e-mails ou importe um arquivo CSV acima.'),
     ).toBeTruthy()
   })
 
@@ -184,6 +187,11 @@ describe('<CrmMailingListsTable /> detail', () => {
     setup()
     await openDetail()
     fireEvent.click(screen.getByRole('button', { name: /remover lista/i }))
+    fireEvent.click(
+      (await screen.findAllByRole('button', { name: /remover lista/i })).at(
+        -1,
+      ) as HTMLElement,
+    )
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Lista removida'),
     )
@@ -200,6 +208,11 @@ describe('<CrmMailingListsTable /> detail', () => {
     ])
     await openDetail()
     fireEvent.click(screen.getByRole('button', { name: /remover lista/i }))
+    fireEvent.click(
+      (await screen.findAllByRole('button', { name: /remover lista/i })).at(
+        -1,
+      ) as HTMLElement,
+    )
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect((notify.error.mock.lastCall?.[0] as Error)?.message).toBe(
       'Sem permissão',

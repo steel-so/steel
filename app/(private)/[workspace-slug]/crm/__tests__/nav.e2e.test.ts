@@ -6,7 +6,7 @@ import {
 } from '@/src/__tests__/helpers/e2e'
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 
-// Regression: "E-mail e agenda" and "Chaves de API" existed as pages but had
+// Regression: "Registro de e-mails" and "Chaves de API" existed as pages but had
 // no entry in the CRM sidebar, so nobody could reach them without the URL.
 async function renderPage(slug: string, cookie: string, path = 'leads') {
   const res = await fetch(`${BASE_URL}/${slug}/crm/${path}`, {
@@ -25,7 +25,7 @@ describe('CRM sidebar entries', () => {
     expect(status).toBe(200)
     expect(html).toContain(`href="/${workspace.slug}/crm/email-sync"`)
     expect(html).toContain(`href="/${workspace.slug}/crm/integration-keys"`)
-    expect(html).toContain('E-mail e agenda')
+    expect(html).toContain('Registro de e-mails')
     expect(html).toContain('Chaves de API')
   })
 

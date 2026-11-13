@@ -46,9 +46,28 @@ import type {
   CrmMailDirectionDTO,
 } from '@/types/crm-email-sync'
 
+const PROVIDER_LABELS: Record<string, string> = {
+  GMAIL: 'Gmail',
+  OUTLOOK: 'Outlook',
+}
+
 export function CrmEmailSyncPanel({ workspaceId }: { workspaceId: string }) {
   return (
     <div className='flex flex-col gap-6'>
+      <div
+        role='note'
+        className='rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm'
+      >
+        <p className='font-medium'>
+          Esta tela é um registro manual, não uma sincronização.
+        </p>
+        <p className='mt-1 text-muted-foreground text-xs'>
+          O Steel ainda não lê a sua caixa de entrada do Gmail ou do Outlook.
+          Aqui você anota e-mails e compromissos importantes à mão, para que a
+          equipe veja o histórico no CRM. Nada é enviado nem recebido a partir
+          desta tela.
+        </p>
+      </div>
       <CrmEmailAccountsSection workspaceId={workspaceId} />
       <CrmEmailMessagesSection workspaceId={workspaceId} />
       <CrmCalendarEventsSection workspaceId={workspaceId} />
@@ -167,8 +186,8 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
         </Dialog>
       </div>
       <p className='text-muted-foreground text-xs'>
-        Não há sincronização real com Gmail/Outlook — registre a conta para
-        agrupar e-mails e eventos lançados manualmente.
+        Registrar uma conta não conecta a caixa de entrada: serve só para
+        agrupar os e-mails e eventos que você lançar manualmente.
       </p>
       <div className='max-h-[26rem] overflow-auto rounded-lg border border-border'>
         <Table containerClassName='overflow-x-visible'>
@@ -192,12 +211,13 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
             )}
             {accounts?.map((account) => (
               <TableRow key={account.id}>
-                <TableCell>{account.provider}</TableCell>
+                <TableCell>{PROVIDER_LABELS[account.provider] ?? account.provider}</TableCell>
                 <TableCell>{account.email}</TableCell>
                 <TableCell>
                   <Button
                     variant='ghost'
                     size='icon-xs'
+                    aria-label={`Remover a conta ${account.email}`}
                     onClick={() => handleDelete(account.id)}
                   >
                     <SteelIcon icon={Delete02Icon} strokeWidth={2} />
@@ -366,7 +386,7 @@ function CrmEmailMessagesSection({ workspaceId }: { workspaceId: string }) {
                       message.direction === 'OUTBOUND' ? 'default' : 'outline'
                     }
                   >
-                    {message.direction}
+                    {message.direction === 'OUTBOUND' ? 'Enviado' : 'Recebido'}
                   </Badge>
                 </TableCell>
                 <TableCell>{message.fromEmail}</TableCell>

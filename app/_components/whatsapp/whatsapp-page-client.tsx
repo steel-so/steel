@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ZapOnboardingChecklist } from '@/app/_components/onboarding-checklist/zap-onboarding-checklist'
 import { cn } from '@/lib/utils'
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import { useWhatsAppRealtimeEvents } from '@/src/hooks/use-whatsapp-events'
@@ -53,8 +54,9 @@ export function WhatsappPageClient({
           onBack={() => setSelected(null)}
         />
       ) : (
-        <div className='flex flex-1 items-center justify-center text-muted-foreground text-sm max-lg:hidden'>
-          Selecione uma conversa para começar
+        <div className='flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto p-6 text-muted-foreground text-sm max-lg:hidden'>
+          <ZapOnboardingChecklist workspaceId={workspaceId} />
+          <p>Selecione uma conversa para começar</p>
         </div>
       )}
     </div>

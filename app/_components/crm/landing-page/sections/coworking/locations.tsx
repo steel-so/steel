@@ -22,23 +22,23 @@ const BASE = '/landing-page-templates/coworking'
 export function worksDefaultContent(): WorksContent {
   return {
     type: 'WORKS',
-    title: 'Popular locations',
+    title: 'Locais mais procurados',
     subtitle:
-      'With lots of unique blocks, you can easily build a page easily without any coding.',
+      'Com vários blocos prontos, você monta sua página facilmente, sem escrever código.',
     items: [
       {
         title: 'Beauview',
-        category: '37 seats',
+        category: '37 lugares',
         imageUrl: `${BASE}/location-1.jpg`,
       },
       {
         title: 'Haleyborough',
-        category: '12 seats',
+        category: '12 lugares',
         imageUrl: `${BASE}/location-2.jpg`,
       },
       {
         title: 'Jeromyshire',
-        category: '28 seats',
+        category: '28 lugares',
         imageUrl: `${BASE}/location-3.jpg`,
       },
     ],

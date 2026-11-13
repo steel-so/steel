@@ -22,21 +22,21 @@ const BASE = '/landing-page-templates/web-application'
  */
 export const webApplicationTemplate: LandingPageTemplateDefinition = {
   key: 'web-application',
-  name: 'Web Application',
+  name: 'Aplicação web',
   description: 'Modelo para SaaS e aplicações web.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         navLinks: [
-          { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Demonstrações', href: '#' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Start a free trial',
+        ctaLabel: 'Teste grátis',
         ctaHref: '#footer',
       },
     },
@@ -44,10 +44,10 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        title: 'Get more visitors, get more sales.',
+        title: 'Mais visitantes, mais vendas.',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Start a free trial',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie seu próximo site em poucos minutos.',
+        ctaLabel: 'Teste grátis',
         ctaHref: '#footer',
         imageUrl: `${BASE}/hero-video.png`,
       },
@@ -70,22 +70,22 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'Organize your campaigns',
+        title: 'Organize suas campanhas',
         items: [
           {
-            title: 'Organize your campaigns',
+            title: 'Organize suas campanhas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Manage customers',
+            title: 'Gerencie clientes',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Track progress fast',
+            title: 'Acompanhe o progresso com agilidade',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
         ],
       },
@@ -95,9 +95,9 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Track your progress with our advanced site.',
+        title: 'Acompanhe seu progresso com nosso site avançado.',
         description:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+          'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
         imageUrl: `${BASE}/content-01-laptop.png`,
         imageUrls: [],
       },
@@ -107,9 +107,9 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Understand your visitors fast. Take quick actions.',
+        title: 'Entenda seus visitantes rápido. Aja com agilidade.',
         subtitle:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+          'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
         imageUrl: `${BASE}/content-02-front.png`,
         items: [],
       },
@@ -119,9 +119,9 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Make your customers happy by giving services.',
+        title: 'Encante seus clientes com um ótimo atendimento.',
         description:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+          'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
         imageUrl: `${BASE}/content-03-photo-1.png`,
         imageUrls: [
           `${BASE}/content-03-photo-2.png`,
@@ -133,47 +133,47 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       type: 'PRICING',
       content: {
         type: 'PRICING',
-        title: 'Pricing & Plans',
+        title: 'Planos e preços',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
         plans: [
           {
-            name: 'Starter',
-            price: '$19',
-            period: '/ month',
+            name: 'Inicial',
+            price: 'R$ 19',
+            period: '/ mês',
             features: [
-              'Commercial License',
-              '100+ HTML UI Elements',
-              '01 Domain Support',
+              'Licença comercial',
+              'Mais de 100 elementos de interface',
+              'Suporte a 1 domínio',
             ],
-            ctaLabel: 'Start Free Trial',
+            ctaLabel: 'Teste grátis',
             highlighted: false,
           },
           {
-            name: 'Standard',
-            price: '$49',
-            period: '/ month',
+            name: 'Padrão',
+            price: 'R$ 49',
+            period: '/ mês',
             features: [
-              'Commercial License',
-              '100+ HTML UI Elements',
-              'Unlimited Domain Support',
-              '6 Month Premium Support',
+              'Licença comercial',
+              'Mais de 100 elementos de interface',
+              'Suporte a domínios ilimitados',
+              '6 meses de suporte premium',
             ],
-            ctaLabel: 'Start Free Trial',
+            ctaLabel: 'Teste grátis',
             highlighted: true,
           },
           {
             name: 'Premium',
-            price: '$99',
-            period: '/ month',
+            price: 'R$ 99',
+            period: '/ mês',
             features: [
-              'Commercial License',
-              '100+ HTML UI Elements',
-              'Unlimited Domain Support',
-              '6 Month Premium Support',
-              'Lifetime Updates',
+              'Licença comercial',
+              'Mais de 100 elementos de interface',
+              'Suporte a domínios ilimitados',
+              '6 meses de suporte premium',
+              'Atualizações vitalícias',
             ],
-            ctaLabel: 'Start Free Trial',
+            ctaLabel: 'Teste grátis',
             highlighted: false,
           },
         ],
@@ -184,9 +184,9 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'OMG! I cannot believe that I have got a brand new landing page after getting Omega. It was super easy to edit and publish.',
+          'Uau! Não acredito que ganhei uma landing page totalmente nova com o Omega. Foi super fácil de editar e publicar.',
         authorName: 'Diego Morata',
-        authorRole: 'Web Developer',
+        authorRole: 'Desenvolvedor web',
         style: 'default',
       },
     },
@@ -195,9 +195,9 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users.",
+          'Simplesmente o melhor. Superior a todos os outros. Eu recomendaria este produto para iniciantes e usuários avançados.',
         authorName: 'Franklin Hicks',
-        authorRole: 'Digital Marketer',
+        authorRole: 'Profissional de marketing digital',
         style: 'default',
       },
     },
@@ -207,43 +207,43 @@ export const webApplicationTemplate: LandingPageTemplateDefinition = {
         type: 'FOOTER',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing digital', href: '#' },
+              { label: 'Redação de conteúdo', href: '#' },
+              { label: 'SEO para empresas', href: '#' },
+              { label: 'Design de interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
           {
-            title: 'Contact us',
+            title: 'Fale conosco',
             links: [
               {
                 label: 'contato@suaempresa.com.br',

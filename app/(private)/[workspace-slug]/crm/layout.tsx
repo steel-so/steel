@@ -116,6 +116,18 @@ export default async function CrmLayout({
             <NavItem href={`${base}/documents`} icon={DocumentValidationIcon}>
               Documentos
             </NavItem>
+            <NavItem
+              href={`${base}/documents?kind=PROPOSAL`}
+              icon={DocumentValidationIcon}
+            >
+              Propostas
+            </NavItem>
+            <NavItem
+              href={`${base}/documents?tab=modelos&kind=PROPOSAL`}
+              icon={DocumentValidationIcon}
+            >
+              Modelos de proposta
+            </NavItem>
             <NavItem href={`${base}/forms`} icon={FormIcon}>
               Formulários
             </NavItem>
@@ -196,7 +208,7 @@ export default async function CrmLayout({
           </NavGroup>
           <NavGroup>
             <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
-              E-mail e agenda
+              Registro de e-mails
             </NavItem>
             {canManageKeys ? (
               <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
@@ -216,7 +228,7 @@ export default async function CrmLayout({
           { id: 'crm.go-people', href: `${base}/people` },
           { id: 'crm.go-companies', href: `${base}/companies` },
           { id: 'crm.go-tasks', href: `${base}/tasks` },
-          { id: 'crm.go-proposals', href: `${base}/documents` },
+          { id: 'crm.go-proposals', href: `${base}/documents?kind=PROPOSAL` },
         ]}
       />
       {children}

@@ -15,14 +15,14 @@ type FooterContent = Extract<CrmLandingPageSectionContent, { type: 'FOOTER' }>
 export function footerDefaultContent(): FooterContent {
   return {
     type: 'FOOTER',
-    logoText: 'Brainwave.io',
+    logoText: 'Sua Empresa',
     linkGroups: [
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Política de Privacidade', href: '#' },
+          { label: 'Termos e Condições', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
     ],

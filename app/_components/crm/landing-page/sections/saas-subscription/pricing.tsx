@@ -16,38 +16,38 @@ type Plan = PricingContent['plans'][number]
 const WAVE = '/landing-page-templates/saas-subscription/pricing-wave.svg'
 
 const BLURB =
-  'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.'
+  'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.'
 
 export function pricingDefaultContent(): PricingContent {
   return {
     type: 'PRICING',
-    title: 'Pricing & Plans',
+    title: 'Planos e preços',
     subtitle: BLURB,
     plans: [
       {
-        name: 'Basic',
-        price: '$29',
-        period: 'One time purchase',
+        name: 'Básico',
+        price: 'R$ 29',
+        period: 'Pagamento único',
         features: [BLURB],
-        ctaLabel: 'Get started for free',
+        ctaLabel: 'Comece grátis',
         ctaHref: '#footer',
         highlighted: false,
       },
       {
-        name: 'Standard',
-        price: '$49',
-        period: 'One time purchase',
+        name: 'Padrão',
+        price: 'R$ 49',
+        period: 'Pagamento único',
         features: [BLURB],
-        ctaLabel: 'Get started for free',
+        ctaLabel: 'Comece grátis',
         ctaHref: '#footer',
         highlighted: false,
       },
       {
         name: 'Premium',
-        price: '$99',
-        period: 'One time purchase',
+        price: 'R$ 99',
+        period: 'Pagamento único',
         features: [BLURB],
-        ctaLabel: 'Get started for free',
+        ctaLabel: 'Comece grátis',
         ctaHref: '#footer',
         highlighted: false,
       },
@@ -76,10 +76,10 @@ export function SaasSubscriptionPricing({
         ...content.plans,
         {
           name: 'Plano',
-          price: '$0',
-          period: 'One time purchase',
+          price: 'R$ 0',
+          period: 'Pagamento único',
           features: [BLURB],
-          ctaLabel: 'Get started for free',
+          ctaLabel: 'Comece grátis',
           ctaHref: '#footer',
           highlighted: false,
         },
@@ -183,7 +183,7 @@ export function SaasSubscriptionPricing({
             <GhostInput
               value={plan.price}
               onCommit={(v) => updatePlan(planIndex, { price: v })}
-              placeholder='$0'
+              placeholder='R$ 0'
               readOnly={readOnly}
               className='text-center font-bold text-[#161c2d] text-[48px] tracking-[-1.8px]'
             />

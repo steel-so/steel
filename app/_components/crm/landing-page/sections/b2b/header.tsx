@@ -18,11 +18,11 @@ export function headerDefaultContent(): HeaderContent {
     logoText: 'Brainwave.io',
     navLinks: [
       { label: 'Demos', href: '#' },
-      { label: 'Pages', href: '#' },
-      { label: 'Support', href: '#' },
-      { label: 'Contact', href: '#footer' },
+      { label: 'Páginas', href: '#' },
+      { label: 'Suporte', href: '#' },
+      { label: 'Contato', href: '#footer' },
     ],
-    ctaLabel: 'Get A Free Quote',
+    ctaLabel: 'Solicitar orçamento grátis',
     ctaHref: '#footer',
   }
 }

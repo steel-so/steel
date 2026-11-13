@@ -21,16 +21,16 @@ type ServicesContent = Extract<
 export function servicesDefaultContent(): ServicesContent {
   return {
     type: 'SERVICES',
-    title: 'Jobs by category',
+    title: 'Vagas por categoria',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding.',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
     items: [
-      { title: 'Design', description: '47 Jobs' },
-      { title: 'Marketing', description: '51 Jobs' },
-      { title: 'Engineering', description: '89 Jobs' },
-      { title: 'Management', description: '16 Jobs' },
-      { title: 'Finance', description: '23 Jobs' },
-      { title: 'Customer Support', description: '34 Jobs' },
+      { title: 'Design', description: '47 vagas' },
+      { title: 'Marketing', description: '51 vagas' },
+      { title: 'Engenharia', description: '89 vagas' },
+      { title: 'Gestão', description: '16 vagas' },
+      { title: 'Finanças', description: '23 vagas' },
+      { title: 'Atendimento ao cliente', description: '34 vagas' },
     ],
   }
 }
@@ -152,7 +152,7 @@ export function JobSiteServices({
                 <GhostInput
                   value={item.description}
                   onCommit={(v) => updateItem(index, { description: v })}
-                  placeholder='N Jobs'
+                  placeholder='N vagas'
                   readOnly={readOnly}
                   className={
                     highlighted

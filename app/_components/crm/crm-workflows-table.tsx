@@ -18,9 +18,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
+import { WORKFLOW_TEMPLATES } from '@/app/_components/crm/workflow/workflow-templates'
 import {
   useCreateCrmWorkflow,
   useCrmWorkflows,
+  useUpdateCrmWorkflowDraft,
 } from '@/src/hooks/use-crm-workflow'
 import { useCrmWorkspaceLookups } from '@/src/hooks/use-crm-workspace-lookups'
 import type { CrmWorkflowDTO } from '@/src/schemas/crm-workflow.schema'
@@ -104,7 +107,9 @@ function CreateCrmWorkflowDialog({
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
+  const [templateKey, setTemplateKey] = React.useState('blank')
   const createWorkflow = useCreateCrmWorkflow(workspaceId)
+  const updateDraft = useUpdateCrmWorkflowDraft(workspaceId)
 
   async function handleCreate() {
     if (!name.trim()) {
@@ -113,6 +118,21 @@ function CreateCrmWorkflowDialog({
     }
     try {
       const created = await createWorkflow.mutateAsync({ name: name.trim() })
+      const template = WORKFLOW_TEMPLATES.find((t) => t.key === templateKey)
+      if (template) {
+        try {
+          await updateDraft.mutateAsync({
+            workflowId: created.id,
+            definition: template.definition,
+          })
+        } catch (err) {
+          // The workflow exists; open it empty and say why the model is missing.
+          notify.error(
+            err,
+            'O workflow foi criado, mas não conseguimos aplicar o modelo. Monte as etapas manualmente.',
+          )
+        }
+      }
       setOpen(false)
       setName('')
       router.push(`/${slug}/crm/workflows/${created.id}`)
@@ -126,7 +146,10 @@ function CreateCrmWorkflowDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) setName('')
+        if (next) {
+          setName('')
+          setTemplateKey('blank')
+        }
       }}
     >
       <Button size='sm' onClick={() => setOpen(true)}>
@@ -148,12 +171,55 @@ function CreateCrmWorkflowDialog({
           />
         </div>
 
+        <fieldset className='flex flex-col gap-2'>
+          <legend className='mb-1 font-medium text-sm'>
+            Começar de um modelo
+          </legend>
+          {[
+            {
+              key: 'blank',
+              name: 'Em branco',
+              description: 'Monte as etapas do zero no editor.',
+            },
+            ...WORKFLOW_TEMPLATES,
+          ].map((template) => (
+            <label
+              key={template.key}
+              className={cn(
+                'flex cursor-pointer flex-col gap-0.5 rounded-lg border p-3 text-left transition-colors',
+                templateKey === template.key
+                  ? 'border-primary bg-primary/5'
+                  : 'hover:bg-muted/40',
+              )}
+            >
+              <span className='flex items-center gap-2 font-medium text-sm'>
+                <input
+                  type='radio'
+                  name='workflow-template'
+                  className='accent-primary'
+                  checked={templateKey === template.key}
+                  onChange={() => setTemplateKey(template.key)}
+                />
+                {template.name}
+              </span>
+              <span className='pl-6 text-muted-foreground text-xs'>
+                {template.description}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
         <DialogFooter>
           <DialogClose render={<Button variant='outline' />}>
             Cancelar
           </DialogClose>
-          <Button onClick={handleCreate} disabled={createWorkflow.isPending}>
-            {createWorkflow.isPending ? 'Criando…' : 'Criar e abrir'}
+          <Button
+            onClick={handleCreate}
+            disabled={createWorkflow.isPending || updateDraft.isPending}
+          >
+            {createWorkflow.isPending || updateDraft.isPending
+              ? 'Criando…'
+              : 'Criar e abrir'}
           </Button>
         </DialogFooter>
       </DialogContent>

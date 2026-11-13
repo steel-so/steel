@@ -15,22 +15,22 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const jobSiteTemplate: LandingPageTemplateDefinition = {
   key: 'job-site',
-  name: 'Job Site',
+  name: 'Portal de vagas',
   description: 'Modelo para portais de vagas e recrutamento.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         navLinks: [
-          { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
-          { label: 'Login', href: '#' },
+          { label: 'Demonstrações', href: '#' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
+          { label: 'Entrar', href: '#' },
         ],
-        ctaLabel: 'Sign up',
+        ctaLabel: 'Cadastre-se',
         ctaHref: '#subscribe',
       },
     },
@@ -38,10 +38,10 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        title: 'Find a dream job that changes life.',
+        title: 'Encontre o emprego dos sonhos que muda vidas.',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next job website.',
-        ctaLabel: 'Search',
+          'Com blocos prontos, você monta o seu portal de vagas facilmente, sem escrever código.',
+        ctaLabel: 'Buscar',
         ctaHref: '#jobs',
         imageUrl: '/landing-page-templates/job-site/hero-portrait.png',
       },
@@ -50,7 +50,7 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'LOGOS',
       content: {
         type: 'LOGOS',
-        title: 'Big companies are here',
+        title: 'Grandes empresas estão aqui',
         logos: [
           {
             name: 'MakeLess',
@@ -83,16 +83,16 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'SERVICES',
       content: {
         type: 'SERVICES',
-        title: 'Jobs by category',
+        title: 'Vagas por categoria',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
         items: [
-          { title: 'Design', description: '47 Jobs' },
-          { title: 'Marketing', description: '51 Jobs' },
-          { title: 'Engineering', description: '89 Jobs' },
-          { title: 'Management', description: '16 Jobs' },
-          { title: 'Finance', description: '23 Jobs' },
-          { title: 'Customer Support', description: '34 Jobs' },
+          { title: 'Design', description: '47 vagas' },
+          { title: 'Marketing', description: '51 vagas' },
+          { title: 'Engenharia', description: '89 vagas' },
+          { title: 'Gestão', description: '16 vagas' },
+          { title: 'Finanças', description: '23 vagas' },
+          { title: 'Atendimento ao cliente', description: '34 vagas' },
         ],
       },
     },
@@ -100,25 +100,25 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Find jobs with 3 easy steps',
+        title: 'Encontre vagas em 3 passos simples',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
         imageUrl: '/landing-page-templates/job-site/content-photo.png',
         items: [
           {
-            title: 'Search for a job',
+            title: 'Busque uma vaga',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
           {
-            title: 'Apply within our website',
+            title: 'Candidate-se pelo site',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
           {
-            title: 'Get interview call',
+            title: 'Receba o convite para entrevista',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
         ],
       },
@@ -127,28 +127,28 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'WORKS',
       content: {
         type: 'WORKS',
-        title: 'Featured jobs',
+        title: 'Vagas em destaque',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
         items: [
           {
-            title: 'Senior Software Engineer — Dorfus, New York, USA',
-            category: 'Full-time',
+            title: 'Engenheiro(a) de Software Sênior — Dorfus, São Paulo, SP',
+            category: 'Tempo integral',
             imageUrl: '/landing-page-templates/job-site/job-logo-dorfus.png',
           },
           {
-            title: 'Product Designer — Coworks, Lake Colby, UK',
-            category: 'Remote',
+            title: 'Designer de Produto — Coworks, Curitiba, PR',
+            category: 'Remoto',
             imageUrl: '/landing-page-templates/job-site/job-logo-coworks.svg',
           },
           {
-            title: 'UX Designer — Askimat, California, USA',
-            category: 'Full-time',
+            title: 'Designer de UX — Askimat, Florianópolis, SC',
+            category: 'Tempo integral',
             imageUrl: '/landing-page-templates/job-site/job-logo-askimat.png',
           },
           {
-            title: 'Full-stack Web Developer — Greener, Katlynburgh, Sweden',
-            category: 'Part-time',
+            title: 'Desenvolvedor(a) Web Full-stack — Greener, Belo Horizonte, MG',
+            category: 'Meio período',
             imageUrl: '/landing-page-templates/job-site/job-logo-greener.svg',
           },
         ],
@@ -158,23 +158,23 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'WORKS',
       content: {
         type: 'WORKS',
-        title: 'News that helps',
+        title: 'Notícias que ajudam',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
         items: [
           {
-            title: 'How to win any job you want. Get started with 5 steps.',
-            category: 'Career',
+            title: 'Como conquistar a vaga que você quer em 5 passos.',
+            category: 'Carreira',
             imageUrl: '/landing-page-templates/job-site/news-1.png',
           },
           {
-            title: '10 ways to reduce your office work depression.',
-            category: 'Lifestyle',
+            title: '10 formas de reduzir o desânimo no trabalho de escritório.',
+            category: 'Estilo de vida',
             imageUrl: '/landing-page-templates/job-site/news-2.png',
           },
           {
-            title: 'Why should you work as a team even on small projects.',
-            category: 'Career',
+            title: 'Por que trabalhar em equipe até nos projetos pequenos.',
+            category: 'Carreira',
             imageUrl: '/landing-page-templates/job-site/news-3.png',
           },
         ],
@@ -184,54 +184,54 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
       type: 'NEWSLETTER',
       content: {
         type: 'NEWSLETTER',
-        title: 'Get our latest updates',
+        title: 'Receba nossas novidades',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        placeholder: 'Enter your email',
-        ctaLabel: 'Subscribe',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
+        placeholder: 'Digite o seu e-mail',
+        ctaLabel: 'Inscrever-se',
       },
     },
     {
       type: 'FOOTER',
       content: {
         type: 'FOOTER',
-        logoText: 'Brainwave.io',
-        text: 'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+        logoText: 'Sua Empresa',
+        text: 'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing digital', href: '#' },
+              { label: 'Redação de conteúdo', href: '#' },
+              { label: 'SEO para negócios', href: '#' },
+              { label: 'Design de interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de privacidade', href: '#' },
+              { label: 'Termos e condições', href: '#' },
+              { label: 'Política de devolução', href: '#' },
             ],
           },
         ],

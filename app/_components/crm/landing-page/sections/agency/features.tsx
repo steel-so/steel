@@ -34,34 +34,34 @@ const ICON_VARIANTS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'People choose us because we serve the best for everyone',
-    subtitle: 'Why choose us',
+    title: 'As pessoas nos escolhem porque entregamos o melhor para todos',
+    subtitle: 'Por que nos escolher',
     items: [
       {
-        title: 'Dedicated project manager',
+        title: 'Gerente de projeto dedicado',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Organized tasks',
+        title: 'Tarefas organizadas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Easy feedback sharing',
+        title: 'Feedback sem complicação',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Never miss deadline',
+        title: 'Prazos sempre cumpridos',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
     ],
-    ctaTitle: 'Ready to launch your next project?',
+    ctaTitle: 'Pronto para lançar o seu próximo projeto?',
     ctaDescription:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-    ctaLabel: 'Get started a project',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+    ctaLabel: 'Iniciar um projeto',
     ctaHref: '#footer',
   }
 }

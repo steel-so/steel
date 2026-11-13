@@ -42,37 +42,37 @@ const ICONS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'We made this app to solve your problems.',
+    title: 'Criamos este app para resolver os seus problemas.',
     items: [
       {
-        title: 'Unlimited Projects',
+        title: 'Projetos ilimitados',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
       {
-        title: 'Team Management',
+        title: 'Gestão de equipes',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
       {
-        title: 'File Sharing',
+        title: 'Compartilhamento de arquivos',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
       {
-        title: 'Video Meetings',
+        title: 'Reuniões em vídeo',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
       {
-        title: 'Time Tracking',
+        title: 'Controle de horas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
       {
-        title: 'Payment System',
+        title: 'Sistema de pagamentos',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
       },
     ],
   }

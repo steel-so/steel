@@ -14,8 +14,8 @@ const DEFAULT_BG = '/landing-page-templates/ecommerce/hero-bg.png'
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    eyebrow: 'Minimal Interior Design',
-    title: 'We minimize your waste in every step of the process.',
+    eyebrow: 'Design de interiores minimalista',
+    title: 'Menos desperdício em cada etapa do seu projeto.',
     imageUrl: DEFAULT_BG,
   }
 }

@@ -25,33 +25,33 @@ const SOCIAL_ICONS: Record<string, string> = {
 export function footerDefaultContent(): FooterContent {
   return {
     type: 'FOOTER',
-    logoText: 'Brainwave.io',
+    logoText: 'Sua Empresa',
     linkGroups: [
       {
-        title: 'Company',
+        title: 'Empresa',
         links: [
-          { label: 'About us', href: '#' },
-          { label: 'Contact us', href: '#' },
-          { label: 'Careers', href: '#' },
-          { label: 'Press', href: '#' },
+          { label: 'Sobre nós', href: '#' },
+          { label: 'Fale conosco', href: '#' },
+          { label: 'Carreiras', href: '#' },
+          { label: 'Imprensa', href: '#' },
         ],
       },
       {
-        title: 'Product',
+        title: 'Produto',
         links: [
-          { label: 'Features', href: '#' },
-          { label: 'Pricing', href: '#' },
-          { label: 'News', href: '#' },
-          { label: 'Help desk', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Recursos', href: '#' },
+          { label: 'Preços', href: '#' },
+          { label: 'Novidades', href: '#' },
+          { label: 'Central de ajuda', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Return Policy', href: '#' },
+          { label: 'Política de privacidade', href: '#' },
+          { label: 'Termos e condições', href: '#' },
+          { label: 'Política de devolução', href: '#' },
         ],
       },
     ],

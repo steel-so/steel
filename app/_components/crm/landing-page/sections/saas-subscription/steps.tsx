@@ -26,9 +26,9 @@ const BASE = '/landing-page-templates/saas-subscription'
 export function stepsGettingStartedDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Getting started with Albino is easier than ever',
+    title: 'Começar com o Albino nunca foi tão fácil',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page so quickly with Albino.',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page rapidamente com o Albino.',
     imageUrl: `${BASE}/steps1-user-1.png`,
     items: [],
   }
@@ -38,25 +38,25 @@ export function stepsGettingStartedDefaultContent(): StepsContent {
 export function stepsManageProjectsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Manage your projects fast',
+    title: 'Gerencie seus projetos com rapidez',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
     imageUrl: `${BASE}/steps2-event.png`,
     items: [
       {
-        title: 'Create a project',
+        title: 'Crie um projeto',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código.',
       },
       {
-        title: 'Assign related people',
+        title: 'Atribua as pessoas envolvidas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código.',
       },
       {
-        title: 'Make it done on-time',
+        title: 'Entregue dentro do prazo',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código.',
       },
     ],
   }
@@ -255,7 +255,7 @@ export function SaasSubscriptionSteps({
             className='inline-flex w-fit items-center justify-center rounded-lg bg-[#473bf0] px-8 py-4 font-bold text-[17px] text-white tracking-[-0.6px] transition-opacity hover:opacity-90'
           >
             <GhostInput
-              value={textOf(content, 'cta', 'Get started for free')}
+              value={textOf(content, 'cta', 'Comece grátis')}
               onCommit={(v) => onChange?.(withText(content, 'cta', v))}
               placeholder='Texto do botão'
               readOnly={readOnly}
