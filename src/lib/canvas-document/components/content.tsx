@@ -650,6 +650,12 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     propsSchema: documentImageSchema,
     defaultProps: () => ({ src: '', alt: '' }),
     accepts: false,
+    resizable: {
+      widthPath: 'width',
+      widthUnit: '%',
+      min: { width: 10 },
+      max: { width: 100 },
+    },
     inspector: [
       section('image', 'Imagem', [
         {

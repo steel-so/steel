@@ -370,6 +370,11 @@ export const imageDefinition = defineComponent<EmailImageProps>({
     visibility: { ...SHOWN },
   }),
   accepts: false,
+  resizable: {
+    widthPath: 'width',
+    min: { width: 16 },
+    max: { width: 800 },
+  },
   inspector: [
     {
       id: 'content',
@@ -452,6 +457,12 @@ export const dividerDefinition = defineComponent<EmailDividerProps>({
     visibility: { ...SHOWN },
   }),
   accepts: false,
+  resizable: {
+    widthPath: 'width',
+    widthUnit: '%',
+    min: { width: 10 },
+    max: { width: 100 },
+  },
   inspector: [
     {
       id: 'style',
@@ -517,6 +528,7 @@ export const spacerDefinition = defineComponent<EmailSpacerProps>({
   propsSchema: spacerSchema,
   defaultProps: () => ({ height: 24, visibility: { ...SHOWN } }),
   accepts: false,
+  resizable: { heightPath: 'height', min: { height: 4 }, max: { height: 200 } },
   inspector: [
     {
       id: 'style',

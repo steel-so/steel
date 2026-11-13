@@ -53,13 +53,24 @@ export function imageDefinition(ctx: SiteRenderContext) {
       align: 'center',
     }),
     accepts: false,
+    resizable: {
+      widthPath: 'width',
+      widthFormat: 'size',
+      widthUnit: '%',
+      min: { width: 5 },
+      max: { width: 100 },
+    },
     inspector: [
       {
         id: 'content',
         label: 'Imagem',
         tab: 'content',
         fields: [
-          { path: 'image', label: 'Imagem', control: { kind: 'image' } },
+          {
+            path: 'image',
+            label: 'Imagem',
+            control: { kind: 'image', dimensionsPath: 'dimensions' },
+          },
           {
             path: 'caption',
             label: 'Legenda',

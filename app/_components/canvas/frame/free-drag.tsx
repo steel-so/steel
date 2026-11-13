@@ -20,7 +20,7 @@ interface DragSession {
 }
 
 /** Box of `element` inside `parent`'s padding box, in frame px. */
-function boxIn(element: Element, parent: Element): SnapBox {
+export function boxIn(element: Element, parent: Element): SnapBox {
   const outer = parent.getBoundingClientRect()
   const inner = element.getBoundingClientRect()
   return {

@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { getNode } from '@/src/lib/canvas/ops'
+import { getIn } from '@/src/lib/canvas/path'
 import { CANVAS_BREAKPOINTS } from '@/src/lib/canvas/types'
 import {
   type CanvasImage,
@@ -58,12 +60,15 @@ export function ImagePicker({
   src,
   onChange,
   accept,
+  onDimensions,
 }: {
   id?: string
   label: string
   src: string
   onChange: (src: string) => void
   accept?: string[]
+  /** Natural size of the picked image, once the preview loads. */
+  onDimensions?: (size: { width: number; height: number }) => void
 }) {
   const { props } = useCanvasEditor()
   const upload = props.onUploadImage
@@ -104,7 +109,17 @@ export function ImagePicker({
         )}
       >
         {src ? (
-          <img src={src} alt='' className='size-full object-contain' />
+          <img
+            src={src}
+            alt=''
+            className='size-full object-contain'
+            onLoad={(event) => {
+              const { naturalWidth, naturalHeight } = event.currentTarget
+              if (naturalWidth > 0 && naturalHeight > 0) {
+                onDimensions?.({ width: naturalWidth, height: naturalHeight })
+              }
+            }}
+          />
         ) : (
           <div className='flex flex-col items-center gap-1.5 text-center text-[11px] text-muted-foreground'>
             <SteelIcon icon={Image02Icon} className='size-6' />
@@ -178,7 +193,23 @@ export function ImageControl({
   onChange,
   control,
 }: ControlProps<'image', CanvasImage>) {
+  const { store } = useCanvasEditor()
   const current = value ?? { src: '', alt: '' }
+  const dimensionsPath = control.dimensionsPath
+  const setDimensions = (size: { width: number; height: number } | undefined) => {
+    if (!dimensionsPath) return
+    const selected = store.getState().selection[0]
+    const node = selected ? getNode(store.getState().doc, selected) : undefined
+    if (!selected || !node) return
+    const stored = getIn(node.props, dimensionsPath) as
+      | { width: number; height: number }
+      | undefined
+    if (stored?.width === size?.width && stored?.height === size?.height) return
+    store.dispatch(
+      { kind: 'update', id: selected, set: { [dimensionsPath]: size } },
+      { label: 'image-size' },
+    )
+  }
   return (
     <div className='flex flex-col gap-2'>
       <ImagePicker
@@ -186,7 +217,11 @@ export function ImageControl({
         label={label}
         src={current.src}
         accept={control.accept}
-        onChange={(src) => onChange({ ...current, src })}
+        onChange={(src) => {
+          onChange({ ...current, src })
+          if (!src) setDimensions(undefined)
+        }}
+        onDimensions={dimensionsPath ? setDimensions : undefined}
       />
       <SubField label='Texto alternativo'>
         <input
