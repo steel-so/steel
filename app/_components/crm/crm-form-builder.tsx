@@ -1,17 +1,44 @@
 'use client'
 
 import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   Add01Icon,
   Analytics01Icon,
   ArrowDown01Icon,
   ArrowLeft02Icon,
   ArrowUp01Icon,
+  ComputerIcon,
   Copy01Icon,
   Delete02Icon,
+  DragDropVerticalIcon,
   Globe02Icon,
+  Redo02Icon,
+  SmartPhone01Icon,
+  Tablet01Icon,
+  Undo02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  SaveStatus,
+  type SaveStatusValue,
+} from '@/app/_components/canvas/save-status'
 import { CrmFormStatsPanel } from '@/app/_components/crm/crm-form-stats-panel'
 import { CrmPublicFormRenderer } from '@/app/_components/crm/crm-public-form-renderer'
 import { SteelIcon } from '@/components/icon/icon'
@@ -30,6 +57,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
+import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { saveCrmForm, useCrmForm } from '@/src/hooks/use-crm-form'
 import { useCrmNewsletters } from '@/src/hooks/use-crm-newsletters'
 import {
@@ -173,6 +202,39 @@ function toPublicForm(
   }
 }
 
+type FormDoc = {
+  name: string
+  description: string
+  action: CrmFormActionDTO
+  fields: CrmFormFieldDefinition[]
+  phases: CrmFormPhase[]
+  successMessage: string
+  newsletterId: string
+}
+
+type PreviewDevice = 'desktop' | 'tablet' | 'mobile'
+
+const DEVICES: {
+  value: PreviewDevice
+  label: string
+  icon: typeof ComputerIcon
+  width: string
+}[] = [
+  { value: 'desktop', label: 'Computador', icon: ComputerIcon, width: '100%' },
+  { value: 'tablet', label: 'Tablet', icon: Tablet01Icon, width: '768px' },
+  { value: 'mobile', label: 'Celular', icon: SmartPhone01Icon, width: '390px' },
+]
+
+const AUTOSAVE_DELAY_MS = 1500
+
+/** First `campo_N` key not used by any field, so copies never collide. */
+function uniqueFieldKey(fields: CrmFormFieldDefinition[]): string {
+  const used = new Set(fields.map((f) => f.key))
+  let n = fields.length + 1
+  while (used.has(`campo_${n}`)) n += 1
+  return `campo_${n}`
+}
+
 export function CrmFormBuilder({
   workspaceId,
   slug,
@@ -182,7 +244,7 @@ export function CrmFormBuilder({
   slug: string
   formId: string
 }) {
-  const { form, isLoading, refetch } = useCrmForm(workspaceId, formId)
+  const { form, isLoading } = useCrmForm(workspaceId, formId)
 
   if (isLoading) {
     return (
@@ -204,7 +266,6 @@ export function CrmFormBuilder({
       workspaceId={workspaceId}
       slug={slug}
       initial={form}
-      onSaved={refetch}
     />
   )
 }
@@ -213,27 +274,44 @@ function CrmFormBuilderInner({
   workspaceId,
   slug,
   initial,
-  onSaved,
 }: {
   workspaceId: string
   slug: string
   initial: NonNullable<ReturnType<typeof useCrmForm>['form']>
-  onSaved: () => void
 }) {
   const router = useRouter()
 
-  const [name, setName] = useState(initial.name)
-  const [description, setDescription] = useState(initial.description ?? '')
-  const [action, setAction] = useState<CrmFormActionDTO>(initial.action)
-  const [fields, setFields] = useState<CrmFormFieldDefinition[]>(initial.fields)
-  const [phases, setPhases] = useState<CrmFormPhase[]>(initial.phases)
-  const [successMessage, setSuccessMessage] = useState(
-    initial.successMessage ?? '',
-  )
+  const history = useEditorHistory<FormDoc>({
+    name: initial.name,
+    description: initial.description ?? '',
+    action: initial.action,
+    fields: initial.fields,
+    phases: initial.phases,
+    successMessage: initial.successMessage ?? '',
+    newsletterId: initial.newsletterId ?? NO_NEWSLETTER,
+  })
+  const { name, description, action, fields, phases } = history.state
+  const { successMessage, newsletterId } = history.state
+  const { set: setDoc } = history
   const [status, setStatus] = useState(initial.status)
-  const [newsletterId, setNewsletterId] = useState(
-    initial.newsletterId ?? NO_NEWSLETTER,
-  )
+  const [device, setDevice] = useState<PreviewDevice>('desktop')
+
+  const setName = (value: string) =>
+    setDoc((d) => ({ ...d, name: value }), 'name')
+  const setDescription = (value: string) =>
+    setDoc((d) => ({ ...d, description: value }), 'description')
+  const setSuccessMessage = (value: string) =>
+    setDoc((d) => ({ ...d, successMessage: value }), 'successMessage')
+  const setNewsletterId = (value: string) =>
+    setDoc((d) => ({ ...d, newsletterId: value }))
+  const setFields = (
+    updater: (cur: CrmFormFieldDefinition[]) => CrmFormFieldDefinition[],
+    coalesceKey?: string,
+  ) => setDoc((d) => ({ ...d, fields: updater(d.fields) }), coalesceKey)
+  const setPhases = (
+    updater: (cur: CrmFormPhase[]) => CrmFormPhase[],
+    coalesceKey?: string,
+  ) => setDoc((d) => ({ ...d, phases: updater(d.phases) }), coalesceKey)
   const newsletters = useCrmNewsletters(workspaceId)
   const newsletterOptions = (newsletters.data ?? []).filter(
     (n) => n.status === 'ACTIVE' || n.id === newsletterId,
@@ -241,8 +319,10 @@ function CrmFormBuilderInner({
   const newsletterName = newsletterOptions.find(
     (n) => n.id === newsletterId,
   )?.name
-  const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveStatusValue>('idle')
   const [publishing, setPublishing] = useState(false)
+  const [saveTick, setSaveTick] = useState(0)
+  const savingRef = useRef(false)
   const [statsOpen, setStatsOpen] = useState(false)
 
   const online = status === 'PUBLISHED'
@@ -271,7 +351,6 @@ function CrmFormBuilderInner({
     return ''
   }, [fields])
 
-  const keyCounter = useRef(initial.fields.length)
   const phaseCounter = useRef(initial.phases.length)
 
   function buildPayload() {
@@ -289,6 +368,7 @@ function CrmFormBuilderInner({
   const snapshot = JSON.stringify(buildPayload())
   const savedSnapshot = useRef(snapshot)
   const dirty = snapshot !== savedSnapshot.current
+  const saving = saveStatus === 'saving'
 
   useEffect(() => {
     function onBeforeUnload(event: BeforeUnloadEvent) {
@@ -298,17 +378,79 @@ function CrmFormBuilderInner({
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [dirty])
 
-  async function onSave() {
-    setSaving(true)
-    const res = await saveCrmForm(workspaceId, initial.id, buildPayload())
-    setSaving(false)
-    if (res.ok) {
-      savedSnapshot.current = snapshot
-      notify.success('Formulário salvo')
-      onSaved()
-    } else {
-      notify.error(res.message ?? 'Não foi possível salvar.')
+  const payloadRef = useRef(buildPayload)
+  payloadRef.current = buildPayload
+
+  const persist = useCallback(
+    async (silent: boolean) => {
+      if (savingRef.current) return
+      savingRef.current = true
+      setSaveStatus('saving')
+      const sent = JSON.stringify(payloadRef.current())
+      const res = await saveCrmForm(
+        workspaceId,
+        initial.id,
+        payloadRef.current(),
+      )
+      savingRef.current = false
+      if (res.ok) {
+        savedSnapshot.current = sent
+        setSaveStatus('saved')
+        if (!silent) notify.success('Formulário salvo')
+      } else {
+        setSaveStatus('error')
+        notify.error(res.message ?? 'Não foi possível salvar.')
+      }
+      // Re-run the autosave check: the form may have changed while saving.
+      setSaveTick((t) => t + 1)
+    },
+    [workspaceId, initial.id],
+  )
+
+  // Autosave: a short pause after the last edit. After an error we stop
+  // retrying on our own and wait for the user (retry button or a new edit).
+  const failedSnapshot = useRef<string | null>(null)
+  useEffect(() => {
+    void saveTick
+    if (snapshot === savedSnapshot.current) return
+    if (saveStatus === 'error' && failedSnapshot.current === snapshot) return
+    const timer = setTimeout(() => {
+      failedSnapshot.current = snapshot
+      void persist(true)
+    }, AUTOSAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [snapshot, saveTick, saveStatus, persist])
+
+  // Leaving the screen with pending edits: send them right away.
+  useEffect(
+    () => () => {
+      if (JSON.stringify(payloadRef.current()) !== savedSnapshot.current) {
+        void saveCrmForm(workspaceId, initial.id, payloadRef.current())
+      }
+    },
+    [workspaceId, initial.id],
+  )
+
+  const { undo, redo } = history
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return
+      const key = event.key.toLowerCase()
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault()
+        undo()
+      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
+        event.preventDefault()
+        redo()
+      }
     }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo, redo])
+
+  function onSave() {
+    failedSnapshot.current = null
+    void persist(false)
   }
 
   async function onTogglePublish(next: boolean) {
@@ -326,8 +468,8 @@ function CrmFormBuilderInner({
     if (res.ok) {
       savedSnapshot.current = snapshot
       setStatus(desired)
+      setSaveStatus('saved')
       notify.success(next ? 'Formulário publicado' : 'Formulário despublicado')
-      onSaved()
     } else {
       notify.error(res.message ?? 'Não foi possível alterar a publicação.')
     }
@@ -336,44 +478,68 @@ function CrmFormBuilderInner({
   function onChangeAction(next: CrmFormActionDTO) {
     const allowed = ACTION_TARGETS[next] as readonly CrmFormFieldTargetDTO[]
     const fallback = defaultMapping(next)
-    setFields((cur) =>
-      cur.map((f) =>
+    setDoc((d) => ({
+      ...d,
+      action: next,
+      fields: d.fields.map((f) =>
         allowed.includes(f.mapping.target) ? f : { ...f, mapping: fallback },
       ),
-    )
-    setAction(next)
+    }))
   }
 
   function addField() {
-    keyCounter.current += 1
-    const newField: CrmFormFieldDefinition = {
-      key: `campo_${keyCounter.current}`,
-      label: 'Novo campo',
-      type: 'text',
-      required: false,
-      mapping: defaultMapping(action),
-    }
-    setFields((cur) => [...cur, newField])
+    setFields((cur) => [
+      ...cur,
+      {
+        key: uniqueFieldKey(cur),
+        label: 'Novo campo',
+        type: 'text',
+        required: false,
+        mapping: defaultMapping(action),
+      },
+    ])
+  }
+
+  function duplicateField(index: number) {
+    setFields((cur) => {
+      const source = cur[index]
+      if (!source) return cur
+      const copy: CrmFormFieldDefinition = {
+        ...source,
+        key: uniqueFieldKey(cur),
+        label: `${source.label || 'Campo'} (cópia)`,
+        options: source.options?.map((o) => ({ ...o })),
+      }
+      return [...cur.slice(0, index + 1), copy, ...cur.slice(index + 1)]
+    })
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  function onFieldDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setFields((cur) => {
+      const from = cur.findIndex((f) => f.key === active.id)
+      const to = cur.findIndex((f) => f.key === over.id)
+      return from === -1 || to === -1 ? cur : arrayMove(cur, from, to)
+    })
   }
 
   function updateField(index: number, patch: Partial<CrmFormFieldDefinition>) {
-    setFields((cur) =>
-      cur.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+    setFields(
+      (cur) => cur.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+      `field:${index}:${Object.keys(patch).join(',')}`,
     )
   }
 
   function removeField(index: number) {
     setFields((cur) => cur.filter((_, i) => i !== index))
-  }
-
-  function moveField(index: number, dir: -1 | 1) {
-    setFields((cur) => {
-      const next = [...cur]
-      const target = index + dir
-      if (target < 0 || target >= next.length) return cur
-      ;[next[index], next[target]] = [next[target], next[index]]
-      return next
-    })
   }
 
   function addPhase() {
@@ -385,8 +551,9 @@ function CrmFormBuilderInner({
   }
 
   function updatePhase(index: number, patch: Partial<CrmFormPhase>) {
-    setPhases((cur) =>
-      cur.map((p, i) => (i === index ? { ...p, ...patch } : p)),
+    setPhases(
+      (cur) => cur.map((p, i) => (i === index ? { ...p, ...patch } : p)),
+      `phase:${index}`,
     )
   }
 
@@ -479,8 +646,35 @@ function CrmFormBuilderInner({
             </span>
           ) : null}
         </Button>
+        <div className='flex items-center'>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label='Desfazer'
+            title='Desfazer (Ctrl+Z)'
+            disabled={!history.canUndo}
+            onClick={history.undo}
+          >
+            <SteelIcon icon={Undo02Icon} strokeWidth={2} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label='Refazer'
+            title='Refazer (Ctrl+Shift+Z)'
+            disabled={!history.canRedo}
+            onClick={history.redo}
+          >
+            <SteelIcon icon={Redo02Icon} strokeWidth={2} />
+          </Button>
+        </div>
+        <SaveStatus
+          status={dirty && saveStatus === 'saved' ? 'idle' : saveStatus}
+          onRetry={onSave}
+          className='hidden sm:flex'
+        />
         <Button size='sm' onClick={onSave} disabled={saving} data-shortcut-save>
-          {saving ? 'Salvando…' : dirty ? 'Salvar alterações' : 'Salvar'}
+          Salvar agora
         </Button>
       </header>
 
@@ -681,29 +875,65 @@ function CrmFormBuilderInner({
                 </p>
               ) : null}
 
-              {fields.map((field, index) => (
-                <FieldEditor
-                  key={field.key}
-                  field={field}
-                  index={index}
-                  total={fields.length}
-                  phases={phases}
-                  mappingOptions={mappingOptions}
-                  onChange={(patch) => updateField(index, patch)}
-                  onRemove={() => removeField(index)}
-                  onMove={(dir) => moveField(index, dir)}
-                />
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={onFieldDragEnd}
+              >
+                <SortableContext
+                  items={fields.map((f) => f.key)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {fields.map((field, index) => (
+                    <FieldEditor
+                      key={field.key}
+                      field={field}
+                      phases={phases}
+                      mappingOptions={mappingOptions}
+                      onChange={(patch) => updateField(index, patch)}
+                      onRemove={() => removeField(index)}
+                      onDuplicate={() => duplicateField(index)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </section>
           </div>
         </div>
 
         <div className='min-h-0 min-w-0 flex-1 overflow-y-auto bg-muted/30'>
           <div className='mx-auto max-w-xl p-6'>
-            <p className='mb-3 text-muted-foreground text-xs uppercase tracking-wide'>
-              Pré-visualização
-            </p>
-            <CrmPublicFormRenderer form={preview} preview />
+            <div className='mb-3 flex items-center justify-between gap-2'>
+              <p className='text-muted-foreground text-xs uppercase tracking-wide'>
+                Pré-visualização
+              </p>
+              <div className='flex items-center gap-0.5 rounded-md border bg-background p-0.5'>
+                {DEVICES.map((d) => (
+                  <Button
+                    key={d.value}
+                    variant={device === d.value ? 'secondary' : 'ghost'}
+                    size='icon-xs'
+                    aria-label={`Ver no ${d.label.toLowerCase()}`}
+                    aria-pressed={device === d.value}
+                    title={d.label}
+                    onClick={() => setDevice(d.value)}
+                  >
+                    <SteelIcon icon={d.icon} strokeWidth={2} />
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div
+              className={cn(
+                'mx-auto max-w-full transition-[width]',
+                device !== 'desktop' && 'rounded-xl border bg-background p-3',
+              )}
+              style={{
+                width: DEVICES.find((d) => d.value === device)?.width,
+              }}
+            >
+              <CrmPublicFormRenderer form={preview} preview />
+            </div>
           </div>
         </div>
       </div>
@@ -713,23 +943,27 @@ function CrmFormBuilderInner({
 
 function FieldEditor({
   field,
-  index,
-  total,
   phases,
   mappingOptions,
   onChange,
   onRemove,
-  onMove,
+  onDuplicate,
 }: {
   field: CrmFormFieldDefinition
-  index: number
-  total: number
   phases: CrmFormPhase[]
   mappingOptions: MappingOption[]
   onChange: (patch: Partial<CrmFormFieldDefinition>) => void
   onRemove: () => void
-  onMove: (dir: -1 | 1) => void
+  onDuplicate: () => void
 }) {
+  const {
+    setNodeRef,
+    transform,
+    transition,
+    attributes,
+    listeners,
+    isDragging,
+  } = useSortable({ id: field.key })
   const mappingValue = `${field.mapping.target}.${field.mapping.attribute}`
 
   function setOption(i: number, label: string) {
@@ -749,8 +983,25 @@ function FieldEditor({
   }
 
   return (
-    <div className='flex flex-col gap-3 rounded-lg border p-4'>
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        'flex flex-col gap-3 rounded-lg border bg-background p-4',
+        isDragging && 'relative z-10 opacity-70 shadow-md',
+      )}
+    >
       <div className='flex items-center gap-2'>
+        <button
+          type='button'
+          aria-label={`Arrastar o campo ${field.label || 'sem nome'} para mudar a ordem`}
+          title='Arraste para mudar a ordem'
+          className='cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing'
+          {...attributes}
+          {...listeners}
+        >
+          <SteelIcon icon={DragDropVerticalIcon} strokeWidth={2} size={16} />
+        </button>
         <Input
           value={field.label}
           placeholder='Rótulo do campo'
@@ -759,20 +1010,11 @@ function FieldEditor({
         <Button
           variant='ghost'
           size='icon-sm'
-          aria-label='Mover para cima'
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
+          aria-label={`Duplicar o campo ${field.label || 'sem nome'}`}
+          title='Duplicar campo'
+          onClick={onDuplicate}
         >
-          <SteelIcon icon={ArrowUp01Icon} strokeWidth={2} />
-        </Button>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          aria-label='Mover para baixo'
-          disabled={index === total - 1}
-          onClick={() => onMove(1)}
-        >
-          <SteelIcon icon={ArrowDown01Icon} strokeWidth={2} />
+          <SteelIcon icon={Copy01Icon} strokeWidth={2} />
         </Button>
         <ConfirmAction
           trigger={
