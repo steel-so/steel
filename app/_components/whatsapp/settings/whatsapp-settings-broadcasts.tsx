@@ -1095,7 +1095,10 @@ export function WhatsappSettingsBroadcasts({
                     <span className='block'>Pula números sem WhatsApp</span>
                   ) : null}
                   {broadcast.failedCount > 0 && broadcast.failureReason ? (
-                    <span className='block text-destructive'>
+                    <span
+                      className='line-clamp-3 block max-w-md text-destructive'
+                      title={broadcast.failureReason}
+                    >
                       Motivo: {broadcast.failureReason}
                     </span>
                   ) : null}
