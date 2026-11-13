@@ -179,12 +179,8 @@ describe('<WhatsappSettingsConnections />', () => {
 
     // Meta is preselected, but the manual form is behind "Avançado".
     expect(within(dialog).queryByLabelText('Phone Number ID')).toBeNull()
-    fireEvent.click(
-      within(dialog).getByRole('button', { name: /Avançado/ }),
-    )
-    expect(
-      await within(dialog).findByLabelText('Phone Number ID'),
-    ).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: /Avançado/ }))
+    expect(await within(dialog).findByLabelText('Phone Number ID')).toBeTruthy()
     expect(within(dialog).queryByLabelText('ID da instância')).toBeNull()
 
     type(dialog, 'Nome', 'Vendas')
@@ -250,7 +246,10 @@ describe('<WhatsappSettingsConnections />', () => {
       {
         method: 'POST',
         match: `${BASE}/conn_1/status`,
-        data: connection({ status: 'DISCONNECTED', statusError: 'Sem pareamento' }),
+        data: connection({
+          status: 'DISCONNECTED',
+          statusError: 'Sem pareamento',
+        }),
       },
       { match: BASE, data: [connection()] },
     ])

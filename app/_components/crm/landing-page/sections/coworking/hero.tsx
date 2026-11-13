@@ -305,7 +305,11 @@ export function CoworkingHero({
               className='h-[19px] w-[19px]'
             />
             <GhostInput
-              value={textOf(content, 'tour', 'Faça um tour virtual pelos nossos espaços')}
+              value={textOf(
+                content,
+                'tour',
+                'Faça um tour virtual pelos nossos espaços',
+              )}
               onCommit={(v) => onChange?.(withText(content, 'tour', v))}
               placeholder='Texto do link'
               readOnly={readOnly}

@@ -54,6 +54,7 @@ const ENTITY_LABELS: Record<CrmCustomFieldEntityDTO, string> = {
   COMPANY: 'Empresas',
   PERSON: 'Pessoas',
   OPPORTUNITY: 'Oportunidades',
+  WHATSAPP_CONTACT: 'Contatos do WhatsApp',
 }
 
 const TYPE_LABELS: Record<CrmCustomFieldTypeDTO, string> = {
@@ -62,6 +63,12 @@ const TYPE_LABELS: Record<CrmCustomFieldTypeDTO, string> = {
   DATE: 'Data',
   BOOLEAN: 'Sim ou não',
   SELECT: 'Lista de opções',
+  CPF: 'CPF',
+  CNPJ: 'CNPJ',
+  EMAIL: 'E-mail',
+  PHONE: 'Telefone',
+  URL: 'Link (URL)',
+  CEP: 'CEP',
 }
 
 export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {

@@ -43,8 +43,6 @@ import {
 } from '@/app/_components/crm/landing-page/sections/registry'
 
 import { SteelIcon } from '@/components/icon/icon'
-import { Button } from '@/components/ui/button'
-import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +53,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +67,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
-import { getLandingPageTemplate } from '@/src/lib/landing-page-templates'
 import {
   useCrmLandingPage,
   useSetCrmLandingPagePublished,
@@ -75,6 +74,7 @@ import {
 } from '@/src/hooks/use-crm-landing-page'
 import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
+import { getLandingPageTemplate } from '@/src/lib/landing-page-templates'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type {
   CrmLandingPageDTO,
@@ -180,9 +180,9 @@ function CrmLandingPageBuilderInner({
 
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   // What is waiting for the debounce. Kept so leaving the page never drops it.
-  const pendingSave = React.useRef<Parameters<
-    typeof updatePage.mutate
-  >[0] | null>(null)
+  const pendingSave = React.useRef<
+    Parameters<typeof updatePage.mutate>[0] | null
+  >(null)
   const [saveState, setSaveState] = React.useState<
     'idle' | 'saving' | 'saved' | 'error'
   >('idle')
@@ -555,8 +555,8 @@ function CrmLandingPageBuilderInner({
             ))}
           </ul>
           <p className='text-muted-foreground text-xs'>
-            Para receber contatos, conecte um formulário na seção de
-            newsletter. Ainda não tem um?{' '}
+            Para receber contatos, conecte um formulário na seção de newsletter.
+            Ainda não tem um?{' '}
             <Link
               href={`/${slug}/crm/forms`}
               className='text-primary underline underline-offset-2'

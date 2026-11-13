@@ -504,10 +504,11 @@ export const WhatsAppAiReplyService = {
     )
     // Own documents, plus KB articles and published Wiki pages that match
     // what the customer just asked (unified index, public content only).
-    const sharedKnowledge = await WhatsAppReplyKnowledgeService.forCustomerReply(
-      workspaceId,
-      customerQueryText(orderedHistory),
-    )
+    const sharedKnowledge =
+      await WhatsAppReplyKnowledgeService.forCustomerReply(
+        workspaceId,
+        customerQueryText(orderedHistory),
+      )
     const knowledgeBaseSection =
       (await buildKnowledgeBaseSection(workspaceId)) +
       buildReplyKnowledgeSection(sharedKnowledge, 'customer')

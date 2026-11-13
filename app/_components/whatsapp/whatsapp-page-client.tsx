@@ -27,7 +27,9 @@ function UnavailableNotice({
         className,
       )}
     >
-      <p className='font-medium'>Essa conversa não está disponível para você.</p>
+      <p className='font-medium'>
+        Essa conversa não está disponível para você.
+      </p>
       <p className='text-muted-foreground text-xs'>
         Ela pode ter sido transferida para outra equipe ou outro atendente, ter
         sido apagada, ou você não tem acesso a ela. Fale com quem enviou o link
@@ -68,7 +70,9 @@ export function WhatsappPageClient({
   const refreshSelected = useCallback(
     (fresh: WhatsAppConversationDTO) =>
       setSelected((current) =>
-        current && current.id === fresh.id && current.updatedAt !== fresh.updatedAt
+        current &&
+        current.id === fresh.id &&
+        current.updatedAt !== fresh.updatedAt
           ? fresh
           : current,
       ),
@@ -149,7 +153,9 @@ export function WhatsappPageClient({
       ) : (
         <div className='flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto p-6 text-center text-muted-foreground text-sm max-lg:hidden'>
           {showUnavailable ? (
-            <UnavailableNotice onDismiss={() => setUnavailableDismissed(true)} />
+            <UnavailableNotice
+              onDismiss={() => setUnavailableDismissed(true)}
+            />
           ) : null}
           <ZapOnboardingChecklist workspaceId={workspaceId} />
           <p>Selecione uma conversa para começar</p>

@@ -2,8 +2,8 @@
 
 import { QrCodeIcon, TradeMarkIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useState } from 'react'
-import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { ConnectionSpendCapButton } from '@/app/_components/whatsapp/costs/whatsapp-spend-caps'
+import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -37,12 +37,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PhoneInput } from '@/components/ui/phone-input'
-import { cn } from '@/lib/utils'
 import {
   NEXT_PUBLIC_META_APP_ID,
   NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
 } from '@/lib/env/env'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
 import {
   useConnectWhatsAppViaMeta,
   useCreateWhatsAppConnection,
@@ -69,8 +69,7 @@ const STATUS_HINT: Partial<Record<WhatsAppConnectionDTO['status'], string>> = {
     'Ainda não terminou de conectar. Se for Z-API, leia o QR Code com o celular.',
   DISCONNECTED:
     'Este número não está recebendo nem enviando mensagens agora. Reconecte para voltar a atender.',
-  ERROR:
-    'A conexão está com problema. Use "Testar conexão" para ver o motivo.',
+  ERROR: 'A conexão está com problema. Use "Testar conexão" para ver o motivo.',
 }
 
 const PROVIDER_LABEL: Record<WhatsAppProviderDTO, string> = {
@@ -184,6 +183,7 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
             {PROVIDER_OPTIONS.map((option) => {
               const selected = form.provider === option.value
               return (
+                // biome-ignore lint/a11y/useSemanticElements: a selectable card, not a bare radio input
                 <button
                   key={option.value}
                   type='button'
@@ -291,8 +291,8 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
                       className='text-muted-foreground text-xs'
                     >
                       Token de segurança da conta (no painel da Z-API, em
-                      Segurança). Obrigatório quando a conta exige; sem ele a Z-API
-                      recusa as chamadas e o QR não aparece.
+                      Segurança). Obrigatório quando a conta exige; sem ele a
+                      Z-API recusa as chamadas e o QR não aparece.
                     </p>
                   </div>
                 </>
@@ -313,12 +313,14 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
                       id='metaPhoneNumberId-hint'
                       className='text-muted-foreground text-xs'
                     >
-                      No Gerenciador do WhatsApp da Meta, em Configurações da API:
-                      é o "ID do número de telefone".
+                      No Gerenciador do WhatsApp da Meta, em Configurações da
+                      API: é o "ID do número de telefone".
                     </p>
                   </div>
                   <div className='space-y-1.5'>
-                    <Label htmlFor='metaWabaId'>WhatsApp Business Account ID</Label>
+                    <Label htmlFor='metaWabaId'>
+                      WhatsApp Business Account ID
+                    </Label>
                     <Input
                       id='metaWabaId'
                       required
@@ -358,8 +360,6 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
                   </div>
                 </>
               )}
-
-
             </>
           )}
 

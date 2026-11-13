@@ -83,6 +83,13 @@ export interface SteelAiTool<Args = Record<string, unknown>> {
   label: string
   /** Module that must be enabled (null = platform-level tool). */
   module: ModuleKind | null
+  /**
+   * Platform-level tool (`module: null`) that is NOT offered in every round:
+   * it only enters when the message talks about it (keyword match), when it
+   * was used recently (pinned), or when `steel_find_tools` finds it. Keeps the
+   * per-call tool budget for the module tools the request actually needs.
+   */
+  onDemand?: boolean
   kind: AiToolKind
   /**
    * Instructions for the model, in pt-BR. Also read by external MCP clients,

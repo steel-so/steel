@@ -1,7 +1,6 @@
 import { DocumentValidationIcon } from '@hugeicons-pro/core-stroke-rounded'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { DOCUMENT_KINDS } from '@/src/schemas/document.schema'
 import { DocumentsList } from '@/app/_components/documents/documents-list'
 import {
   HeaderBreadcrumbCrumb,
@@ -10,6 +9,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { SteelIcon } from '@/components/icon/icon'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { DOCUMENT_KINDS } from '@/src/schemas/document.schema'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {

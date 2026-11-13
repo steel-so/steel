@@ -37,7 +37,8 @@ const KNOWN: Record<number, Omit<SendFailureExplanation, 'needsTemplate'>> = {
   },
   131030: {
     title: 'O número do contato não está liberado para receber mensagens.',
-    action: 'Avise o administrador: o número pode estar fora da lista de teste.',
+    action:
+      'Avise o administrador: o número pode estar fora da lista de teste.',
   },
   131052: {
     title: 'Não foi possível baixar o arquivo enviado pelo contato.',
@@ -48,7 +49,8 @@ const KNOWN: Record<number, Omit<SendFailureExplanation, 'needsTemplate'>> = {
     action: 'Verifique o formato e o tamanho do arquivo e reenvie.',
   },
   132000: {
-    title: 'O modelo (template) foi preenchido com variáveis a mais ou a menos.',
+    title:
+      'O modelo (template) foi preenchido com variáveis a mais ou a menos.',
     action: 'Abra o modelo de novo e preencha todos os campos.',
   },
   132001: {

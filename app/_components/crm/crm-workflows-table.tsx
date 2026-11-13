@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { WORKFLOW_TEMPLATES } from '@/app/_components/crm/workflow/workflow-templates'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +20,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
-import { WORKFLOW_TEMPLATES } from '@/app/_components/crm/workflow/workflow-templates'
 import {
   useCreateCrmWorkflow,
   useCrmWorkflows,

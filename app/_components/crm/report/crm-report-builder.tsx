@@ -841,9 +841,9 @@ function PreviewSection({
           <Skeleton className='h-64 w-full' />
         ) : !data || data.rows.length === 0 ? (
           <p className='rounded-lg border border-dashed bg-card py-16 text-center text-muted-foreground text-sm'>
-            Nenhum registro encontrado com esta configuração. Escolha ao menos uma
-            coluna e, se houver filtros, afrouxe-os. Se a fonte ainda não tem
-            registros, cadastre alguns no CRM e volte aqui.
+            Nenhum registro encontrado com esta configuração. Escolha ao menos
+            uma coluna e, se houver filtros, afrouxe-os. Se a fonte ainda não
+            tem registros, cadastre alguns no CRM e volte aqui.
           </p>
         ) : (
           <div className='overflow-auto rounded-lg border bg-card'>

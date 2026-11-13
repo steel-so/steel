@@ -1263,7 +1263,7 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ).toEqual({ teamId: null }),
     )
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe'),
+      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe.'),
     )
   })
 
@@ -1656,13 +1656,15 @@ describe('<WhatsappConversationView /> · usability guards', () => {
     renderWithQuery(
       <WhatsappConversationView
         workspaceId='ws_1'
-        conversation={conversation({ lastInboundAt: '2020-01-01T00:00:00.000Z' })}
+        conversation={conversation({
+          lastInboundAt: '2020-01-01T00:00:00.000Z',
+        })}
         connection={connection()}
       />,
     )
-    expect(
-      (await screen.findByTestId('composer')).dataset.windowClosed,
-    ).toBe('true')
+    expect((await screen.findByTestId('composer')).dataset.windowClosed).toBe(
+      'true',
+    )
   })
 
   it('keeps free text open on Z-API and on a recent Meta conversation', async () => {
@@ -1670,13 +1672,15 @@ describe('<WhatsappConversationView /> · usability guards', () => {
     const { rerender } = renderWithQuery(
       <WhatsappConversationView
         workspaceId='ws_1'
-        conversation={conversation({ lastInboundAt: '2020-01-01T00:00:00.000Z' })}
+        conversation={conversation({
+          lastInboundAt: '2020-01-01T00:00:00.000Z',
+        })}
         connection={connection({ provider: 'ZAPI' })}
       />,
     )
-    expect(
-      (await screen.findByTestId('composer')).dataset.windowClosed,
-    ).toBe('false')
+    expect((await screen.findByTestId('composer')).dataset.windowClosed).toBe(
+      'false',
+    )
 
     rerender(
       <WhatsappConversationView
@@ -1711,9 +1715,9 @@ describe('<WhatsappConversationView /> · usability guards', () => {
         conversation={conversation({ status: 'CLOSED' })}
       />,
     )
-    expect(
-      (await screen.findByTestId('composer')).dataset.reason,
-    ).toContain('Reabra')
+    expect((await screen.findByTestId('composer')).dataset.reason).toContain(
+      'Reabra',
+    )
   })
 
   it('shows who is handling the conversation', async () => {
@@ -1732,24 +1736,25 @@ describe('<WhatsappConversationView /> · usability guards', () => {
   })
 
   it('shows the translated reason and a way out under a failed message', async () => {
-    setup([], [
-      message({
-        id: 'm9',
-        direction: 'OUT',
-        text: 'Oi de novo',
-        status: 'FAILED',
-        failureReason: '131047: Re-engagement message',
-      }),
-    ])
+    setup(
+      [],
+      [
+        message({
+          id: 'm9',
+          direction: 'OUT',
+          text: 'Oi de novo',
+          status: 'FAILED',
+          failureReason: '131047: Re-engagement message',
+        }),
+      ],
+    )
     renderWithQuery(
       <WhatsappConversationView
         workspaceId='ws_1'
         conversation={conversation()}
       />,
     )
-    expect(
-      await screen.findByText(/Passaram mais de 24 horas/),
-    ).toBeTruthy()
+    expect(await screen.findByText(/Passaram mais de 24 horas/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Usar modelo' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Reenviar' })).toBeNull()
   })
@@ -1781,7 +1786,9 @@ describe('<WhatsappConversationView /> · usability guards', () => {
         conversation={conversation()}
       />,
     )
-    fireEvent.contextMenu(await screen.findByText('Preciso de ajuda com meu pedido'))
+    fireEvent.contextMenu(
+      await screen.findByText('Preciso de ajuda com meu pedido'),
+    )
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Apagar mensagem' }),
     )
@@ -1810,7 +1817,9 @@ describe('<WhatsappConversationView /> · usability guards', () => {
         conversation={conversation()}
       />,
     )
-    fireEvent.contextMenu(await screen.findByText('Preciso de ajuda com meu pedido'))
+    fireEvent.contextMenu(
+      await screen.findByText('Preciso de ajuda com meu pedido'),
+    )
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Apagar mensagem' }),
     )

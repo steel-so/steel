@@ -142,7 +142,9 @@ function CreateCrmIntegrationKeyDialog({
       await navigator.clipboard.writeText(plaintextKey)
       notify.success('Chave copiada')
     } catch {
-      notify.error('Não foi possível copiar. Selecione a chave e copie manualmente.')
+      notify.error(
+        'Não foi possível copiar. Selecione a chave e copie manualmente.',
+      )
     }
   }
 

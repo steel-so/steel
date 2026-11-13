@@ -291,7 +291,11 @@ export function ConsultationAbout({
           ) : (
             <div className={`${SUBMIT_CLASS} px-4 text-center`}>
               <GhostInput
-                value={textOf(content, 'form.submit', 'Quero consultoria grátis')}
+                value={textOf(
+                  content,
+                  'form.submit',
+                  'Quero consultoria grátis',
+                )}
                 onCommit={(v) =>
                   onChange?.(withText(content, 'form.submit', v))
                 }

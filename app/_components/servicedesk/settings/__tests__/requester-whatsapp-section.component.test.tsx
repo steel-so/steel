@@ -90,9 +90,11 @@ describe('<SdRequesterWhatsappSection />', () => {
         },
       },
     })
-    fireEvent.change(screen.getByDisplayValue('pt_BR'), {
-      target: { value: '' },
-    })
+    // Every event row defaults to pt_BR, so target the saved entry's field by id.
+    fireEvent.change(
+      document.getElementById('rw-lang-ticket.resolved') as HTMLInputElement,
+      { target: { value: '' } },
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Salvar avisos' }))
     expect(onSave).not.toHaveBeenCalled()
     expect(notifyError).toHaveBeenCalled()

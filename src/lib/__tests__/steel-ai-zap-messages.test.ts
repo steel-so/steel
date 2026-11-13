@@ -226,6 +226,7 @@ describe('zap_template_send', () => {
     conversationId: 'c1',
     templateName: 'boas_vindas',
     bodyVariables: ['Maria'],
+    headerVariables: [] as string[],
   }
 
   it('should be a customer-facing ACTION gated by conversations:CREATE', () => {
@@ -386,10 +387,7 @@ describe('zap_template_send', () => {
         }),
       ]),
     )
-    const error = expectErr(
-      await previewOf(t)(ctx, tArgs),
-      'VALIDATION_ERROR',
-    )
+    const error = expectErr(await previewOf(t)(ctx, tArgs), 'VALIDATION_ERROR')
     expect(error.message).toMatch(/botão de link/)
   })
 
@@ -406,10 +404,7 @@ describe('zap_template_send', () => {
     conversations.get.mockResolvedValueOnce(
       ok(conversation({ aiActive: true })),
     )
-    expectErr(
-      await t.execute(ctx, tArgs),
-      'WHATSAPP_CONVERSATION_AI_HANDLING',
-    )
+    expectErr(await t.execute(ctx, tArgs), 'WHATSAPP_CONVERSATION_AI_HANDLING')
     expect(messages.sendTemplate).not.toHaveBeenCalled()
   })
 

@@ -78,6 +78,12 @@ function type(label: string | RegExp, value: string) {
   fireEvent.change(field(label), { target: { value } })
 }
 
+// With no leads the board shows "Novo lead" in the header and in the empty
+// state; both open the same dialog.
+function openCreateDialog() {
+  fireEvent.click(screen.getAllByText('Novo lead', { selector: 'button' })[0])
+}
+
 async function openLead(name: string) {
   fireEvent.click(await screen.findByText(name))
 }
@@ -139,7 +145,7 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     const submit = await screen.findByText('Criar lead')
 
     fireEvent.click(submit)
@@ -182,7 +188,7 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     await screen.findByText('Criar lead')
     type('Nome *', '  Diego Alves ')
     type('E-mail', 'diego@alves.com ')
@@ -215,7 +221,7 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     await screen.findByText('Criar lead')
     type('Nome *', 'Diego')
     type('E-mail', 'd@a.com')
@@ -271,7 +277,7 @@ describe('<CrmLeadsBoard /> stage panel', () => {
       'Informe com quem falou ou tentou falar',
     )
 
-    type('Com quem falou/tentou falar', ' Ana ')
+    type('Com quem falou/tentou falar *', ' Ana ')
     type('Observação', 'Retornar amanhã')
     fireEvent.click(
       screen.getByText('Registrar contato', { selector: 'button' }),

@@ -92,11 +92,7 @@ export function WhatsappSettingsAi({ workspaceId }: { workspaceId: string }) {
             : 'Não foi possível carregar a configuração da IA.'}{' '}
           Se o problema persistir, peça a um administrador do workspace.
         </p>
-        <Button
-          size='sm'
-          variant='outline'
-          onClick={() => aiConfig.refetch()}
-        >
+        <Button size='sm' variant='outline' onClick={() => aiConfig.refetch()}>
           Tentar de novo
         </Button>
       </div>

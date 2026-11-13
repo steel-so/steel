@@ -28,7 +28,7 @@ type ConfirmActionProps = {
   cancelLabel?: string
   destructive?: boolean
   pending?: boolean
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => unknown
 }
 
 /**

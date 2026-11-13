@@ -101,7 +101,9 @@ export function CrmRetentionSettingsSection({
                 <Switch
                   id='crm-retention-detractor'
                   checked={onDetractor}
-                  onCheckedChange={(checked) => setOnDetractor(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setOnDetractor(checked === true)
+                  }
                   disabled={!isPrivileged}
                 />
                 <FieldLabel htmlFor='crm-retention-detractor'>

@@ -520,8 +520,8 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
             <CardTitle>Pontuação de leads</CardTitle>
             <CardDescription>
               A pontuação mostra quais leads estão mais quentes. Cada regra soma
-              (ou tira) pontos quando o lead bate com a condição. Exemplo: “Origem
-              é igual a Indicação” soma 20 pontos.
+              (ou tira) pontos quando o lead bate com a condição. Exemplo:
+              “Origem é igual a Indicação” soma 20 pontos.
             </CardDescription>
           </div>
           <NewScoringRuleDialog

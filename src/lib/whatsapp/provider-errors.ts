@@ -40,7 +40,8 @@ const META_MESSAGES: Record<number, string> = {
     'O modelo foi bloqueado por violar as políticas do WhatsApp. Crie um novo modelo.',
   132012:
     'Os valores das variáveis não seguem o formato do modelo. Revise o preenchimento.',
-  132015: 'O modelo está pausado pela Meta por baixa qualidade. Use outro modelo.',
+  132015:
+    'O modelo está pausado pela Meta por baixa qualidade. Use outro modelo.',
   132016: 'O modelo foi desativado pela Meta. Crie um novo modelo.',
   130429:
     'Limite de envios por segundo da Meta atingido. Aguarde alguns instantes e tente de novo.',
@@ -48,7 +49,8 @@ const META_MESSAGES: Record<number, string> = {
     'Este contato faz parte de um teste da Meta e não recebe esta mensagem agora.',
   133010:
     'O número do WhatsApp não está registrado na Meta. Reconecte o número nas configurações.',
-  80007: 'Limite de requisições da Meta atingido. Aguarde um pouco e tente de novo.',
+  80007:
+    'Limite de requisições da Meta atingido. Aguarde um pouco e tente de novo.',
   613: 'Limite de requisições da Meta atingido. Aguarde um pouco e tente de novo.',
   190: 'O acesso da conexão à Meta expirou. Reconecte o número nas configurações do WhatsApp.',
   100: 'A Meta recusou os dados enviados. Confira número, texto e modelo e tente de novo.',
@@ -66,7 +68,9 @@ function metaCode(error: unknown): number | undefined {
 
 /** Message already written for the user (pt-BR, accents) — keep as is. */
 function looksPortuguese(message: string): boolean {
-  return /[ãõáéíóúâêôçà]/i.test(message) || /\b(não|nao|falha|erro)\b/i.test(message)
+  return (
+    /[ãõáéíóúâêôçà]/i.test(message) || /\b(não|nao|falha|erro)\b/i.test(message)
+  )
 }
 
 /** Maps any error thrown by a provider client to a pt-BR message. */
@@ -79,13 +83,21 @@ export function whatsappProviderMessage(error: unknown): string {
   if (/\b(rate limit|too many requests)\b/i.test(message)) {
     return 'Muitos envios em pouco tempo. Aguarde alguns instantes e tente de novo.'
   }
-  if (/invalid (phone|number)|not a valid whatsapp|not on whatsapp/i.test(message)) {
+  if (
+    /invalid (phone|number)|not a valid whatsapp|not on whatsapp/i.test(message)
+  ) {
     return META_MESSAGES[131026]
   }
-  if (/instance not found|not connected|disconnected|you are not connected/i.test(message)) {
+  if (
+    /instance not found|not connected|disconnected|you are not connected/i.test(
+      message,
+    )
+  ) {
     return 'O número da Z-API está desconectado. Reconecte lendo o QR Code nas configurações do WhatsApp.'
   }
-  if (/(fetch failed|network|timeout|timed out|ECONN|ENOTFOUND)/i.test(message)) {
+  if (
+    /(fetch failed|network|timeout|timed out|ECONN|ENOTFOUND)/i.test(message)
+  ) {
     return 'Não foi possível falar com o WhatsApp agora. Verifique a conexão e tente de novo.'
   }
   return looksPortuguese(message) || /Z-API/.test(message)

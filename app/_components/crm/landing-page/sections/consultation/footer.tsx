@@ -155,7 +155,8 @@ export function ConsultationFooter({
     >
       <div className='mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-12 pb-16 sm:grid-cols-3 lg:grid-cols-5'>
         {content.linkGroups.map((group, groupIndex) => {
-          const isContact = group.title === 'Fale conosco' || group.title === 'Contact us'
+          const isContact =
+            group.title === 'Fale conosco' || group.title === 'Contact us'
           return (
             <div key={groupIndex} className='flex flex-col gap-4'>
               <GhostInput

@@ -32,9 +32,11 @@ describe('fieldErrorsFromIssues', () => {
 
 describe('readFieldErrors', () => {
   it('reads error.fieldErrors', () => {
-    expect(readFieldErrors({ fieldErrors: { name: ['Obrigatório'] } })).toEqual({
-      name: ['Obrigatório'],
-    })
+    expect(readFieldErrors({ fieldErrors: { name: ['Obrigatório'] } })).toEqual(
+      {
+        name: ['Obrigatório'],
+      },
+    )
   })
 
   it('reads details.fieldErrors (Zod flatten)', () => {
@@ -45,7 +47,9 @@ describe('readFieldErrors', () => {
 
   it('reads details as the raw issues array', () => {
     expect(
-      readFieldErrors({ details: [{ path: ['name'], message: 'Obrigatório' }] }),
+      readFieldErrors({
+        details: [{ path: ['name'], message: 'Obrigatório' }],
+      }),
     ).toEqual({ name: ['Obrigatório'] })
   })
 
@@ -66,6 +70,8 @@ describe('formatFieldErrors', () => {
   })
 
   it('omits the field label for root issues', () => {
-    expect(formatFieldErrors({ _: ['Dados inválidos'] })).toBe('Dados inválidos')
+    expect(formatFieldErrors({ _: ['Dados inválidos'] })).toBe(
+      'Dados inválidos',
+    )
   })
 })

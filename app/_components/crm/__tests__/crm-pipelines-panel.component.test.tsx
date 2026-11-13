@@ -70,7 +70,7 @@ describe('<CrmPipelinesPanel />', () => {
 
   it('creates a pipeline from the dialog (submit disabled while empty)', async () => {
     const spy = setup()
-    fireEvent.click(screen.getByRole('button', { name: /novo pipeline/i }))
+    fireEvent.click(screen.getByRole('button', { name: /novo funil/i }))
     const submit = (await screen.findByRole('button', {
       name: 'Criar funil',
     })) as HTMLButtonElement

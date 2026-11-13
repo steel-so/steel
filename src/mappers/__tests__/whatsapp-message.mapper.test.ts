@@ -24,6 +24,7 @@ describe('toWhatsAppMessageDTO()', () => {
       text: 'Olá!',
       mediaUrl: null,
       status: 'SENT',
+      failureReason: null,
       senderUserId: null,
       sentByAi: true,
       replyToMessageId: null,

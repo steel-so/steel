@@ -247,6 +247,7 @@ describe('tool registry validation: MCP hints', () => {
       'sd_reply_to_requester',
       'sd_request_approval',
       'zap_message_send_text',
+      'zap_template_send',
     ])
   })
 })

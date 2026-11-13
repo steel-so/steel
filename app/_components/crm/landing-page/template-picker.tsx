@@ -83,29 +83,29 @@ export function LandingPageTemplatePicker({
             {Object.values(LANDING_PAGE_TEMPLATE_CATALOG).map((template) => {
               const thumbnail = previewImage(template.sections)
               return (
-              <button
-                key={template.key}
-                type='button'
-                disabled={createPage.isPending}
-                onClick={() => pick(template.key)}
-                className='flex flex-col gap-1 rounded-lg border p-4 text-left transition-colors hover:border-primary hover:bg-muted/40 disabled:pointer-events-none disabled:opacity-50'
-              >
-                {thumbnail ? (
-                  <img
-                    src={thumbnail}
-                    alt=''
-                    loading='lazy'
-                    className='mb-2 h-24 w-full rounded-md bg-muted object-cover'
-                  />
-                ) : null}
-                <span className='font-medium text-sm'>{template.name}</span>
-                <span className='text-muted-foreground text-xs'>
-                  {template.description}
-                </span>
-                <span className='text-muted-foreground/80 text-[11px]'>
-                  {template.sections.length} seções
-                </span>
-              </button>
+                <button
+                  key={template.key}
+                  type='button'
+                  disabled={createPage.isPending}
+                  onClick={() => pick(template.key)}
+                  className='flex flex-col gap-1 rounded-lg border p-4 text-left transition-colors hover:border-primary hover:bg-muted/40 disabled:pointer-events-none disabled:opacity-50'
+                >
+                  {thumbnail ? (
+                    <img
+                      src={thumbnail}
+                      alt=''
+                      loading='lazy'
+                      className='mb-2 h-24 w-full rounded-md bg-muted object-cover'
+                    />
+                  ) : null}
+                  <span className='font-medium text-sm'>{template.name}</span>
+                  <span className='text-muted-foreground text-xs'>
+                    {template.description}
+                  </span>
+                  <span className='text-muted-foreground/80 text-[11px]'>
+                    {template.sections.length} seções
+                  </span>
+                </button>
               )
             })}
           </div>

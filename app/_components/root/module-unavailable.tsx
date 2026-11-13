@@ -20,7 +20,12 @@ export function moduleFromPathname(pathname: string | null): string | null {
 export function ModuleUnavailable({ moduleName }: { moduleName: string }) {
   return (
     <div className='mx-auto flex h-screen max-w-sm flex-col justify-center px-7 py-8 text-left'>
-      <SteelIcon icon={LockKeyIcon} size={40} strokeWidth={2} className='mb-6' />
+      <SteelIcon
+        icon={LockKeyIcon}
+        size={40}
+        strokeWidth={2}
+        className='mb-6'
+      />
       <h1 className='mb-3 font-medium text-2xl leading-8'>
         {moduleName} não está habilitado
       </h1>
@@ -38,11 +43,7 @@ export function ModuleUnavailable({ moduleName }: { moduleName: string }) {
 }
 
 /** Not-found of the workspace segment: tells a disabled module from a 404. */
-export function WorkspaceNotFound({
-  fallback,
-}: {
-  fallback: React.ReactNode
-}) {
+export function WorkspaceNotFound({ fallback }: { fallback: React.ReactNode }) {
   const moduleName = moduleFromPathname(usePathname())
   return moduleName ? <ModuleUnavailable moduleName={moduleName} /> : fallback
 }

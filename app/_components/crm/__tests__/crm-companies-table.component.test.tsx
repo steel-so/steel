@@ -122,9 +122,7 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
         icp: false,
       }),
     )
-    expect(fetchBody(fetchSpy, /\/crm\/companies$/)).not.toHaveProperty(
-      'cnpj',
-    )
+    expect(fetchBody(fetchSpy, /\/crm\/companies$/)).not.toHaveProperty('cnpj')
   })
 
   it('rejects an invalid CNPJ without saving', async () => {

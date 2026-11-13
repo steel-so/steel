@@ -18,7 +18,8 @@ export default function Page() {
         Não foi possível carregar esta página
       </h1>
       <p className='text-sm font-normal leading-5 mb-5 text-[#ededed]'>
-        Ocorreu um erro no servidor. Recarregue a página para tentar de novo; se continuar, avise o administrador do seu workspace.
+        Ocorreu um erro no servidor. Recarregue a página para tentar de novo; se
+        continuar, avise o administrador do seu workspace.
       </p>
       <div className='flex items-center gap-2'>
         <Button size={'sm'} onClick={() => (window.location.href = '/')}>

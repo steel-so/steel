@@ -90,7 +90,12 @@ const BR_DATETIME = new Intl.DateTimeFormat('pt-BR', {
 /** Spreadsheet model: header for the template's variables plus one example. */
 export function buildImportModelCsv(variableCount: number): string {
   const vars = Array.from({ length: variableCount }, (_, i) => i + 1)
-  const header = ['telefone', 'nome', 'data_referencia', ...vars.map((n) => `var_${n}`)]
+  const header = [
+    'telefone',
+    'nome',
+    'data_referencia',
+    ...vars.map((n) => `var_${n}`),
+  ]
   const example = [
     '11999998888',
     'Maria',
@@ -493,9 +498,8 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const [skipNoWhatsapp, setSkipNoWhatsapp] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   // Step 2: what the spreadsheet would schedule, before anything is created.
-  const [preview, setPreview] = useState<WhatsAppBroadcastImportResultDTO | null>(
-    null,
-  )
+  const [preview, setPreview] =
+    useState<WhatsAppBroadcastImportResultDTO | null>(null)
   const [csvText, setCsvText] = useState('')
   const [result, setResult] = useState<WhatsAppBroadcastImportResultDTO | null>(
     null,
@@ -558,7 +562,8 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     setCsvText(csv)
     importBroadcast.mutate(payload(csv, true), {
       onSuccess: (data) => setPreview(data),
-      onError: (error) => notify.error(error, 'Não foi possível ler a planilha'),
+      onError: (error) =>
+        notify.error(error, 'Não foi possível ler a planilha'),
     })
   }
 
@@ -572,7 +577,9 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     })
   }
 
-  function rejectedList(rows: WhatsAppBroadcastImportResultDTO['rejectedRows']) {
+  function rejectedList(
+    rows: WhatsAppBroadcastImportResultDTO['rejectedRows'],
+  ) {
     return rows.length > 0 ? (
       <div className='max-h-48 space-y-1 overflow-y-auto rounded-md border p-2 text-xs'>
         {rows.map((row) => (
@@ -894,7 +901,9 @@ function StartBroadcastButton({
       )
     }
   }
-  parts.push('Depois de iniciar, você ainda pode cancelar o que não foi enviado.')
+  parts.push(
+    'Depois de iniciar, você ainda pode cancelar o que não foi enviado.',
+  )
 
   return (
     <ConfirmAction
@@ -985,7 +994,8 @@ function BroadcastFailuresDialog({
                   </span>
                 ) : null}
                 <p className='text-destructive text-xs'>
-                  {recipient.errorMessage ?? 'A Meta ou a Z-API recusou o envio.'}
+                  {recipient.errorMessage ??
+                    'A Meta ou a Z-API recusou o envio.'}
                 </p>
               </li>
             ))}

@@ -165,7 +165,9 @@ export function useWhatsAppRealtimeEvents(
             )
           }
           // Recording / transcript / summary landed: refresh the call cards.
-          queryClient.invalidateQueries({ queryKey: phoneCallsKey(workspaceId) })
+          queryClient.invalidateQueries({
+            queryKey: phoneCallsKey(workspaceId),
+          })
         }
 
         if (parsed.type === 'pix-charge.updated') {

@@ -317,7 +317,9 @@ describe('WhatsAppBroadcastRepository', () => {
         await WhatsAppBroadcastRepository.listByWorkspace(workspace.id),
       )
       expect(lists.map((l) => l.id)).toEqual([newer.id, older.id])
-      expect(lists[1].recipients).toEqual([{ status: 'PENDING' }])
+      expect(lists[1].recipients).toEqual([
+        { status: 'PENDING', errorMessage: null },
+      ])
 
       const found = expectOk(
         await WhatsAppBroadcastRepository.findById(older.id, workspace.id),

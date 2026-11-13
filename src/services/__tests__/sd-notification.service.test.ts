@@ -32,7 +32,6 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { sendSdTicketNotificationEmail } from '@/src/lib/mail/servicedesk/send-sd-ticket-notification'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
-import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 import { SdNotificationRepository } from '@/src/repositories/sd-notification.repository'
 import { SdRequesterWhatsappRepository } from '@/src/repositories/sd-requester-whatsapp.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
@@ -42,6 +41,7 @@ import {
   notifySdEvent,
   SdNotificationService,
 } from '../sd-notification.service'
+import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
 const repo = vi.mocked(SdNotificationRepository)
 const ctxRepo = vi.mocked(SdTicketContextRepository)

@@ -85,7 +85,7 @@ describe('workflow labels', () => {
 })
 
 describe('<WorkflowTopBar />', () => {
-  it('should label every action in pt-BR', () => {
+  it('should label every action in pt-BR', async () => {
     const handlers = {
       onBack: vi.fn(),
       onActivate: vi.fn(),
@@ -110,9 +110,12 @@ describe('<WorkflowTopBar />', () => {
       screen.getByRole('button', { name: 'Descartar alterações' }),
     )
     fireEvent.click(
-      screen.getAllByRole('button', { name: 'Descartar alterações' }).at(-1) as HTMLElement,
+      screen
+        .getAllByRole('button', { name: 'Descartar alterações' })
+        .at(-1) as HTMLElement,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Ativar' }))
+    // The discard confirmation closes asynchronously (ConfirmAction awaits onConfirm).
+    fireEvent.click(await screen.findByRole('button', { name: 'Ativar' }))
     expect(screen.getByRole('button', { name: 'Adicionar etapa' })).toBeTruthy()
     expect(screen.getByText('Rascunho')).toBeTruthy()
 

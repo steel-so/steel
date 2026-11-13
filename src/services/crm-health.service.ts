@@ -81,6 +81,7 @@ async function scoreCompany(
   const company = await CrmHealthRepository.findCompany(workspaceId, companyId)
   if (!company.ok) return company
   if (!company.value) return err(crmCompanyNotFound())
+  const companyRecord = company.value
 
   const signals = await CrmHealthSignalsRepository.customerSignals(
     workspaceId,
@@ -125,8 +126,8 @@ async function scoreCompany(
         workspaceId,
         company: {
           id: companyId,
-          name: company.value.name,
-          accountOwnerId: company.value.accountOwnerId,
+          name: companyRecord.name,
+          accountOwnerId: companyRecord.accountOwnerId,
         },
         riskScore: computation.riskScore,
         levelLabel: levelLabel(computation),
