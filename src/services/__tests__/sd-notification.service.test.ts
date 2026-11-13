@@ -25,11 +25,13 @@ vi.mock('@/src/repositories/sd-integration.repository')
 vi.mock('@/src/repositories/sd-ticket-context.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/services/notification.service')
+vi.mock('../whatsapp-opt-out', () => ({ checkWhatsAppOptOut: vi.fn() }))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { sendSdTicketNotificationEmail } from '@/src/lib/mail/servicedesk/send-sd-ticket-notification'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
+import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 import { SdNotificationRepository } from '@/src/repositories/sd-notification.repository'
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
@@ -45,6 +47,7 @@ const connections = vi.mocked(WhatsAppConnectionRepository)
 const notifications = vi.mocked(NotificationService)
 const sendEmail = vi.mocked(sendSdTicketNotificationEmail)
 const sendWhatsapp = vi.mocked(WhatsAppSend.text)
+const optOut = vi.mocked(checkWhatsAppOptOut)
 
 const WS = 'ws1'
 
@@ -80,6 +83,7 @@ const payload = { title: 'Atribuído', body: 'corpo' }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  optOut.mockResolvedValue('allowed')
   recipientsFromArgs()
   repo.listPreferencesForEvent.mockResolvedValue(ok([]))
   repo.listFollowerIds.mockResolvedValue(ok([]))
@@ -405,6 +409,48 @@ describe('notifySdEvent — preferências', () => {
     expect(out).toMatchObject({ inApp: 1, email: 0 })
     expect(sendEmail).not.toHaveBeenCalled()
   })
+
+  it.each(['opted_out', 'unverified'] as const)(
+    'não envia WhatsApp quando o destino está %s (LGPD)',
+    async (status) => {
+      repo.listPreferencesForEvent.mockResolvedValue(
+        ok([
+          createFakeSdNotificationPreference({
+            userId: 'agent',
+            event: 'ticket.assigned',
+            channel: 'WHATSAPP',
+            enabled: true,
+          }),
+        ]),
+      )
+      repo.findWhatsappNumbers.mockResolvedValue(
+        ok(new Map([['agent', '11999998888']])),
+      )
+      connections.findById.mockResolvedValue(
+        ok({ id: 'conn', status: 'CONNECTED' } as never),
+      )
+      ctxRepo.ensureSettings.mockResolvedValue(
+        ok(createFakeSdSettings({ whatsappConnectionId: 'conn' })),
+      )
+      optOut.mockResolvedValue(status)
+
+      const out = expectOk(
+        await notifySdEvent({
+          workspaceId: WS,
+          event: 'ticket.assigned',
+          ticket: ticket(),
+          payload,
+        }),
+      )
+      expect(out).toMatchObject({ whatsapp: 0, whatsappSkippedOptOut: 1 })
+      expect(optOut).toHaveBeenCalledWith(WS, '5511999998888')
+      expect(sendWhatsapp).not.toHaveBeenCalled()
+      expect(logger.info).toHaveBeenCalledWith(
+        'servicedesk.notify.whatsapp_opted_out',
+        expect.objectContaining({ reason: status }),
+      )
+    },
+  )
 
   it('respeita um canal ligado fora do padrão (WhatsApp)', async () => {
     repo.listPreferencesForEvent.mockResolvedValue(

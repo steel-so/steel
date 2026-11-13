@@ -12,6 +12,10 @@ vi.mock('@/src/lib/mail/documents/send-document-emails', () => ({
 vi.mock('@/src/lib/whatsapp/send', () => ({
   WhatsAppSend: { text: vi.fn() },
 }))
+vi.mock('../whatsapp-opt-out', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../whatsapp-opt-out')>()),
+  checkWhatsAppOptOut: vi.fn(),
+}))
 vi.mock('@/src/repositories/document-lookup.repository')
 vi.mock('@/src/repositories/document-recipient.repository')
 
@@ -21,9 +25,11 @@ import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { DocumentLookupRepository } from '@/src/repositories/document-lookup.repository'
 import { DocumentRecipientRepository } from '@/src/repositories/document-recipient.repository'
 import { deliverDocument } from '../document-delivery'
+import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
 const sendEmail = vi.mocked(sendDocumentSharedEmail)
 const whatsapp = vi.mocked(WhatsAppSend)
+const optOut = vi.mocked(checkWhatsAppOptOut)
 const lookup = vi.mocked(DocumentLookupRepository)
 const recipientRepo = vi.mocked(DocumentRecipientRepository)
 
@@ -46,6 +52,7 @@ const mailRecipient = (email: string | null) =>
   createFakeDocumentRecipient({ channel: 'EMAIL', email })
 
 beforeEach(() => {
+  optOut.mockResolvedValue('allowed')
   recipientRepo.markSent.mockImplementation(async (id, data) =>
     ok(createFakeDocumentRecipient({ id, ...data, sentAt: data.at })),
   )
@@ -149,6 +156,27 @@ describe('deliverDocument()', () => {
       AT,
     )
     expect(badPhone.delivery.message).toContain('telefone')
+    expect(whatsapp.text).not.toHaveBeenCalled()
+  })
+
+  it('skips WhatsApp and says why when the contact opted out (LGPD)', async () => {
+    optOut.mockResolvedValue('opted_out')
+    const [outcome] = await deliverDocument(CTX, [zapRecipient()], AT)
+    expect(outcome.delivery).toMatchObject({
+      requested: 'WHATSAPP',
+      channel: 'LINK',
+      delivered: false,
+    })
+    expect(outcome.delivery.message).toContain('LGPD')
+    expect(optOut).toHaveBeenCalledWith('ws1', '5511988887777')
+    expect(whatsapp.text).not.toHaveBeenCalled()
+  })
+
+  it('skips WhatsApp when the opt-out could not be verified', async () => {
+    optOut.mockResolvedValue('unverified')
+    const [outcome] = await deliverDocument(CTX, [zapRecipient()], AT)
+    expect(outcome.delivery.delivered).toBe(false)
+    expect(outcome.delivery.message).toContain('confirmar')
     expect(whatsapp.text).not.toHaveBeenCalled()
   })
 

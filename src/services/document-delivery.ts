@@ -12,6 +12,11 @@ import { documentLinkUrl } from '@/src/mappers/document.mapper'
 import { DocumentLookupRepository } from '@/src/repositories/document-lookup.repository'
 import { DocumentRecipientRepository } from '@/src/repositories/document-recipient.repository'
 import type { DocumentDeliveryDTO } from '@/types/document'
+import {
+  checkWhatsAppOptOut,
+  WHATSAPP_OPT_OUT_UNVERIFIED_MESSAGE,
+  WHATSAPP_OPTED_OUT_MESSAGE,
+} from './whatsapp-opt-out'
 
 /**
  * Delivery of a document to its recipients (ADR 0063): e-mail with the
@@ -106,6 +111,22 @@ async function sendWhatsApp(
   }
   const waId = recipient.phone ? leadPhoneToWaId(recipient.phone) : null
   if (!waId) return { channel: 'LINK', delivered: false, message: BAD_PHONE }
+  const optOut = await checkWhatsAppOptOut(ctx.workspaceId, waId)
+  if (optOut !== 'allowed') {
+    logger.info('documents.delivery.whatsapp_skipped', {
+      documentId: ctx.documentId,
+      recipientId: recipient.id,
+      reason: optOut,
+    })
+    return {
+      channel: 'LINK',
+      delivered: false,
+      message:
+        optOut === 'opted_out'
+          ? WHATSAPP_OPTED_OUT_MESSAGE
+          : WHATSAPP_OPT_OUT_UNVERIFIED_MESSAGE,
+    }
+  }
   const sent = await WhatsAppSend.text(
     connection,
     { to: waId, text: whatsappText(ctx, recipient) },
