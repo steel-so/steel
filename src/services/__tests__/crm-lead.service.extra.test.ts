@@ -14,6 +14,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { crmProposalNotFound, databaseError, notFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
 
+vi.mock('@/src/services/crm-lead-contact-sync', () => ({
+  syncLeadContacts: vi.fn(),
+}))
 vi.mock('@/src/services/crm-notifications')
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/membership.repository')

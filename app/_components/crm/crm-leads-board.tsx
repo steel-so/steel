@@ -11,7 +11,7 @@ import {
   Search01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
 import { LeadCadencePanel } from '@/app/_components/crm/cadences/lead-cadence-panel'
@@ -78,7 +78,10 @@ import {
   useCrmResourceList,
 } from '@/src/hooks/use-crm-resource-list'
 import { useCrmSettings } from '@/src/hooks/use-crm-settings'
+import { useOpenLeadWhatsapp } from '@/src/hooks/use-lead-whatsapp'
 import { useRecordParam } from '@/src/hooks/use-record-param'
+import { useSteelAiCapabilities } from '@/src/hooks/use-steel-ai'
+import { toDisplayPhone } from '@/src/lib/phone-br'
 import type { CrmDocumentSummaryDTO } from '@/types/crm-document-summary'
 import type {
   CrmLeadContactAttemptDTO,
@@ -651,7 +654,30 @@ export function CrmLeadsBoard({
 }
 
 /** `U` inside the lead sheet closes it (the sheet traps other keys). */
-function LeadContacts({ lead }: { lead: CrmLeadDTO }) {
+function LeadContacts({
+  workspaceId,
+  slug,
+  lead,
+}: {
+  workspaceId: string
+  slug: string
+  lead: CrmLeadDTO
+}) {
+  const router = useRouter()
+  const capabilities = useSteelAiCapabilities(workspaceId)
+  const whatsappEnabled = (capabilities.data?.modules ?? []).includes(
+    'COMMUNICATION',
+  )
+  const openWhatsapp = useOpenLeadWhatsapp(workspaceId, lead.id)
+
+  function open(phone: string) {
+    openWhatsapp.mutate(phone, {
+      onSuccess: (result) =>
+        router.push(`/${slug}/zap?conversa=${result.conversationId}`),
+      onError: (error) => notify.error(error),
+    })
+  }
+
   return (
     <dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm'>
       <dt className='text-muted-foreground'>E-mail</dt>
@@ -672,15 +698,28 @@ function LeadContacts({ lead }: { lead: CrmLeadDTO }) {
       <dd className='min-w-0'>
         {lead.phones.length === 0
           ? '—'
-          : lead.phones.map((phone) => (
-              <a
-                key={phone}
-                href={`tel:${phone}`}
-                className='block hover:underline'
-              >
-                {phone}
-              </a>
-            ))}
+          : lead.phones.map((phone) =>
+              whatsappEnabled ? (
+                <button
+                  key={phone}
+                  type='button'
+                  title='Abrir conversa no WhatsApp'
+                  disabled={openWhatsapp.isPending}
+                  onClick={() => open(phone)}
+                  className='block text-left hover:underline disabled:opacity-60'
+                >
+                  {toDisplayPhone(phone)}
+                </button>
+              ) : (
+                <a
+                  key={phone}
+                  href={`tel:${phone}`}
+                  className='block hover:underline'
+                >
+                  {toDisplayPhone(phone)}
+                </a>
+              ),
+            )}
       </dd>
     </dl>
   )
@@ -750,7 +789,7 @@ function LeadStagePanel({
       </SheetHeader>
 
       <div className='flex flex-col gap-6 px-4'>
-        <LeadContacts lead={lead} />
+        <LeadContacts workspaceId={workspaceId} slug={slug} lead={lead} />
 
         <LeadAgentRow workspaceId={workspaceId} leadId={lead.id} />
 

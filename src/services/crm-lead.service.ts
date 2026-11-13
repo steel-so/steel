@@ -61,6 +61,7 @@ import type {
 } from '@/types/crm-lead'
 import type { CrmPersonDTO } from '@/types/crm-person'
 import { assertModuleEnabled, assertModuleMember } from './authz'
+import { syncLeadContacts } from './crm-lead-contact-sync'
 import {
   notifyCrmDealClosed,
   notifyCrmLeadAssigned,
@@ -133,9 +134,7 @@ function contactKeys(emails: string[], phones: string[]) {
     emails: [
       ...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean)),
     ],
-    phones: [
-      ...new Set(phones.flatMap((p) => phoneVariants(p))),
-    ],
+    phones: [...new Set(phones.flatMap((p) => phoneVariants(p)))],
   }
 }
 
@@ -437,6 +436,7 @@ export const CrmLeadService = {
       })
     }
 
+    void syncLeadContacts(workspaceId, result.value.name, result.value.phones)
     void indexSearchDocument('crm-lead', workspaceId, lead.id)
     return ok({ lead, created: true })
   },
@@ -551,6 +551,9 @@ export const CrmLeadService = {
       })
     }
 
+    if (dto.phones !== undefined || dto.name !== undefined) {
+      void syncLeadContacts(workspaceId, result.value.name, result.value.phones)
+    }
     void indexSearchDocument('crm-lead', workspaceId, leadId)
     return ok(toCrmLeadDTO(result.value))
   },

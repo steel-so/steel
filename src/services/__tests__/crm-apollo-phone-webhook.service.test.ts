@@ -4,6 +4,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { crmApolloImportNotFound, databaseError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/src/services/crm-lead-contact-sync', () => ({
+  syncLeadContacts: vi.fn(),
+}))
 vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -267,4 +270,3 @@ describe('CrmApolloPhoneWebhookService.apply (read straight from Apollo)', () =>
     expect(importRepo.addPhoneProgress).not.toHaveBeenCalled()
   })
 })
-

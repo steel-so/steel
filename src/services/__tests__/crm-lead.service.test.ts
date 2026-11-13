@@ -14,6 +14,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { documentTemplateNotFound } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/src/services/crm-lead-contact-sync', () => ({
+  syncLeadContacts: vi.fn(),
+}))
 vi.mock('@/src/services/crm-notifications')
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-lead.repository')

@@ -19,6 +19,7 @@ import { CrmApolloImportRepository } from '@/src/repositories/crm-apollo-import.
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import type { ApolloPhoneWebhookDTO } from '@/src/schemas/crm-apollo.schema'
 import { CrmLeadService } from './crm-lead.service'
+import { syncLeadContacts } from './crm-lead-contact-sync'
 
 /**
  * Applies the phones Apollo delivers (minutes after the import) to the leads
@@ -113,7 +114,14 @@ async function applyPhones(
     }
     if (appended.value.found) {
       leadFound += 1
-      if (appended.value.added > 0) received += 1
+      if (appended.value.added > 0) {
+        received += 1
+        void syncLeadContacts(
+          row.workspaceId,
+          appended.value.name ?? '',
+          phones,
+        )
+      }
       continue
     }
     leadMissing += 1
