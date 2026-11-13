@@ -1,6 +1,15 @@
 import { z } from 'zod'
 import { V1PageQuerySchema } from '@/src/lib/api/v1-pagination'
 import { CrmLeadStageEnum } from '@/src/schemas/crm-lead.schema'
+import {
+  DocumentKindSchema,
+  DocumentStatusSchema,
+} from '@/src/schemas/document.schema'
+import { SdCustomerKindEnum } from '@/src/schemas/sd-customer.schema'
+import {
+  SdKbStatusEnum,
+  SdKbVisibilityEnum,
+} from '@/src/schemas/sd-kb-article.schema'
 import { SdTicketTypeEnum } from '@/src/schemas/sd-rule.schema'
 import { SD_PHASE_CATEGORIES } from '@/src/schemas/sd-ticket.schema'
 import { SD_MESSAGE_MAX_LENGTH } from '@/src/schemas/sd-ticket-message.schema'
@@ -244,3 +253,89 @@ export const SendV1WhatsAppTemplateSchema = z
 export type SendV1WhatsAppTemplateDTO = z.infer<
   typeof SendV1WhatsAppTemplateSchema
 >
+
+/* ------------------------------------------------------------------ */
+/* Registers, knowledge base and documents                              */
+/* ------------------------------------------------------------------ */
+
+const text = (description: string) =>
+  z.preprocess(
+    blank,
+    z.string().trim().max(200).optional().meta({ description }),
+  )
+
+const boolFlag = (description: string) =>
+  z.preprocess(
+    (value) =>
+      value === 'true' ? true : value === 'false' ? false : blank(value),
+    z.boolean().optional().meta({ description }),
+  )
+
+export const ListV1CrmPeopleSchema = V1PageQuerySchema.extend({
+  companyId: text('Só as pessoas desta empresa do CRM.'),
+})
+export type ListV1CrmPeopleDTO = z.infer<typeof ListV1CrmPeopleSchema>
+
+export const ListV1CrmCompaniesSchema = V1PageQuerySchema.extend({
+  icp: boolFlag('`true`: só as empresas do perfil de cliente ideal (ICP).'),
+})
+export type ListV1CrmCompaniesDTO = z.infer<typeof ListV1CrmCompaniesSchema>
+
+export const ListV1CrmDocumentsSchema = V1PageQuerySchema.extend({
+  kind: z.preprocess(
+    blank,
+    DocumentKindSchema.optional().meta({ description: 'Tipo do documento.' }),
+  ),
+  status: z.preprocess(
+    blank,
+    DocumentStatusSchema.optional().meta({ description: 'Status.' }),
+  ),
+  q: text('Texto no título.'),
+  ownerId: text('Id do responsável.'),
+  companyId: text('Id da empresa do CRM.'),
+  personId: text('Id da pessoa do CRM.'),
+  opportunityId: text('Id da oportunidade.'),
+  leadId: text('Id do lead.'),
+  isTemplate: boolFlag('`true`: lista os modelos em vez dos documentos.'),
+})
+export type ListV1CrmDocumentsDTO = z.infer<typeof ListV1CrmDocumentsSchema>
+
+export const ListV1SdCustomersSchema = V1PageQuerySchema.extend({
+  q: text('Texto no nome, fantasia, documento, e-mail ou cidade.'),
+  kind: z.preprocess(
+    blank,
+    SdCustomerKindEnum.optional().meta({
+      description: '`CLIENT` (pessoa) ou `COMPANY` (empresa).',
+    }),
+  ),
+  active: boolFlag('Filtra por ativos (`true`) ou inativos (`false`).'),
+  state: text('UF com 2 letras.'),
+  city: text('Cidade.'),
+})
+export type ListV1SdCustomersDTO = z.infer<typeof ListV1SdCustomersSchema>
+
+export const ListV1SdContactsSchema = V1PageQuerySchema.extend({
+  q: text('Texto no nome, cargo, e-mail, telefone ou WhatsApp.'),
+  customerId: text('Só os contatos vinculados a este cliente/empresa.'),
+  active: boolFlag('Filtra por ativos (`true`) ou inativos (`false`).'),
+})
+export type ListV1SdContactsDTO = z.infer<typeof ListV1SdContactsSchema>
+
+export const ListV1SdKbArticlesSchema = V1PageQuerySchema.extend({
+  q: text('Busca com relevância no título e no texto (máx. 50 resultados).'),
+  status: z.preprocess(
+    blank,
+    SdKbStatusEnum.optional().meta({
+      description: 'Só na busca (`q`): `DRAFT` ou `PUBLISHED`.',
+    }),
+  ),
+  visibility: z.preprocess(
+    blank,
+    SdKbVisibilityEnum.optional().meta({
+      description: 'Só na busca (`q`): `INTERNAL` ou `PORTAL`.',
+    }),
+  ),
+  categoryId: text('Só na busca (`q`): id da categoria.'),
+  tag: text('Só na busca (`q`): uma tag.'),
+})
+export type ListV1SdKbArticlesDTO = z.infer<typeof ListV1SdKbArticlesSchema>

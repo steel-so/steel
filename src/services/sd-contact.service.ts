@@ -41,6 +41,7 @@ import type {
 } from '@/types/sd-directory'
 import { SdAccess } from './sd-access'
 import { validateSdEntityCustomFields } from './sd-entity-custom-fields'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 const RESOURCE = 'sd-contacts'
 
@@ -293,6 +294,11 @@ export const SdContactService = {
       if (result.ok) {
         created++
         createdIds.push(result.value.id)
+        void emitEntityWebhook(workspaceId, actorId, {
+          entity: 'sd_contact',
+          action: 'created',
+          record: toSdContactDTO(result.value),
+        })
       } else rejected.push({ line, message: result.error.message })
     }
 
@@ -363,6 +369,11 @@ export const SdContactService = {
       contactId: result.value.id,
     })
     void indexSearchDocument('sd-contact', workspaceId, result.value.id)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_contact',
+      action: 'created',
+      record: toSdContactDTO(result.value),
+    })
     return ok(toSdContactDTO(result.value))
   },
 
@@ -420,6 +431,11 @@ export const SdContactService = {
       meta: { workspaceId, fields: Object.keys(dto) },
     })
     void indexSearchDocument('sd-contact', workspaceId, contactId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_contact',
+      action: 'updated',
+      record: toSdContactDTO(result.value),
+    })
     return ok(toSdContactDTO(result.value))
   },
 
@@ -445,6 +461,11 @@ export const SdContactService = {
       meta: { workspaceId },
     })
     void indexSearchDocument('sd-contact', workspaceId, contactId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_contact',
+      action: 'deleted',
+      record: toSdContactDTO(existing.value),
+    })
     return ok(undefined)
   },
 }

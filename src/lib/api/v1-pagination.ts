@@ -83,3 +83,49 @@ export function paginateArray<T>(
     nextCursor: end < items.length ? encodeOffsetCursor(end) : null,
   })
 }
+
+const PAGE_PREFIX = 'p:'
+
+/** Opaque cursor for a page number (`p:<n>` in base64url). */
+export function encodePageCursor(page: number): string {
+  return Buffer.from(`${PAGE_PREFIX}${page}`).toString('base64url')
+}
+
+/** The page a cursor points to (1 = first page when absent). */
+export function decodePageCursor(
+  cursor: string | undefined,
+): Result<number, AppError> {
+  if (cursor === undefined) return ok(1)
+  const raw = Buffer.from(cursor, 'base64url').toString('utf-8')
+  const page = raw.startsWith(PAGE_PREFIX)
+    ? Number(raw.slice(PAGE_PREFIX.length))
+    : Number.NaN
+  if (!Number.isSafeInteger(page) || page < 1) {
+    return err(
+      validationError('Cursor inválido', [
+        { code: 'custom', path: ['cursor'], message: 'Cursor inválido' },
+      ]),
+    )
+  }
+  return ok(page)
+}
+
+/**
+ * One page of a list the service pages by `page`/`pageSize` (ServiceDesk
+ * registers, documents). The cursor carries the next page number, so keep
+ * the same `limit` while following it.
+ */
+export function pageResultToV1<T>(result: {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}): V1Page<T> {
+  return {
+    items: result.items,
+    nextCursor:
+      result.page * result.pageSize < result.total
+        ? encodePageCursor(result.page + 1)
+        : null,
+  }
+}

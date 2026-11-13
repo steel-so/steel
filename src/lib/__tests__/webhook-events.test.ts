@@ -43,6 +43,57 @@ describe('webhook event catalog', () => {
     expect(isWebhookEventType('crm.unknown')).toBe(false)
   })
 
+  it('should keep every event name published before the entity events', () => {
+    for (const type of [
+      'steel.ping',
+      'servicedesk.ticket.created',
+      'servicedesk.ticket.updated',
+      'servicedesk.ticket.assigned',
+      'servicedesk.ticket.message',
+      'servicedesk.ticket.resolved',
+      'servicedesk.ticket.reopened',
+      'servicedesk.ticket.escalated',
+      'servicedesk.ticket.csat',
+      'servicedesk.sla.at_risk',
+      'servicedesk.sla.breached',
+      'servicedesk.approval.requested',
+      'servicedesk.approval.responded',
+      'crm.lead.created',
+      'crm.opportunity.stage_changed',
+      'crm.deal.won',
+      'crm.deal.lost',
+      'communication.message.received',
+      'communication.conversation.waiting',
+      'agents.approval.pending',
+    ]) {
+      expect(isWebhookEventType(type)).toBe(true)
+    }
+  })
+
+  it('should publish created/updated/deleted for the registers', () => {
+    for (const entity of [
+      'crm.person',
+      'crm.company',
+      'crm.document',
+      'servicedesk.customer',
+      'servicedesk.contact',
+      'servicedesk.kb_article',
+    ]) {
+      for (const action of ['created', 'updated', 'deleted']) {
+        expect(isWebhookEventType(`${entity}.${action}`)).toBe(true)
+      }
+    }
+    for (const type of [
+      'crm.document.sent',
+      'crm.document.accepted',
+      'crm.document.declined',
+      'servicedesk.kb_article.published',
+      'servicedesk.kb_article.unpublished',
+    ]) {
+      expect(isWebhookEventType(type)).toBe(true)
+    }
+  })
+
   it('should refuse data that does not match the schema', () => {
     expect(
       parseWebhookEventData('crm.deal.won', { source: 'lead' }).success,

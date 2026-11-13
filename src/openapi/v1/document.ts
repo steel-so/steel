@@ -7,6 +7,7 @@ import { TAG_GROUPS } from '../tags'
 import { registerV1AccountPaths } from './paths/account'
 import { registerV1AuthPaths } from './paths/auth'
 import { registerV1CrmPaths } from './paths/crm'
+import { registerV1RegistersPaths } from './paths/registers'
 import { registerV1ServiceDeskPaths } from './paths/servicedesk'
 import { registerV1WhatsAppPaths } from './paths/whatsapp'
 
@@ -29,6 +30,7 @@ export function createV1Registry(): OpenApiRegistry {
   registerV1ServiceDeskPaths(registry)
   registerV1CrmPaths(registry)
   registerV1WhatsAppPaths(registry)
+  registerV1RegistersPaths(registry)
   registerV1WebhookPaths(registry)
   return registry
 }

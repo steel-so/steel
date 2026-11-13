@@ -38,6 +38,7 @@ import type {
 import type { PermissionAction } from '../lib/permissions'
 import { SdAccess } from './sd-access'
 import { validateSdEntityCustomFields } from './sd-entity-custom-fields'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 const RESOURCE = 'sd-customers'
 
@@ -205,6 +206,11 @@ export const SdCustomerService = {
       if (result.ok) {
         created++
         createdIds.push(result.value.id)
+        void emitEntityWebhook(workspaceId, actorId, {
+          entity: 'sd_customer',
+          action: 'created',
+          record: toSdCustomerDTO(result.value),
+        })
       } else rejected.push({ line, message: result.error.message })
     }
 
@@ -327,6 +333,11 @@ export const SdCustomerService = {
       kind: result.value.kind,
     })
     void indexSearchDocument('sd-customer', workspaceId, result.value.id)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_customer',
+      action: 'created',
+      record: toSdCustomerDTO(result.value),
+    })
     return ok(toSdCustomerDTO(result.value))
   },
 
@@ -397,6 +408,11 @@ export const SdCustomerService = {
       meta: { workspaceId, fields: Object.keys(dto) },
     })
     void indexSearchDocument('sd-customer', workspaceId, customerId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_customer',
+      action: 'updated',
+      record: toSdCustomerDTO(result.value),
+    })
     return ok(toSdCustomerDTO(result.value))
   },
 
@@ -425,6 +441,11 @@ export const SdCustomerService = {
       meta: { workspaceId },
     })
     void indexSearchDocument('sd-customer', workspaceId, customerId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'sd_customer',
+      action: 'deleted',
+      record: toSdCustomerDTO(existing.value),
+    })
     return ok(undefined)
   },
 }

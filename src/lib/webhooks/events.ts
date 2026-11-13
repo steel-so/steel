@@ -92,6 +92,125 @@ const StageSchema = z.object({
   category: z.enum(['OPEN', 'WON', 'LOST']),
 })
 
+/* Cadastros, base de conhecimento e documentos (API v1 + webhooks). */
+
+const nullableIso = isoDate.nullable()
+
+const CrmPersonSnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  emails: z.array(z.string()),
+  phones: z.array(z.string()),
+  city: z.string().nullable(),
+  jobTitle: z.string().nullable(),
+  companyId: z.string().nullable(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const CrmCompanySnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  cnpj: z.string().nullable(),
+  domain: z.string().nullable(),
+  employees: z.number().nullable(),
+  arr: z.number().nullable(),
+  icp: z.boolean(),
+  accountOwnerId: z.string().nullable(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const DocumentRefSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  ownerId: z.string().nullable(),
+})
+
+const DocumentSnapshotSchema = DocumentRefSchema.extend({
+  kind: z.string(),
+  status: z.string(),
+  isTemplate: z.boolean(),
+  companyId: z.string().nullable(),
+  personId: z.string().nullable(),
+  opportunityId: z.string().nullable(),
+  leadId: z.string().nullable(),
+  totalValue: z.number().nullable(),
+  validUntil: nullableIso,
+  sentAt: nullableIso,
+  acceptedAt: nullableIso,
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const DocumentAnsweredSchema = z.object({
+  document: DocumentRefSchema,
+  /** Who answered through the public link. */
+  reader: z.object({
+    name: z.string().nullable(),
+    email: z.string().nullable(),
+  }),
+  /** Decline reason; `null` on accept. */
+  reason: z.string().nullable(),
+})
+
+const SdCustomerSnapshotSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['CLIENT', 'COMPANY']),
+  personType: z.enum(['INDIVIDUAL', 'LEGAL']),
+  name: z.string(),
+  tradeName: z.string().nullable(),
+  document: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  whatsapp: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  active: z.boolean(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const SdContactSnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  jobTitle: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  whatsapp: z.string().nullable(),
+  userId: z.string().nullable(),
+  active: z.boolean(),
+  /** Linked customers/companies, primary first. */
+  customerIds: z.array(z.string()),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const SdKbArticleSnapshotSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(['DRAFT', 'IN_REVIEW', 'PUBLISHED']),
+  visibility: z.enum(['INTERNAL', 'PORTAL']),
+  parentId: z.string().nullable(),
+  categoryId: z.string().nullable(),
+  tags: z.array(z.string()),
+  sourceTicketId: z.string().nullable(),
+  publishedAt: nullableIso,
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+const actor = { actorId: z.string().nullable() }
+const personEvent = z.object({ person: CrmPersonSnapshotSchema, ...actor })
+const companyEvent = z.object({ company: CrmCompanySnapshotSchema, ...actor })
+const documentEvent = z.object({ document: DocumentSnapshotSchema, ...actor })
+const customerEvent = z.object({ customer: SdCustomerSnapshotSchema, ...actor })
+const contactEvent = z.object({ contact: SdContactSnapshotSchema, ...actor })
+const kbArticleEvent = z.object({
+  article: SdKbArticleSnapshotSchema,
+  ...actor,
+})
+
 export const WEBHOOK_DATA_SCHEMAS = {
   'steel.ping': z.object({ message: z.string() }),
   'servicedesk.ticket.created': z.object({
@@ -186,6 +305,31 @@ export const WEBHOOK_DATA_SCHEMAS = {
     /** Actions waiting for a decision. */
     count: z.number().int(),
   }),
+  'crm.person.created': personEvent,
+  'crm.person.updated': personEvent,
+  'crm.person.deleted': personEvent,
+  'crm.company.created': companyEvent,
+  'crm.company.updated': companyEvent,
+  'crm.company.deleted': companyEvent,
+  'crm.document.created': documentEvent,
+  'crm.document.updated': documentEvent,
+  'crm.document.deleted': documentEvent,
+  'crm.document.sent': documentEvent.extend({
+    recipients: z.number().int(),
+  }),
+  'crm.document.accepted': DocumentAnsweredSchema,
+  'crm.document.declined': DocumentAnsweredSchema,
+  'servicedesk.customer.created': customerEvent,
+  'servicedesk.customer.updated': customerEvent,
+  'servicedesk.customer.deleted': customerEvent,
+  'servicedesk.contact.created': contactEvent,
+  'servicedesk.contact.updated': contactEvent,
+  'servicedesk.contact.deleted': contactEvent,
+  'servicedesk.kb_article.created': kbArticleEvent,
+  'servicedesk.kb_article.updated': kbArticleEvent,
+  'servicedesk.kb_article.published': kbArticleEvent,
+  'servicedesk.kb_article.unpublished': kbArticleEvent,
+  'servicedesk.kb_article.deleted': kbArticleEvent,
 } as const
 
 export type WebhookEventType = keyof typeof WEBHOOK_DATA_SCHEMAS
@@ -326,6 +470,146 @@ export const WEBHOOK_EVENTS: readonly WebhookEventDefinition[] = [
     description: 'Um Steel Agent propôs ações que aguardam aprovação.',
     subscribable: true,
   },
+  {
+    type: 'crm.person.created',
+    module: 'CRM',
+    description: 'Pessoa cadastrada no CRM, por qualquer canal.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.person.updated',
+    module: 'CRM',
+    description: 'Pessoa do CRM alterada.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.person.deleted',
+    module: 'CRM',
+    description: 'Pessoa do CRM excluída.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.company.created',
+    module: 'CRM',
+    description: 'Empresa cadastrada no CRM, por qualquer canal.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.company.updated',
+    module: 'CRM',
+    description: 'Empresa do CRM alterada.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.company.deleted',
+    module: 'CRM',
+    description: 'Empresa do CRM excluída.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.created',
+    module: 'CRM',
+    description: 'Documento criado (proposta, contrato, orçamento...).',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.updated',
+    module: 'CRM',
+    description: 'Documento alterado: dados, vínculos ou status.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.deleted',
+    module: 'CRM',
+    description: 'Documento excluído.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.sent',
+    module: 'CRM',
+    description: 'Documento enviado a um ou mais destinatários.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.accepted',
+    module: 'CRM',
+    description: 'Documento aceito pelo leitor do link público.',
+    subscribable: true,
+  },
+  {
+    type: 'crm.document.declined',
+    module: 'CRM',
+    description: 'Documento recusado pelo leitor do link público.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.customer.created',
+    module: 'SERVICE_DESK',
+    description: 'Cliente ou empresa cadastrado no ServiceDesk.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.customer.updated',
+    module: 'SERVICE_DESK',
+    description: 'Cliente ou empresa do ServiceDesk alterado.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.customer.deleted',
+    module: 'SERVICE_DESK',
+    description: 'Cliente ou empresa do ServiceDesk excluído.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.contact.created',
+    module: 'SERVICE_DESK',
+    description: 'Contato cadastrado no ServiceDesk.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.contact.updated',
+    module: 'SERVICE_DESK',
+    description: 'Contato do ServiceDesk alterado.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.contact.deleted',
+    module: 'SERVICE_DESK',
+    description: 'Contato do ServiceDesk excluído.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.kb_article.created',
+    module: 'SERVICE_DESK',
+    description: 'Artigo criado na base de conhecimento.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.kb_article.updated',
+    module: 'SERVICE_DESK',
+    description:
+      'Artigo da base de conhecimento alterado (título, categoria, visibilidade, tags ou conteúdo).',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.kb_article.published',
+    module: 'SERVICE_DESK',
+    description: 'Artigo da base de conhecimento publicado.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.kb_article.unpublished',
+    module: 'SERVICE_DESK',
+    description:
+      'Artigo da base de conhecimento voltou para rascunho ou revisão.',
+    subscribable: true,
+  },
+  {
+    type: 'servicedesk.kb_article.deleted',
+    module: 'SERVICE_DESK',
+    description: 'Artigo da base de conhecimento excluído.',
+    subscribable: true,
+  },
 ]
 
 const BY_TYPE = new Map(WEBHOOK_EVENTS.map((event) => [event.type, event]))
@@ -406,6 +690,104 @@ const EXAMPLE_DEAL = {
   amount: 12000,
   ownerId: 'cm2usr000000example',
   actorId: 'cm2usr000000example',
+}
+
+const EXAMPLE_TS = {
+  createdAt: '2026-10-18T12:00:00.000Z',
+  updatedAt: '2026-10-18T12:05:00.000Z',
+}
+const EXAMPLE_ACTOR = 'cm2usr000000example'
+
+const EXAMPLE_PERSON = {
+  id: 'cm2per000000example',
+  name: 'Maria Souza',
+  emails: ['maria@example.com'],
+  phones: ['+5511999990000'],
+  city: 'São Paulo',
+  jobTitle: 'Gerente de TI',
+  companyId: 'cm2cmp000000example',
+  ...EXAMPLE_TS,
+}
+
+const EXAMPLE_COMPANY = {
+  id: 'cm2cmp000000example',
+  name: 'Acme Ltda',
+  cnpj: '12345678000190',
+  domain: 'acme.com.br',
+  employees: 120,
+  arr: 240000,
+  icp: true,
+  accountOwnerId: EXAMPLE_ACTOR,
+  ...EXAMPLE_TS,
+}
+
+const EXAMPLE_DOCUMENT = {
+  id: 'cm2doc000000example',
+  title: 'Proposta comercial - Acme',
+  ownerId: EXAMPLE_ACTOR,
+  kind: 'PROPOSAL',
+  status: 'DRAFT',
+  isTemplate: false,
+  companyId: 'cm2cmp000000example',
+  personId: null,
+  opportunityId: 'cm2opp000000example',
+  leadId: null,
+  totalValue: 12000,
+  validUntil: '2026-11-18T12:00:00.000Z',
+  sentAt: null,
+  acceptedAt: null,
+  ...EXAMPLE_TS,
+}
+
+const EXAMPLE_DOCUMENT_ANSWERED = {
+  document: {
+    id: EXAMPLE_DOCUMENT.id,
+    title: EXAMPLE_DOCUMENT.title,
+    ownerId: EXAMPLE_ACTOR,
+  },
+  reader: { name: 'Maria Souza', email: 'maria@example.com' },
+}
+
+const EXAMPLE_CUSTOMER = {
+  id: 'cm2cus000000example',
+  kind: 'COMPANY' as const,
+  personType: 'LEGAL' as const,
+  name: 'Acme Ltda',
+  tradeName: 'Acme',
+  document: '12345678000190',
+  email: 'contato@acme.com.br',
+  phone: '1130000000',
+  whatsapp: '5511999990000',
+  city: 'São Paulo',
+  state: 'SP',
+  active: true,
+  ...EXAMPLE_TS,
+}
+
+const EXAMPLE_SD_CONTACT = {
+  id: 'cm2sct000000example',
+  name: 'Carlos Lima',
+  jobTitle: 'Analista de TI',
+  email: 'carlos@acme.com.br',
+  phone: null,
+  whatsapp: '5511988887777',
+  userId: null,
+  active: true,
+  customerIds: ['cm2cus000000example'],
+  ...EXAMPLE_TS,
+}
+
+const EXAMPLE_KB_ARTICLE = {
+  id: 'cm2kba000000example',
+  title: 'Como redefinir a senha da VPN',
+  status: 'PUBLISHED' as const,
+  visibility: 'PORTAL' as const,
+  parentId: null,
+  categoryId: null,
+  tags: ['vpn', 'acesso'],
+  sourceTicketId: null,
+  publishedAt: '2026-10-18T12:05:00.000Z',
+  ...EXAMPLE_TS,
 }
 
 /**
@@ -541,6 +923,82 @@ export const WEBHOOK_EVENT_EXAMPLES: {
     agent: { id: 'cm2agt000000example', name: 'Triagem de leads' },
     runId: 'cm2run000000example',
     count: 2,
+  },
+  'crm.person.created': { person: EXAMPLE_PERSON, actorId: EXAMPLE_ACTOR },
+  'crm.person.updated': { person: EXAMPLE_PERSON, actorId: EXAMPLE_ACTOR },
+  'crm.person.deleted': { person: EXAMPLE_PERSON, actorId: EXAMPLE_ACTOR },
+  'crm.company.created': { company: EXAMPLE_COMPANY, actorId: EXAMPLE_ACTOR },
+  'crm.company.updated': { company: EXAMPLE_COMPANY, actorId: EXAMPLE_ACTOR },
+  'crm.company.deleted': { company: EXAMPLE_COMPANY, actorId: EXAMPLE_ACTOR },
+  'crm.document.created': {
+    document: EXAMPLE_DOCUMENT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'crm.document.updated': {
+    document: EXAMPLE_DOCUMENT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'crm.document.deleted': {
+    document: EXAMPLE_DOCUMENT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'crm.document.sent': {
+    document: {
+      ...EXAMPLE_DOCUMENT,
+      status: 'SENT',
+      sentAt: '2026-10-18T12:05:00.000Z',
+    },
+    actorId: EXAMPLE_ACTOR,
+    recipients: 1,
+  },
+  'crm.document.accepted': { ...EXAMPLE_DOCUMENT_ANSWERED, reason: null },
+  'crm.document.declined': {
+    ...EXAMPLE_DOCUMENT_ANSWERED,
+    reason: 'Fora do orçamento deste trimestre.',
+  },
+  'servicedesk.customer.created': {
+    customer: EXAMPLE_CUSTOMER,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.customer.updated': {
+    customer: EXAMPLE_CUSTOMER,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.customer.deleted': {
+    customer: EXAMPLE_CUSTOMER,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.contact.created': {
+    contact: EXAMPLE_SD_CONTACT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.contact.updated': {
+    contact: EXAMPLE_SD_CONTACT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.contact.deleted': {
+    contact: EXAMPLE_SD_CONTACT,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.kb_article.created': {
+    article: { ...EXAMPLE_KB_ARTICLE, status: 'DRAFT', publishedAt: null },
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.kb_article.updated': {
+    article: EXAMPLE_KB_ARTICLE,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.kb_article.published': {
+    article: EXAMPLE_KB_ARTICLE,
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.kb_article.unpublished': {
+    article: { ...EXAMPLE_KB_ARTICLE, status: 'DRAFT', publishedAt: null },
+    actorId: EXAMPLE_ACTOR,
+  },
+  'servicedesk.kb_article.deleted': {
+    article: EXAMPLE_KB_ARTICLE,
+    actorId: EXAMPLE_ACTOR,
   },
 }
 
