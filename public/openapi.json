@@ -44974,6 +44974,155 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/import": {
+      "post": {
+        "tags": ["CRM · Leads"],
+        "summary": "Importar leads, pessoas ou empresas (CSV)",
+        "operationId": "postWorkspacesByIdCrmImport",
+        "description": "O navegador lê o CSV e envia as linhas já mapeadas por coluna. Cada linha passa pelo mesmo fluxo da criação manual (validação, duplicidade, pontuação e roteamento no caso de leads, workflows, auditoria); uma linha inválida ou repetida volta em `rejected` com o motivo e não impede as demais. Exige `consentConfirmed: true`. Até 1.000 linhas por chamada. A permissão exigida é `leads`, `people` ou `companies` × `CREATE`, conforme `entity`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado (sem permissão específica).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "entity": {
+                    "type": "string",
+                    "enum": ["leads", "people", "companies"]
+                  },
+                  "rows": {
+                    "minItems": 1,
+                    "maxItems": 1000,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "email": {
+                          "type": "string",
+                          "maxLength": 600
+                        },
+                        "phone": {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "company": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "jobTitle": {
+                          "type": "string",
+                          "maxLength": 150
+                        },
+                        "city": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "state": {
+                          "type": "string",
+                          "maxLength": 40
+                        },
+                        "linkedin": {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        "source": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "channel": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "cnpj": {
+                          "type": "string",
+                          "maxLength": 30
+                        },
+                        "domain": {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        "employees": {
+                          "type": "string",
+                          "maxLength": 20
+                        }
+                      }
+                    }
+                  },
+                  "consentConfirmed": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": ["entity", "rows", "consentConfirmed"]
+              },
+              "example": {
+                "entity": "people",
+                "rows": [
+                  {
+                    "name": "Ana Souza",
+                    "email": "ana@acme.com.br",
+                    "phone": "(11) 91234-5678",
+                    "company": "Acme Ltda"
+                  }
+                ],
+                "consentConfirmed": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumo da importação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmImportResult"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/integration-keys": {
       "get": {
         "tags": ["CRM · Integrações"],
@@ -216783,6 +216932,41 @@
           "updatedAt"
         ],
         "description": "Gancho (hook) de conteúdo salvo no Hook Vault para reutilizar em posts."
+      },
+      "CrmImportResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Registros criados."
+          },
+          "rejected": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Número da linha de dados (1 = primeira após o cabeçalho)."
+                },
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "example": "Já existe uma pessoa com este e-mail ou telefone"
+                }
+              },
+              "required": ["row", "name", "reason"]
+            },
+            "description": "Linhas não criadas: inválidas, repetidas no arquivo ou já cadastradas."
+          }
+        },
+        "required": ["created", "rejected"]
       },
       "CrmInstagramInsights": {
         "type": "object",
