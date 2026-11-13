@@ -13,6 +13,8 @@ import { CustomerHealthPanel } from '@/app/_components/crm/health/health-panel'
 import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { Customer360Panel } from '@/app/_components/customer-360/customer-360-panel'
+import { CustomerContactButtons } from '@/app/_components/customer-360/customer-contact-buttons'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import {
   useCan,
@@ -159,6 +161,16 @@ export function CrmCompaniesTable({
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-4'>
+              <CustomerContactButtons
+                workspaceId={workspaceId}
+                slug={slug}
+                target={{ companyId: record.id }}
+              />
+              <Customer360Panel
+                workspaceId={workspaceId}
+                slug={slug}
+                companyId={record.id}
+              />
               <CustomerHealthPanel
                 workspaceId={workspaceId}
                 companyId={record.id}

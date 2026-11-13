@@ -900,6 +900,7 @@ export function SdTicketScreen({
   const sidebar = (
     <SdTicketSidebar
       workspaceId={workspaceId}
+      slug={slug}
       ticket={data}
       config={config.data}
       agents={agents.data ?? []}

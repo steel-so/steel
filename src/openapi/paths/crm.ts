@@ -5,6 +5,7 @@ import { crmCadenceRoutes } from './crm/cadences'
 import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
 import { crmCustomerLinkRoutes } from './crm/customer-links'
+import { crmCustomer360Routes } from './crm/customer-360'
 import { crmDealsRoutes } from './crm/deals'
 import { crmDocumentAnalyticsRoutes } from './crm/document-analytics'
 import { crmDocumentExportsRoutes } from './crm/document-exports'
@@ -59,6 +60,7 @@ const routes: RouteConfig[] = [
   ...crmDuplicateRoutes,
   ...crmCustomerLinkRoutes,
   ...crmDealsRoutes,
+  ...crmCustomer360Routes,
   ...crmHealthRoutes,
   ...crmEmailRoutes,
   ...crmEmailEditorRoutes,
