@@ -249,7 +249,7 @@ describe('CrmLeadService', () => {
       )
       expect(mockedLeadRepo.findOpenByContacts).toHaveBeenCalledWith('ws1', {
         emails: [],
-        phones: ['81999990000'],
+        phones: ['5581999990000', '81999990000'],
       })
       expect(mockedMembershipRepo.findByUserAndWorkspace).not.toHaveBeenCalled()
     })

@@ -112,6 +112,21 @@ export interface CrmLeadIntakeResult {
   created: boolean
 }
 
+/**
+ * Variantes de um telefone para comparar: leads antigos foram gravados sem o
+ * 55 e os novos com ele, então a busca olha as duas formas.
+ */
+function phoneVariants(raw: string): string[] {
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return []
+  const hasCountryCode =
+    digits.startsWith('55') && (digits.length === 12 || digits.length === 13)
+  if (hasCountryCode) return [digits, digits.slice(2)]
+  return digits.length === 10 || digits.length === 11
+    ? [`55${digits}`, digits]
+    : [digits]
+}
+
 /** Chaves de comparação: e-mail sem caixa/espaços, telefone só com dígitos. */
 function contactKeys(emails: string[], phones: string[]) {
   return {
@@ -119,7 +134,7 @@ function contactKeys(emails: string[], phones: string[]) {
       ...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean)),
     ],
     phones: [
-      ...new Set(phones.map((p) => p.replace(/\D/g, '')).filter(Boolean)),
+      ...new Set(phones.flatMap((p) => phoneVariants(p))),
     ],
   }
 }

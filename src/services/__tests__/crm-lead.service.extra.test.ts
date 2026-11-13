@@ -599,7 +599,7 @@ describe('CrmLeadService.intake() — channels and failures', () => {
     // e-mails normalizados e telefones só com dígitos, sem repetição.
     expect(mockedLeadRepo.findOpenByContacts).toHaveBeenCalledWith('ws1', {
       emails: ['jane@acme.com'],
-      phones: ['8199990000'],
+      phones: ['558199990000', '8199990000'],
     })
     expect(mockedAudit).toHaveBeenCalledWith(
       expect.objectContaining({
