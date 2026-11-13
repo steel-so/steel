@@ -1,3 +1,4 @@
+import { LandingImageAlt } from '@/app/_components/crm/landing-page/image-alt'
 import { sectionAnchors } from '@/app/_components/crm/landing-page/section-anchors'
 import { getSectionDefinition } from '@/app/_components/crm/landing-page/sections/registry'
 import type { CrmLandingPageSectionDTO } from '@/types/crm-landing-page'
@@ -25,7 +26,9 @@ export function LandingPageWebPreview({
         const { Component } = getSectionDefinition(templateKey, section.type)
         return (
           <div key={section.id} id={anchors[index]?.id} className='scroll-mt-4'>
-            <Component content={section.content} readOnly />
+            <LandingImageAlt texts={section.content.texts}>
+              <Component content={section.content} readOnly />
+            </LandingImageAlt>
           </div>
         )
       })}
