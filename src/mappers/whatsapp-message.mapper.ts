@@ -26,6 +26,7 @@ export function toWhatsAppMessageDTO(
       (message.contactPayload as WhatsAppMessageContactPayload | null) ?? null,
     buttons: parseMessageButtons(message.buttons),
     buttonPayload: message.buttonPayload,
+    failureReason: message.failureReason,
     createdAt: message.createdAt.toISOString(),
   }
 }

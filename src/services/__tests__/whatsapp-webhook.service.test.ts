@@ -447,6 +447,7 @@ describe('WhatsAppWebhookService', () => {
           aiActive: true,
           aiHandoff: false,
           unreadCount: { increment: 1 },
+          lastInboundAt: expect.any(Date),
         }),
       )
       expect(mockedEventRepo.create).toHaveBeenCalledWith(
@@ -1292,6 +1293,28 @@ describe('WhatsAppWebhookService', () => {
       })
 
       expectOk(result)
+    })
+
+    it('should hand the provider failure detail to the message repository', async () => {
+      mockedMessageRepo.updateStatusByProviderMessageId.mockResolvedValue(
+        ok(null),
+      )
+
+      expectOk(
+        await WhatsAppWebhookService.ingestStatusUpdate({
+          providerMessageId: 'wamid.fail',
+          status: 'FAILED',
+          error: '131047: Re-engagement message',
+        }),
+      )
+
+      expect(
+        mockedMessageRepo.updateStatusByProviderMessageId,
+      ).toHaveBeenCalledWith(
+        'wamid.fail',
+        'FAILED',
+        '131047: Re-engagement message',
+      )
     })
 
     it('should hand every status to the newsletter receipts (nl3)', async () => {

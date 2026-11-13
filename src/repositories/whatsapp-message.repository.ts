@@ -127,6 +127,7 @@ export const WhatsAppMessageRepository = {
   async updateStatusByProviderMessageId(
     providerMessageId: string,
     status: WhatsAppMessage['status'],
+    failureReason?: string | null,
   ): Promise<Result<WhatsAppMessage | null>> {
     try {
       const existing = await prisma.whatsAppMessage.findUnique({
@@ -134,9 +135,14 @@ export const WhatsAppMessageRepository = {
       })
       if (!existing) return ok(null)
 
+      // Only a FAILED status carries a reason; a later non-failed status
+      // (rare retry from the provider) clears the stale one.
       const message = await prisma.whatsAppMessage.update({
         where: { providerMessageId },
-        data: { status },
+        data: {
+          status,
+          failureReason: status === 'FAILED' ? (failureReason ?? null) : null,
+        },
       })
       return ok(message)
     } catch (error) {

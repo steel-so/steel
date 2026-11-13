@@ -113,4 +113,16 @@ describe('toWhatsAppConversationDTO()', () => {
     expect(dto.lastMessageAt).toBe(lastMessageAt.toISOString())
     expect(dto.closeReason).toBe('RESOLVED')
   })
+
+  it('should serialize lastInboundAt, null when the contact never wrote', () => {
+    const never = createFakeWhatsAppConversationWithPreview()
+    expect(toWhatsAppConversationDTO(never).lastInboundAt).toBeNull()
+
+    const wrote = createFakeWhatsAppConversationWithPreview({
+      lastInboundAt: new Date('2026-11-13T10:00:00.000Z'),
+    })
+    expect(toWhatsAppConversationDTO(wrote).lastInboundAt).toBe(
+      '2026-11-13T10:00:00.000Z',
+    )
+  })
 })

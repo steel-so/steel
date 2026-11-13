@@ -174,6 +174,57 @@ describe('WhatsAppMessageRepository', () => {
       expect(updated?.status).toBe('READ')
     })
 
+    it('should persist the failure reason of a FAILED message and clear it later', async () => {
+      const { workspace, conversation } = await seedConversation()
+      await WhatsAppMessageRepository.create({
+        workspaceId: workspace.id,
+        conversationId: conversation.id,
+        direction: 'OUT',
+        type: 'TEXT',
+        text: 'Olá',
+        providerMessageId: 'pm-status-fail',
+        status: 'SENT',
+      })
+
+      const failed = expectOk(
+        await WhatsAppMessageRepository.updateStatusByProviderMessageId(
+          'pm-status-fail',
+          'FAILED',
+          '131047: Re-engagement message',
+        ),
+      )
+      expect(failed?.failureReason).toBe('131047: Re-engagement message')
+
+      const recovered = expectOk(
+        await WhatsAppMessageRepository.updateStatusByProviderMessageId(
+          'pm-status-fail',
+          'DELIVERED',
+        ),
+      )
+      expect(recovered?.failureReason).toBeNull()
+    })
+
+    it('should store a null reason when a FAILED status carries none', async () => {
+      const { workspace, conversation } = await seedConversation()
+      await WhatsAppMessageRepository.create({
+        workspaceId: workspace.id,
+        conversationId: conversation.id,
+        direction: 'OUT',
+        type: 'TEXT',
+        text: 'Olá',
+        providerMessageId: 'pm-status-fail-2',
+        status: 'SENT',
+      })
+
+      const failed = expectOk(
+        await WhatsAppMessageRepository.updateStatusByProviderMessageId(
+          'pm-status-fail-2',
+          'FAILED',
+        ),
+      )
+      expect(failed?.failureReason).toBeNull()
+    })
+
     it('should return null instead of throwing for an unknown providerMessageId', async () => {
       const result = expectOk(
         await WhatsAppMessageRepository.updateStatusByProviderMessageId(
