@@ -25,6 +25,7 @@ import {
   applyNlResult,
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
@@ -500,6 +501,11 @@ export function CrmLeadsBoard({
             <SteelIcon icon={Download01Icon} strokeWidth={2} />
             Importar da Apollo
           </Button>
+          <CrmImportButton
+            workspaceId={workspaceId}
+            entity='leads'
+            onImported={refetch}
+          />
           <Button size='sm' onClick={() => setCreateOpen(true)}>
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Novo lead

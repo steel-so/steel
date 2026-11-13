@@ -10,6 +10,7 @@ import {
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { CustomerHealthPanel } from '@/app/_components/crm/health/health-panel'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
@@ -138,9 +139,19 @@ export function CrmCompaniesTable({
           searchPlaceholder='Buscar empresas…'
           refetch={refetch}
           headerExtra={
-            isPrivileged ? (
-              <CnpjBulkDialog workspaceId={workspaceId} onFinished={refetch} />
-            ) : null
+            <>
+              <CrmImportButton
+                workspaceId={workspaceId}
+                entity='companies'
+                onImported={refetch}
+              />
+              {isPrivileged ? (
+                <CnpjBulkDialog
+                  workspaceId={workspaceId}
+                  onFinished={refetch}
+                />
+              ) : null}
+            </>
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-4'>
