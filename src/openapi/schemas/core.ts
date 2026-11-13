@@ -136,7 +136,7 @@ export const MediaUrlDTO = dto(
     .object({
       url: z.string().meta({
         example:
-          'https://steel.stratustelecom.com.br/media/avatars/users/abc/avatar.webp',
+          'https://homologacao.stratustelecom.com.br/media/avatars/users/abc/avatar.webp',
       }),
     })
     .meta({ description: 'URL pública do arquivo enviado.' }),
@@ -848,7 +848,7 @@ export const ShortLinkDTO = dto(
     title: z.string().meta({ example: 'Documentação' }),
     url: z
       .url()
-      .meta({ example: 'https://steel.stratustelecom.com.br/docs' }),
+      .meta({ example: 'https://homologacao.stratustelecom.com.br/docs' }),
     userId: z.string(),
     createdAt: dateTime(),
     updatedAt: dateTime(),

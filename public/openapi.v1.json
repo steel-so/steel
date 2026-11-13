@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "https://steel.stratustelecom.com.br",
+      "url": "https://homologacao.stratustelecom.com.br",
       "description": "Homologação"
     },
     {

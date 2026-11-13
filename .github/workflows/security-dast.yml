@@ -20,7 +20,7 @@ jobs:
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@7c4deb10e6261301961c86d65d54a516394f9aed # v0.14.0
         with:
-          target: 'https://steel.stratustelecom.com.br'
+          target: 'https://homologacao.stratustelecom.com.br'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           allow_issue_writing: true
@@ -38,7 +38,7 @@ jobs:
     name: Security Headers Validation
     runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     env:
-      BASE_URL: https://steel.stratustelecom.com.br
+      BASE_URL: https://homologacao.stratustelecom.com.br
     steps:
       # Três classes de resposta, porque cada uma passa por um caminho
       # diferente e já divergiu em produção (ZAP #1/#3/#4/#5/#6):

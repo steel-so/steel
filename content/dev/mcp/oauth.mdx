@@ -14,7 +14,7 @@ O servidor de autorização é o do Steel, OAuth 2.1:
 
 | Item | Valor |
 | --- | --- |
-| Recurso protegido | `https://steel.stratustelecom.com.br/api/mcp` |
+| Recurso protegido | `https://homologacao.stratustelecom.com.br/api/mcp` |
 | Emissor (_issuer_) | o endereço do Steel seguido de `/api/auth` |
 | Fluxo | Authorization code com PKCE (`S256`, obrigatório) |
 | Registro de cliente | Dinâmico (RFC 7591), sem autenticação; cliente público declara `token_endpoint_auth_method: none` |
@@ -29,7 +29,7 @@ Uma chamada sem token ao servidor MCP responde `401` com o cabeçalho
 `WWW-Authenticate` apontando para os metadados do recurso:
 
 ```bash
-curl -i -X POST https://steel.stratustelecom.com.br/api/mcp \
+curl -i -X POST https://homologacao.stratustelecom.com.br/api/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
@@ -37,7 +37,7 @@ curl -i -X POST https://steel.stratustelecom.com.br/api/mcp \
 
 ```http
 HTTP/1.1 401 Unauthorized
-WWW-Authenticate: Bearer resource_metadata="https://steel.stratustelecom.com.br/.well-known/oauth-protected-resource"
+WWW-Authenticate: Bearer resource_metadata="https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource"
 Content-Type: application/json
 
 {"success":false,"statusCode":401,"error":{"code":"UNAUTHORIZED","message":"Token de integração inválido ou ausente"}}
@@ -49,17 +49,17 @@ Com um token vencido ou revogado, o cabeçalho também traz
 Os metadados do recurso (RFC 9728) dizem qual servidor de autorização usar:
 
 ```bash
-curl https://steel.stratustelecom.com.br/.well-known/oauth-protected-resource
+curl https://homologacao.stratustelecom.com.br/.well-known/oauth-protected-resource
 ```
 
 ```json
 {
-  "resource": "https://steel.stratustelecom.com.br/api/mcp",
-  "authorization_servers": ["https://steel.stratustelecom.com.br/api/auth"],
+  "resource": "https://homologacao.stratustelecom.com.br/api/mcp",
+  "authorization_servers": ["https://homologacao.stratustelecom.com.br/api/auth"],
   "scopes_supported": ["mcp:read", "mcp:write"],
   "bearer_methods_supported": ["header"],
   "resource_name": "Steel",
-  "resource_documentation": "https://steel.stratustelecom.com.br/dev"
+  "resource_documentation": "https://homologacao.stratustelecom.com.br/dev"
 }
 ```
 
@@ -68,16 +68,16 @@ RFC (`/.well-known/oauth-authorization-server/api/auth`) e no caminho curto,
 com o mesmo documento:
 
 ```bash
-curl https://steel.stratustelecom.com.br/.well-known/oauth-authorization-server
+curl https://homologacao.stratustelecom.com.br/.well-known/oauth-authorization-server
 ```
 
 ```json
 {
-  "issuer": "https://steel.stratustelecom.com.br/api/auth",
-  "authorization_endpoint": "https://steel.stratustelecom.com.br/api/auth/oauth2/authorize",
-  "token_endpoint": "https://steel.stratustelecom.com.br/api/auth/oauth2/token",
-  "registration_endpoint": "https://steel.stratustelecom.com.br/api/auth/oauth2/register",
-  "revocation_endpoint": "https://steel.stratustelecom.com.br/api/auth/oauth2/revoke",
+  "issuer": "https://homologacao.stratustelecom.com.br/api/auth",
+  "authorization_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/authorize",
+  "token_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/token",
+  "registration_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/register",
+  "revocation_endpoint": "https://homologacao.stratustelecom.com.br/api/auth/oauth2/revoke",
   "scopes_supported": ["mcp:read", "mcp:write", "offline_access"],
   "response_types_supported": ["code"],
   "response_modes_supported": ["query"],
@@ -95,7 +95,7 @@ respondem a qualquer origem (CORS), para clientes que rodam no navegador.
 ## 2. Registro do cliente
 
 ```bash
-curl -X POST https://steel.stratustelecom.com.br/api/auth/oauth2/register \
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/register \
   -H "Content-Type: application/json" \
   -d '{
     "client_name": "Meu cliente MCP",
@@ -173,8 +173,8 @@ state=$(openssl rand -hex 16)
 Abra no navegador da pessoa:
 
 ```http
-GET /api/auth/oauth2/authorize?response_type=code&client_id=kXq2…&redirect_uri=http%3A%2F%2F127.0.0.1%3A8976%2Fcallback&scope=mcp%3Aread%20mcp%3Awrite%20offline_access&state=<state>&code_challenge=<code_challenge>&code_challenge_method=S256&resource=https%3A%2F%2Fsteel.stratustelecom.com.br%2Fapi%2Fmcp
-Host: steel.stratustelecom.com.br
+GET /api/auth/oauth2/authorize?response_type=code&client_id=kXq2…&redirect_uri=http%3A%2F%2F127.0.0.1%3A8976%2Fcallback&scope=mcp%3Aread%20mcp%3Awrite%20offline_access&state=<state>&code_challenge=<code_challenge>&code_challenge_method=S256&resource=https%3A%2F%2Fhomologacao.stratustelecom.com.br%2Fapi%2Fmcp
+Host: homologacao.stratustelecom.com.br
 ```
 
 O que a pessoa vê:
@@ -188,7 +188,7 @@ O que a pessoa vê:
 3. O navegador vai para o `redirect_uri` com `code`, `state` e `iss`:
 
 ```text
-http://127.0.0.1:8976/callback?code=Yc7…&state=<state>&iss=https%3A%2F%2Fsteel.stratustelecom.com.br%2Fapi%2Fauth
+http://127.0.0.1:8976/callback?code=Yc7…&state=<state>&iss=https%3A%2F%2Fhomologacao.stratustelecom.com.br%2Fapi%2Fauth
 ```
 
 Confira se o `state` é o que você gerou e se o `iss` é o emissor esperado.
@@ -200,14 +200,14 @@ também o emissor ou o endereço do Steel, para clientes que mandam um desses.
 ## 4. Troca do código pelos tokens
 
 ```bash
-curl -X POST https://steel.stratustelecom.com.br/api/auth/oauth2/token \
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=authorization_code" \
   --data-urlencode "code=Yc7…" \
   --data-urlencode "redirect_uri=http://127.0.0.1:8976/callback" \
   --data-urlencode "client_id=kXq2…" \
   --data-urlencode "code_verifier=$code_verifier" \
-  --data-urlencode "resource=https://steel.stratustelecom.com.br/api/mcp"
+  --data-urlencode "resource=https://homologacao.stratustelecom.com.br/api/mcp"
 ```
 
 ```json
@@ -236,7 +236,7 @@ Antes de a hora do access token acabar, ou depois de um `401` com
 `error="invalid_token"`:
 
 ```bash
-curl -X POST https://steel.stratustelecom.com.br/api/auth/oauth2/token \
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=refresh_token" \
   --data-urlencode "refresh_token=stl_rt_…" \
@@ -253,7 +253,7 @@ autorização.
 ## 6. Revogação
 
 ```bash
-curl -X POST https://steel.stratustelecom.com.br/api/auth/oauth2/revoke \
+curl -X POST https://homologacao.stratustelecom.com.br/api/auth/oauth2/revoke \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "token=stl_rt_…" \
   --data-urlencode "client_id=kXq2…"
@@ -283,7 +283,7 @@ O transporte é Streamable HTTP **sem estado**: cada mensagem JSON-RPC é um
 `GET` e `DELETE` respondem `405`.
 
 ```bash
-export MCP_URL=https://steel.stratustelecom.com.br/api/mcp
+export MCP_URL=https://homologacao.stratustelecom.com.br/api/mcp
 export MCP_TOKEN=stl_at_…
 
 curl -X POST "$MCP_URL" \
@@ -365,7 +365,7 @@ curl -X POST "$MCP_URL" \
             "assignee": "Ana Souza",
             "sla": { "firstResponse": "met", "resolution": "at_risk", "resolutionDueAt": "2026-10-18T17:00:00.000Z" },
             "risk": { "level": "HIGH", "score": 78 },
-            "href": "https://steel.stratustelecom.com.br/acme/servicedesk/tickets/123"
+            "href": "https://homologacao.stratustelecom.com.br/acme/servicedesk/tickets/123"
           }
         ],
         "breached": [ { "code": "INC-000118", "…": "…" } ]

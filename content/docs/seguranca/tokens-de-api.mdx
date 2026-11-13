@@ -69,7 +69,7 @@ Envie o token no cabeçalho `Authorization` de cada chamada à API v1. Para
 conferir se ele funciona, peça os dados do próprio token:
 
 ```bash
-curl https://steel.stratustelecom.com.br/api/v1/me \
+curl https://homologacao.stratustelecom.com.br/api/v1/me \
   -H "Authorization: Bearer $STEEL_TOKEN"
 ```
 
@@ -102,7 +102,7 @@ No SDK TypeScript (`@steel-so/sdk`):
 import { createSteelClient } from '@steel-so/sdk'
 
 const steel = createSteelClient({
-  baseUrl: 'https://steel.stratustelecom.com.br',
+  baseUrl: 'https://homologacao.stratustelecom.com.br',
   token: process.env.STEEL_TOKEN,
 })
 
@@ -185,7 +185,7 @@ Credenciais no Windows, Secret Service no Linux) ou, sem chaveiro, em
 `~/.config/steel/credentials` com permissão 600.
 
 **O link não abriu?** Abra `/device` no endereço do Steel da sua empresa (por
-exemplo, `https://steel.stratustelecom.com.br/device`), digite o código
+exemplo, `https://homologacao.stratustelecom.com.br/device`), digite o código
 do terminal em **Código** e clique em **Continuar**. Maiúsculas e o hífen não
 importam: `bcdf gh23` vale o mesmo que `BCDF-GH23`.
 

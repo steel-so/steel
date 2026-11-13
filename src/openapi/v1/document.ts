@@ -210,7 +210,7 @@ export function buildOpenApiV1Document({
     },
     servers: [
       {
-        url: 'https://steel.stratustelecom.com.br',
+        url: 'https://homologacao.stratustelecom.com.br',
         description: 'Homologação',
       },
       { url: 'http://localhost:3001', description: 'Desenvolvimento local' },

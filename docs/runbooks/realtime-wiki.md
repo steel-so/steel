@@ -83,14 +83,14 @@ De qualquer máquina, deve imprimir `HTTP/1.1 101 Switching Protocols`:
 ```bash
 curl -s -D - -o /dev/null --max-time 4 -H "Connection: Upgrade" -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: $(openssl rand -base64 16)" \
-  https://steel.stratustelecom.com.br/realtime | head -1
+  https://homologacao.stratustelecom.com.br/realtime | head -1
 ```
 
 Não use `-o /dev/null -w '%{http_code}'`: o curl mantém o socket aberto e
 imprime `000`. Um `200` com corpo "Welcome to Hocuspocus!" significa que algum
 proxy está removendo o upgrade. Para achar qual salto, repita o mesmo comando
 no .145 contra `http://127.0.0.1/realtime` (com `-H "Host:
-steel.stratustelecom.com.br"`) e contra `http://127.0.0.1:1235/` — o
+homologacao.stratustelecom.com.br"`) e contra `http://127.0.0.1:1235/` — o
 primeiro salto que devolve `101` está certo; o problema está no anterior.
 
 ## 2. Saúde

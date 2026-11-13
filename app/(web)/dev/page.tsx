@@ -217,7 +217,7 @@ export default async function DevIndexPage() {
                 <td className='px-4 py-2'>Homologação</td>
                 <td className='px-4 py-2'>
                   <code className='break-all text-xs'>
-                    https://steel.stratustelecom.com.br/api
+                    https://homologacao.stratustelecom.com.br/api
                   </code>
                 </td>
               </tr>

@@ -22,7 +22,7 @@ usuário, as suas permissões e só nos módulos que você liberar.
 - Está disponível em todos os planos, e as perguntas feitas no Claude, no
   ChatGPT ou no Cursor **não** contam na cota mensal da Steel AI.
 - Tenha em mãos o endereço do Steel da sua empresa seguido de `/api/mcp`
-  (por exemplo, `https://steel.stratustelecom.com.br/api/mcp`). É esse
+  (por exemplo, `https://homologacao.stratustelecom.com.br/api/mcp`). É esse
   endereço que você cola no assistente. Não há chave nem senha para copiar.
 
 Os nomes dos menus abaixo são os de outubro de 2026. Os assistentes mudam
@@ -70,7 +70,7 @@ clica em **Conectar** e entra com a própria conta do Steel.
 No terminal, rode uma vez:
 
 ```bash
-claude mcp add --transport http steel https://steel.stratustelecom.com.br/api/mcp
+claude mcp add --transport http steel https://homologacao.stratustelecom.com.br/api/mcp
 ```
 
 Troque pelo endereço do seu Steel. Depois, dentro do Claude Code, digite
@@ -109,7 +109,7 @@ liberar o modo desenvolvedor para a organização.
    {
      "mcpServers": {
        "steel": {
-         "url": "https://steel.stratustelecom.com.br/api/mcp"
+         "url": "https://homologacao.stratustelecom.com.br/api/mcp"
        }
      }
    }

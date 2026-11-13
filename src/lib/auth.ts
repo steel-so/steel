@@ -14,7 +14,6 @@ import {
   GITHUB_CLIENT_SECRET,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
-  META_PUBLIC_URL,
 } from '@/lib/env/server'
 import { PRIVACY_VERSION, TERMS_VERSION } from '@/lib/legal/versions'
 import { sendResetPasswordEmail } from '@/src/lib/mail/user/send-reset-password'
@@ -50,11 +49,7 @@ export const auth = betterAuth({
       DISABLE_AUTH_RATE_LIMIT === 'true' ? false : NODE_ENV === 'production',
   },
   baseURL: BETTER_AUTH_URL,
-  // O host da Meta continua servindo o app inteiro (Embedded Signup roda nele),
-  // então também é uma origem confiável.
-  trustedOrigins: META_PUBLIC_URL
-    ? [BETTER_AUTH_URL, META_PUBLIC_URL]
-    : [BETTER_AUTH_URL],
+  trustedOrigins: [BETTER_AUTH_URL],
   secret: BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,

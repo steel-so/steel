@@ -421,7 +421,7 @@ const catalog = await steel.servicedesk.catalog({ ticketType: 'SERVICE_REQUEST',
 - name: Abrir chamado no Steel
   if: failure()
   env:
-    STEEL_URL: https://steel.stratustelecom.com.br
+    STEEL_URL: https://homologacao.stratustelecom.com.br
     STEEL_TOKEN: ${{ secrets.STEEL_TOKEN }}
   run: |
     steel sd ticket create --type incidente \

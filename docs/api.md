@@ -11,7 +11,7 @@ compara o arquivo commitado com a saída do gerador e falha se divergirem.
   para o próprio site (`src/lib/docs/public-openapi.ts`). O endereço antigo
   `/reference` redireciona para lá.
 - Servidores declarados: local (`http://localhost:3001/api`) e homologação
-  (`https://steel.stratustelecom.com.br/api`). Os paths do spec são
+  (`https://homologacao.stratustelecom.com.br/api`). Os paths do spec são
   relativos a `/api`.
 - `info.version` é a tag CalVer derivada do `version` do `package.json`
   (ADR 0003); `pnpm version:sync` continua funcionando.

@@ -39,7 +39,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: steel-so/steel
   DEPLOY_ENVIRONMENT: homologacao
-  DEPLOY_URL: https://steel.stratustelecom.com.br
+  DEPLOY_URL: https://homologacao.stratustelecom.com.br
   DEPLOY_DIR: /var/www/steel
 
 jobs:
@@ -239,7 +239,7 @@ jobs:
       cancel-in-progress: false
     environment:
       name: homologacao
-      url: https://steel.stratustelecom.com.br
+      url: https://homologacao.stratustelecom.com.br
     steps:
       # Mesmo commit da imagem (docker-compose.yml, scripts/deploy.sh e o .env
       # cifrado precisam casar com a versão deployada).

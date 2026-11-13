@@ -6,7 +6,7 @@ name: Promote to Production
 #
 # A imagem é rebuildada a partir do tag do release porque as NEXT_PUBLIC_*
 # (URL, Axiom) são embutidas no bundle em build time — a imagem de
-# homologação aponta para steel.stratustelecom.com.br. Publicada como
+# homologação aponta para homologacao.stratustelecom.com.br. Publicada como
 # <versão>-production.
 #
 # O job deploy usa o environment "production": configure required reviewers

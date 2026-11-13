@@ -140,7 +140,7 @@ arquivo). Faltando menos de 7 dias para o token vencer, ele avisa. Com
   "modules": ["SERVICE_DESK", "CRM"],
   "token": { "id": "cm2tok...", "expiresAt": "2027-01-16T12:00:00.000Z" },
   "profile": "homologacao",
-  "url": "https://steel.stratustelecom.com.br",
+  "url": "https://homologacao.stratustelecom.com.br",
   "tokenSource": "keychain"
 }
 ```
@@ -176,7 +176,7 @@ steel profile add local --url http://localhost:3001 --use
 steel whoami --profile local                        # um comando em outro perfil
 ```
 
-- **Perfis prontos:** `homologacao` (`https://steel.stratustelecom.com.br`,
+- **Perfis prontos:** `homologacao` (`https://homologacao.stratustelecom.com.br`,
   o padrão) e `producao`. A URL de produção ainda não foi definida: até lá,
   `--profile producao` responde que a URL não existe. Se a sua equipe já tem
   um endereço, rode `steel profile add producao --url <url> --force`.

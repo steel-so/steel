@@ -26,18 +26,6 @@ function redirectToSettings(
 }
 
 export const GET = withAxiom(async (request: NextRequest) => {
-  // O callback da Meta chega no host registrado no app dela (META_PUBLIC_URL),
-  // onde não há cookie de sessão. Repassa ao host canônico, que tem a sessão e
-  // o cookie PKCE, preservando `code` e `state`.
-  const canonical = new URL(BETTER_AUTH_URL)
-  if (request.nextUrl.host !== canonical.host) {
-    const target = new URL(
-      `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      canonical,
-    )
-    return NextResponse.redirect(target, 302)
-  }
-
   const auth = await getAuthSession()
   if (!auth.ok) {
     return Response.redirect(

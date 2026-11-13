@@ -413,7 +413,7 @@ const routes: RouteConfig[] = [
       'Exemplo com cURL:',
       '',
       '```bash',
-      'curl -X POST https://steel.stratustelecom.com.br/api/crm/integrations/leads \\',
+      'curl -X POST https://homologacao.stratustelecom.com.br/api/crm/integrations/leads \\',
       '  -H "Authorization: Bearer $STEEL_CRM_KEY" \\',
       '  -H "Content-Type: application/json" \\',
       '  -d \'{"name":"Carlos Lima","emails":["carlos@empresa.com.br"],"company":"Empresa Exemplo Ltda","source":"site"}\'',
