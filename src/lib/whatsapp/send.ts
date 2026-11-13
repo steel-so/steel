@@ -12,6 +12,7 @@ import {
 } from '@/src/services/whatsapp-spend-cap.service'
 import { WhatsAppUsageService } from '@/src/services/whatsapp-usage.service'
 import { createMetaClient } from './meta-client'
+import { whatsappProviderMessage } from './provider-errors'
 import type {
   WhatsAppCostContext,
   WhatsAppOutboundButtons,
@@ -159,11 +160,7 @@ async function withProvider<T>(
     }
     return ok(result)
   } catch (error) {
-    return err(
-      whatsappProviderError(
-        error instanceof Error ? error.message : 'Falha ao enviar mensagem',
-      ),
-    )
+    return err(whatsappProviderError(whatsappProviderMessage(error)))
   }
 }
 

@@ -109,6 +109,35 @@ describe('handleError()', () => {
     expect(body.message).toBe('E-mail já está em uso')
   })
 
+  it('should hide the English database detail behind a pt-BR message', async () => {
+    const res = handleError({
+      code: 'DATABASE_ERROR',
+      message: 'Failed to list CRM leads',
+      details: { cause: 'secret' },
+    })
+
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body.message).toBe('Erro interno. Tente novamente.')
+    expect(body.error.details).toBeUndefined()
+  })
+
+  it('should flatten validation issues into error.fieldErrors', async () => {
+    const res = standardError('VALIDATION_ERROR', 'Dados inválidos', [
+      { path: ['email'], message: 'E-mail inválido' },
+    ])
+
+    const body = await res.json()
+    expect(body.error.fieldErrors).toEqual({ email: ['E-mail inválido'] })
+    expect(body.error.details).toHaveLength(1)
+  })
+
+  it('should expose retryAfterSeconds in the body for RATE_LIMITED', async () => {
+    const res = handleError(rateLimited(30))
+    const body = await res.json()
+    expect(body.error.details.retryAfterSeconds).toBe(30)
+  })
+
   it('should set Retry-After header for RATE_LIMITED with retryAfterSeconds', () => {
     const res = handleError(rateLimited(120))
 
