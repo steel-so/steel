@@ -116,6 +116,7 @@ async function linkedConversation(
   const found = await SdWhatsappRepository.findConversation(
     loaded.ticket.workspaceId,
     id,
+    loaded.ticket.id,
   )
   if (!found.ok) return found
   if (!found.value) return err(sdWhatsappConversationNotFound())
@@ -273,6 +274,7 @@ export const SdWhatsappService = {
       const found = await SdWhatsappRepository.findConversation(
         workspaceId,
         ticket.whatsappConversationId,
+        ticket.id,
       )
       if (!found.ok) return found
       conversation = found.value

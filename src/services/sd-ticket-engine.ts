@@ -883,6 +883,15 @@ export const SdTicketEngine = {
       title: `Novo na fila: ${sdTicketCode(ticket, config.prefixes)}`,
       body: ticket.title,
     })
+    // Customer-facing acknowledgement ("chamado criado"). Only when a team
+    // member opens it: tickets the customer starts (e-mail, WhatsApp, monitor,
+    // AI) already get their own reply, and the portal requester is the author.
+    if (actor.kind === 'user' && ticket.channel !== 'PORTAL') {
+      await notifyEvent('ticket.created', ticket, config, actor, {
+        title: `Chamado ${sdTicketCode(ticket, config.prefixes)} criado`,
+        body: `Recebemos sua solicitação: ${ticket.title}`,
+      })
+    }
     await publish(ticket, 'ticket.created', actor, config)
     void dispatchSteelAgentEvent(workspaceId, 'sd.ticket.created', {
       ticketId: ticket.id,

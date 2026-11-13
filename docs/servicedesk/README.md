@@ -255,6 +255,71 @@ de canal vira log e o resto segue; só erro de banco vira `err`.
   preferência de cada destinatário (o valor da regra vai para o log como
   `ruleEmail`).
 
+## Chamado a partir de conversa ou registro do CRM
+
+`SdTicketSourceService` (`src/services/sd-ticket-source.service.ts`) abre um
+chamado a partir de uma **conversa do WhatsApp** (zap) ou de um **lead,
+pessoa ou oportunidade** do CRM, e liga os dois lados.
+
+- **API** (`app/api/workspaces/[id]/servicedesk/tickets/`):
+  `GET from-source?source&sourceId` (pré-preenchimento do diálogo: título,
+  prévia da descrição, contato e cliente encontrados, chamados em aberto da
+  origem), `POST from-source` (cria) e `GET by-source?source&sourceId`
+  (chamados ligados à origem). `source` é `conversation | lead | person |
+  opportunity`. Hook: `src/hooks/use-sd-ticket-source.ts`.
+- **Autorização**: agente do ServiceDesk com `sd-tickets` CREATE (listar
+  pede VIEW) **e** acesso de leitura à origem: no CRM, `leads` / `people` /
+  `opportunities`; na conversa da Comunicação, `conversations` mais a visão
+  por equipe (conversa fora da visão responde como inexistente). Solicitante
+  (sem departamento) recebe `SD_NOT_AGENT`.
+- **O chamado é criado por `SdTicketService.create`**: catálogo, SLA,
+  roteamento, automações e o evento "chamado criado" (abaixo) funcionam como
+  em qualquer outro chamado. Canal `WHATSAPP` para conversa, `AGENT` para o
+  CRM. O solicitante é casado com o ServiceDesk sem criar cadastro: contato
+  por telefone (variações com e sem o nono dígito) ou e-mail, cliente pelo
+  vínculo do contato, CNPJ da empresa do CRM ou nome exato. Sem casamento, o
+  chamado sai sem contato e os dados vão na descrição.
+- **Descrição**: observação do agente, origem, dados (empresa, cargo,
+  telefone, e-mail) e, para a conversa, as últimas mensagens citadas (10 por
+  padrão, até 30), com data no fuso `America/Sao_Paulo`. Tudo escapado.
+- **Duplicidade**: com chamado **em aberto** na mesma origem a criação
+  responde `SD_TICKET_SOURCE_HAS_OPEN_TICKET` (409); o diálogo mostra o
+  existente e pede confirmação (`allowDuplicate: true`).
+- **Vínculos de ida e volta** (migração `ticket_from_conversation`):
+  `SdTicket.whatsappConversationId` (já existia), `crmLeadId`, `crmPersonId`
+  e `crmOpportunityId`. A conversa do zap mostra a faixa
+  `SdConversationTicketsBar` com os chamados; lead, pessoa e oportunidade
+  mostram `SdLinkedTicketsSection` (na linha do tempo do registro e no painel
+  do lead) e uma atividade `SD_TICKET_CREATED` entra na linha do tempo da
+  pessoa, oportunidade e empresa (o lead não tem linha do tempo própria).
+  Quem abre pela conversa também liga, se achar, a pessoa do CRM pelo mesmo
+  telefone (chave DDD + 8 últimos dígitos). O chamado grava o evento de
+  rastreabilidade `whatsapp.linked` ou `crm.linked`.
+- **Conexão `COMMUNICATION` x `SERVICE_DESK` (decisão)**: o inbox do zap usa
+  conexões `COMMUNICATION`; o ServiceDesk tem a sua (`SERVICE_DESK`, em
+  `SdSettings.whatsappConnectionId`). Em vez de copiar a conversa ou abrir
+  uma nova, o chamado **liga a conversa como ela é**. Para a conversa da
+  Comunicação, a aba WhatsApp do chamado lê e responde por essa mesma
+  conexão (`SdWhatsappRepository.findConversation` aceita a conversa
+  `COMMUNICATION` só quando é a vinculada ao próprio chamado, nunca por id
+  avulso), e as próximas mensagens do cliente continuam chegando no zap, sem
+  espelhar no histórico do chamado. Conversa de conexão `SERVICE_DESK` segue o
+  fluxo de sempre (espelho no histórico). O diálogo avisa a diferença.
+
+### Evento "chamado criado" (`ticket.created`)
+
+Entrou no catálogo (grupo "Chamados"): público `requester` e `contact`,
+canais IN_APP / EMAIL / WHATSAPP, ligados por padrão IN_APP e EMAIL. O motor
+dispara logo depois de criar o chamado, só quando **um membro da equipe**
+abre (ator `user`): chamado que o próprio cliente inicia (e-mail, WhatsApp,
+monitoramento, IA) já tem a sua resposta, e no `PORTAL` o solicitante é o
+autor. No WhatsApp vai
+pelo caminho do solicitante (`SdRequesterWhatsapp`): **modelo aprovado**
+configurado para o evento em `requesterWhatsappTemplates`, janela de 24 h e
+descadastro respeitados; sem modelo, só com texto livre se o catálogo o
+liga (não liga). Variáveis de modelo: `code`, `title`, `headline`,
+`message`, `requester`.
+
 ## Painel IA vs. técnico (S9)
 
 Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e
