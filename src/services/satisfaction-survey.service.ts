@@ -64,6 +64,10 @@ import type {
   SurveyReportDTO,
 } from '@/types/satisfaction-survey'
 import { assertModuleMember, assertModulePrivileged } from './authz'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from './crm-retention.service'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from './whatsapp-notify'
 
 const CONFIG_TRIGGERS: SurveyConfigDTO['trigger'][] = [
@@ -991,8 +995,12 @@ async function alertDetractor(
   config: SatisfactionSurveyConfig | null,
 ): Promise<void> {
   try {
-    if (config && !config.alertDetractors) return
     if (!isDetractorScore(survey.kind, score, config?.detractorMaxScore)) return
+    // The CRM follow-up has its own switch, apart from the admin notice.
+    await runRetentionSafely('survey_detractor', () =>
+      CrmRetentionService.onSurveyDetractor({ survey, score, comment }),
+    )
+    if (config && !config.alertDetractors) return
 
     const who = survey.customerName ?? survey.recipientName ?? 'Um cliente'
     const scale = SURVEY_SCALES[survey.kind]

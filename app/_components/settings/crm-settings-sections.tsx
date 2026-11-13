@@ -17,6 +17,7 @@ import { CrmLeadRulesSection } from '@/app/_components/settings/crm-lead-rules-s
 import { CrmPipelineSettingsSection } from '@/app/_components/settings/crm-pipeline-settings-section'
 import { CrmPrivacySection } from '@/app/_components/settings/crm-privacy-section'
 import { CrmProfilesSection } from '@/app/_components/settings/crm-profiles-section'
+import { CrmRetentionSettingsSection } from '@/app/_components/settings/crm-retention-settings-section'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 type IconType = Parameters<
@@ -84,6 +85,14 @@ export const CRM_SETTINGS_SECTIONS: CrmSettingsSection[] = [
     icon: TargetDollarIcon,
     description: 'Validade de propostas e regras de negócios.',
     render: (id) => <CrmDealsSettingsSection workspaceId={id} />,
+  },
+  {
+    id: 'retention',
+    label: 'Retenção',
+    group: 'Funil de vendas',
+    icon: UserMultipleIcon,
+    description: 'Tarefa automática quando um cliente dá nota baixa ou esfria.',
+    render: (id) => <CrmRetentionSettingsSection workspaceId={id} />,
   },
   {
     id: 'custom-fields',

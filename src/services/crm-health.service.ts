@@ -33,6 +33,10 @@ import {
   notifyCrmCustomerHealthDrop,
   notifyCrmOpportunityAtRisk,
 } from './crm-notifications'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from './crm-retention.service'
 
 /**
  * Health scores of the CRM: T4 (churn risk of a company) and C4 (risk of an
@@ -116,6 +120,21 @@ async function scoreCompany(
       nextAction: computation.nextAction.label,
       computedAt: now,
     })
+    await runRetentionSafely('health_drop', () =>
+      CrmRetentionService.onHealthDrop({
+        workspaceId,
+        company: {
+          id: companyId,
+          name: company.value.name,
+          accountOwnerId: company.value.accountOwnerId,
+        },
+        riskScore: computation.riskScore,
+        levelLabel: levelLabel(computation),
+        reason: computation.factors[0]?.detail ?? null,
+        nextAction: computation.nextAction.label,
+        now,
+      }),
+    )
   }
   return ok({
     row: saved.value.row,
