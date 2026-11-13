@@ -7,6 +7,7 @@ import {
   StarIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { CustomerLinkPanel } from '@/app/_components/customer-link/customer-link-panel'
 import { SdCustomerContractBlock } from '@/app/_components/servicedesk/contracts/sd-customer-contract-block'
 import { SdCustomFieldsView } from '@/app/_components/servicedesk/custom-fields/sd-custom-fields-form'
 import { SdContactFormSheet } from '@/app/_components/servicedesk/directory/contacts/sd-contact-form-sheet'
@@ -216,6 +217,13 @@ export function SdCustomerDetailSheet({
                   entity='CUSTOMER'
                   values={customer.customFields}
                 />
+                <div className='mt-4'>
+                  <CustomerLinkPanel
+                    workspaceId={workspaceId}
+                    kind='sd-customer'
+                    id={customer.id}
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value='contacts' className='flex flex-col gap-3'>

@@ -6,6 +6,7 @@ import {
   StarIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { CustomerLinkPanel } from '@/app/_components/customer-link/customer-link-panel'
 import { SdCustomFieldsView } from '@/app/_components/servicedesk/custom-fields/sd-custom-fields-form'
 import {
   formatSdDate,
@@ -177,6 +178,13 @@ export function SdContactDetailSheet({
                   entity='CONTACT'
                   values={contact.customFields}
                 />
+                <div className='mt-4'>
+                  <CustomerLinkPanel
+                    workspaceId={workspaceId}
+                    kind='sd-contact'
+                    id={contact.id}
+                  />
+                </div>
               </TabsContent>
               <TabsContent value='customers'>
                 {contact.customers.length === 0 ? (
