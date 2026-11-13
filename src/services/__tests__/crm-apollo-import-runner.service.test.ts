@@ -23,7 +23,7 @@ vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 vi.mock('@/src/lib/integrations/apollo-client', () => ({
-  ApolloClient: { bulkMatch: vi.fn() },
+  ApolloClient: { bulkMatch: vi.fn(), webhookResult: vi.fn() },
 }))
 vi.mock('@/src/lib/integrations/apollo-webhook', () => ({
   apolloWebhookToken: (id: string) => `tok-${id}`,
@@ -34,6 +34,9 @@ vi.mock('@/src/lib/queue/queues', () => ({ getCrmApolloImportQueue: vi.fn() }))
 vi.mock('@/src/services/sd-integration-credentials')
 vi.mock('@/src/services/crm-lead.service', () => ({
   CrmLeadService: { intake: vi.fn() },
+}))
+vi.mock('@/src/services/crm-apollo-phone-webhook.service', () => ({
+  CrmApolloPhoneWebhookService: { apply: vi.fn() },
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
   notifyCrmApolloImportDone: vi.fn(),
@@ -52,6 +55,7 @@ import { CrmEmailOptOutRepository } from '@/src/repositories/crm-email-opt-out.r
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmMailingListMemberRepository } from '@/src/repositories/crm-mailing-list.repository'
 import { WorkspaceIntegrationRepository } from '@/src/repositories/workspace-integration.repository'
+import { CrmApolloPhoneWebhookService } from '@/src/services/crm-apollo-phone-webhook.service'
 import { CrmLeadService } from '@/src/services/crm-lead.service'
 import { notifyCrmApolloImportDone } from '@/src/services/crm-notifications'
 import { decryptSdIntegrationToken } from '@/src/services/sd-integration-credentials'
@@ -63,6 +67,8 @@ const leadRepo = vi.mocked(CrmLeadRepository)
 const memberRepo = vi.mocked(CrmMailingListMemberRepository)
 const integrationRepo = vi.mocked(WorkspaceIntegrationRepository)
 const bulkMatch = vi.mocked(ApolloClient.bulkMatch)
+const webhookResult = vi.mocked(ApolloClient.webhookResult)
+const applyPhones = vi.mocked(CrmApolloPhoneWebhookService.apply)
 const intake = vi.mocked(CrmLeadService.intake)
 const notify = vi.mocked(notifyCrmApolloImportDone)
 const add = vi.fn()
@@ -393,6 +399,101 @@ describe('CrmApolloImportRunner.run', () => {
       .mockResolvedValueOnce(ok(createFakeCrmApolloImport()))
       .mockResolvedValueOnce(err(databaseError('x')))
     expect(expectOk(await CrmApolloImportRunner.run('imp1')).state).toBe('DONE')
+  })
+})
+
+describe('CrmApolloImportRunner.run reading phones back from Apollo', () => {
+  const ready = (people: unknown[]) =>
+    ok({
+      data: { ready: true, creditsConsumed: 8, people },
+      rateLimit: RATE,
+    })
+
+  function withRequestId(id: string | null) {
+    bulkMatch.mockResolvedValue(
+      ok({
+        data: {
+          matches: [person('a1')] as ApolloBulkMatchResult['matches'],
+          creditsConsumed: 1,
+          requestId: id,
+        },
+        rateLimit: RATE,
+      }),
+    )
+  }
+
+  it('applies the result by request id once Apollo has it, without the webhook', async () => {
+    vi.useFakeTimers()
+    try {
+      const row = loadRow({ revealPhones: true, apolloIds: ['a1'] })
+      withRequestId('req-1')
+      const people = [{ id: 'a1', phone_numbers: [] }]
+      webhookResult
+        .mockResolvedValueOnce(
+          ok({
+            data: { ready: false, creditsConsumed: 0, people: [] },
+            rateLimit: RATE,
+          }),
+        )
+        .mockResolvedValueOnce(ready(people))
+      importRepo.findByIdForWorker.mockResolvedValue(ok(row))
+      applyPhones.mockResolvedValue({ received: 1, created: 0 })
+
+      const run = CrmApolloImportRunner.run('imp1')
+      await vi.advanceTimersByTimeAsync(20_000)
+      expect(expectOk(await run).state).toBe('DONE')
+
+      expect(webhookResult).toHaveBeenCalledWith('the-key', 'req-1')
+      expect(applyPhones).toHaveBeenCalledTimes(1)
+      expect(applyPhones).toHaveBeenCalledWith(row, {
+        people,
+        credits: 8,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not wait when there is no request id', async () => {
+    loadRow({ revealPhones: true, apolloIds: ['a1'] })
+    withRequestId(null)
+    expect(expectOk(await CrmApolloImportRunner.run('imp1')).state).toBe('DONE')
+    expect(webhookResult).not.toHaveBeenCalled()
+  })
+
+  it('gives up after the time budget and still finishes the import', async () => {
+    vi.useFakeTimers()
+    try {
+      loadRow({ revealPhones: true, apolloIds: ['a1'] })
+      withRequestId('req-1')
+      webhookResult.mockResolvedValue(
+        ok({
+          data: { ready: false, creditsConsumed: 0, people: [] },
+          rateLimit: RATE,
+        }),
+      )
+      const run = CrmApolloImportRunner.run('imp1')
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(expectOk(await run).state).toBe('DONE')
+      expect(applyPhones).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops reading when Apollo rate limits and leaves it to the webhook', async () => {
+    vi.useFakeTimers()
+    try {
+      loadRow({ revealPhones: true, apolloIds: ['a1'] })
+      withRequestId('req-1')
+      webhookResult.mockResolvedValue(err(crmApolloRateLimited(30)))
+      const run = CrmApolloImportRunner.run('imp1')
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(expectOk(await run).state).toBe('DONE')
+      expect(webhookResult).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

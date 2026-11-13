@@ -27,6 +27,7 @@ import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmMailingListMemberRepository } from '@/src/repositories/crm-mailing-list.repository'
 import { WorkspaceIntegrationRepository } from '@/src/repositories/workspace-integration.repository'
 import { ApolloImportContactSchema } from '@/src/schemas/crm-apollo.schema'
+import { CrmApolloPhoneWebhookService } from './crm-apollo-phone-webhook.service'
 import { CrmLeadService } from './crm-lead.service'
 import { notifyCrmApolloImportDone } from './crm-notifications'
 import { decryptSdIntegrationToken } from './sd-integration-credentials'
@@ -228,6 +229,8 @@ export const CrmApolloImportRunner = {
       row.source === 'SEARCH' ? row.apolloIds.length : contacts.length
     let cursor = row.cursor
     let consecutiveFailures = 0
+    // Apollo request ids of this run's phone reveals, read back at the end.
+    const phoneRequestIds: string[] = []
 
     while (cursor < total) {
       const end = Math.min(cursor + APOLLO_BULK_MATCH_SIZE, total)
@@ -236,6 +239,7 @@ export const CrmApolloImportRunner = {
       let credits = 0
       let phonesRequested = 0
       let minuteLeft: number | null = null
+      let batchRequestId: string | null = null
 
       const ids =
         row.source === 'SEARCH'
@@ -292,8 +296,10 @@ export const CrmApolloImportRunner = {
           consecutiveFailures = 0
           credits = matched.value.data.creditsConsumed
           minuteLeft = matched.value.rateLimit.minuteLeft
-          if (webhookUrl)
+          if (webhookUrl) {
             phonesRequested = matched.value.data.matches.filter(Boolean).length
+            batchRequestId = matched.value.data.requestId
+          }
           if (row.source === 'SEARCH') {
             batch = matched.value.data.matches.flatMap((m) =>
               m ? [fromEnriched(m)] : [],
@@ -328,6 +334,7 @@ export const CrmApolloImportRunner = {
           : undefined,
       })
       cursor = end
+      if (batchRequestId) phoneRequestIds.push(batchRequestId)
 
       // Plan-agnostic throttling: the window is read from the headers.
       if (minuteLeft !== null && minuteLeft <= 0 && cursor < total) {
@@ -335,8 +342,72 @@ export const CrmApolloImportRunner = {
       }
     }
 
+    if (key && phoneRequestIds.length > 0) {
+      await reconcilePhones(row.id, key, phoneRequestIds)
+    }
+
     return ok(await finish(row, 'DONE'))
   },
+}
+
+/** First read soon after the batch: Apollo answers already-revealed people fast. */
+const PHONE_POLL_FIRST_MS = 4_000
+const PHONE_POLL_INTERVAL_MS = 5_000
+/** Hard cap so the whole import (leads + phones) stays under ~2 minutes. */
+const PHONE_POLL_BUDGET_MS = 100_000
+
+/**
+ * Reads each batch's phone result straight from Apollo
+ * (`webhook_result/{id}`) and applies it. The webhook can arrive before the
+ * leads exist or never arrive; this does not depend on it, and applying both
+ * is harmless (numbers already on the lead are skipped).
+ */
+async function reconcilePhones(
+  importId: string,
+  key: string,
+  requestIds: string[],
+): Promise<void> {
+  const pending = new Set(requestIds)
+  const misses = new Map<string, number>()
+  const deadline = Date.now() + PHONE_POLL_BUDGET_MS
+  let wait = PHONE_POLL_FIRST_MS
+
+  while (pending.size > 0 && Date.now() + wait <= deadline) {
+    await new Promise((resolve) => setTimeout(resolve, wait))
+    wait = PHONE_POLL_INTERVAL_MS
+
+    for (const requestId of [...pending]) {
+      const result = await ApolloClient.webhookResult(key, requestId)
+      if (!result.ok) {
+        // Rate limited: stop reading, the webhook is still the safety net.
+        if (result.error.code === 'CRM_APOLLO_RATE_LIMITED') return
+        const failed = (misses.get(requestId) ?? 0) + 1
+        misses.set(requestId, failed)
+        if (failed >= 3) pending.delete(requestId)
+        continue
+      }
+      if (!result.value.data.ready) continue
+
+      const fresh = await CrmApolloImportRepository.findByIdForWorker(importId)
+      if (fresh.ok) {
+        await CrmApolloPhoneWebhookService.apply(fresh.value, {
+          people: result.value.data.people,
+          credits: result.value.data.creditsConsumed,
+        })
+      }
+      pending.delete(requestId)
+    }
+  }
+
+  if (pending.size > 0) {
+    logger.warn(
+      'crm.apollo.phone_poll_timeout',
+      logFields(
+        { component: 'CrmApolloImportRunner' },
+        { importId, pending: pending.size },
+      ),
+    )
+  }
 }
 
 /** Marks the run as paused and wakes it after Apollo's `retry-after`. */

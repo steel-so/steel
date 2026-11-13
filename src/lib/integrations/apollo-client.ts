@@ -102,6 +102,19 @@ export interface ApolloContact {
   city: string | null
 }
 
+export interface ApolloWebhookResult {
+  ready: boolean
+  creditsConsumed: number
+  people: Array<{
+    id: string
+    phone_numbers: Array<{
+      sanitized_number: string | null
+      raw_number: string | null
+      status_cd: string | null
+    }>
+  }>
+}
+
 export interface ApolloContactsResult {
   contacts: ApolloContact[]
   totalEntries: number
@@ -256,11 +269,14 @@ export const ApolloClient = {
       rateLimit: result.value.rateLimit,
       data: {
         creditsConsumed: num(raw.credits_consumed) ?? 0,
+        // `request_id` is a 19-digit number that JSON parsing rounds; the
+        // `_str` twin is exact and is what `webhook_result/{id}` expects.
         requestId:
-          typeof raw.request_id === 'string' ||
+          str(raw.request_id_str) ??
+          (typeof raw.request_id === 'string' ||
           typeof raw.request_id === 'number'
             ? String(raw.request_id)
-            : null,
+            : null),
         matches: matches.map((entry): ApolloEnrichedPerson | null => {
           const p = rec(entry)
           if (!str(p.id)) return null
@@ -286,6 +302,41 @@ export const ApolloClient = {
             organizationIndustry: str(org.industry),
           }
         }),
+      },
+    })
+  },
+
+  /**
+   * Result of a phone-reveal request, read directly instead of waiting for
+   * the webhook (which may arrive before the leads exist, or not at all).
+   * `ready` is false while Apollo is still processing it.
+   */
+  async webhookResult(
+    key: string,
+    requestId: string,
+  ): Promise<Result<ApolloReply<ApolloWebhookResult>>> {
+    const result = await request<Raw>(
+      key,
+      `/webhook_result/${encodeURIComponent(requestId)}`,
+      { method: 'GET' },
+    )
+    if (!result.ok) return result
+    const raw = result.value.data
+    const body = rec(raw.webhook_result)
+    const people = list(body.people).map((p) => ({
+      id: String(p.id ?? ''),
+      phone_numbers: list(p.phone_numbers).map((n) => ({
+        sanitized_number: str(n.sanitized_number),
+        raw_number: str(n.raw_number),
+        status_cd: str(n.status_cd),
+      })),
+    }))
+    return ok({
+      rateLimit: result.value.rateLimit,
+      data: {
+        ready: str(raw.webhook_status) === 'success' || people.length > 0,
+        creditsConsumed: num(body.credits_consumed) ?? 0,
+        people: people.filter((p) => p.id),
       },
     })
   },

@@ -238,3 +238,33 @@ describe('CrmApolloPhoneWebhookService.handle', () => {
     expect(intake).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('CrmApolloPhoneWebhookService.apply (read straight from Apollo)', () => {
+  it('applies the same way and charges credits once', async () => {
+    const row = createFakeCrmApolloImport({ id: 'imp1', revealPhones: true })
+    const result = await CrmApolloPhoneWebhookService.apply(row, {
+      people: [{ id: 'p1', phone_numbers: [phone('+5511988887777')] }],
+      credits: 8,
+    })
+    expect(result).toEqual({ received: 1, created: 0 })
+    expect(importRepo.addPhoneProgress).toHaveBeenCalledWith('imp1', {
+      received: 1,
+      created: 0,
+      credits: 8,
+    })
+  })
+
+  it('changes nothing when the numbers are already on the lead', async () => {
+    leadRepo.appendPhonesByExternalId.mockResolvedValue(
+      ok({ found: true, added: 0 }),
+    )
+    const row = createFakeCrmApolloImport({ id: 'imp1', revealPhones: true })
+    const result = await CrmApolloPhoneWebhookService.apply(row, {
+      people: [{ id: 'p1', phone_numbers: [phone('+5511988887777')] }],
+      credits: 8,
+    })
+    expect(result).toEqual({ received: 0, created: 0 })
+    expect(importRepo.addPhoneProgress).not.toHaveBeenCalled()
+  })
+})
+
