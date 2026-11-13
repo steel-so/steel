@@ -7768,6 +7768,17 @@
             "type": "boolean",
             "description": "Lista com \"pular números sem WhatsApp\" ligado. Só pula quem já foi verificado."
           },
+          "failureReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -7870,6 +7881,7 @@
           "skippedCount",
           "noWhatsappCount",
           "skipNoWhatsapp",
+          "failureReason",
           "createdAt",
           "updatedAt",
           "recipients"
@@ -8178,6 +8190,18 @@
               }
             ]
           },
+          "lastInboundAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Última mensagem recebida do contato. Em conexões Meta, a janela de 24h para texto livre conta daqui."
+          },
           "lastMessagePreview": {
             "anyOf": [
               {
@@ -8273,6 +8297,7 @@
           "unreadCount",
           "avgSentimentScore",
           "lastMessageAt",
+          "lastInboundAt",
           "lastMessagePreview",
           "pinned",
           "archived",
@@ -8468,6 +8493,17 @@
               }
             ],
             "description": "Clique recebido (IN, tipo `BUTTON`): payload do botão (`stl:t:<templateId>:<botão>` ou `stl:q:<respostaId>:<botão>`) ou o id cru de um botão de fora do Steel."
+          },
+          "failureReason": {
+            "description": "Motivo da falha informado pelo provedor (status `FAILED`), no formato `código: texto`.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "createdAt": {
             "type": "string",
