@@ -139,6 +139,7 @@ describe('<RedirectsDialog />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Editar /antigo' }))
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Excluir /antigo' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Redirecionamento excluído.'),
     )

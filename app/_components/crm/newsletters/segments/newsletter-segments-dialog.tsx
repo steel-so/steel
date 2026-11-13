@@ -9,6 +9,7 @@ import {
 import { useId, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -162,7 +163,6 @@ function SegmentList({
   onEdit: (segment: CrmNewsletterSegmentDTO) => void
 }) {
   const remove = useDeleteCrmNewsletterSegment(workspaceId, newsletterId)
-  const [confirming, setConfirming] = useState<string | null>(null)
   const options = useCrmNewsletterSegmentOptions(
     workspaceId,
     newsletterId,
@@ -194,52 +194,34 @@ function SegmentList({
             </p>
           </div>
           <div className='flex shrink-0 gap-1'>
-            {confirming === segment.id ? (
-              <>
-                <Button
-                  size='sm'
-                  variant='destructive'
-                  disabled={remove.isPending}
-                  onClick={() =>
-                    remove.mutate(segment.id, {
-                      onSuccess: () => {
-                        notify.success('Segmento excluído')
-                        setConfirming(null)
-                      },
-                      onError: (error) => notify.error(error),
-                    })
-                  }
-                >
-                  Excluir
-                </Button>
-                <Button
-                  size='sm'
-                  variant='ghost'
-                  onClick={() => setConfirming(null)}
-                >
-                  Cancelar
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  size='icon-sm'
-                  variant='ghost'
-                  aria-label={`Editar ${segment.name}`}
-                  onClick={() => onEdit(segment)}
-                >
-                  <SteelIcon icon={PencilEdit02Icon} />
-                </Button>
+            <Button
+              size='icon-sm'
+              variant='ghost'
+              aria-label={`Editar ${segment.name}`}
+              onClick={() => onEdit(segment)}
+            >
+              <SteelIcon icon={PencilEdit02Icon} />
+            </Button>
+            <ConfirmAction
+              trigger={
                 <Button
                   size='icon-sm'
                   variant='ghost'
                   aria-label={`Excluir ${segment.name}`}
-                  onClick={() => setConfirming(segment.id)}
                 >
                   <SteelIcon icon={Delete02Icon} />
                 </Button>
-              </>
-            )}
+              }
+              title={`Excluir o segmento "${segment.name}"?`}
+              description='Os contatos não são apagados, só o segmento. Não é possível desfazer.'
+              pending={remove.isPending}
+              onConfirm={() =>
+                remove.mutate(segment.id, {
+                  onSuccess: () => notify.success('Segmento excluído'),
+                  onError: (error) => notify.error(error),
+                })
+              }
+            />
           </div>
         </li>
       ))}

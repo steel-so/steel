@@ -49,9 +49,9 @@ function patchBodies(spy: ReturnType<typeof mockFetch>) {
 describe('<CrmPipelinesPanel />', () => {
   it('shows the empty state when no pipeline exists', async () => {
     setup([{ match: '/crm/pipelines', data: [] }])
-    expect(await screen.findByText('Nenhum pipeline cadastrado')).toBeTruthy()
+    expect(await screen.findByText('Nenhum funil cadastrado')).toBeTruthy()
     expect(
-      screen.getByText('Selecione um pipeline para gerenciar as etapas'),
+      screen.getByText('Selecione um funil para gerenciar as etapas'),
     ).toBeTruthy()
   })
 
@@ -72,17 +72,17 @@ describe('<CrmPipelinesPanel />', () => {
     const spy = setup()
     fireEvent.click(screen.getByRole('button', { name: /novo pipeline/i }))
     const submit = (await screen.findByRole('button', {
-      name: 'Criar pipeline',
+      name: 'Criar funil',
     })) as HTMLButtonElement
     expect(submit.disabled).toBe(true)
 
-    fireEvent.change(screen.getByPlaceholderText('Nome do pipeline'), {
+    fireEvent.change(screen.getByPlaceholderText('Nome do funil'), {
       target: { value: 'Renovações' },
     })
     fireEvent.click(submit)
 
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Pipeline criado'),
+      expect(notify.success).toHaveBeenCalledWith('Funil criado'),
     )
     expect(fetchBody(spy, /crm\/pipelines$/)).toEqual({ name: 'Renovações' })
   })
@@ -151,10 +151,11 @@ describe('<CrmPipelinesPanel />', () => {
     // Sem <button> aninhado: selecionar e remover são botões irmãos.
     expect(select.querySelector('button')).toBeNull()
     fireEvent.click(
-      screen.getByRole('button', { name: 'Remover pipeline Parcerias' }),
+      screen.getByRole('button', { name: 'Remover funil Parcerias' }),
     )
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover' }))
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Pipeline removido'),
+      expect(notify.success).toHaveBeenCalledWith('Funil removido'),
     )
     expect(
       spy.mock.calls.some(

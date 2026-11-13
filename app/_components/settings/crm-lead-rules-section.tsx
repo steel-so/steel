@@ -2,6 +2,7 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Muted } from '@/components/typography/text/muted'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -482,6 +484,7 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
   const usersById = new Map(
     lookups.options.users.map((u) => [u.value, u.label]),
   )
+  const canDelete = useCan('leads', 'DELETE')
 
   async function handleDeleteScoring(id: string) {
     const result = await deleteCrmResource(
@@ -560,14 +563,25 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <Button
-                          variant='ghost'
-                          size='icon-sm'
-                          aria-label='Excluir regra'
-                          onClick={() => handleDeleteScoring(rule.id)}
-                        >
-                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                        </Button>
+                        {canDelete ? (
+                          <ConfirmAction
+                            trigger={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label='Excluir regra'
+                              >
+                                <SteelIcon
+                                  icon={Delete02Icon}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            }
+                            title='Excluir esta regra?'
+                            description='A pontuação deixa de ser aplicada a novos leads. Pontos já somados continuam como estão. Não é possível desfazer.'
+                            onConfirm={() => handleDeleteScoring(rule.id)}
+                          />
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -628,14 +642,25 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <Button
-                          variant='ghost'
-                          size='icon-sm'
-                          aria-label='Excluir regra'
-                          onClick={() => handleDeleteRouting(rule.id)}
-                        >
-                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                        </Button>
+                        {canDelete ? (
+                          <ConfirmAction
+                            trigger={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label='Excluir regra'
+                              >
+                                <SteelIcon
+                                  icon={Delete02Icon}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            }
+                            title='Excluir esta regra?'
+                            description='Novos leads deixam de ser atribuídos por esta regra. Não é possível desfazer.'
+                            onConfirm={() => handleDeleteRouting(rule.id)}
+                          />
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}

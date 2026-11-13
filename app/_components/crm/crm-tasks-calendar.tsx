@@ -200,6 +200,11 @@ function QuickAddDialog({
               autoComplete='off'
             />
           </div>
+          {title.trim() ? null : (
+            <p className='text-muted-foreground text-xs'>
+              Digite o título para poder criar a tarefa.
+            </p>
+          )}
           <div className='flex items-center justify-end gap-2 pt-1'>
             <Button
               type='button'

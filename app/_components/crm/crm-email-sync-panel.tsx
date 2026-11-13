@@ -2,9 +2,11 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -78,6 +80,8 @@ export function CrmEmailSyncPanel({ workspaceId }: { workspaceId: string }) {
 function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
   const { data: accounts, isLoading } = useCrmEmailAccounts(workspaceId)
   const deleteAccount = useDeleteCrmEmailAccount(workspaceId)
+  const canCreate = useCan('email', 'CREATE')
+  const canDelete = useCan('email', 'DELETE')
   const [open, setOpen] = useState(false)
   const [provider, setProvider] = useState<CrmEmailProviderDTO>('GMAIL')
   const [email, setEmail] = useState('')
@@ -119,7 +123,16 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
         >
           <DialogTrigger
             render={
-              <Button variant='default' size='xs'>
+              <Button
+                variant='default'
+                size='xs'
+                disabled={!canCreate}
+                title={
+                  canCreate
+                    ? undefined
+                    : 'Você não tem permissão para adicionar registros de e-mail'
+                }
+              >
                 <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
                 Nova conta
               </Button>
@@ -214,14 +227,23 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
                 <TableCell>{PROVIDER_LABELS[account.provider] ?? account.provider}</TableCell>
                 <TableCell>{account.email}</TableCell>
                 <TableCell>
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    aria-label={`Remover a conta ${account.email}`}
-                    onClick={() => handleDelete(account.id)}
-                  >
-                    <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                  </Button>
+                  {canDelete ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          aria-label={`Remover a conta ${account.email}`}
+                        >
+                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                        </Button>
+                      }
+                      title='Remover esta conta?'
+                      description='A conta deixa de ser listada aqui. Não é possível desfazer.'
+                      confirmLabel='Remover'
+                      onConfirm={() => handleDelete(account.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}
@@ -235,6 +257,8 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
 function CrmEmailMessagesSection({ workspaceId }: { workspaceId: string }) {
   const { data: messages, isLoading } = useCrmEmailMessages(workspaceId)
   const deleteMessage = useDeleteCrmEmailMessage(workspaceId)
+  const canCreate = useCan('email', 'CREATE')
+  const canDelete = useCan('email', 'DELETE')
   const [open, setOpen] = useState(false)
   const [direction, setDirection] = useState<CrmMailDirectionDTO>('OUTBOUND')
   const [fromEmail, setFromEmail] = useState('')
@@ -283,7 +307,16 @@ function CrmEmailMessagesSection({ workspaceId }: { workspaceId: string }) {
         >
           <DialogTrigger
             render={
-              <Button variant='default' size='xs'>
+              <Button
+                variant='default'
+                size='xs'
+                disabled={!canCreate}
+                title={
+                  canCreate
+                    ? undefined
+                    : 'Você não tem permissão para adicionar registros de e-mail'
+                }
+              >
                 <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
                 Registrar e-mail
               </Button>
@@ -392,13 +425,23 @@ function CrmEmailMessagesSection({ workspaceId }: { workspaceId: string }) {
                 <TableCell>{message.fromEmail}</TableCell>
                 <TableCell>{message.toEmails.join(', ') || '-'}</TableCell>
                 <TableCell>
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    onClick={() => handleDelete(message.id)}
-                  >
-                    <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                  </Button>
+                  {canDelete ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          aria-label='Remover e-mail'
+                        >
+                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                        </Button>
+                      }
+                      title='Remover este e-mail?'
+                      description='O registro do e-mail sai do CRM. Não é possível desfazer.'
+                      confirmLabel='Remover'
+                      onConfirm={() => handleDelete(message.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}
@@ -412,6 +455,8 @@ function CrmEmailMessagesSection({ workspaceId }: { workspaceId: string }) {
 function CrmCalendarEventsSection({ workspaceId }: { workspaceId: string }) {
   const { data: events, isLoading } = useCrmCalendarEvents(workspaceId)
   const deleteEvent = useDeleteCrmCalendarEvent(workspaceId)
+  const canCreate = useCan('email', 'CREATE')
+  const canDelete = useCan('email', 'DELETE')
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [startsAt, setStartsAt] = useState('')
@@ -460,7 +505,16 @@ function CrmCalendarEventsSection({ workspaceId }: { workspaceId: string }) {
         >
           <DialogTrigger
             render={
-              <Button variant='default' size='xs'>
+              <Button
+                variant='default'
+                size='xs'
+                disabled={!canCreate}
+                title={
+                  canCreate
+                    ? undefined
+                    : 'Você não tem permissão para adicionar registros de e-mail'
+                }
+              >
                 <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
                 Novo evento
               </Button>
@@ -550,13 +604,23 @@ function CrmCalendarEventsSection({ workspaceId }: { workspaceId: string }) {
                 </TableCell>
                 <TableCell>{new Date(event.endsAt).toLocaleString()}</TableCell>
                 <TableCell>
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    onClick={() => handleDelete(event.id)}
-                  >
-                    <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                  </Button>
+                  {canDelete ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          aria-label='Remover evento'
+                        >
+                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                        </Button>
+                      }
+                      title='Remover este evento?'
+                      description='O evento sai do calendário do CRM. Não é possível desfazer.'
+                      confirmLabel='Remover'
+                      onConfirm={() => handleDelete(event.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}

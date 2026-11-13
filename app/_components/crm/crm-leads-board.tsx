@@ -259,6 +259,7 @@ export function CrmLeadsBoard({
   const {
     items: leads,
     isLoading,
+    error,
     refetch,
   } = useCrmResourceList<CrmLeadDTO>(workspaceId, 'leads')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
@@ -563,7 +564,21 @@ export function CrmLeadsBoard({
         </div>
       ) : null}
 
-      {!isLoading && leads.length === 0 ? (
+      {error ? (
+        <div
+          role='alert'
+          className='flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm'
+        >
+          <span className='flex-1'>
+            Não foi possível carregar os leads. {error}
+          </span>
+          <Button size='sm' variant='outline' onClick={() => void refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : null}
+
+      {!isLoading && !error && leads.length === 0 ? (
         <div className='flex shrink-0 flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center'>
           <div className='space-y-1'>
             <p className='font-medium text-sm'>Você ainda não tem leads</p>
