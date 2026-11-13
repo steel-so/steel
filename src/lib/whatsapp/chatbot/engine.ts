@@ -144,11 +144,38 @@ export type ChatbotWebhookResponse =
   | { ok: true; json: unknown }
   | { ok: false; reason: string }
 
+/** What a cross-module block asks the runtime to do (CRM lead, ticket). */
+export type ChatbotActionRequest =
+  | {
+      kind: 'create-lead'
+      name: string
+      phone: string
+      email: string
+      company: string
+      origin: string
+    }
+  | {
+      kind: 'open-ticket'
+      ticketType: 'INCIDENT' | 'SERVICE_REQUEST' | 'CHANGE' | 'PROBLEM'
+      title: string
+      description: string
+    }
+
+/** `value` is the lead id or the ticket code, stored in `resultVariable`. */
+export type ChatbotActionResponse =
+  | { ok: true; value: string }
+  | { ok: false; reason: string }
+
 export interface ChatbotContext {
   contact: { name: string | null; phone: string }
   callWebhook: (
     request: ChatbotWebhookRequest,
   ) => Promise<ChatbotWebhookResponse>
+  /**
+   * Runs a cross-module block. Absent in dry runs that do not simulate it:
+   * the block then succeeds with a placeholder value.
+   */
+  runAction?: (request: ChatbotActionRequest) => Promise<ChatbotActionResponse>
 }
 
 export interface ChatbotInput {
@@ -340,6 +367,42 @@ async function visit(run: Run, node: ChatbotNode): Promise<Step> {
         ...(fallbackText ? { fallbackText } : {}),
       })
       // The form is answered whenever the contact wants to: the flow goes on.
+      return { kind: 'goto', nodeId: targetOf(flow, node.id, 'next') }
+    }
+    case 'create-lead':
+    case 'open-ticket': {
+      const request: ChatbotActionRequest =
+        node.type === 'create-lead'
+          ? {
+              kind: 'create-lead',
+              name: interpolate(node.data.name, variables).trim(),
+              phone: interpolate(node.data.phone, variables).trim(),
+              email: interpolate(node.data.email ?? '', variables).trim(),
+              company: interpolate(node.data.company ?? '', variables).trim(),
+              origin: interpolate(node.data.origin, variables).trim(),
+            }
+          : {
+              kind: 'open-ticket',
+              ticketType: node.data.ticketType,
+              title: interpolate(node.data.title, variables).trim(),
+              description: interpolate(
+                node.data.description ?? '',
+                variables,
+              ).trim(),
+            }
+      const response = run.ctx.runAction
+        ? await run.ctx.runAction(request)
+        : ({ ok: true, value: 'simulado' } as const)
+      if (!response.ok) {
+        const onError = targetOf(flow, node.id, 'error')
+        return {
+          kind: 'goto',
+          nodeId: onError ?? targetOf(flow, node.id, 'next'),
+        }
+      }
+      if (node.data.resultVariable) {
+        variables[node.data.resultVariable] = response.value
+      }
       return { kind: 'goto', nodeId: targetOf(flow, node.id, 'next') }
     }
     case 'handoff-human':

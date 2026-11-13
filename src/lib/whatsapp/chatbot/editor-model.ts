@@ -23,6 +23,8 @@ export const NODE_TYPE_LABEL: Record<ChatbotNodeType, string> = {
   'set-variable': 'Definir variável',
   webhook: 'Integração (HTTP)',
   'send-form': 'Enviar formulário',
+  'create-lead': 'Criar lead no CRM',
+  'open-ticket': 'Abrir chamado',
   'handoff-human': 'Passar para atendente',
   'handoff-ai': 'Passar para a IA',
   end: 'Encerrar',
@@ -37,6 +39,8 @@ export const NODE_TYPE_DESCRIPTION: Record<ChatbotNodeType, string> = {
   'set-variable': 'Guarda um valor para usar depois',
   webhook: 'Chama um endereço HTTPS e lê a resposta',
   'send-form': 'Envia um formulário do WhatsApp (Flow) ao contato',
+  'create-lead': 'Cadastra o contato como lead no CRM, sem duplicar',
+  'open-ticket': 'Abre um chamado no ServiceDesk para este contato',
   'handoff-human': 'Entrega a conversa a uma equipe ou pessoa',
   'handoff-ai': 'Entrega a conversa à IA do Comunicação',
   end: 'Termina o fluxo, com opção de fechar a conversa',
@@ -51,7 +55,7 @@ export const PALETTE_GROUPS: Array<{
     title: 'Perguntas e lógica',
     types: ['question', 'condition', 'set-variable'],
   },
-  { title: 'Integração', types: ['webhook'] },
+  { title: 'Integração', types: ['webhook', 'create-lead', 'open-ticket'] },
   { title: 'Encerrar', types: ['handoff-human', 'handoff-ai', 'end'] },
 ]
 
@@ -168,6 +172,19 @@ export function defaultNodeData(type: ChatbotNodeType): ChatbotNode['data'] {
       return { url: 'https://exemplo.com.br/api', method: 'POST' }
     case 'send-form':
       return { flowId: '' }
+    case 'create-lead':
+      return {
+        name: '{{contact_name}}',
+        phone: '{{contact_phone}}',
+        origin: 'WhatsApp (chatbot)',
+      }
+    case 'open-ticket':
+      return {
+        ticketType: 'INCIDENT',
+        title: 'Atendimento pelo WhatsApp',
+        description: '{{last_message}}',
+        resultVariable: 'chamado',
+      }
     case 'handoff-human':
       return { text: 'Já vou chamar um atendente para ajudar você.' }
     case 'handoff-ai':
@@ -275,6 +292,12 @@ export function collectVariables(flow: ChatbotFlow): string[] {
     }
     if (node.type === 'menu' && node.data.variable)
       names.add(node.data.variable)
+    if (
+      (node.type === 'create-lead' || node.type === 'open-ticket') &&
+      node.data.resultVariable
+    ) {
+      names.add(node.data.resultVariable)
+    }
     if (node.type === 'webhook' && node.data.responseVariable) {
       names.add(node.data.responseVariable)
     }

@@ -7,6 +7,7 @@ import {
   PlusSignIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ReactNode } from 'react'
+import { CrossEngineSendFields } from '@/app/_components/whatsapp/cross-engine-send-fields'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -31,12 +32,14 @@ import { cn } from '@/lib/utils'
 import { useSdAgents } from '@/src/hooks/use-sd-config'
 import {
   type SD_CONDITION_OPERATORS,
+  SD_WHATSAPP_VARIABLES,
   type SdAutomationAction,
   SdAutomationActionsSchema,
   type SdCondition,
   SdConditionsSchema,
   type SdEscalationActions,
   SdEscalationActionsSchema,
+  type SdWhatsappVariable,
 } from '@/src/schemas/sd-rule.schema'
 import { SD_CHANGE_TYPES, SD_RISK_LEVELS } from '@/src/schemas/sd-ticket.schema'
 import type {
@@ -722,6 +725,13 @@ export function summarizeSdConditions(conditions: SdCondition[]): string {
 
 type ActionType = SdAutomationAction['type']
 
+const SD_WHATSAPP_VARIABLE_CHOICES = [
+  { value: 'code', label: 'Código do chamado' },
+  { value: 'title', label: 'Título do chamado' },
+  { value: 'requester', label: 'Nome do solicitante' },
+  { value: 'phase', label: 'Fase atual' },
+]
+
 export const SD_AUTOMATION_ACTION_META: Record<
   ActionType,
   { label: string; description: string }
@@ -766,6 +776,19 @@ export const SD_AUTOMATION_ACTION_META: Record<
     label: 'Aplicar modelo',
     description: 'Aplica valores e checklist de um modelo.',
   },
+  send_whatsapp_template: {
+    label: 'Enviar WhatsApp',
+    description:
+      'Envia um modelo aprovado ao contato do chamado (respeita quem não quer receber).',
+  },
+  create_crm_task: {
+    label: 'Criar tarefa no CRM',
+    description: 'Abre uma tarefa de acompanhamento no CRM.',
+  },
+  create_crm_lead: {
+    label: 'Criar lead no CRM',
+    description: 'Cadastra o contato do chamado como lead, sem duplicar.',
+  },
   escalate: {
     label: 'Escalonar',
     description: 'Escalonamento funcional ou hierárquico.',
@@ -805,6 +828,12 @@ function defaultAction(type: ActionType): SdAutomationAction {
       return { type, params: { title: '' } }
     case 'apply_template':
       return { type, params: { templateId: '' } }
+    case 'send_whatsapp_template':
+      return { type, params: { connectionId: '', variables: [] } }
+    case 'create_crm_task':
+      return { type, params: { title: '' } }
+    case 'create_crm_lead':
+      return { type, params: { origin: 'ServiceDesk' } }
     case 'escalate':
       return { type, params: { kind: 'HIERARCHICAL', reason: '' } }
   }
@@ -820,6 +849,7 @@ function ActionParams({
   disabled?: boolean
 }) {
   const { users, departments, templates, optionsFor } = useFieldOptions()
+  const { workspaceId } = useSdSettingsContext()
   const fields = useFields().filter((f) => f.kind !== 'tags')
 
   switch (action.type) {
@@ -1071,6 +1101,110 @@ function ActionParams({
             />
           </FieldBlock>
         </div>
+      )
+    case 'send_whatsapp_template':
+      return (
+        <CrossEngineSendFields
+          workspaceId={workspaceId}
+          variableChoices={SD_WHATSAPP_VARIABLE_CHOICES}
+          value={{
+            connectionId: action.params.connectionId,
+            templateId: action.params.templateId,
+            variables: action.params.variables,
+            text: action.params.text,
+          }}
+          onChange={(next) =>
+            onChange({
+              ...action,
+              params: {
+                ...next,
+                variables: next.variables.filter(
+                  (v): v is SdWhatsappVariable =>
+                    (SD_WHATSAPP_VARIABLES as readonly string[]).includes(v),
+                ),
+              },
+            })
+          }
+        />
+      )
+    case 'create_crm_task':
+      return (
+        <div className='grid gap-2 md:grid-cols-2'>
+          <FieldBlock
+            label='Título'
+            className='md:col-span-2'
+            hint='Use {{code}}, {{title}}, {{requester}} e {{phase}}.'
+          >
+            <Input
+              value={action.params.title}
+              maxLength={200}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...action,
+                  params: { ...action.params, title: e.target.value },
+                })
+              }
+            />
+          </FieldBlock>
+          <FieldBlock label='Responsável'>
+            <SimpleSelect
+              value={action.params.assigneeId ?? null}
+              options={users}
+              allowEmpty
+              emptyLabel='Responsável do chamado'
+              disabled={disabled}
+              onChange={(assigneeId) =>
+                onChange({
+                  ...action,
+                  params: {
+                    ...action.params,
+                    assigneeId: assigneeId ?? undefined,
+                  },
+                })
+              }
+            />
+          </FieldBlock>
+          <FieldBlock label='Prazo (minutos após a regra)'>
+            <Input
+              type='number'
+              min={1}
+              value={action.params.dueInMinutes ?? ''}
+              disabled={disabled}
+              onChange={(e) =>
+                onChange({
+                  ...action,
+                  params: {
+                    ...action.params,
+                    dueInMinutes:
+                      e.target.value === ''
+                        ? undefined
+                        : Number(e.target.value),
+                  },
+                })
+              }
+            />
+          </FieldBlock>
+        </div>
+      )
+    case 'create_crm_lead':
+      return (
+        <FieldBlock
+          label='Origem do lead'
+          hint='Se já existir um lead aberto com o mesmo telefone ou e-mail, ele é reaproveitado.'
+        >
+          <Input
+            value={action.params.origin}
+            maxLength={100}
+            disabled={disabled}
+            onChange={(e) =>
+              onChange({
+                ...action,
+                params: { origin: e.target.value || 'ServiceDesk' },
+              })
+            }
+          />
+        </FieldBlock>
       )
     case 'apply_template':
       return (

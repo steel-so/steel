@@ -1,4 +1,5 @@
 import z from 'zod'
+import { SD_TICKET_TYPES } from '@/src/schemas/sd-rule.schema'
 
 /**
  * Contrato de Workflows — motor de grafo (trigger + nodes + edges),
@@ -103,6 +104,8 @@ export const CRM_WORKFLOW_NODE_TYPES = [
   'send-email',
   'draft-email',
   'form',
+  'send-whatsapp-template',
+  'create-ticket',
 ] as const
 export type CrmWorkflowNodeType = (typeof CRM_WORKFLOW_NODE_TYPES)[number]
 
@@ -400,6 +403,31 @@ const DraftEmailDataSchema = z.object({
   ...BaseNodeMixin,
 })
 
+const SendWhatsAppTemplateDataSchema = z.object({
+  type: z.literal('send-whatsapp-template'),
+  connectionId: z.string().trim().min(1).max(64),
+  /** Expressão que resolve para o telefone do contato. */
+  to: ExpressionSchema,
+  /** Template aprovado (Meta). Vale em qualquer horário. */
+  templateId: z.string().trim().min(1).max(64).optional(),
+  /** Valores de {{1}}, {{2}}…; cada um aceita expressões. */
+  variables: z.array(z.string().max(1000)).max(20).default([]),
+  /** Texto livre: Z-API, ou Meta dentro da janela de 24 horas. */
+  text: z.string().max(4000).optional(),
+  ...BaseNodeMixin,
+})
+
+const CreateTicketDataSchema = z.object({
+  type: z.literal('create-ticket'),
+  ticketType: z.enum(SD_TICKET_TYPES).default('INCIDENT'),
+  title: ExpressionSchema.min(1),
+  description: ExpressionSchema.optional(),
+  /** Telefone/e-mail do solicitante: ligam o chamado ao contato do ServiceDesk. */
+  phone: ExpressionSchema.optional(),
+  email: ExpressionSchema.optional(),
+  ...BaseNodeMixin,
+})
+
 const FormFieldSchema = z.object({
   name: z
     .string()
@@ -435,6 +463,8 @@ export const CrmWorkflowNodeDataSchema = z.discriminatedUnion('type', [
   SendEmailDataSchema,
   DraftEmailDataSchema,
   FormDataSchema,
+  SendWhatsAppTemplateDataSchema,
+  CreateTicketDataSchema,
 ])
 
 const NodeIdSchema = z.string().trim().min(1).max(64)

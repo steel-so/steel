@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { SD_TICKET_TYPES } from '@/src/schemas/sd-rule.schema'
 
 /**
  * Chatbot flow contract (Z2). A flow is a graph in the same shape React Flow
@@ -17,6 +18,8 @@ export const CHATBOT_NODE_TYPES = [
   'set-variable',
   'webhook',
   'send-form',
+  'create-lead',
+  'open-ticket',
   'handoff-human',
   'handoff-ai',
   'end',
@@ -215,6 +218,32 @@ export const ChatbotNodeSchema = z.discriminatedUnion('type', [
       ctaLabel: z.string().trim().max(30).optional(),
       /** Sent instead when the form cannot be delivered (Z-API, retired). */
       fallbackText: OptionalTextSchema,
+    }),
+  }),
+  z.object({
+    ...nodeBase,
+    type: z.literal('create-lead'),
+    data: z.object({
+      /** `{{variable}}` is replaced in every text field of the block. */
+      name: z.string().trim().min(1).max(200),
+      phone: z.string().trim().max(100),
+      email: z.string().trim().max(200).optional(),
+      company: z.string().trim().max(200).optional(),
+      /** Origin shown on the CRM lead. */
+      origin: z.string().trim().min(1).max(100),
+      /** Variable that receives the id of the lead. */
+      resultVariable: VariableNameSchema.optional(),
+    }),
+  }),
+  z.object({
+    ...nodeBase,
+    type: z.literal('open-ticket'),
+    data: z.object({
+      ticketType: z.enum(SD_TICKET_TYPES),
+      title: z.string().trim().min(1).max(200),
+      description: z.string().trim().max(2000).optional(),
+      /** Variable that receives the code of the ticket (e.g. INC-000123). */
+      resultVariable: VariableNameSchema.optional(),
     }),
   }),
   z.object({

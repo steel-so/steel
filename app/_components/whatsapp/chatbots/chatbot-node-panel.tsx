@@ -566,6 +566,165 @@ function WebhookForm({
   )
 }
 
+function CreateLeadForm({
+  node,
+  variables,
+  readOnly,
+  onChange,
+}: PanelProps & { node: ChatbotNodeOf<'create-lead'> }) {
+  const { data } = node
+  const patch = (next: Partial<typeof data>) => onChange({ ...data, ...next })
+  return (
+    <>
+      <p className='rounded-lg bg-muted p-3 text-muted-foreground text-xs'>
+        Cadastra o contato como lead no CRM. Se já existir um lead aberto com o
+        mesmo telefone ou e-mail, ele é reaproveitado. Precisa do módulo CRM
+        habilitado. Se falhar, o fluxo segue pela saída “Se der erro”.
+      </p>
+      <Field label='Nome' htmlFor='lead-name'>
+        <Input
+          id='lead-name'
+          value={data.name}
+          maxLength={200}
+          disabled={readOnly}
+          onChange={(event) => patch({ name: event.target.value })}
+        />
+      </Field>
+      <Field label='Telefone' htmlFor='lead-phone'>
+        <Input
+          id='lead-phone'
+          value={data.phone}
+          maxLength={100}
+          disabled={readOnly}
+          onChange={(event) => patch({ phone: event.target.value })}
+        />
+      </Field>
+      <Field
+        label='E-mail (opcional)'
+        htmlFor='lead-email'
+        hint={`Os campos aceitam variáveis, como ${variables.map((name) => `{{${name}}}`).join(' ')}`}
+      >
+        <Input
+          id='lead-email'
+          value={data.email ?? ''}
+          maxLength={200}
+          disabled={readOnly}
+          onChange={(event) =>
+            patch({ email: event.target.value || undefined })
+          }
+        />
+      </Field>
+      <Field label='Empresa (opcional)' htmlFor='lead-company'>
+        <Input
+          id='lead-company'
+          value={data.company ?? ''}
+          maxLength={200}
+          disabled={readOnly}
+          onChange={(event) =>
+            patch({ company: event.target.value || undefined })
+          }
+        />
+      </Field>
+      <Field label='Origem do lead' htmlFor='lead-origin'>
+        <Input
+          id='lead-origin'
+          value={data.origin}
+          maxLength={100}
+          disabled={readOnly}
+          onChange={(event) => patch({ origin: event.target.value })}
+        />
+      </Field>
+      <Field
+        label='Guardar o código do lead em (opcional)'
+        htmlFor='lead-result'
+        hint={VARIABLE_HINT}
+      >
+        <Input
+          id='lead-result'
+          value={data.resultVariable ?? ''}
+          maxLength={32}
+          disabled={readOnly}
+          onChange={(event) =>
+            patch({ resultVariable: event.target.value || undefined })
+          }
+        />
+      </Field>
+    </>
+  )
+}
+
+function OpenTicketForm({
+  node,
+  variables,
+  readOnly,
+  onChange,
+}: PanelProps & { node: ChatbotNodeOf<'open-ticket'> }) {
+  const { data } = node
+  const patch = (next: Partial<typeof data>) => onChange({ ...data, ...next })
+  return (
+    <>
+      <p className='rounded-lg bg-muted p-3 text-muted-foreground text-xs'>
+        Abre um chamado no ServiceDesk e liga esta conversa a ele. Se a
+        conversa já tem um chamado aberto, ele é reaproveitado. Precisa do
+        módulo ServiceDesk habilitado. Se falhar, o fluxo segue pela saída “Se
+        der erro”.
+      </p>
+      <Field label='Tipo do chamado'>
+        <SimpleSelect
+          ariaLabel='Tipo do chamado'
+          value={data.ticketType}
+          disabled={readOnly}
+          options={[
+            { value: 'INCIDENT', label: 'Incidente' },
+            { value: 'SERVICE_REQUEST', label: 'Requisição' },
+            { value: 'CHANGE', label: 'Mudança' },
+            { value: 'PROBLEM', label: 'Problema' },
+          ]}
+          onChange={(ticketType) =>
+            patch({ ticketType: ticketType as typeof data.ticketType })
+          }
+        />
+      </Field>
+      <Field label='Título' htmlFor='ticket-title'>
+        <Input
+          id='ticket-title'
+          value={data.title}
+          maxLength={200}
+          disabled={readOnly}
+          onChange={(event) => patch({ title: event.target.value })}
+        />
+      </Field>
+      <Field label='Descrição (opcional)' htmlFor='ticket-description'>
+        <TextWithVariables
+          id='ticket-description'
+          rows={3}
+          value={data.description ?? ''}
+          variables={variables}
+          disabled={readOnly}
+          onChange={(description) =>
+            patch({ description: description || undefined })
+          }
+        />
+      </Field>
+      <Field
+        label='Guardar o código do chamado em (opcional)'
+        htmlFor='ticket-result'
+        hint={`${VARIABLE_HINT} Use para avisar o contato: “Abrimos o chamado {{chamado}}”.`}
+      >
+        <Input
+          id='ticket-result'
+          value={data.resultVariable ?? ''}
+          maxLength={32}
+          disabled={readOnly}
+          onChange={(event) =>
+            patch({ resultVariable: event.target.value || undefined })
+          }
+        />
+      </Field>
+    </>
+  )
+}
+
 function SendFormForm({
   node,
   variables,
@@ -764,6 +923,10 @@ function Body(props: PanelProps) {
       return <WebhookForm {...props} node={node} />
     case 'send-form':
       return <SendFormForm {...props} node={node} />
+    case 'create-lead':
+      return <CreateLeadForm {...props} node={node} />
+    case 'open-ticket':
+      return <OpenTicketForm {...props} node={node} />
     case 'handoff-human':
       return <HandoffHumanForm {...props} node={node} />
     case 'handoff-ai':

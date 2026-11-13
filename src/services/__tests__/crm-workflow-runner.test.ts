@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { moduleDisabled, validationError } from '@/src/errors'
 import { sendEmail } from '@/src/lib/mail/send'
-import { ok } from '@/src/lib/result'
+import { err, ok } from '@/src/lib/result'
 import type { CrmWorkflowDefinition } from '@/src/schemas/crm-workflow.schema'
 
 vi.mock('@/src/lib/mail/send')
@@ -37,6 +38,12 @@ vi.mock('@/src/repositories/crm-workflow.repository', () => ({
         ok({ id: 'wf-1', name: 'Fluxo', createdById: 'owner-1' }),
       ),
   },
+}))
+const { crossEngine } = vi.hoisted(() => ({
+  crossEngine: { sendWhatsApp: vi.fn(), openTicket: vi.fn() },
+}))
+vi.mock('../cross-engine-actions.service', () => ({
+  CrossEngineActions: crossEngine,
 }))
 vi.mock('../crm-notifications', () => ({
   notifyCrmWorkflowFailed: vi.fn().mockResolvedValue(1),
@@ -1497,5 +1504,194 @@ describe('runCrmWorkflow() — notifications', () => {
     expect(notifyCrmWorkflowWaiting).toHaveBeenCalledWith(
       expect.objectContaining({ assigneeId: null }),
     )
+  })
+})
+
+describe('runCrmWorkflow() — cross-engine nodes', () => {
+  const whatsapp = (data: Record<string, unknown> = {}) => ({
+    id: 'w1',
+    data: {
+      type: 'send-whatsapp-template',
+      connectionId: 'conn-1',
+      to: '{{trigger.record.phone}}',
+      templateId: 'tpl-1',
+      variables: ['{{trigger.record.id}}', 'fixo'],
+      ...data,
+    },
+  })
+  const ticket = (data: Record<string, unknown> = {}) => ({
+    id: 't1',
+    data: {
+      type: 'create-ticket',
+      ticketType: 'INCIDENT',
+      title: 'Lead {{trigger.record.id}}',
+      description: 'Falar com {{trigger.record.id}}',
+      phone: '{{trigger.record.phone}}',
+      email: '{{trigger.record.email}}',
+      ...data,
+    },
+  })
+  const params = (node: NodeSpec, testMode = false) => ({
+    ...baseParams(def([node])),
+    triggerPayload: {
+      record: { id: 'lead-1', phone: '11 91234-5678', email: 'a@b.com' },
+    },
+    testMode,
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockedRunRepo.setStatus.mockResolvedValue(ok({} as never))
+    mockedRunRepo.createStep.mockResolvedValue(ok({ id: 'step-1' } as never))
+    mockedRunRepo.updateStep.mockResolvedValue(ok({} as never))
+  })
+
+  describe('send-whatsapp-template', () => {
+    it('should send through the cross-engine service and record the result', async () => {
+      crossEngine.sendWhatsApp.mockResolvedValue(
+        ok({ status: 'sent', providerMessageId: 'wamid.1', mode: 'template' }),
+      )
+      await runCrmWorkflow(params(whatsapp()))
+      expect(crossEngine.sendWhatsApp).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        source: 'crm_workflow',
+        refId: 'run-1',
+        connectionId: 'conn-1',
+        phone: '11 91234-5678',
+        templateId: 'tpl-1',
+        variables: ['lead-1', 'fixo'],
+        text: '',
+      })
+      expect(stepOutputs()[0]).toEqual({
+        sent: true,
+        to: '11 91234-5678',
+        providerMessageId: 'wamid.1',
+        mode: 'template',
+      })
+      expect(lastSetStatus()?.[1]).toBe('COMPLETED')
+    })
+
+    it('should resolve the free text expression', async () => {
+      crossEngine.sendWhatsApp.mockResolvedValue(
+        ok({ status: 'sent', providerMessageId: 'w', mode: 'text' }),
+      )
+      await runCrmWorkflow(
+        params(
+          whatsapp({ templateId: undefined, text: 'Oi {{trigger.record.id}}' }),
+        ),
+      )
+      expect(crossEngine.sendWhatsApp).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Oi lead-1' }),
+      )
+    })
+
+    it('should only simulate in test mode', async () => {
+      await runCrmWorkflow(params(whatsapp(), true))
+      expect(crossEngine.sendWhatsApp).not.toHaveBeenCalled()
+      expect(stepOutputs()[0]).toEqual({
+        simulated: true,
+        to: '11 91234-5678',
+        variables: ['lead-1', 'fixo'],
+        text: '',
+      })
+    })
+
+    it('should skip without a phone', async () => {
+      await runCrmWorkflow(params(whatsapp({ to: '{{trigger.record.none}}' })))
+      expect(crossEngine.sendWhatsApp).not.toHaveBeenCalled()
+      expect(stepOutputs()[0]).toEqual({
+        skipped: true,
+        reason: 'no recipient',
+      })
+    })
+
+    it('should record an opt-out as skipped and let the run complete', async () => {
+      crossEngine.sendWhatsApp.mockResolvedValue(
+        ok({ status: 'skipped', reason: 'opted_out', message: 'LGPD' }),
+      )
+      await runCrmWorkflow(params(whatsapp()))
+      expect(stepOutputs()[0]).toEqual({
+        skipped: true,
+        reason: 'opted_out',
+        message: 'LGPD',
+      })
+      expect(lastSetStatus()?.[1]).toBe('COMPLETED')
+    })
+
+    it('should fail the run with the service message', async () => {
+      crossEngine.sendWhatsApp.mockResolvedValue(
+        err(validationError('Conexão desconectada')),
+      )
+      await runCrmWorkflow(params(whatsapp()))
+      expect(lastSetStatus()).toEqual([
+        'run-1',
+        'FAILED',
+        expect.objectContaining({
+          error: 'sendWhatsApp: Conexão desconectada',
+        }),
+      ])
+    })
+  })
+
+  describe('create-ticket', () => {
+    it('should open the ticket with the resolved expressions', async () => {
+      crossEngine.openTicket.mockResolvedValue(
+        ok({ ticketId: 'tk1', code: 'INC-000001', reused: false }),
+      )
+      await runCrmWorkflow(params(ticket()))
+      expect(crossEngine.openTicket).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        source: 'crm_workflow',
+        refId: 'run-1',
+        type: 'INCIDENT',
+        title: 'Lead lead-1',
+        description: 'Falar com lead-1',
+        phone: '11 91234-5678',
+        email: 'a@b.com',
+      })
+      expect(stepOutputs()[0]).toEqual({
+        id: 'tk1',
+        code: 'INC-000001',
+        title: 'Lead lead-1',
+      })
+    })
+
+    it('should send empty optional fields and simulate in test mode', async () => {
+      crossEngine.openTicket.mockResolvedValue(
+        ok({ ticketId: 'tk1', code: 'INC-000001', reused: false }),
+      )
+      const bare = ticket({
+        description: undefined,
+        phone: undefined,
+        email: undefined,
+      })
+      await runCrmWorkflow(params(bare))
+      expect(crossEngine.openTicket).toHaveBeenCalledWith(
+        expect.objectContaining({ description: '', phone: '', email: '' }),
+      )
+      vi.clearAllMocks()
+      await runCrmWorkflow(params(ticket(), true))
+      expect(crossEngine.openTicket).not.toHaveBeenCalled()
+      expect(stepOutputs()[0]).toEqual({
+        simulated: true,
+        title: 'Lead lead-1',
+        type: 'INCIDENT',
+        phone: '11 91234-5678',
+      })
+    })
+
+    it('should skip an empty title and fail the run on service errors', async () => {
+      await runCrmWorkflow(params(ticket({ title: '{{trigger.record.none}}' })))
+      expect(stepOutputs()[0]).toEqual({ skipped: true, reason: 'no title' })
+      crossEngine.openTicket.mockResolvedValue(err(moduleDisabled()))
+      await runCrmWorkflow(params(ticket()))
+      expect(lastSetStatus()).toEqual([
+        'run-1',
+        'FAILED',
+        expect.objectContaining({
+          error: expect.stringContaining('openTicket:'),
+        }),
+      ])
+    })
   })
 })
