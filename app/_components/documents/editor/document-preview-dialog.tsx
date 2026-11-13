@@ -1,11 +1,14 @@
 'use client'
 
-import {
-  ComputerIcon,
-  SmartPhone01Icon,
-} from '@hugeicons-pro/core-stroke-rounded'
 import { useMemo, useState } from 'react'
-import { SteelIcon } from '@/components/icon/icon'
+import {
+  DeviceSwitcher,
+  type PreviewDevice,
+} from '@/app/_components/canvas/preview/device-switcher'
+import {
+  type PreviewTheme,
+  ThemeSwitcher,
+} from '@/app/_components/canvas/preview/theme-switcher'
 import {
   Dialog,
   DialogContent,
@@ -32,10 +35,7 @@ export const SAMPLE_VARIABLES = Object.fromEntries(
   DOCUMENT_VARIABLES.map((variable) => [variable.key, variable.sample]),
 ) as DocumentVariableValues
 
-const DEVICES = [
-  { value: 'desktop', label: 'Computador', icon: ComputerIcon },
-  { value: 'mobile', label: 'Celular', icon: SmartPhone01Icon },
-] as const
+const DEVICES: readonly PreviewDevice[] = ['base', 'mobile']
 
 const PREVIEW_MESSAGE =
   'Na pré-visualização nada é enviado. Envie o documento para testar o aceite.'
@@ -119,7 +119,8 @@ export function DocumentPreviewDialog({
   validUntil: string | null
   title: string
 }) {
-  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [device, setDevice] = useState<PreviewDevice>('base')
+  const [theme, setTheme] = useState<PreviewTheme>('light')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='flex h-[92dvh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl'>
@@ -130,33 +131,21 @@ export function DocumentPreviewDialog({
               Pré-visualização com dados de exemplo
             </DialogDescription>
           </div>
-          <fieldset className='flex gap-1 rounded-lg bg-muted p-1'>
-            <legend className='sr-only'>Largura da tela</legend>
-            {DEVICES.map((option) => (
-              <button
-                key={option.value}
-                type='button'
-                aria-pressed={device === option.value}
-                aria-label={option.label}
-                title={option.label}
-                onClick={() => setDevice(option.value)}
-                className={cn(
-                  'flex size-7 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-                  device === option.value
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                <SteelIcon icon={option.icon} className='size-4' />
-              </button>
-            ))}
-          </fieldset>
+          <DeviceSwitcher
+            value={device}
+            onChange={setDevice}
+            devices={DEVICES}
+          />
+          <ThemeSwitcher value={theme} onChange={setTheme} />
         </div>
         <div className='min-h-0 flex-1 overflow-y-auto bg-muted/40'>
           <div
             data-testid='document-preview'
+            data-theme={theme === 'dark' ? 'dark' : undefined}
+            style={{ colorScheme: theme }}
             className={cn(
-              'mx-auto min-h-full bg-background',
+              'mx-auto min-h-full bg-background text-foreground',
+              theme === 'dark' && 'dark',
               device === 'mobile' ? 'max-w-[390px] border-x' : 'w-full',
             )}
           >

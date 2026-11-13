@@ -30,6 +30,7 @@ export type ShortcutScope =
   | 'wiki'
   | 'ai'
   | 'editor'
+  | 'editor.canvas'
 
 type ScopeInfo = {
   /** Inner scopes win when two mounted bindings match the same keys. */
@@ -69,6 +70,8 @@ export const SHORTCUT_SCOPES: Record<ShortcutScope, ScopeInfo> = {
   wiki: { depth: 1, module: 'wiki', excludes: ['list', 'kanban'] },
   ai: { depth: 1, module: 'ai', excludes: ['list', 'kanban'] },
   editor: { depth: 9, module: 'editor', documentationOnly: true },
+  // Visual (Canvas) editors: handled by `use-shortcuts.ts`, hints read here.
+  'editor.canvas': { depth: 9, module: 'editor', documentationOnly: true },
 }
 
 /** Can bindings of these two scopes be mounted at the same time? */
@@ -117,6 +120,8 @@ export type ShortcutDefinition = {
   allowInDialog?: boolean
   /** Never fires inside the rich editor (the editor owns these keys). */
   notInRichEditor?: boolean
+  /** The editor deliberately takes a combo the browser also uses (Ctrl+D). */
+  overridesBrowser?: boolean
   /** Ids of outer bindings this one deliberately overrides. */
   shadows?: readonly string[]
   priority: 'P1' | 'P2'
@@ -1118,6 +1123,144 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = define([
     scope: 'editor',
     group: 'editor',
     label: 'Refazer',
+    priority: 'P1',
+  },
+  // ── Editores visuais (Canvas): Sites, E-mail e Documentos ────────────────
+  {
+    id: 'canvas.save',
+    keys: 'mod+s',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Salvar agora',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.undo',
+    keys: 'mod+z',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Desfazer',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.redo',
+    keys: ['mod+shift+z', 'mod+y'],
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Refazer',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.copy',
+    keys: 'mod+c',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Copiar o elemento',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.cut',
+    keys: 'mod+x',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Recortar o elemento',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.paste',
+    keys: 'mod+v',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Colar',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.duplicate',
+    keys: 'mod+d',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Duplicar o elemento',
+    overridesBrowser: true,
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.delete',
+    keys: ['delete', 'backspace'],
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Excluir o elemento',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.select-parent',
+    keys: 'escape',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Selecionar o elemento que contém este',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.select-sibling',
+    keys: ['arrowup', 'arrowdown'],
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Selecionar o elemento anterior ou seguinte',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.select-outer',
+    keys: 'arrowleft',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Selecionar o elemento pai',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.select-inner',
+    keys: 'arrowright',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Selecionar o primeiro elemento filho',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.move',
+    keys: ['alt+arrowup', 'alt+arrowdown'],
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Mover o elemento para cima ou para baixo',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.edit-text',
+    keys: 'enter',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Editar o texto do elemento',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.zoom-in',
+    keys: 'mod+=',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Aumentar o zoom',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.zoom-out',
+    keys: 'mod+-',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Diminuir o zoom',
+    priority: 'P1',
+  },
+  {
+    id: 'canvas.zoom-fit',
+    keys: 'mod+0',
+    scope: 'editor.canvas',
+    group: 'editor',
+    label: 'Ajustar à tela',
     priority: 'P1',
   },
 ])

@@ -95,7 +95,7 @@ export function findShortcutConflicts(
     }
 
     for (const keys of entry.keys) {
-      if (RESERVED_PC.has(parseFirst(keys))) {
+      if (!entry.overridesBrowser && RESERVED_PC.has(parseFirst(keys))) {
         conflicts.push({ kind: 'reserved', ids: [entry.id], keys })
       }
       // Ctrl+Alt is AltGr on Windows (ABNT2 types ¹²³£¢¬ with it).
@@ -108,7 +108,7 @@ export function findShortcutConflicts(
       }
     }
     for (const keys of shortcutKeys(entry, true)) {
-      if (RESERVED_MAC.has(parseFirst(keys))) {
+      if (!entry.overridesBrowser && RESERVED_MAC.has(parseFirst(keys))) {
         conflicts.push({ kind: 'reserved', ids: [entry.id], keys })
       }
     }

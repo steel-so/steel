@@ -7,6 +7,7 @@ import type { CanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasNodeId } from '@/src/lib/canvas/types'
 import { useCanvasEditor, useCanvasEditorUi } from '../editor-context'
 import { nodeIdAt } from '../lib/frame-handle'
+import { applyFrameTheme } from '../preview/frame-theme'
 import { useCanvasStore } from '../use-canvas'
 import { InlineTextEditor } from './inline-text'
 import { DocumentView } from './node-view'
@@ -204,10 +205,10 @@ export function CanvasFrame({
 
   useEffect(() => {
     if (!mount) return
-    const html = mount.doc.documentElement
-    if (dark) html.setAttribute('data-canvas-dark', '')
-    else html.removeAttribute('data-canvas-dark')
-  }, [mount, dark])
+    applyFrameTheme(mount.doc, dark ? 'dark' : 'light', {
+      simulate: props.darkPreview !== 'native',
+    })
+  }, [mount, dark, props.darkPreview])
 
   return (
     <iframe

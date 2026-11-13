@@ -2,17 +2,9 @@
 
 import type { IconSvgElement } from '@hugeicons/react'
 import {
-  AlertCircleIcon,
-  CheckmarkCircle02Icon,
-  ComputerIcon,
-  Loading03Icon,
   MinusSignIcon,
-  Moon02Icon,
   PlusSignIcon,
   Redo02Icon,
-  SmartPhone01Icon,
-  Sun03Icon,
-  Tablet01Icon,
   Undo02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import type { ReactNode } from 'react'
@@ -27,19 +19,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { ZOOM_MAX, ZOOM_MIN } from '@/src/lib/canvas/store'
-import type { CanvasBreakpoint } from '@/src/lib/canvas/types'
 import { useCollabSession, useCollabSnapshot } from './collab/collab-context'
 import { CollabPresence } from './collab/presence-bar'
 import { useCanvasEditor, useCanvasEditorUi } from './editor-context'
 import { DEFAULT_VIEWPORTS, fitZoom } from './frame/canvas-stage'
 import { BREAKPOINT_LABELS } from './lib/messages'
+import { shortcutHint } from './lib/shortcut-hint'
+import { DeviceSwitcher } from './preview/device-switcher'
+import { ThemeSwitcher } from './preview/theme-switcher'
+import { SaveStatus, type SaveStatusValue } from './save-status'
 import { useCanvasStore } from './use-canvas'
-
-const BREAKPOINT_ICONS: Record<CanvasBreakpoint, IconSvgElement> = {
-  base: ComputerIcon,
-  tablet: Tablet01Icon,
-  mobile: SmartPhone01Icon,
-}
 
 const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
 
@@ -95,6 +84,7 @@ export function IconButton({
 
 function SaveIndicator() {
   const { saveStatus } = useCanvasEditorUi()
+  const { save } = useCanvasEditor()
   const dirty = useCanvasStore((state) => state.dirty)
   // Live co-editing: the realtime server saves, so "saved" means synced.
   const session = useCollabSession()
@@ -102,7 +92,7 @@ function SaveIndicator() {
     (snapshot) => snapshot.status === 'live' && !snapshot.readOnly,
   )
   const syncing = useCollabSnapshot((snapshot) => snapshot.syncing)
-  const status =
+  const status: SaveStatusValue =
     saveStatus === 'saving'
       ? 'saving'
       : saveStatus === 'error' && !(session && live)
@@ -114,36 +104,12 @@ function SaveIndicator() {
           : dirty
             ? 'dirty'
             : 'saved'
-  const copy = {
-    saving: { icon: Loading03Icon, text: 'Salvando…' },
-    syncing: { icon: Loading03Icon, text: 'Sincronizando…' },
-    error: { icon: AlertCircleIcon, text: 'Não foi possível salvar' },
-    dirty: { icon: null, text: 'Alterações não salvas' },
-    saved: { icon: CheckmarkCircle02Icon, text: 'Salvo' },
-  }[status]
   return (
-    <span
-      role='status'
-      data-testid='canvas-save-status'
-      data-status={status}
-      className={cn(
-        'hidden items-center gap-1.5 text-xs whitespace-nowrap text-muted-foreground lg:flex',
-        status === 'error' && 'text-destructive',
-      )}
-    >
-      {copy.icon ? (
-        <SteelIcon
-          icon={copy.icon}
-          className={cn(
-            'size-3.5',
-            (status === 'saving' || status === 'syncing') && 'animate-spin',
-          )}
-        />
-      ) : (
-        <span className='size-1.5 rounded-full bg-muted-foreground/60' />
-      )}
-      {copy.text}
-    </span>
+    <SaveStatus
+      status={status}
+      onRetry={() => void save()}
+      className='hidden md:flex'
+    />
   )
 }
 
@@ -161,7 +127,7 @@ function ZoomControl() {
       <IconButton
         label='Diminuir zoom'
         icon={MinusSignIcon}
-        shortcut={`${modKey()} -`}
+        shortcut={shortcutHint('canvas.zoom-out')}
         className='size-7'
         disabled={zoom <= ZOOM_MIN}
         onClick={() => store.setZoom(stepZoom(zoom, -1))}
@@ -176,7 +142,9 @@ function ZoomControl() {
         <DropdownMenuContent align='center' className='w-40'>
           <DropdownMenuItem onClick={fit}>
             Ajustar à tela
-            <DropdownMenuShortcut>{modKey()} 0</DropdownMenuShortcut>
+            <DropdownMenuShortcut>
+              {shortcutHint('canvas.zoom-fit')}
+            </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {ZOOM_STEPS.map((step) => (
@@ -189,7 +157,7 @@ function ZoomControl() {
       <IconButton
         label='Aumentar zoom'
         icon={PlusSignIcon}
-        shortcut={`${modKey()} +`}
+        shortcut={shortcutHint('canvas.zoom-in')}
         className='size-7'
         disabled={zoom >= ZOOM_MAX}
         onClick={() => store.setZoom(stepZoom(zoom, 1))}
@@ -208,7 +176,6 @@ export function CanvasTopBar({ title }: { title: ReactNode }) {
   const breakpoint = useCanvasStore((state) => state.breakpoint)
   const canUndo = useCanvasStore((state) => state.canUndo)
   const canRedo = useCanvasStore((state) => state.canRedo)
-  const mod = modKey()
 
   return (
     <header className='flex h-12 shrink-0 items-center gap-3 border-b bg-background px-3'>
@@ -218,53 +185,39 @@ export function CanvasTopBar({ title }: { title: ReactNode }) {
 
       <div className='flex items-center gap-2'>
         {catalog.breakpoints.length > 1 && (
-          <div
-            role='toolbar'
-            aria-label='Tamanho de tela'
-            className='flex items-center gap-0.5 rounded-md bg-muted p-0.5'
-          >
-            {catalog.breakpoints.map((item) => (
-              <button
-                key={item}
-                type='button'
-                aria-pressed={breakpoint === item}
-                aria-label={BREAKPOINT_LABELS[item]}
-                title={`${BREAKPOINT_LABELS[item]} · ${props.viewportWidths[item] ?? DEFAULT_VIEWPORTS[item]} px`}
-                onClick={() => store.setBreakpoint(item)}
-                className={cn(
-                  'flex h-7 w-8 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-                  breakpoint === item &&
-                    'bg-background text-foreground shadow-xs',
-                )}
-              >
-                <SteelIcon icon={BREAKPOINT_ICONS[item]} className='size-4' />
-              </button>
-            ))}
-          </div>
+          <DeviceSwitcher
+            value={breakpoint}
+            onChange={(item) => store.setBreakpoint(item)}
+            devices={catalog.breakpoints}
+            widths={{
+              base: props.viewportWidths.base ?? DEFAULT_VIEWPORTS.base,
+              tablet: props.viewportWidths.tablet ?? DEFAULT_VIEWPORTS.tablet,
+              mobile: props.viewportWidths.mobile ?? DEFAULT_VIEWPORTS.mobile,
+            }}
+            labels={BREAKPOINT_LABELS}
+          />
         )}
         <ZoomControl />
         <div className='flex items-center'>
           <IconButton
             label='Desfazer'
             icon={Undo02Icon}
-            shortcut={`${mod} Z`}
+            shortcut={shortcutHint('canvas.undo')}
             disabled={!canUndo}
             onClick={() => store.undo()}
           />
           <IconButton
             label='Refazer'
             icon={Redo02Icon}
-            shortcut={`${mod} Shift Z`}
+            shortcut={shortcutHint('canvas.redo')}
             disabled={!canRedo}
             onClick={() => store.redo()}
           />
         </div>
         {props.darkPreview && (
-          <IconButton
-            label={dark ? 'Ver no modo claro' : 'Ver no modo escuro'}
-            icon={dark ? Sun03Icon : Moon02Icon}
-            active={dark}
-            onClick={() => setDark(!dark)}
+          <ThemeSwitcher
+            value={dark ? 'dark' : 'light'}
+            onChange={(theme) => setDark(theme === 'dark')}
           />
         )}
       </div>

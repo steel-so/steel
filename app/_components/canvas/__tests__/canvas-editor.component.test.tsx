@@ -86,6 +86,8 @@ function openTab(name: string) {
 
 beforeEach(() => {
   vi.useRealTimers()
+  // A failed save keeps a local draft; do not leak it into the next test.
+  window.localStorage.clear()
 })
 
 describe('CanvasEditor', () => {
