@@ -144,6 +144,7 @@ describe('DocumentService — authorization', () => {
   it('lets only OWNER/ADMIN delete', async () => {
     expectErr(await DocumentService.remove('u1', 'ws1', 'd1'), 'FORBIDDEN')
     asRole('ADMIN')
+    documentRepo.findById.mockResolvedValue(ok(createFakeDocumentFull()))
     documentRepo.softDelete.mockResolvedValue(ok(undefined))
     expectOk(await DocumentService.remove('u1', 'ws1', 'd1'))
     expect(documentRepo.softDelete).toHaveBeenCalledWith('d1')
@@ -763,12 +764,12 @@ describe('DocumentService.duplicate()', () => {
 describe('DocumentService.remove()', () => {
   it('propagates not found and database errors', async () => {
     asRole('OWNER')
-    documentRepo.findMeta.mockResolvedValue(err(documentNotFound()))
+    documentRepo.findById.mockResolvedValue(err(documentNotFound()))
     expectErr(
       await DocumentService.remove('u1', 'ws1', 'd1'),
       'DOCUMENT_NOT_FOUND',
     )
-    documentRepo.findMeta.mockResolvedValue(ok(META))
+    documentRepo.findById.mockResolvedValue(ok(createFakeDocumentFull()))
     documentRepo.softDelete.mockResolvedValue(err(databaseError()))
     expectErr(await DocumentService.remove('u1', 'ws1', 'd1'), 'DATABASE_ERROR')
   })

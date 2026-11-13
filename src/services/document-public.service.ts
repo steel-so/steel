@@ -57,6 +57,7 @@ import { advanceOpportunityOnAccept } from './document-crm-sync'
 import { documentPath, notifyDocumentAnswered } from './document-notifications'
 import { DocumentVariablesService } from './document-variables.service'
 import { dispatchSteelAgentEvent } from './steel-agent-dispatcher'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 /**
  * Public link of CRM > Documentos (`/d/<token>`, ADR 0063): no session, the
@@ -277,11 +278,23 @@ function afterAnswer(
   input: {
     action: 'ACCEPT' | 'DECLINE'
     readerName: string
+    readerEmail?: string | null
     reason: string | null
     total: number | null
   },
 ): void {
   const { context } = link
+  void emitEntityWebhook(context.workspaceId, null, {
+    entity: 'document_answer',
+    action: input.action === 'ACCEPT' ? 'accepted' : 'declined',
+    document: {
+      id: context.id,
+      title: context.title,
+      ownerId: context.ownerId,
+    },
+    reader: { name: input.readerName, email: input.readerEmail ?? null },
+    reason: input.reason,
+  })
   void notifyDocumentAnswered({
     workspaceId: context.workspaceId,
     document: {
@@ -475,6 +488,7 @@ export const DocumentPublicService = {
     afterAnswer(link.value, {
       action: 'ACCEPT',
       readerName: input.name,
+      readerEmail: input.email,
       reason: null,
       total: priced.total,
     })
@@ -516,6 +530,7 @@ export const DocumentPublicService = {
     afterAnswer(link.value, {
       action: 'DECLINE',
       readerName: name ?? 'O leitor do link',
+      readerEmail: recipient?.email ?? null,
       reason: input.reason || null,
       total: null,
     })

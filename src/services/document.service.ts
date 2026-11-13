@@ -54,6 +54,7 @@ import type {
 } from '@/types/document'
 import { assertMember, assertModuleMember } from './authz'
 import { CrmSettingsService } from './crm-settings.service'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 /**
  * CRM > Documentos (ADR 0063): documents and templates. Authorization
@@ -325,7 +326,13 @@ export const DocumentService = {
         source: start.value.source,
       },
     })
-    return ok(toDocumentDTO(result.value))
+    const created = toDocumentDTO(result.value)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'document',
+      action: 'created',
+      record: created,
+    })
+    return ok(created)
   },
 
   async update(
@@ -406,7 +413,13 @@ export const DocumentService = {
       targetId: documentId,
       meta: { workspaceId, fields: Object.keys(dto) },
     })
-    return ok(toDocumentDTO(result.value))
+    const updated = toDocumentDTO(result.value)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'document',
+      action: 'updated',
+      record: updated,
+    })
+    return ok(updated)
   },
 
   async saveContent(
@@ -499,7 +512,7 @@ export const DocumentService = {
     const membership = await access(actorId, workspaceId, 'DELETE')
     if (!membership.ok) return membership
 
-    const existing = await DocumentRepository.findMeta(documentId, workspaceId)
+    const existing = await DocumentRepository.findById(documentId, workspaceId)
     if (!existing.ok) return existing
 
     const result = await DocumentRepository.softDelete(documentId)
@@ -511,6 +524,11 @@ export const DocumentService = {
       actorId,
       targetId: documentId,
       meta: { workspaceId },
+    })
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'document',
+      action: 'deleted',
+      record: toDocumentDTO(existing.value),
     })
     return ok(undefined)
   },

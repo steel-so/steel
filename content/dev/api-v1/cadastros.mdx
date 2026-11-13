@@ -1,0 +1,176 @@
+---
+title: Cadastros, base de conhecimento e documentos
+description: Pessoas, empresas e documentos do CRM, clientes e contatos do ServiceDesk e artigos da base de conhecimento pela API v1, com curl, a paginação de cada lista, os erros e os webhooks que cada escrita dispara.
+section: api-v1
+order: 5
+---
+
+Esta página reúne os cadastros do Steel que a v1 lê e escreve: **pessoas**,
+**empresas** e **documentos** do CRM, **clientes** e **contatos** do
+ServiceDesk e os **artigos da base de conhecimento**. Toda escrita passa pelo
+mesmo serviço da tela, então valem as mesmas regras (permissões do perfil do
+dono do token, duplicidade, validações) e a mesma auditoria. Os exemplos usam
+`$STEEL_URL` e `$STEEL_TOKEN` (veja
+[Antes da primeira chamada](/dev/api-v1#antes-da-primeira-chamada)).
+
+As rotas do **CRM** exigem um token com o módulo CRM; as do **ServiceDesk**,
+com o módulo ServiceDesk e um usuário **agente** (solicitantes não gerenciam
+cadastros). Leituras pedem `api:read`; criar, alterar e excluir pedem
+`api:write`.
+
+| Recurso | Listar / criar | Ver / alterar / excluir | Webhooks |
+| --- | --- | --- | --- |
+| Pessoas | `GET`, `POST /api/v1/crm/people` | `GET`, `PATCH`, `DELETE /api/v1/crm/people/{personId}` | `crm.person.*` |
+| Empresas | `GET`, `POST /api/v1/crm/companies` | `GET`, `PATCH`, `DELETE /api/v1/crm/companies/{companyId}` | `crm.company.*` |
+| Documentos | `GET`, `POST /api/v1/crm/documents` | `GET`, `PATCH`, `DELETE /api/v1/crm/documents/{documentId}` | `crm.document.*` |
+| Clientes e empresas (ServiceDesk) | `GET`, `POST /api/v1/servicedesk/customers` | `GET`, `PATCH`, `DELETE /api/v1/servicedesk/customers/{customerId}` | `servicedesk.customer.*` |
+| Contatos (ServiceDesk) | `GET`, `POST /api/v1/servicedesk/contacts` | `GET`, `PATCH`, `DELETE /api/v1/servicedesk/contacts/{contactId}` | `servicedesk.contact.*` |
+| Artigos da base | `GET`, `POST /api/v1/servicedesk/kb/articles` | `GET`, `PATCH`, `DELETE /api/v1/servicedesk/kb/articles/{articleId}` | `servicedesk.kb_article.*` |
+| Publicar artigo | — | `POST /api/v1/servicedesk/kb/articles/{articleId}/status` | `servicedesk.kb_article.published` e `.unpublished` |
+
+Os corpos e as respostas seguem os da tela; o formato exato de cada campo está
+na [Referência da API v1](/dev/api/v1). Todo `DELETE` responde
+`{ "id": "..." }`.
+
+## Eventos de webhook
+
+Cada escrita dispara um [evento de webhook](/dev/webhooks/eventos), seja ela
+feita pela API, pela tela, por importação ou por automação. Assim um ERP ou um
+BI não precisa consultar a lista de tempos em tempos:
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/webhooks/endpoints" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://erp.suaempresa.com.br/steel",
+    "events": ["crm.company.created", "crm.company.updated", "servicedesk.customer.created"]
+  }'
+```
+
+O evento traz um retrato enxuto do registro (sem notas internas, campos
+personalizados nem conteúdo); para o registro completo, use a rota de
+detalhe com o `id` do evento. Os nomes dos eventos são parte do contrato e não
+mudam.
+
+## Pessoas e empresas do CRM
+
+Listas em ordem manual da grade do CRM, com paginação por cursor
+(`limit` de 1 a 100, padrão 25; `cursor` = o `nextCursor` anterior).
+
+| Filtro | Rota | O que faz |
+| --- | --- | --- |
+| `companyId` | `GET /crm/people` | Só as pessoas desta empresa |
+| `icp=true` | `GET /crm/companies` | Só as empresas do perfil de cliente ideal |
+
+```bash
+curl "$STEEL_URL/api/v1/crm/companies?icp=true&limit=50" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+
+curl -X POST "$STEEL_URL/api/v1/crm/people" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Carlos Lima",
+    "emails": ["carlos@empresa.com.br"],
+    "phones": ["+5511999990000"],
+    "jobTitle": "Gerente de TI",
+    "companyId": "ckw1comp0000ab7d3k1e5xyz"
+  }'
+```
+
+`PATCH` muda só os campos enviados; textos opcionais aceitam `null` para
+apagar. `DELETE` é lógico: o registro some das listas.
+
+| Erro | Quando |
+| --- | --- |
+| `404 RESOURCE_NOT_FOUND` | Pessoa ou empresa inexistente ou de outro workspace |
+| `409 CRM_COMPANY_CONFLICT` | Domínio ou CNPJ já usado por outra empresa |
+| `422 CRM_CUSTOM_FIELD_INVALID` | Valor de `customFields` incompatível com a definição |
+
+## Documentos
+
+`GET /crm/documents` lista do mais recente para o mais antigo. Filtros:
+`kind`, `status`, `q` (título), `ownerId`, `companyId`, `personId`,
+`opportunityId`, `leadId` e `isTemplate=true` (lista os modelos). A paginação
+usa o `nextCursor` como as outras listas; **mantenha o mesmo `limit`** ao
+seguir os cursores.
+
+`POST` cria um **rascunho** (em branco, a partir de um modelo com `templateId`
+ou de um modelo da galeria com `starterId`). `PATCH` altera título, tipo,
+responsável, vínculos, validade e `status` (`ARCHIVED` ou `DRAFT` para
+desarquivar). O texto do documento e o **envio** aos destinatários continuam
+no aplicativo; o envio dispara `crm.document.sent` e a resposta do leitor,
+`crm.document.accepted` ou `crm.document.declined`.
+
+```bash
+curl "$STEEL_URL/api/v1/crm/documents?status=SENT&companyId=ckw1comp0000ab7d3k1e5xyz" \
+  -H "Authorization: Bearer $STEEL_TOKEN"
+```
+
+| Erro | Quando |
+| --- | --- |
+| `404 DOCUMENT_NOT_FOUND` | Documento inexistente ou de outro workspace |
+| `404 DOCUMENT_TEMPLATE_NOT_FOUND` | `templateId` inexistente |
+| `404 RESOURCE_NOT_FOUND` | `companyId`, `personId`, `opportunityId` ou `leadId` fora do workspace |
+| `403 FORBIDDEN` | Só administradores do CRM reabrem um documento expirado |
+
+## Clientes e contatos do ServiceDesk
+
+Listas por nome, também com `nextCursor` e o mesmo `limit` ao seguir.
+
+| Filtro | Rota | O que faz |
+| --- | --- | --- |
+| `q` | clientes | Nome, fantasia, documento, e-mail ou cidade |
+| `kind` | clientes | `CLIENT` (pessoa) ou `COMPANY` (empresa) |
+| `state`, `city` | clientes | UF e cidade |
+| `active` | ambos | `true` ou `false` |
+| `q`, `customerId` | contatos | Texto e cliente/empresa vinculado |
+
+`GET /servicedesk/customers/{customerId}` traz também os contatos e os últimos
+10 chamados; o do contato, os últimos 10 chamados dele. Em `PATCH` de contato,
+`customers` (quando enviado) **substitui** todos os vínculos.
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/servicedesk/customers" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"COMPANY","name":"Acme Ltda","document":"12.345.678/0001-90"}'
+```
+
+| Erro | Quando |
+| --- | --- |
+| `404 SD_CUSTOMER_NOT_FOUND`, `SD_CONTACT_NOT_FOUND` | Id inexistente ou de outro workspace |
+| `409 SD_CUSTOMER_DOCUMENT_CONFLICT` | CPF/CNPJ já usado por outro cliente |
+| `422 SD_DOCUMENT_INVALID` | CPF/CNPJ inválido |
+| `403 SD_NOT_AGENT` | O dono do token é solicitante |
+
+## Base de conhecimento
+
+`GET /servicedesk/kb/articles` devolve os artigos **sem o conteúdo**. Sem `q`,
+é a árvore inteira; com `q`, é a busca por relevância (até 50 resultados),
+que aceita `status`, `visibility`, `categoryId` e `tag`. Solicitantes só veem
+o que está publicado no portal. O conteúdo (blocos do editor) vem em
+`GET /servicedesk/kb/articles/{articleId}` e é enviado em `PATCH` no campo
+`content`.
+
+Um artigo nasce como **rascunho**. Para publicar ou voltar para rascunho:
+
+```bash
+curl -X POST "$STEEL_URL/api/v1/servicedesk/kb/articles/ckw1kbart0000ab7d3k1e5xyz/status" \
+  -H "Authorization: Bearer $STEEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"PUBLISHED"}'
+```
+
+`DELETE` é **definitivo**: apaga o artigo, os sub-artigos, os comentários e a
+mídia.
+
+| Erro | Quando |
+| --- | --- |
+| `404 SD_KB_ARTICLE_NOT_FOUND` | Artigo inexistente, ou fora do portal para um solicitante |
+| `422 VALIDATION_ERROR` | Publicar um artigo arquivado ou sem título |
+| `403 SD_NOT_AGENT` | Escrever sendo solicitante |
+
+Os erros comuns a toda a v1 (`401`, `403 API_TOKEN_*`, `429`) estão em
+[API pública v1](/dev/api-v1).

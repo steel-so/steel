@@ -1,3 +1,9 @@
+import type { CrmCompanyDTO } from '@/types/crm-company'
+import type { CrmPersonDTO } from '@/types/crm-person'
+import type { DocumentListItemDTO } from '@/types/document'
+import type { SdContactDTO } from '@/types/sd-contact'
+import type { SdCustomerDTO } from '@/types/sd-customer'
+import type { SdKbArticleSummaryDTO } from '@/types/sd-kb-article'
 import type { WebhookEventData } from './events'
 
 /**
@@ -307,5 +313,126 @@ export function communicationConversationWaitingData(input: {
     },
     reason: input.reason,
     actorId: input.actorId,
+  }
+}
+
+/* ----------------- registers, knowledge base and documents ---------------- */
+
+/*
+ * Snapshots of the entity events (`entity-events.ts` in the services). Only
+ * the fields of the public contract leave: no notes, custom fields, internal
+ * tokens or document content.
+ */
+
+export function crmPersonSnapshot(
+  person: CrmPersonDTO,
+): WebhookEventData<'crm.person.created'>['person'] {
+  return {
+    id: person.id,
+    name: person.name,
+    emails: person.emails,
+    phones: person.phones,
+    city: person.city,
+    jobTitle: person.jobTitle,
+    companyId: person.companyId,
+    createdAt: person.createdAt,
+    updatedAt: person.updatedAt,
+  }
+}
+
+export function crmCompanySnapshot(
+  company: CrmCompanyDTO,
+): WebhookEventData<'crm.company.created'>['company'] {
+  return {
+    id: company.id,
+    name: company.name,
+    cnpj: company.cnpj,
+    domain: company.domain,
+    employees: company.employees,
+    arr: company.arr,
+    icp: company.icp,
+    accountOwnerId: company.accountOwnerId,
+    createdAt: company.createdAt,
+    updatedAt: company.updatedAt,
+  }
+}
+
+export function documentSnapshot(
+  document: DocumentListItemDTO,
+): WebhookEventData<'crm.document.created'>['document'] {
+  return {
+    id: document.id,
+    title: document.title,
+    ownerId: document.owner?.id ?? null,
+    kind: document.kind,
+    status: document.status,
+    isTemplate: document.isTemplate,
+    companyId: document.company?.id ?? null,
+    personId: document.person?.id ?? null,
+    opportunityId: document.opportunity?.id ?? null,
+    leadId: document.lead?.id ?? null,
+    totalValue: document.totalValue,
+    validUntil: document.validUntil,
+    sentAt: document.sentAt,
+    acceptedAt: document.acceptedAt,
+    createdAt: document.createdAt,
+    updatedAt: document.updatedAt,
+  }
+}
+
+export function sdCustomerSnapshot(
+  customer: SdCustomerDTO,
+): WebhookEventData<'servicedesk.customer.created'>['customer'] {
+  return {
+    id: customer.id,
+    kind: customer.kind,
+    personType: customer.personType,
+    name: customer.name,
+    tradeName: customer.tradeName,
+    document: customer.document,
+    email: customer.email,
+    phone: customer.phone,
+    whatsapp: customer.whatsapp,
+    city: customer.city,
+    state: customer.state,
+    active: customer.active,
+    createdAt: customer.createdAt,
+    updatedAt: customer.updatedAt,
+  }
+}
+
+export function sdContactSnapshot(
+  contact: SdContactDTO,
+): WebhookEventData<'servicedesk.contact.created'>['contact'] {
+  return {
+    id: contact.id,
+    name: contact.name,
+    jobTitle: contact.jobTitle,
+    email: contact.email,
+    phone: contact.phone,
+    whatsapp: contact.whatsapp,
+    userId: contact.userId,
+    active: contact.active,
+    customerIds: contact.customers.map((customer) => customer.id),
+    createdAt: contact.createdAt,
+    updatedAt: contact.updatedAt,
+  }
+}
+
+export function sdKbArticleSnapshot(
+  article: SdKbArticleSummaryDTO,
+): WebhookEventData<'servicedesk.kb_article.created'>['article'] {
+  return {
+    id: article.id,
+    title: article.title,
+    status: article.status,
+    visibility: article.visibility,
+    parentId: article.parentId,
+    categoryId: article.categoryId,
+    tags: article.tags,
+    sourceTicketId: article.sourceTicketId,
+    publishedAt: article.publishedAt,
+    createdAt: article.createdAt,
+    updatedAt: article.updatedAt,
   }
 }

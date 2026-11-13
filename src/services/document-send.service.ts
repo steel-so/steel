@@ -42,6 +42,7 @@ import {
   type DocumentDeliveryOutcome,
   deliverDocument,
 } from './document-delivery'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 /**
  * Sending of CRM > Documentos (ADR 0063): freezes an immutable version,
@@ -223,8 +224,15 @@ export const DocumentSendService = {
 
     const reloaded = await DocumentRepository.findById(documentId, workspaceId)
     if (!reloaded.ok) return reloaded
+    const sent = toDocumentDTO(reloaded.value)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'document',
+      action: 'sent',
+      record: sent,
+      recipients: outcomes.length,
+    })
     return ok({
-      ...toDocumentDTO(reloaded.value),
+      ...sent,
       deliveries: outcomes.map((outcome) => outcome.delivery),
     })
   },
