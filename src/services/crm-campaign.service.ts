@@ -1029,16 +1029,22 @@ export const CrmCampaignService = {
 
     if (dto.phone) {
       const waId = toCampaignWaId(dto.phone)
-      const problems = campaign.value.whatsappEnabled
-        ? await whatsappIssues(campaign.value)
-        : ok(['Ative o WhatsApp na campanha para testar'])
-      if (!problems.ok) return problems
+      const checked = campaign.value.whatsappEnabled
+        ? await whatsappIssues(
+            campaign.value,
+            campaign.value.destinationType === null,
+          )
+        : null
+      if (checked && !checked.ok) return checked
+      const problems = checked
+        ? checked.value.issues
+        : ['Ative o WhatsApp na campanha para testar']
       if (!waId) {
         result.whatsapp = 'failed'
         result.errors.push('Número de WhatsApp inválido')
-      } else if (problems.value.length > 0) {
+      } else if (problems.length > 0) {
         result.whatsapp = 'failed'
-        result.errors.push(...problems.value)
+        result.errors.push(...problems)
       } else {
         const sent = await sendCampaignWhatsApp(campaign.value, {
           waId,
