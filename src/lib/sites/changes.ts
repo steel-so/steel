@@ -1,3 +1,4 @@
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import { templateLabel } from './blog/templates'
 import type { SiteSnapshot } from './snapshot'
 
@@ -30,6 +31,8 @@ export interface SiteChangesDTO {
   settings: boolean
   /** Number of listed changes (0 = the draft equals the live site). */
   total: number
+  /** Pre-publish checks of the draft (errors block the publish). */
+  checks?: PublishCheckItem[]
 }
 
 /** JSON with object keys sorted, so equal values compare equal no matter
@@ -77,7 +80,7 @@ function diffItems<T extends { id: string }>(
 
 const GLOBAL_NAMES = { HEADER: 'Cabeçalho', FOOTER: 'Rodapé' } as const
 
-function globalName(global: SiteSnapshot['globals'][number]): string {
+export function globalName(global: SiteSnapshot['globals'][number]): string {
   if (global.kind === 'TEMPLATE') return templateLabel(global.name)
   return global.kind === 'SYMBOL' ? global.name : GLOBAL_NAMES[global.kind]
 }

@@ -107,6 +107,56 @@ describe('<PublishDialog />', () => {
     ).toBe('https://clinica.sites.example.com')
   })
 
+  it('lists warnings without blocking the publish', async () => {
+    routes({
+      ...CHANGES,
+      checks: [
+        {
+          code: 'IMAGE_ALT_MISSING',
+          level: 'warning',
+          message: 'Imagem sem texto alternativo',
+          documentId: 'home',
+          documentName: 'Início',
+        },
+      ],
+    })
+    renderInEditor(<PublishDialog open onOpenChange={() => {}} />)
+    const dialog = await screen.findByTestId('publish-dialog')
+    await within(dialog).findByText('Imagem sem texto alternativo')
+    expect(within(dialog).getByText('Os avisos não impedem a publicação.')).toBeTruthy()
+    expect(
+      (within(dialog).getByTestId('publish-confirm') as HTMLButtonElement)
+        .disabled,
+    ).toBe(false)
+  })
+
+  it('blocks the publish while there are errors', async () => {
+    routes({
+      ...CHANGES,
+      checks: [
+        {
+          code: 'FORM_NO_DESTINATION',
+          level: 'error',
+          message: 'Formulário sem destino',
+          documentId: 'home',
+          documentName: 'Início',
+        },
+      ],
+    })
+    renderInEditor(<PublishDialog open onOpenChange={() => {}} />)
+    const dialog = await screen.findByTestId('publish-dialog')
+    await within(dialog).findByText('Formulário sem destino')
+    expect(
+      within(dialog).getByText(
+        'Corrija os itens que impedem a publicação para continuar.',
+      ),
+    ).toBeTruthy()
+    expect(
+      (within(dialog).getByTestId('publish-confirm') as HTMLButtonElement)
+        .disabled,
+    ).toBe(true)
+  })
+
   it('announces the first publish with the address', async () => {
     routes({ ...CHANGES, firstPublish: true, publishedAt: null })
     renderInEditor(<PublishDialog open onOpenChange={() => {}} />)

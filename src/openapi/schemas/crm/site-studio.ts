@@ -9,6 +9,15 @@ const CHANGE = z.object({
   change: z.enum(['added', 'changed', 'removed']),
 })
 
+const PUBLISH_CHECK = z.object({
+  code: z.string().meta({ example: 'IMAGE_ALT_MISSING' }),
+  level: z.enum(['error', 'warning']),
+  message: z.string().meta({ example: 'Imagem sem texto alternativo' }),
+  nodeId: z.string().optional(),
+  documentId: z.string().optional(),
+  documentName: z.string().optional(),
+})
+
 export const SiteChangesDTOSchema = dto(
   'SiteChanges',
   z
@@ -21,6 +30,10 @@ export const SiteChangesDTOSchema = dto(
       theme: z.boolean(),
       settings: z.boolean(),
       total: z.number().int().meta({ example: 3 }),
+      checks: z.array(PUBLISH_CHECK).optional().meta({
+        description:
+          'Verificações antes de publicar. Erros impedem a publicação; avisos apenas recomendam.',
+      }),
     })
     .meta({
       description:
