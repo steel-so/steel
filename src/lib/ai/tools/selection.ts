@@ -367,7 +367,8 @@ export function selectSteelAiTools(input: ToolSelectionInput): ToolSelection {
     used += specTokens(tool)
   }
 
-  for (const tool of input.available) if (!tool.module) take(tool)
+  for (const tool of input.available)
+    if (!tool.module && !tool.onDemand) take(tool)
 
   const pinned: AnySteelAiTool[] = []
   for (const name of input.pinned ?? []) {
@@ -393,6 +394,16 @@ export function selectSteelAiTools(input: ToolSelectionInput): ToolSelection {
     if (chosen.has(tool.name)) continue
     const cost = specTokens(tool)
     if (used + cost > budget) continue
+    take(tool)
+  }
+
+  // On-demand platform tools (e.g. the Wiki) enter only when the request
+  // mentions them, after the module tools had their share of the budget.
+  const stems = keywordStems(input.message)
+  for (const tool of input.available) {
+    if (tool.module || !tool.onDemand || chosen.has(tool.name)) continue
+    if (scoreTool(tool, stems) === 0) continue
+    if (used + specTokens(tool) > budget) continue
     take(tool)
   }
 
@@ -461,8 +472,9 @@ export function findTools(
   const queryModules = module ? [module] : detectModules(query)
   const pool = available.filter(
     (tool) =>
-      tool.module &&
-      (queryModules.length === 0 || queryModules.includes(tool.module)),
+      (tool.onDemand && queryModules.length === 0) ||
+      (tool.module &&
+        (queryModules.length === 0 || queryModules.includes(tool.module))),
   )
   const stems = keywordStems(query)
   const ranked = pool
@@ -478,7 +490,7 @@ export function findTools(
       tools: ranked.map((tool) => ({
         name: tool.name,
         kind: tool.kind,
-        module: MODULE_NAMES[tool.module as ModuleKind],
+        module: tool.module ? MODULE_NAMES[tool.module] : 'Plataforma',
         summary: firstSentence(tool.description),
       })),
     },

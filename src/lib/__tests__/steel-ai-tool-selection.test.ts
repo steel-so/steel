@@ -474,6 +474,36 @@ describe('token budget (real Steel AI registry)', () => {
     for (const name of expected) expect(picked).toContain(name)
   })
 
+  it('should keep the on-demand Wiki tools out of unrelated rounds', () => {
+    const picked = names(
+      selectSteelAiTools({
+        available,
+        message: 'Quais chamados estão com SLA em risco hoje?',
+      }).tools,
+    )
+    expect(picked).not.toContain('wiki_pages_list')
+    expect(picked).toContain('sd_search_tickets')
+  })
+
+  it('should offer the Wiki tools when the request mentions the Wiki', () => {
+    const picked = names(
+      selectSteelAiTools({
+        available,
+        message: 'Procure na Wiki a página de onboarding',
+      }).tools,
+    )
+    expect(picked).toContain('wiki_pages_list')
+  })
+
+  it('should let steel_find_tools surface the on-demand Wiki tools', () => {
+    expect(findTools(available, { query: 'wiki' }).names).toContain(
+      'wiki_pages_list',
+    )
+    expect(
+      findTools(available, { module: 'CRM', query: 'wiki' }).names,
+    ).not.toContain('wiki_pages_list')
+  })
+
   it('should keep the tool specs of any selection within the budget', () => {
     const selection = selectSteelAiTools({
       available,

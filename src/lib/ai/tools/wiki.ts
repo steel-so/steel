@@ -55,6 +55,7 @@ export const wikiPagesListTool: SteelAiTool<z.output<typeof ListArgs>> = {
   name: 'wiki_pages_list',
   label: 'Consultando a Wiki',
   module: null,
+  onDemand: true,
   kind: 'READ',
   description:
     'Lista as páginas da Wiki do workspace (título, página-mãe, se está publicada e a data da última edição). Filtre por parte do título com `query`. Para ler o conteúdo de uma página use wiki_page_get; para responder perguntas de "como fazemos…" prefira steel_search.',
@@ -92,6 +93,7 @@ export const wikiPageGetTool: SteelAiTool<z.output<typeof GetArgs>> = {
   name: 'wiki_page_get',
   label: 'Lendo página da Wiki',
   module: null,
+  onDemand: true,
   kind: 'READ',
   description:
     'Lê uma página da Wiki: título e o conteúdo em texto simples (cortado em cerca de 8 mil caracteres), com o link para abrir no Steel.',
@@ -148,6 +150,7 @@ export const wikiPageCreateTool: SteelAiTool<CreateArgs> = {
   name: 'wiki_page_create',
   label: 'Criando página na Wiki',
   module: null,
+  onDemand: true,
   kind: 'CREATE',
   annotations: { destructiveHint: false },
   description:
