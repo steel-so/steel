@@ -2,9 +2,11 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -57,6 +59,8 @@ export function CrmSocialConnectionsSection({
 }) {
   const { data: connections, isLoading } = useCrmSocialConnections(workspaceId)
   const deleteConnection = useDeleteCrmSocialConnection(workspaceId)
+  const canCreate = useCan('social', 'CREATE')
+  const canDelete = useCan('social', 'DELETE')
 
   async function handleDelete(connectionId: string) {
     try {
@@ -70,7 +74,9 @@ export function CrmSocialConnectionsSection({
   return (
     <div className='flex flex-col gap-3'>
       <div className='flex justify-end'>
-        <CreateCrmSocialConnectionDialog workspaceId={workspaceId} />
+        {canCreate ? (
+          <CreateCrmSocialConnectionDialog workspaceId={workspaceId} />
+        ) : null}
       </div>
       <p className='text-muted-foreground text-xs'>
         Conecte via OAuth em cada studio de plataforma (menu Social) — o
@@ -114,13 +120,23 @@ export function CrmSocialConnectionsSection({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    onClick={() => handleDelete(connection.id)}
-                  >
-                    <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                  </Button>
+                  {canDelete ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          aria-label='Remover conexão'
+                        >
+                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                        </Button>
+                      }
+                      title='Remover esta conexão?'
+                      description='O Steel deixa de publicar e de ler dados desta conta. Você pode conectar de novo depois.'
+                      confirmLabel='Remover'
+                      onConfirm={() => handleDelete(connection.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}

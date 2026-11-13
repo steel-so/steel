@@ -16,7 +16,13 @@ import {
 
 type ConfirmActionProps = {
   /** The element that opens the dialog (usually the icon/delete button). */
-  trigger: ReactElement
+  trigger?: ReactElement
+  /**
+   * Controlled mode, for actions that live inside menus/popovers that unmount
+   * when closed (render the dialog outside them and drive it with state).
+   */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   title: string
   /** Say what is lost, e.g. "Os 12 membros da lista também serão removidos." */
   description: string
@@ -39,6 +45,8 @@ type ConfirmActionProps = {
  */
 export function ConfirmAction({
   trigger,
+  open: controlledOpen,
+  onOpenChange,
   title,
   description,
   confirmLabel = "Excluir",
@@ -47,11 +55,16 @@ export function ConfirmAction({
   pending = false,
   onConfirm,
 }: ConfirmActionProps) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = (next: boolean) => {
+    setInternalOpen(next)
+    onOpenChange?.(next)
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={trigger} />
+      {trigger ? <AlertDialogTrigger render={trigger} /> : null}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

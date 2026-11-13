@@ -47,18 +47,20 @@ async function chooseOption(trigger: HTMLElement, option: string) {
   fireEvent.click(item)
 }
 
+const KEY_PLACEHOLDER = 'Chave (letras minúsculas e _, ex.: data_contrato)'
+
 describe('<CrmCustomFieldsPanel />', () => {
   it('lists the company fields by default', async () => {
     setup()
     expect(await screen.findByText('cnpj')).toBeTruthy()
     expect(screen.getByText('CNPJ')).toBeTruthy()
-    expect(screen.getByText('TEXT')).toBeTruthy()
+    expect(screen.getByText('Texto')).toBeTruthy()
   })
 
   it('switches entity and refetches its fields', async () => {
     setup()
     await screen.findByText('cnpj')
-    await chooseOption(screen.getByRole('combobox'), 'PERSON')
+    await chooseOption(screen.getByRole('combobox'), 'Pessoas')
     expect(await screen.findByText('aniversario')).toBeTruthy()
     expect(screen.queryByText('cnpj')).toBeNull()
   })
@@ -66,9 +68,9 @@ describe('<CrmCustomFieldsPanel />', () => {
   it('shows the per-entity empty state', async () => {
     setup()
     await screen.findByText('cnpj')
-    await chooseOption(screen.getByRole('combobox'), 'OPPORTUNITY')
+    await chooseOption(screen.getByRole('combobox'), 'Oportunidades')
     expect(
-      await screen.findByText('Nenhum campo customizado para OPPORTUNITY'),
+      await screen.findByText('Nenhum campo personalizado para oportunidades'),
     ).toBeTruthy()
   })
 
@@ -82,7 +84,7 @@ describe('<CrmCustomFieldsPanel />', () => {
     })) as HTMLButtonElement
     expect(submit.disabled).toBe(true)
 
-    fireEvent.change(screen.getByPlaceholderText('Chave (snake_case)'), {
+    fireEvent.change(screen.getByPlaceholderText(KEY_PLACEHOLDER), {
       target: { value: 'porte' },
     })
     expect(submit.disabled).toBe(true)
@@ -93,7 +95,7 @@ describe('<CrmCustomFieldsPanel />', () => {
 
     const dialog = screen.getByRole('dialog')
     const typeTrigger = dialog.querySelector('[role="combobox"]') as HTMLElement
-    await chooseOption(typeTrigger, 'SELECT')
+    await chooseOption(typeTrigger, 'Lista de opções')
     fireEvent.click(screen.getByRole('button', { name: 'Criar campo' }))
 
     await waitFor(() =>
@@ -117,7 +119,7 @@ describe('<CrmCustomFieldsPanel />', () => {
       },
     ])
     fireEvent.click(screen.getByRole('button', { name: /novo campo/i }))
-    fireEvent.change(await screen.findByPlaceholderText('Chave (snake_case)'), {
+    fireEvent.change(await screen.findByPlaceholderText(KEY_PLACEHOLDER), {
       target: { value: 'cnpj' },
     })
     fireEvent.change(screen.getByPlaceholderText('Rótulo'), {
@@ -134,6 +136,7 @@ describe('<CrmCustomFieldsPanel />', () => {
     const spy = setup()
     const row = (await screen.findByText('cnpj')).closest('tr') as HTMLElement
     fireEvent.click(row.querySelector('button') as HTMLElement)
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover' }))
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Campo removido'),
     )

@@ -13,6 +13,7 @@ import { CRM_SOCIAL_PLATFORM_META } from '@/app/_components/crm/social/social-pl
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Field, FieldGroup } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -596,16 +597,25 @@ function PostCard({
           )}
         </div>
         {canCancel && (
-          <Button
-            variant='ghost'
-            size='icon-xs'
-            onClick={onCancel}
-            disabled={canceling}
-            title='Cancelar agendamento'
-            className='text-destructive hover:text-destructive'
-          >
-            <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-          </Button>
+          <ConfirmAction
+            trigger={
+              <Button
+                variant='ghost'
+                size='icon-xs'
+                disabled={canceling}
+                title='Cancelar agendamento'
+                aria-label='Cancelar agendamento'
+                className='text-destructive hover:text-destructive'
+              >
+                <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+              </Button>
+            }
+            title='Cancelar este agendamento?'
+            description='A publicação não será feita no horário marcado.'
+            confirmLabel='Cancelar agendamento'
+            cancelLabel='Voltar'
+            onConfirm={onCancel}
+          />
         )}
       </div>
 
@@ -665,14 +675,21 @@ function PostCard({
         {canCancel && (
           <RescheduleButton workspaceId={workspaceId} postId={post.id} />
         )}
-        <Button
-          variant='ghost'
-          size='icon-xs'
-          onClick={onDelete}
-          title='Excluir'
-        >
-          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button
+              variant='ghost'
+              size='icon-xs'
+              title='Excluir'
+              aria-label='Excluir publicação'
+            >
+              <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+            </Button>
+          }
+          title='Excluir esta publicação?'
+          description='Ela sai da lista e não poderá ser recuperada.'
+          onConfirm={onDelete}
+        />
       </div>
     </Card>
   )

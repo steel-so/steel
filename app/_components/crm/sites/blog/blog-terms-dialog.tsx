@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -73,14 +74,21 @@ function TermRow({
           <SteelIcon icon={Tick02Icon} />
         </Button>
       ) : null}
-      <Button
-        variant='ghost'
-        size='icon-sm'
-        aria-label={`Remover ${term.name}`}
-        onClick={() => void onRemove()}
-      >
-        <SteelIcon icon={Delete02Icon} />
-      </Button>
+      <ConfirmAction
+        trigger={
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label={`Remover ${term.name}`}
+          >
+            <SteelIcon icon={Delete02Icon} />
+          </Button>
+        }
+        title={`Remover "${term.name}"?`}
+        description='Os artigos que usam este item perdem a associação. Não é possível desfazer.'
+        confirmLabel='Remover'
+        onConfirm={onRemove}
+      />
     </li>
   )
 }

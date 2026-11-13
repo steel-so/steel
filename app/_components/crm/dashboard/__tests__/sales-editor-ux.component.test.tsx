@@ -243,6 +243,7 @@ describe('<DashboardScreens />', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /Remover esta tela e 6 widget/ }),
     )
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover tela' }))
     expect(onRemove).toHaveBeenCalledWith(1)
   })
 })
@@ -303,6 +304,7 @@ describe('<TvLinkDialog />', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Revogar link TV da recepção' }),
     )
+    fireEvent.click(await screen.findByRole('button', { name: 'Revogar' }))
     await waitFor(() =>
       expect(screen.getAllByTestId('tv-link-row')).toHaveLength(1),
     )
@@ -359,6 +361,7 @@ describe('<TvLinkDialog />', () => {
         name: 'Revogar link TV da recepção',
       }),
     )
+    fireEvent.click(await screen.findByRole('button', { name: 'Revogar' }))
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect(screen.getAllByTestId('tv-link-row')).toHaveLength(1)
   })

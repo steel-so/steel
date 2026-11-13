@@ -16,6 +16,7 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -182,6 +183,7 @@ export function NewsletterIssuesTab({
   const [page, setPage] = useState(1)
   const issues = useCrmNewsletterIssues(workspaceId, newsletterId, page)
   const remove = useDeleteCrmNewsletterIssue(workspaceId, newsletterId)
+  const [deleting, setDeleting] = useState<CrmNewsletterIssueDTO | null>(null)
   const [creating, setCreating] = useState<{
     duplicateOf?: CrmNewsletterIssueDTO
   } | null>(null)
@@ -283,7 +285,7 @@ export function NewsletterIssuesTab({
                   workspaceSlug={workspaceSlug}
                   newsletterId={newsletterId}
                   onDuplicate={(source) => setCreating({ duplicateOf: source })}
-                  onDelete={handleDelete}
+                  onDelete={setDeleting}
                 />
               ))
             ) : (
@@ -323,6 +325,20 @@ export function NewsletterIssuesTab({
           </Button>
         </div>
       ) : null}
+
+      <ConfirmAction
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null)
+        }}
+        title='Excluir este rascunho?'
+        description={`"${deleting?.subject ?? ''}" será excluído e não poderá ser recuperado.`}
+        confirmLabel='Excluir rascunho'
+        pending={remove.isPending}
+        onConfirm={() => {
+          if (deleting) handleDelete(deleting)
+        }}
+      />
 
       <NewIssueDialog
         open={creating !== null}

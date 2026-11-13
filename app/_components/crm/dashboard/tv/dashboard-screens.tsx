@@ -4,6 +4,7 @@ import { Add01Icon, Settings02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import * as React from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -54,6 +55,10 @@ export function DashboardScreens({
 }) {
   const [title, setTitle] = React.useState(settings.pages[current] ?? '')
   const titleId = React.useId()
+  // The confirmation lives outside the popover: the popover closes on outside
+  // press and would unmount a dialog rendered inside it.
+  const [popoverOpen, setPopoverOpen] = React.useState(false)
+  const [confirmRemove, setConfirmRemove] = React.useState(false)
 
   React.useEffect(() => {
     setTitle(settings.pages[current] ?? '')
@@ -119,7 +124,7 @@ export function DashboardScreens({
           <SteelIcon icon={Add01Icon} strokeWidth={2} />
         </Button>
       ) : null}
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger
           render={
             <Button
@@ -175,7 +180,10 @@ export function DashboardScreens({
               variant='outline'
               size='sm'
               className='text-destructive'
-              onClick={() => onRemove(current)}
+              onClick={() => {
+                setPopoverOpen(false)
+                setConfirmRemove(true)
+              }}
             >
               Remover esta tela
               {counts[current] ? ` e ${counts[current]} widget(s)` : ''}
@@ -183,6 +191,18 @@ export function DashboardScreens({
           ) : null}
         </PopoverContent>
       </Popover>
+      <ConfirmAction
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title={`Remover a tela "${settings.pages[current]}"?`}
+        description={
+          counts[current]
+            ? `Os ${counts[current]} widget(s) desta tela também serão removidos. Não é possível desfazer.`
+            : 'Esta tela está vazia. Não é possível desfazer.'
+        }
+        confirmLabel='Remover tela'
+        onConfirm={() => onRemove(current)}
+      />
     </div>
   )
 }

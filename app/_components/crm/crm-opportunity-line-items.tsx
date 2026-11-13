@@ -1,9 +1,11 @@
 'use client'
 
 import { Add01Icon, Delete02Icon } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import * as React from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -37,9 +39,12 @@ export function CrmOpportunityLineItems({
   workspaceId,
   opportunityId,
   productOptions,
+  slug,
   onChanged,
 }: {
   workspaceId: string
+  /** Workspace slug, used to link to the products catalog when it is empty. */
+  slug?: string
   opportunityId: string
   productOptions: Option[]
   onChanged?: () => void
@@ -117,7 +122,13 @@ export function CrmOpportunityLineItems({
   return (
     <div className='flex flex-col gap-3'>
       <div className='flex items-center justify-between'>
-        <span className='font-medium text-sm'>Itens</span>
+        <div className='flex flex-col'>
+          <span className='font-medium text-sm'>Itens</span>
+          <span className='text-muted-foreground text-xs'>
+            O total dos itens é uma referência: o valor da oportunidade
+            continua sendo o campo Valor.
+          </span>
+        </div>
         <Button size='sm' variant='outline' onClick={handleAdd} disabled={busy}>
           <SteelIcon icon={Add01Icon} strokeWidth={2} className='size-4' />
           Adicionar
@@ -127,9 +138,21 @@ export function CrmOpportunityLineItems({
       {isLoading ? (
         <p className='text-muted-foreground text-sm'>Carregando…</p>
       ) : items.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>
-          Sem itens. O valor da oportunidade é editável manualmente.
-        </p>
+        <div className='flex flex-col gap-1 text-muted-foreground text-sm'>
+          <p>Sem itens. O valor da oportunidade é editável manualmente.</p>
+          {productOptions.length === 0 && slug ? (
+            <p>
+              Ainda não há produtos cadastrados.{' '}
+              <Link
+                href={`/${slug}/crm/products`}
+                className='text-foreground underline underline-offset-2'
+              >
+                Cadastre produtos
+              </Link>{' '}
+              para escolher itens do catálogo.
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div className='flex flex-col gap-2'>
           {items.map((item) => (
@@ -171,19 +194,26 @@ export function CrmOpportunityLineItems({
                     aria-label='Nome do item'
                   />
                 )}
-                <Button
-                  variant='ghost'
-                  size='icon-sm'
-                  onClick={() => handleDelete(item)}
-                  disabled={busy}
-                  aria-label='Remover item'
-                >
-                  <SteelIcon
-                    icon={Delete02Icon}
-                    strokeWidth={2}
-                    className='size-4'
-                  />
-                </Button>
+                <ConfirmAction
+                  trigger={
+                    <Button
+                      variant='ghost'
+                      size='icon-sm'
+                      disabled={busy}
+                      aria-label='Remover item'
+                    >
+                      <SteelIcon
+                        icon={Delete02Icon}
+                        strokeWidth={2}
+                        className='size-4'
+                      />
+                    </Button>
+                  }
+                  title='Remover este item?'
+                  description={`"${item.name}" sai da oportunidade. Não é possível desfazer.`}
+                  confirmLabel='Remover'
+                  onConfirm={() => handleDelete(item)}
+                />
               </div>
 
               <div className='flex items-center gap-2 text-sm'>

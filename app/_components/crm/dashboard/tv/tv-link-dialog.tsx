@@ -8,6 +8,7 @@ import {
 import * as React from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -72,15 +73,22 @@ function LinkRow({
           >
             <SteelIcon icon={Copy01Icon} strokeWidth={2} />
           </Button>
-          <Button
-            variant='ghost'
-            size='icon-sm'
-            className='text-muted-foreground hover:text-destructive'
-            aria-label={`Revogar link ${link.name}`}
-            onClick={() => onRevoke(link)}
-          >
-            <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-          </Button>
+          <ConfirmAction
+            trigger={
+              <Button
+                variant='ghost'
+                size='icon-sm'
+                className='text-muted-foreground hover:text-destructive'
+                aria-label={`Revogar link ${link.name}`}
+              >
+                <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+              </Button>
+            }
+            title={`Revogar o link "${link.name}"?`}
+            description='A TV que usa este link para de atualizar e deixa de exibir o painel. Não é possível desfazer.'
+            confirmLabel='Revogar'
+            onConfirm={() => onRevoke(link)}
+          />
         </div>
       </div>
       <Input

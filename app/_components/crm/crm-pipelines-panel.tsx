@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -42,7 +43,7 @@ export function CrmPipelinesPanel({ workspaceId }: { workspaceId: string }) {
   async function handleDelete(pipelineId: string) {
     try {
       await deletePipeline.mutateAsync(pipelineId)
-      notify.success('Pipeline removido')
+      notify.success('Funil removido')
       if (selectedId === pipelineId) setSelectedId(null)
     } catch (err) {
       notify.error(err)
@@ -60,7 +61,7 @@ export function CrmPipelinesPanel({ workspaceId }: { workspaceId: string }) {
         <div className='flex flex-col gap-1'>
           {!isLoading && pipelines?.length === 0 && (
             <p className='text-sm text-muted-foreground'>
-              Nenhum pipeline cadastrado
+              Nenhum funil cadastrado
             </p>
           )}
           {pipelines?.map((pipeline) => (
@@ -82,15 +83,23 @@ export function CrmPipelinesPanel({ workspaceId }: { workspaceId: string }) {
                 {pipeline.name}
               </button>
               {canDelete ? (
-                <Button
-                  variant='ghost'
-                  size='icon-xs'
-                  className='mr-2'
-                  aria-label={`Remover pipeline ${pipeline.name}`}
-                  onClick={() => handleDelete(pipeline.id)}
-                >
-                  <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                </Button>
+                <ConfirmAction
+                  trigger={
+                    <Button
+                      variant='ghost'
+                      size='icon-xs'
+                      className='mr-2'
+                      aria-label={`Remover funil ${pipeline.name}`}
+                    >
+                      <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                    </Button>
+                  }
+                  title={`Remover o funil "${pipeline.name}"?`}
+                  description='As etapas deste funil serão removidas e não será possível desfazer. Se houver leads ou oportunidades nele, a remoção pode ser recusada.'
+                  confirmLabel='Remover'
+                  pending={deletePipeline.isPending}
+                  onConfirm={() => handleDelete(pipeline.id)}
+                />
               ) : null}
             </div>
           ))}
@@ -104,7 +113,7 @@ export function CrmPipelinesPanel({ workspaceId }: { workspaceId: string }) {
           />
         ) : (
           <p className='text-sm text-muted-foreground'>
-            Selecione um pipeline para gerenciar as etapas
+            Selecione um funil para gerenciar as etapas
           </p>
         )}
       </div>
@@ -127,7 +136,7 @@ function CreateCrmPipelineDialog({ workspaceId }: { workspaceId: string }) {
     e.preventDefault()
     try {
       await createPipeline.mutateAsync({ name })
-      notify.success('Pipeline criado')
+      notify.success('Funil criado')
       handleClose()
     } catch (err) {
       notify.error(err)
@@ -143,7 +152,7 @@ function CreateCrmPipelineDialog({ workspaceId }: { workspaceId: string }) {
         render={
           <Button variant='default' size='xs'>
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
-            Novo pipeline
+            Novo funil
           </Button>
         }
       />
@@ -152,7 +161,7 @@ function CreateCrmPipelineDialog({ workspaceId }: { workspaceId: string }) {
           <FieldGroup>
             <Field>
               <Input
-                placeholder='Nome do pipeline'
+                placeholder='Nome do funil'
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -177,7 +186,7 @@ function CreateCrmPipelineDialog({ workspaceId }: { workspaceId: string }) {
               type='submit'
               disabled={createPipeline.isPending || !name}
             >
-              {createPipeline.isPending ? 'Criando...' : 'Criar pipeline'}
+              {createPipeline.isPending ? 'Criando...' : 'Criar funil'}
             </Button>
           </div>
         </form>
@@ -273,7 +282,7 @@ function CrmPipelineStageRow({
   onUpdate: ReturnType<typeof useUpdateCrmPipelineStage>
   canEdit: boolean
   /** Ausente = sem permissão de excluir (botão escondido). */
-  onDelete?: () => void
+  onDelete?: () => void | Promise<void>
 }) {
   const [editingField, setEditingField] = useState<
     'name' | 'probability' | null
@@ -350,20 +359,28 @@ function CrmPipelineStageRow({
             type='button'
             onClick={() => startEdit('probability')}
             disabled={!canEdit}
+            title='Chance de fechar o negócio quando ele chega a esta etapa. Usada na previsão de vendas.'
             className='rounded px-1.5 py-0.5 text-xs text-muted-foreground enabled:hover:bg-muted/50 disabled:cursor-default'
           >
             {stage.probability}%
           </button>
         )}
         {onDelete ? (
-          <Button
-            variant='ghost'
-            size='icon-xs'
-            aria-label={`Remover etapa ${stage.name}`}
-            onClick={onDelete}
-          >
-            <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-          </Button>
+          <ConfirmAction
+            trigger={
+              <Button
+                variant='ghost'
+                size='icon-xs'
+                aria-label={`Remover etapa ${stage.name}`}
+              >
+                <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+              </Button>
+            }
+            title={`Remover a etapa "${stage.name}"?`}
+            description='Leads e oportunidades que estiverem nesta etapa podem impedir a remoção. Não é possível desfazer.'
+            confirmLabel='Remover'
+            onConfirm={onDelete}
+          />
         ) : null}
       </div>
     </div>
