@@ -81,3 +81,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0062 | [Relatório de desempenho dos atendentes do zap, ligado por workspace pelo admin global](./0062-relatorio-de-desempenho-dos-atendentes-do-zap.md) | Aceita | 2026-11-06 |
 | 0063 | [Construtor de documentos no Steel Canvas, com a proposta como um tipo de documento](./0063-construtor-de-documentos-no-steel-canvas.md) | Aceita | 2026-11-11 |
 | 0064 | [Limite de gasto mensal por número do WhatsApp, com o gasto real lido da Meta](./0064-limite-de-gasto-por-numero-do-whatsapp-com-dados-da-meta.md) | Aceita | 2026-11-11 |
+| 0066 | [Cadastro único: vínculo opcional entre CRM, ServiceDesk e WhatsApp](./0066-cadastro-unico-entre-crm-servicedesk-e-whatsapp.md) | Aceita | 2026-11-13 |
