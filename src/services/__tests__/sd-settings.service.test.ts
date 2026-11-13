@@ -33,6 +33,7 @@ function settingsRow(overrides: Partial<SdSettings> = {}): SdSettings {
     defaultSlaPolicyId: null,
     whatsappConnectionId: null,
     whatsappSendAcknowledgement: true,
+    requesterWhatsappTemplates: {},
     portalEnabled: true,
     portalTicketTypes: ['INCIDENT', 'SERVICE_REQUEST'],
     portalCompanyScope: true,
@@ -122,6 +123,25 @@ describe('SdSettingsService.update', () => {
         targetId: 'ws1',
       }),
     )
+  })
+
+  it('saves the requester WhatsApp templates as one map', async () => {
+    const requesterWhatsappTemplates = {
+      'ticket.resolved': {
+        templateName: 'chamado_resolvido',
+        language: 'pt_BR',
+        variables: ['code' as const],
+      },
+    }
+    expectOk(
+      await SdSettingsService.update('u1', 'ws1', {
+        requesterWhatsappTemplates,
+      }),
+    )
+    expect(repo.update).toHaveBeenCalledWith('ws1', {
+      requesterWhatsappTemplates,
+      updatedById: 'u1',
+    })
   })
 
   it('syncs the default SLA policy and validates referenced ids', async () => {

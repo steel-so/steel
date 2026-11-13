@@ -14,6 +14,10 @@ import {
 import { sendSdTicketNotificationEmail } from '@/src/lib/mail/servicedesk/send-sd-ticket-notification'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
+  parseSdRequesterTemplates,
+  type SdRequesterTemplates,
+} from '@/src/lib/servicedesk/requester-whatsapp'
+import {
   type SdNotifyTicket,
   sdTicketNotificationHref,
 } from '@/src/lib/servicedesk/notify'
@@ -35,6 +39,7 @@ import type { SdNotificationPreferencesDTO } from '@/types/sd-notification'
 import { NotificationService } from './notification.service'
 import { SdAccess } from './sd-access'
 import { SdIntegrationDispatcher } from './sd-integration-dispatcher'
+import { SdRequesterWhatsapp } from './sd-requester-whatsapp.service'
 import { emitWebhookEvent } from './webhook-emitter'
 
 /**
@@ -160,10 +165,11 @@ async function resolveAudience(
   return ids
 }
 
-/** Conexão de WhatsApp do ServiceDesk ativa, se houver. */
-export async function activeWhatsappConnection(
-  workspaceId: string,
-): Promise<WhatsAppConnection | null> {
+/** Conexão ativa do ServiceDesk e a configuração lida junto, se houver. */
+async function activeWhatsappContext(workspaceId: string): Promise<{
+  connection: WhatsAppConnection
+  templates: SdRequesterTemplates
+} | null> {
   const settings = await SdTicketContextRepository.ensureSettings(workspaceId)
   if (!settings.ok || !settings.value.whatsappConnectionId) return null
   const connection = await WhatsAppConnectionRepository.findById(
@@ -172,13 +178,35 @@ export async function activeWhatsappConnection(
     'SERVICE_DESK',
   )
   if (!connection.ok || !connection.value) return null
-  return connection.value.status === 'CONNECTED' ? connection.value : null
+  if (connection.value.status !== 'CONNECTED') return null
+  return {
+    connection: connection.value,
+    templates: parseSdRequesterTemplates(
+      settings.value.requesterWhatsappTemplates,
+    ),
+  }
+}
+
+/** Conexão de WhatsApp do ServiceDesk ativa, se houver. */
+export async function activeWhatsappConnection(
+  workspaceId: string,
+): Promise<WhatsAppConnection | null> {
+  return (await activeWhatsappContext(workspaceId))?.connection ?? null
 }
 
 interface Delivery {
   inApp: string[]
   email: { userId: string | null; name: string; email: string }[]
-  whatsapp: { label: string; number: string }[]
+  whatsapp: {
+    label: string
+    number: string
+    /**
+     * Solicitante ou contato do chamado: vai pelo modelo aprovado, respeita
+     * a janela de 24 h e o descadastro. `textAllowed` = texto livre é um
+     * canal permitido (preferência ligada ou padrão do catálogo).
+     */
+    requester?: { textAllowed: boolean }
+  }[]
 }
 
 async function deliverInApp(
@@ -242,8 +270,8 @@ async function deliverWhatsapp(
   targets: Delivery['whatsapp'],
 ): Promise<number> {
   if (targets.length === 0) return 0
-  const connection = await activeWhatsappConnection(input.workspaceId)
-  if (!connection) {
+  const context = await activeWhatsappContext(input.workspaceId)
+  if (!context) {
     // Workspace sem conexão do ServiceDesk: silencia, sem erro.
     logger.info('servicedesk.notify.whatsapp_unavailable', {
       workspaceId: input.workspaceId,
@@ -252,9 +280,27 @@ async function deliverWhatsapp(
     })
     return 0
   }
+  const { connection, templates } = context
   const text = `*${input.ticket.code}* — ${input.payload.title}\n${input.payload.body}`
   let sent = 0
   for (const target of targets) {
+    if (target.requester) {
+      const outcome = await SdRequesterWhatsapp.deliver({
+        workspaceId: input.workspaceId,
+        connection,
+        templates,
+        event: input.event,
+        ticket: input.ticket,
+        payload: input.payload,
+        target: {
+          label: target.label,
+          number: target.number,
+          textAllowed: target.requester.textAllowed,
+        },
+      })
+      if (outcome === 'sent') sent += 1
+      continue
+    }
     const result = await WhatsAppSend.text(connection, {
       to: target.number,
       text,
@@ -415,7 +461,15 @@ export async function notifySdEvent(
         for (const user of recipients.value) {
           const raw = numbers.value.get(user.id)
           const number = normalizeSdWhatsappNumber(raw)
-          if (number) delivery.whatsapp.push({ label: user.name, number })
+          if (!number) continue
+          const isRequester =
+            user.id === input.ticket.requesterId ||
+            user.id === input.ticket.contact?.userId
+          delivery.whatsapp.push({
+            label: user.name,
+            number,
+            ...(isRequester && { requester: { textAllowed: true } }),
+          })
         }
       } else {
         logger.warn('servicedesk.notify.whatsapp_numbers_failed', {
@@ -441,11 +495,17 @@ export async function notifySdEvent(
           email: channels.value.email,
         })
       }
-      if (spec.defaultChannels.includes('WHATSAPP')) {
-        const number = normalizeSdWhatsappNumber(channels.value.whatsapp)
-        if (number) {
-          delivery.whatsapp.push({ label: externalContact.name, number })
-        }
+      // Sem texto livre por padrão: o contato só recebe WhatsApp se o admin
+      // configurou um modelo aprovado para o evento (ou o catálogo liga o canal).
+      const number = normalizeSdWhatsappNumber(channels.value.whatsapp)
+      if (number) {
+        delivery.whatsapp.push({
+          label: externalContact.name,
+          number,
+          requester: {
+            textAllowed: spec.defaultChannels.includes('WHATSAPP'),
+          },
+        })
       }
     } else if (!channels.ok) {
       logger.warn('servicedesk.notify.contact_channels_failed', {

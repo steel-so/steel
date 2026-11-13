@@ -1,4 +1,5 @@
 import type { SdSettings } from '@prisma/client'
+import { parseSdRequesterTemplates } from '@/src/lib/servicedesk/requester-whatsapp'
 import { SD_DEFAULT_TICKET_PREFIXES } from '@/src/schemas/sd-settings.schema'
 import type {
   SdPublicSettingsDTO,
@@ -34,6 +35,9 @@ export function toSdSettingsDTO(settings: SdSettings): SdSettingsDTO {
     defaultSlaPolicyId: settings.defaultSlaPolicyId,
     whatsappConnectionId: settings.whatsappConnectionId,
     whatsappSendAcknowledgement: settings.whatsappSendAcknowledgement,
+    requesterWhatsappTemplates: parseSdRequesterTemplates(
+      settings.requesterWhatsappTemplates,
+    ),
     portalEnabled: settings.portalEnabled,
     portalTicketTypes: settings.portalTicketTypes,
     portalCompanyScope: settings.portalCompanyScope,

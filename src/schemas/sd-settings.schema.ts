@@ -1,4 +1,8 @@
 import z from 'zod'
+import {
+  isSdRequesterEvent,
+  SD_REQUESTER_TEMPLATE_VARIABLES,
+} from '@/src/lib/servicedesk/requester-whatsapp'
 import { sdId } from './sd-config.schema'
 import { SdTicketTypeEnum } from './sd-rule.schema'
 
@@ -24,6 +28,24 @@ export const SdTicketPrefixesSchema = z.object({
 
 const keyword = z.string().trim().min(1).max(60)
 
+export const SdRequesterTemplateSchema = z.object({
+  templateName: z
+    .string()
+    .trim()
+    .min(1, 'Informe o nome do modelo')
+    .max(512)
+    .regex(/^[a-z0-9_]+$/, 'Use o nome do modelo exatamente como na Meta'),
+  language: z.string().trim().min(2).max(10),
+  variables: z.array(z.enum(SD_REQUESTER_TEMPLATE_VARIABLES)).max(10),
+})
+
+/** Evento do catálogo → modelo aprovado enviado ao solicitante. */
+export const SdRequesterTemplatesSchema = z
+  .record(z.string(), SdRequesterTemplateSchema)
+  .refine((map) => Object.keys(map).every(isSdRequesterEvent), {
+    message: 'Só eventos abertos ao cliente podem ter modelo',
+  })
+
 export const UpdateSdSettingsSchema = z
   .object({
     ticketPrefixes: SdTicketPrefixesSchema.partial().optional(),
@@ -31,6 +53,7 @@ export const UpdateSdSettingsSchema = z
     defaultSlaPolicyId: sdId.nullable().optional(),
     whatsappConnectionId: sdId.nullable().optional(),
     whatsappSendAcknowledgement: z.boolean().optional(),
+    requesterWhatsappTemplates: SdRequesterTemplatesSchema.optional(),
     portalEnabled: z.boolean().optional(),
     portalTicketTypes: z
       .array(SdTicketTypeEnum)

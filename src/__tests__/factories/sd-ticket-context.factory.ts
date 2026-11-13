@@ -61,6 +61,7 @@ export function createFakeSdSettings(
     defaultSlaPolicyId: null,
     whatsappConnectionId: null,
     whatsappSendAcknowledgement: true,
+    requesterWhatsappTemplates: {},
     portalEnabled: true,
     portalTicketTypes: ['INCIDENT', 'SERVICE_REQUEST'],
     portalCompanyScope: true,
