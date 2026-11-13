@@ -16,7 +16,7 @@ import { requestCeilingMs, thresholds } from './profiles.js';
 //
 //   k6 run k6/capacity-test.js                                  # breakpoint, 1,000 -> 6,000 VUs
 //   PROFILE=hold VUS=3000 HOLD=5m k6 run k6/capacity-test.js    # plateau
-//   BASE_URL=https://homologacao.stratustelecom.com.br SITE_SLUG=demo k6 run k6/capacity-test.js
+//   BASE_URL=https://steel.stratustelecom.com.br SITE_SLUG=demo k6 run k6/capacity-test.js
 //
 // Env:
 //   BASE_URL        target (default http://localhost:3001); the latency budget

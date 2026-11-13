@@ -190,7 +190,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ${{ vars.CI_RUNNER || 'avrea-ubuntu-26.04' }}
     env:
-      BASE_URL: https://homologacao.stratustelecom.com.br
+      BASE_URL: https://steel.stratustelecom.com.br
       # GitHub runners (US) -> homologação (BR): the body transfer of the
       # landing page alone costs several round trips (~850ms end-to-end with
       # ~40ms of server time). TTFB keeps the 500ms budget; the end-to-end
