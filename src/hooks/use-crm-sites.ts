@@ -11,6 +11,10 @@ import type {
   SiteVersionDTO,
 } from '@/types/site'
 import type { SiteChangesDTO, SiteMediaItemDTO } from '@/types/site-studio'
+import type {
+  MediaItem,
+  MediaProvider,
+} from '@/app/_components/media/media-types'
 import { ApiError, apiFetch, apiFetchJson, apiSend } from './_fetch'
 import { sitesApi } from './use-sites'
 
@@ -123,6 +127,29 @@ export const crmSitesKeys = {
   forms: (workspaceId: string) => ['crm-sites', workspaceId, 'forms'] as const,
   landingPages: (workspaceId: string) =>
     ['crm-sites', workspaceId, 'landing-pages'] as const,
+}
+
+function siteMediaItem(item: SiteMediaItemDTO): MediaItem {
+  return {
+    id: item.id,
+    url: item.url,
+    size: item.size,
+    uploadedAt: item.uploadedAt,
+    // Images of the old landing pages are read-only.
+    removable: item.source === 'site',
+  }
+}
+
+/** The sites' image library as a shared media provider. Its own query key
+ * (under `media`) so it never mixes with the Mídia panel's cache. */
+export function crmSitesMediaProvider(workspaceId: string): MediaProvider {
+  const api = crmSitesApi(workspaceId)
+  return {
+    key: [...crmSitesKeys.media(workspaceId), 'library'],
+    list: async () => (await api.media()).map(siteMediaItem),
+    upload: async (file) => siteMediaItem(await api.uploadMedia(file)),
+    remove: (item) => api.removeMedia(item.id),
+  }
 }
 
 /** Sites of the workspace (list page). */

@@ -28,6 +28,7 @@ import {
   CrmEmailBrandDTO,
   CrmEmailCampaignDTO,
   CrmEmailCampaignRecipientDTO,
+  CrmEmailImageDTO,
   CrmEmailLinkTargetsDTO,
   CrmEmailMessageDTO,
   CrmEmailOptOutDTO,
@@ -185,6 +186,23 @@ const builderRoutes: RouteConfig[] = [
       200: { description: 'Marca salva.', schema: CrmEmailBrandDTO },
     },
     errors: CRM_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/email-builder/images',
+    tags: TAGS,
+    summary: 'Listar imagens dos editores de e-mail e documento',
+    description: describe(
+      'Biblioteca de imagens já enviadas para os editores visuais de e-mail e de documento do workspace, das mais novas para as mais antigas (até 500).',
+      crmAccess('email', 'VIEW'),
+    ),
+    responses: {
+      200: { description: 'Imagens.', schema: z.array(CrmEmailImageDTO) },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      { code: 'STORAGE_ERROR', when: 'O armazenamento não respondeu' },
+    ],
   },
   {
     method: 'post',

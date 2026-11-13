@@ -52,6 +52,8 @@ export const emailImageSchema = z.object({
       'Imagem precisa de um endereço https://',
     ),
   alt: text(300),
+  /** Decorative image: an empty `alt` is intended. */
+  decorative: z.boolean().optional(),
 })
 export type EmailImage = z.infer<typeof emailImageSchema>
 

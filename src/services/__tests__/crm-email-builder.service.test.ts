@@ -32,6 +32,7 @@ vi.mock('@/src/lib/mail/client', () => ({
 }))
 vi.mock('@/src/services/media/crm-email-media.service', () => ({
   persistCrmEmailImage: vi.fn(),
+  listCrmEmailImages: vi.fn(),
 }))
 
 import { auditMutation } from '@/lib/axiom/audit'
@@ -40,7 +41,10 @@ import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.
 import { CrmEmailTemplateRepository } from '@/src/repositories/crm-email-template.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
-import { persistCrmEmailImage } from '@/src/services/media/crm-email-media.service'
+import {
+  listCrmEmailImages,
+  persistCrmEmailImage,
+} from '@/src/services/media/crm-email-media.service'
 import {
   buildBuilderTemplateContent,
   CrmEmailBuilderService,
@@ -55,6 +59,7 @@ const mockedBuilder = vi.mocked(CrmEmailBuilderRepository)
 const mockedSend = vi.mocked(sendEmail)
 const mockedAudit = vi.mocked(auditMutation)
 const mockedPersist = vi.mocked(persistCrmEmailImage)
+const mockedListImages = vi.mocked(listCrmEmailImages)
 
 function asRole(role: Role) {
   mockedMembership.findByUserAndWorkspace.mockResolvedValue(
@@ -640,6 +645,40 @@ describe('CrmEmailBuilderService', () => {
         await CrmEmailBuilderService.linkTargets('u1', 'ws1'),
         'DATABASE_ERROR',
       )
+    })
+  })
+
+  describe('listImages()', () => {
+    it('lists the workspace images for a VIEWER', async () => {
+      asRole('VIEWER')
+      const items = [
+        {
+          id: 'a.png',
+          url: 'https://cdn/ws1/a.png',
+          size: 3,
+          uploadedAt: null,
+        },
+      ]
+      mockedListImages.mockResolvedValueOnce(ok(items))
+      expect(
+        expectOk(await CrmEmailBuilderService.listImages('u1', 'ws1')),
+      ).toEqual(items)
+      expect(mockedListImages).toHaveBeenCalledWith('ws1')
+    })
+
+    it('propagates storage failures', async () => {
+      asRole('MEMBER')
+      mockedListImages.mockResolvedValueOnce(err(storageError('x')))
+      expectErr(
+        await CrmEmailBuilderService.listImages('u1', 'ws1'),
+        'STORAGE_ERROR',
+      )
+    })
+
+    it('denies a non-member', async () => {
+      mockedMembership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+      expectErr(await CrmEmailBuilderService.listImages('u1', 'ws1'))
+      expect(mockedListImages).not.toHaveBeenCalled()
     })
   })
 

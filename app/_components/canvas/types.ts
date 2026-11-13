@@ -3,6 +3,8 @@ import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
 import type { CanvasColorToken } from '@/src/lib/canvas/values'
+import type { MediaProvider } from '@/app/_components/media/media-types'
+import type { CanvasProps } from '@/src/lib/canvas/types'
 import type { CanvasCollaboration } from './collab/collab-context'
 
 /** A tab in the left sidebar. The shell always provides "Adicionar"
@@ -64,6 +66,14 @@ export interface CanvasEditorProps {
    * (`null` when it failed — the caller already told the user). Without it
    * image controls accept URLs only. */
   onUploadImage?: (file: File) => Promise<string | null>
+  /** The workspace's image library of this editor. Enables "Escolher da
+   * biblioteca" in every image control. Uploads still go through
+   * `onUploadImage` when given, else through `mediaProvider.upload`. */
+  mediaProvider?: MediaProvider
+  /** The catalog's image block. Enables dropping or pasting an image on the
+   * canvas: onto an image block it replaces the picture, elsewhere it adds
+   * a new block. */
+  imageBlock?: CanvasImageBlock
   /** Theme colors offered by color controls (`token:<id>`). */
   colorTokens?: CanvasColorToken[]
   /** Font families offered by the typography control (CSS `font-family`
@@ -76,4 +86,13 @@ export interface CanvasEditorProps {
   /** Key of the local draft kept while saving fails. Defaults to the page
    * address (path and query), which is unique per document. */
   draftKey?: string
+}
+
+/** How the editor builds and updates the catalog's image block. */
+export interface CanvasImageBlock {
+  /** Component type (`site.image`, `email.image`, `image`). */
+  type: string
+  /** Props that show `src`. `current` is the block being replaced, so its
+   * alt text, size and alignment survive. */
+  toProps: (src: string, current?: CanvasProps) => CanvasProps
 }

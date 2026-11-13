@@ -256,3 +256,18 @@ export const CrmEmailSenderOptionsDTO = dto(
     }),
   }),
 )
+
+export const CrmEmailImageDTO = dto(
+  'CrmEmailImage',
+  z.object({
+    id: z
+      .string()
+      .meta({ example: '3f0c8a52-5a1e-4c55-9d0a-0c9f2f1b7a10.webp' }),
+    url: z.string().meta({
+      example:
+        'https://media.example.com/crm-email-images/ws1/3f0c8a52-5a1e-4c55-9d0a-0c9f2f1b7a10.webp',
+    }),
+    size: z.number().int().meta({ example: 182_304 }),
+    uploadedAt: z.iso.datetime().nullable(),
+  }),
+)

@@ -14,7 +14,6 @@ import { CollabProvider, useCanvasCollaboration } from './collab/collab-context'
 import type { CollabSession } from './collab/session'
 import { CanvasDnd } from './dnd/canvas-dnd'
 import { DraftBanner } from './draft-banner'
-import { CanvasHint } from './empty-hint'
 import {
   CanvasEditorContextProvider,
   type CanvasEditorContextValue,
@@ -23,9 +22,9 @@ import {
   useCanvasEditor,
   useDragState,
 } from './editor-context'
+import { CanvasHint } from './empty-hint'
 import { CanvasStage } from './frame/canvas-stage'
 import { CanvasInspector } from './inspector/inspector'
-import { createDragStore } from './lib/drag-store'
 import {
   type CanvasDraft,
   clearDraft,
@@ -33,8 +32,10 @@ import {
   readDraft,
   writeDraft,
 } from './lib/draft-recovery'
+import { createDragStore } from './lib/drag-store'
 import { createFrameHandle } from './lib/frame-handle'
 import { historySkipMessage, opErrorMessage } from './lib/messages'
+import { useCanvasImageInput } from './lib/use-canvas-image-input'
 import { useCompactLayout } from './lib/use-compact-layout'
 import { CanvasSidebar } from './sidebar/sidebar'
 import { CanvasTopBar } from './top-bar'
@@ -166,6 +167,7 @@ function EditorLayout({
 }) {
   useCanvasShortcuts()
   useOpErrors()
+  const imageInput = useCanvasImageInput()
   const dragging = useDragState((state) => state.source !== null)
   const compact = useCompactLayout()
   const hasSelection = useCanvasStore((state) => state.selection.length > 0)
@@ -197,6 +199,16 @@ function EditorLayout({
           <CanvasSidebar compact={compact} />
           <main aria-label='Canvas' className='relative min-w-0 flex-1'>
             <CanvasStage />
+            {imageInput.over && (
+              <div
+                aria-hidden
+                className='pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-primary border-dashed bg-primary/5'
+              >
+                <span className='rounded-md bg-background px-3 py-1.5 font-medium text-sm shadow-sm'>
+                  Solte a imagem para usar aqui
+                </span>
+              </div>
+            )}
             <CanvasHint />
             {compact && !showInspector && (
               <button

@@ -14,8 +14,10 @@ import {
 import { usePublishChecks } from '@/app/_components/canvas/checklist/use-publish-checks'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
+import type { CanvasImageBlock } from '@/app/_components/canvas/types'
 import { DocumentExportButton } from '@/app/_components/documents/export/document-export-button'
 import { FocusedBackLink } from '@/app/_components/layout/focused-screen'
+import { useEmailMediaProvider } from '@/app/_components/media/use-email-media'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -72,11 +74,22 @@ import {
   DocumentPreviewDialog,
   SAMPLE_VARIABLES,
 } from './document-preview-dialog'
+import { documentMediaTab } from './document-media-tab'
 import { DocumentSettingsPanel } from './document-settings-panel'
 import { EDITOR_FONTS } from './editor-theme'
 
-/** "Variáveis" tab of the catalog (merge tags into the selected text). */
-const EXTRA_TABS = [documentVariablesTab()]
+/** "Variáveis" (merge tags into the selected text) and "Mídia" tabs. */
+const EXTRA_TABS = [documentVariablesTab(), documentMediaTab()]
+
+/** The document image block (drop or paste a picture on the canvas). */
+const DOCUMENT_IMAGE_BLOCK: CanvasImageBlock = {
+  type: 'image',
+  toProps: (src, current) => ({
+    src,
+    alt: typeof current?.alt === 'string' ? current.alt : '',
+    decorative: current?.decorative === true ? true : undefined,
+  }),
+}
 
 /** Row changes (settings, theme, title…) are saved this long after the
  * last one. */
@@ -466,6 +479,7 @@ function DocumentCanvasEditor({
     }
   }
 
+  const mediaProvider = useEmailMediaProvider(workspaceId)
   const onUploadImage = useCallback(
     async (file: File) => {
       try {
@@ -557,6 +571,8 @@ function DocumentCanvasEditor({
         documentSettings={() => <DocumentSettingsPanel />}
         onSave={onSave}
         onUploadImage={onUploadImage}
+        mediaProvider={mediaProvider}
+        imageBlock={DOCUMENT_IMAGE_BLOCK}
       />
       <AlertDialog open={conflict}>
         <AlertDialogContent>
