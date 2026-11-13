@@ -290,11 +290,11 @@
                     }
                   },
                   "phones": {
-                    "default": [],
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "company": {

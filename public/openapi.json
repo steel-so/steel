@@ -6580,11 +6580,11 @@
                     }
                   },
                   "phones": {
-                    "default": [],
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "company": {
@@ -31687,8 +31687,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "maxLength": 20
+                    "maxLength": 30,
+                    "pattern": "^[\\d\\s()+.-]+$"
                   }
                 }
               },
@@ -38645,8 +38645,7 @@
                             },
                             "email": {
                               "type": "string",
-                              "maxLength": 320,
-                              "format": "email"
+                              "maxLength": 320
                             },
                             "phone": {
                               "type": "string",
@@ -38660,11 +38659,6 @@
                               "default": "APPROVER",
                               "type": "string",
                               "enum": ["VIEWER", "APPROVER"]
-                            },
-                            "channel": {
-                              "default": "LINK",
-                              "type": "string",
-                              "enum": ["LINK", "EMAIL", "WHATSAPP"]
                             }
                           },
                           "required": ["name"]
@@ -38687,8 +38681,7 @@
                       },
                       "email": {
                         "type": "string",
-                        "maxLength": 320,
-                        "format": "email"
+                        "maxLength": 320
                       },
                       "phone": {
                         "type": "string",
@@ -38702,11 +38695,6 @@
                         "default": "APPROVER",
                         "type": "string",
                         "enum": ["VIEWER", "APPROVER"]
-                      },
-                      "channel": {
-                        "default": "LINK",
-                        "type": "string",
-                        "enum": ["LINK", "EMAIL", "WHATSAPP"]
                       }
                     },
                     "required": ["name"]
@@ -39018,7 +39006,6 @@
                 "type": "object",
                 "properties": {
                   "recipients": {
-                    "default": [],
                     "maxItems": 50,
                     "type": "array",
                     "items": {
@@ -39031,8 +39018,7 @@
                         },
                         "email": {
                           "type": "string",
-                          "maxLength": 320,
-                          "format": "email"
+                          "maxLength": 320
                         },
                         "phone": {
                           "type": "string",
@@ -39046,11 +39032,6 @@
                           "default": "APPROVER",
                           "type": "string",
                           "enum": ["VIEWER", "APPROVER"]
-                        },
-                        "channel": {
-                          "default": "LINK",
-                          "type": "string",
-                          "enum": ["LINK", "EMAIL", "WHATSAPP"]
                         }
                       },
                       "required": ["name"]
@@ -49012,11 +48993,11 @@
                     }
                   },
                   "phones": {
-                    "default": [],
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "company": {
@@ -49370,7 +49351,8 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "company": {
@@ -61730,11 +61712,11 @@
                     }
                   },
                   "phones": {
-                    "default": [],
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "city": {
@@ -62080,7 +62062,8 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 30
+                      "maxLength": 30,
+                      "pattern": "^[\\d\\s()+.-]+$"
                     }
                   },
                   "city": {
@@ -133060,7 +133043,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": ["provider", "label", "phoneNumber", "zapiInstanceId", "zapiToken"]
+                    "required": ["provider", "label", "zapiInstanceId", "zapiToken"]
                   },
                   {
                     "type": "object",
@@ -133096,14 +133079,7 @@
                         "maxLength": 4000
                       }
                     },
-                    "required": [
-                      "provider",
-                      "label",
-                      "phoneNumber",
-                      "metaPhoneNumberId",
-                      "metaWabaId",
-                      "metaAccessToken"
-                    ]
+                    "required": ["provider", "label", "metaPhoneNumberId", "metaWabaId", "metaAccessToken"]
                   }
                 ]
               }
@@ -141701,7 +141677,7 @@
                         "maxLength": 255
                       }
                     },
-                    "required": ["provider", "label", "phoneNumber", "zapiInstanceId", "zapiToken"]
+                    "required": ["provider", "label", "zapiInstanceId", "zapiToken"]
                   },
                   {
                     "type": "object",
@@ -141737,14 +141713,7 @@
                         "maxLength": 4000
                       }
                     },
-                    "required": [
-                      "provider",
-                      "label",
-                      "phoneNumber",
-                      "metaPhoneNumberId",
-                      "metaWabaId",
-                      "metaAccessToken"
-                    ]
+                    "required": ["provider", "label", "metaPhoneNumberId", "metaWabaId", "metaAccessToken"]
                   }
                 ]
               }
@@ -142813,8 +142782,7 @@
                       ]
                     }
                   }
-                },
-                "required": ["waId"]
+                }
               }
             }
           }
@@ -142894,8 +142862,7 @@
                     "minLength": 1,
                     "maxLength": 120
                   }
-                },
-                "required": ["waId"]
+                }
               }
             }
           }
@@ -150508,7 +150475,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": ["waId", "admin"]
+                "required": ["admin"]
               }
             }
           }
