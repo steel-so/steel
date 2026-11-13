@@ -21,6 +21,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { PhoneCallCard } from '@/app/_components/phone-calls/phone-call-card'
+import { CreateTicketFromSourceButton } from '@/app/_components/servicedesk/ticket-source/create-ticket-from-source-button'
+import { SdConversationTicketsBar } from '@/app/_components/servicedesk/ticket-source/sd-linked-tickets'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
@@ -934,6 +936,12 @@ export function WhatsappConversationView({
               ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
+          <CreateTicketFromSourceButton
+            workspaceId={workspaceId}
+            source='conversation'
+            sourceId={conversation.id}
+            iconOnly
+          />
           {canBlock || canUnblock ? (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -1042,6 +1050,11 @@ export function WhatsappConversationView({
       ) : null}
 
       <WhatsappPhoneCallBanner call={phoneCall.data} />
+
+      <SdConversationTicketsBar
+        workspaceId={workspaceId}
+        conversationId={conversation.id}
+      />
 
       <WhatsappAdReferralBanner
         workspaceId={workspaceId}

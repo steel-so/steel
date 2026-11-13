@@ -2570,6 +2570,7 @@ model CrmPerson {
   calendarEvents                CrmCalendarEvent[]
   proposalsAsContact            CrmProposal[]       @relation("CrmProposalContact")
   phoneCalls                    WhatsAppPhoneCall[]
+  sdTickets                     SdTicket[]
   newsletterSubscriptions       CrmNewsletterSubscriber[]
 
   @@index([workspaceId])
@@ -2716,6 +2717,7 @@ model CrmOpportunity {
   calendarEvents CrmCalendarEvent[]
   proposals      CrmProposal[]
   phoneCalls     WhatsAppPhoneCall[]
+  sdTickets      SdTicket[]
   pixCharges     WhatsAppPixCharge[]
   boletoCharges  WhatsAppBoletoCharge[]
   health         CrmOpportunityHealth?
@@ -2898,6 +2900,7 @@ model CrmLead {
   @@index([workspaceId, position])
   @@map("crm_leads")
   documents Document[]
+  sdTickets SdTicket[]
 }
 
 /// Tentativa (ou contato efetivo) registrada nas etapas 01/02 do painel de
@@ -6732,6 +6735,11 @@ model SdTicket {
   parentId                 String?         @map("parent_id")
   /// Conversa do WhatsApp vinculada (aba WhatsApp do chamado).
   whatsappConversationId   String?         @map("whatsapp_conversation_id")
+  /// CRM records the ticket was opened from (ticket-from-conversation): the
+  /// ticket shows them and their timeline lists the ticket back.
+  crmLeadId                String?         @map("crm_lead_id")
+  crmPersonId              String?         @map("crm_person_id")
+  crmOpportunityId         String?         @map("crm_opportunity_id")
   escalationLevel          Int             @default(0) @map("escalation_level")
   tags                     String[]        @default([])
   customFields             Json            @default("{}") @map("custom_fields")
@@ -6799,6 +6807,9 @@ model SdTicket {
   children               SdTicket[]              @relation("SdTicketTree")
   aiSuggestions          SdAiSuggestion[]
   whatsappConversation   WhatsAppConversation?   @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
+  crmLead                CrmLead?                @relation(fields: [crmLeadId], references: [id], onDelete: SetNull)
+  crmPerson              CrmPerson?              @relation(fields: [crmPersonId], references: [id], onDelete: SetNull)
+  crmOpportunity         CrmOpportunity?         @relation(fields: [crmOpportunityId], references: [id], onDelete: SetNull)
   slaPolicy              SdSlaPolicy?            @relation(fields: [slaPolicyId], references: [id], onDelete: SetNull)
   contract               SdContract?             @relation(fields: [contractId], references: [id], onDelete: SetNull)
   participants           SdTicketParticipant[]
@@ -6836,6 +6847,9 @@ model SdTicket {
   @@index([workspaceId, createdAt])
   @@index([parentId])
   @@index([whatsappConversationId])
+  @@index([crmLeadId])
+  @@index([crmPersonId])
+  @@index([crmOpportunityId])
   @@index([deletedAt])
   @@map("sd_tickets")
 }

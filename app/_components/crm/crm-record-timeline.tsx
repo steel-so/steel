@@ -9,9 +9,11 @@ import {
   MailRemove01Icon,
   PencilEdit02Icon,
   PlusSignIcon,
+  Ticket01Icon,
   WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { PhoneCallList } from '@/app/_components/phone-calls/phone-call-list'
+import { SdLinkedTicketsSection } from '@/app/_components/servicedesk/ticket-source/sd-linked-tickets'
 import { CrmOpportunityPixList } from '@/app/_components/whatsapp/pix/crm-opportunity-pix-list'
 import { SteelIcon } from '@/components/icon/icon'
 import { useCrmTimeline } from '@/src/hooks/use-crm-timeline'
@@ -27,6 +29,12 @@ const ACTION_META: Record<CrmActivityDTO['action'], ActionMeta> = {
     verb: 'atualizou',
   },
   DELETED: { icon: Delete02Icon, color: 'text-rose-600', verb: 'removeu' },
+  // A ServiceDesk ticket opened from this record (ticket-from-conversation).
+  SD_TICKET_CREATED: {
+    icon: Ticket01Icon,
+    color: 'text-primary',
+    verb: 'abriu um chamado',
+  },
   // Newsletter bridge (ADR 0054 phase 2): the person did it, not a member,
   // so the summary is shown on its own.
   NEWSLETTER_SUBSCRIBED: {
@@ -144,6 +152,13 @@ export function CrmRecordTimeline({
             personId: personId ?? call.crmPersonId,
             opportunityId: opportunityId ?? call.crmOpportunityId,
           })}
+        />
+      ) : null}
+      {opportunityId || personId ? (
+        <SdLinkedTicketsSection
+          workspaceId={workspaceId}
+          source={opportunityId ? 'opportunity' : 'person'}
+          sourceId={(opportunityId ?? personId) as string}
         />
       ) : null}
       {opportunityId ? (

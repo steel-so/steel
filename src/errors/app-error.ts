@@ -2585,3 +2585,11 @@ export const documentImportFailed = (message?: string): AppError =>
     'DOCUMENT_IMPORT_FAILED',
     message ?? 'A IA não conseguiu montar o documento. Tente de novo.',
   )
+
+export const sdTicketSourceNotFound = (
+  message = 'Não encontramos a conversa ou o registro de origem do chamado',
+): AppError => appError('SD_TICKET_SOURCE_NOT_FOUND', message)
+
+export const sdTicketSourceHasOpenTicket = (
+  message = 'Já existe um chamado em aberto para esta origem. Abra o chamado existente ou confirme para criar outro.',
+): AppError => appError('SD_TICKET_SOURCE_HAS_OPEN_TICKET', message)

@@ -543,3 +543,52 @@ describe('SdWhatsappRepository.listApprovedTemplates', () => {
     expect(rows.map((row) => row.name)).toEqual(['a_template', 'b_template'])
   })
 })
+
+describe('SdWhatsappRepository.findConversation (linked ticket)', () => {
+  it('also finds the Comunicação conversation linked to that ticket only', async () => {
+    const { workspace, user, phase } = await setup()
+    const zap = await seedConnection(workspace.id, user.id, 'COMMUNICATION')
+    const { conversation } = await seedConversation(workspace.id, zap.id)
+    const linked = await seedSdTicket(workspace.id, phase.id, {
+      whatsappConversationId: conversation.id,
+    })
+    const unrelated = await seedSdTicket(workspace.id, phase.id)
+
+    const found = expectOk(
+      await SdWhatsappRepository.findConversation(
+        workspace.id,
+        conversation.id,
+        linked.id,
+      ),
+    )
+    expect(found?.id).toBe(conversation.id)
+
+    // Without the ticket, or with a ticket the conversation is not linked to,
+    // the zap conversation stays out of reach.
+    for (const ticketId of [undefined, unrelated.id]) {
+      expect(
+        expectOk(
+          await SdWhatsappRepository.findConversation(
+            workspace.id,
+            conversation.id,
+            ticketId,
+          ),
+        ),
+      ).toBeNull()
+    }
+  })
+
+  it('still finds a ServiceDesk conversation when a ticket id is given', async () => {
+    const { workspace, connection, phase } = await setup()
+    const { conversation } = await seedConversation(workspace.id, connection.id)
+    const ticket = await seedSdTicket(workspace.id, phase.id)
+    const found = expectOk(
+      await SdWhatsappRepository.findConversation(
+        workspace.id,
+        conversation.id,
+        ticket.id,
+      ),
+    )
+    expect(found?.id).toBe(conversation.id)
+  })
+})

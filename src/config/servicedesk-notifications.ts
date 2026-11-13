@@ -75,6 +75,19 @@ export const SD_NOTIFICATION_EVENTS: SdNotificationEventSpec[] = [
     agentOnly: true,
   },
   {
+    // Customer-facing acknowledgement ("chamado criado"). The WhatsApp copy
+    // goes by an approved template configured per event (never free text
+    // unless the catalog default turns it on), see `sd-requester-whatsapp`.
+    key: 'ticket.created',
+    kind: 'SD_TICKET_CREATED',
+    label: 'Chamado criado',
+    description:
+      'Confirmação ao solicitante ou contato de que o chamado foi aberto, com o número para acompanhar.',
+    audience: ['requester', 'contact'],
+    channels: ALL,
+    defaultChannels: APP_MAIL,
+  },
+  {
     key: 'ticket.message',
     kind: 'SD_TICKET_MESSAGE',
     label: 'Nova mensagem no chamado',
@@ -440,6 +453,7 @@ export const SD_NOTIFICATION_GROUPS: SdNotificationGroup[] = [
     events: [
       'ticket.assigned',
       'ticket.created_in_department',
+      'ticket.created',
       'ticket.participant_added',
       'swarm.invited',
       'swarm.responded',

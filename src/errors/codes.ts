@@ -1659,6 +1659,14 @@ export const ERROR_CODES = {
     status: 422,
   },
   DOCUMENT_IMPORT_FAILED: { code: 'DOCUMENT_IMPORT_FAILED', status: 502 },
+
+  // ServiceDesk — ticket opened from a conversation / CRM record
+  SD_TICKET_SOURCE_NOT_FOUND: { code: 'SD_TICKET_SOURCE_NOT_FOUND', status: 404 },
+  // The source already has an open ticket; the caller must confirm.
+  SD_TICKET_SOURCE_HAS_OPEN_TICKET: {
+    code: 'SD_TICKET_SOURCE_HAS_OPEN_TICKET',
+    status: 409,
+  },
 } as const
 
 export type ErrorCode = keyof typeof ERROR_CODES
