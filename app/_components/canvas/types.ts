@@ -55,8 +55,11 @@ export interface CanvasEditorProps {
   actions?: (ctx: { store: CanvasStore }) => ReactNode
   /** Called debounced (1.5 s) while dirty, and on Ctrl+S. */
   onSave: (doc: CanvasDocument) => Promise<boolean>
-  /** Dark-mode preview toggle (e-mail). */
-  darkPreview?: boolean
+  /** Dark-mode preview toggle. `true` simulates a client that forces dark
+   * mode by inverting the page (e-mail); `'native'` only switches the
+   * frame to dark (`color-scheme`, `data-theme="dark"`, `.dark`) and lets
+   * the catalog's CSS answer. */
+  darkPreview?: boolean | 'native'
   /** Uploads a file picked in an image control and resolves its public URL
    * (`null` when it failed — the caller already told the user). Without it
    * image controls accept URLs only. */
@@ -70,4 +73,7 @@ export interface CanvasEditorProps {
    * room and who is editing. Without it — or while the realtime server is
    * unreachable — the editor saves through `onSave` only. */
   collaboration?: CanvasCollaboration
+  /** Key of the local draft kept while saving fails. Defaults to the page
+   * address (path and query), which is unique per document. */
+  draftKey?: string
 }

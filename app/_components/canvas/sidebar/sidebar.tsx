@@ -26,7 +26,7 @@ interface SidebarTab {
  * Left sidebar: a narrow rail of tabs (Adicionar, Camadas, Seções prontas
  * and the catalog's own tabs) and the active panel.
  */
-export function CanvasSidebar() {
+export function CanvasSidebar({ compact = false }: { compact?: boolean }) {
   const { catalog, props, store } = useCanvasEditor()
   const tabs: SidebarTab[] = [
     {
@@ -59,7 +59,11 @@ export function CanvasSidebar() {
     })
   }
   const [active, setActive] = useState('add')
+  // Below 1024 px the panel is a drawer over the canvas, closed until a tab
+  // is tapped (tapping the open tab closes it).
+  const [open, setOpen] = useState(false)
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0]
+  const panelVisible = !compact || open
 
   return (
     <aside
@@ -80,9 +84,16 @@ export function CanvasSidebar() {
               type='button'
               role='tab'
               id={`canvas-tab-${tab.id}`}
-              aria-selected={selected}
+              aria-selected={selected && panelVisible}
               aria-controls='canvas-sidebar-panel'
-              onClick={() => setActive(tab.id)}
+              onClick={() => {
+                if (compact && selected && open) {
+                  setOpen(false)
+                  return
+                }
+                setActive(tab.id)
+                setOpen(true)
+              }}
               className={cn(
                 'flex w-14 flex-col items-center gap-1 rounded-md px-1 py-1.5 text-[10px] leading-tight font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
                 selected &&
@@ -95,17 +106,23 @@ export function CanvasSidebar() {
           )
         })}
       </div>
-      <div
-        id='canvas-sidebar-panel'
-        role='tabpanel'
-        aria-labelledby={`canvas-tab-${current.id}`}
-        className='flex w-64 min-w-0 flex-col xl:w-72'
-      >
-        <h2 className='flex h-11 shrink-0 items-center border-b px-4 text-sm font-semibold'>
-          {current.label}
-        </h2>
-        {current.render()}
-      </div>
+      {panelVisible && (
+        <div
+          id='canvas-sidebar-panel'
+          role='tabpanel'
+          aria-labelledby={`canvas-tab-${current.id}`}
+          className={cn(
+            'flex w-64 min-w-0 flex-col xl:w-72',
+            compact &&
+              'absolute inset-y-0 left-16 z-30 w-72 border-r bg-background shadow-xl',
+          )}
+        >
+          <h2 className='flex h-11 shrink-0 items-center border-b px-4 text-sm font-semibold'>
+            {current.label}
+          </h2>
+          {current.render()}
+        </div>
+      )}
     </aside>
   )
 }
