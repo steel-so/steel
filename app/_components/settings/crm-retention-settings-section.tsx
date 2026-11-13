@@ -39,6 +39,7 @@ export function CrmRetentionSettingsSection({
 
   const [onDetractor, setOnDetractor] = useState(true)
   const [onHealthDrop, setOnHealthDrop] = useState(true)
+  const [onSlaBreach, setOnSlaBreach] = useState(false)
   const [createOpportunity, setCreateOpportunity] = useState(false)
   const [dueDays, setDueDays] = useState('2')
 
@@ -46,6 +47,7 @@ export function CrmRetentionSettingsSection({
     if (!settings) return
     setOnDetractor(settings.onDetractor)
     setOnHealthDrop(settings.onHealthDrop)
+    setOnSlaBreach(settings.onSlaBreach)
     setCreateOpportunity(settings.createOpportunity)
     setDueDays(String(settings.taskDueDays))
   }, [settings])
@@ -59,6 +61,7 @@ export function CrmRetentionSettingsSection({
     !!settings &&
     (onDetractor !== settings.onDetractor ||
       onHealthDrop !== settings.onHealthDrop ||
+      onSlaBreach !== settings.onSlaBreach ||
       createOpportunity !== settings.createOpportunity ||
       days !== settings.taskDueDays)
 
@@ -73,6 +76,7 @@ export function CrmRetentionSettingsSection({
       await update.mutateAsync({
         onDetractor,
         onHealthDrop,
+        onSlaBreach,
         createOpportunity,
         taskDueDays: days,
       })
@@ -116,6 +120,18 @@ export function CrmRetentionSettingsSection({
                 />
                 <FieldLabel htmlFor='crm-retention-health'>
                   Criar tarefa quando a saúde do cliente cair
+                </FieldLabel>
+              </Field>
+
+              <Field orientation='horizontal'>
+                <Switch
+                  id='crm-retention-sla'
+                  checked={onSlaBreach}
+                  onCheckedChange={(checked) => setOnSlaBreach(checked === true)}
+                  disabled={!isPrivileged}
+                />
+                <FieldLabel htmlFor='crm-retention-sla'>
+                  Criar tarefa quando um chamado do cliente estourar o SLA
                 </FieldLabel>
               </Field>
 
