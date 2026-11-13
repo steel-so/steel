@@ -16,6 +16,7 @@ import { crmForecastRoutes } from './crm/forecast'
 import { crmFormsRoutes } from './crm/forms'
 import { crmHealthRoutes } from './crm/health'
 import { crmHookVaultRoutes } from './crm/hook-vault'
+import { crmImportRoutes } from './crm/import'
 import { crmIntegrationsRoutes } from './crm/integrations'
 import { crmLeadsRoutes } from './crm/leads'
 import { crmNewsletterAutomationRoutes } from './crm/newsletter-automation'
@@ -62,6 +63,7 @@ const routes: RouteConfig[] = [
   ...crmForecastRoutes,
   ...crmFormsRoutes,
   ...crmHookVaultRoutes,
+  ...crmImportRoutes,
   ...crmIntegrationsRoutes,
   ...crmLeadsRoutes,
   ...crmOpportunitiesRoutes,

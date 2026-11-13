@@ -7,6 +7,7 @@ import {
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
@@ -130,6 +131,13 @@ export function CrmPeopleTable({
           isLoading={isLoading}
           searchPlaceholder='Buscar pessoas…'
           refetch={refetch}
+          headerExtra={
+            <CrmImportButton
+              workspaceId={workspaceId}
+              entity='people'
+              onImported={refetch}
+            />
+          }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-6'>
               <CrmPersonNewslettersCard
