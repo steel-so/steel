@@ -15,6 +15,8 @@ export const CreateWhatsAppBroadcastImportSchema = z.object({
   validateWhatsapp: z.boolean().optional(),
   /** Pula (SKIPPED_NO_WHATSAPP) quem a checagem marcou sem WhatsApp. */
   skipNoWhatsapp: z.boolean().optional(),
+  /** Only validates the file and returns a preview; nothing is created. */
+  dryRun: z.boolean().optional(),
 })
 
 export type CreateWhatsAppBroadcastImportDTO = z.infer<

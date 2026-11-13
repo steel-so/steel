@@ -1,7 +1,7 @@
 'use client'
 
 import { Add01Icon, Search01Icon } from '@hugeicons-pro/core-stroke-rounded'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, type ReactNode, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -195,6 +195,34 @@ export function WhatsappGroupSidebar({
     group.name.toLowerCase().includes(search.toLowerCase()),
   )
 
+  let emptyState: ReactNode = null
+  if (groups.isError) {
+    emptyState = (
+      <div className='space-y-2 px-3 py-6 text-center text-sm'>
+        <p className='text-destructive'>Não foi possível carregar os grupos.</p>
+        <Button size='sm' variant='outline' onClick={() => groups.refetch()}>
+          Tentar de novo
+        </Button>
+      </div>
+    )
+  } else if (filtered.length === 0 && !groups.isLoading) {
+    emptyState =
+      (groups.data ?? []).length === 0 ? (
+        <div className='space-y-2 px-3 py-6 text-center text-sm'>
+          <p className='font-medium'>Nenhum grupo ainda</p>
+          <p className='text-muted-foreground text-xs'>
+            Grupos só funcionam com um número conectado pela Z-API (a API
+            oficial da Meta não tem grupos). Conecte um número da Z-API em
+            Ajustes › Conexões ou crie um grupo no botão acima.
+          </p>
+        </div>
+      ) : (
+        <p className='px-3 py-6 text-center text-muted-foreground text-sm'>
+          Nenhum grupo encontrado para "{search}".
+        </p>
+      )
+  }
+
   return (
     <div className='flex h-full w-80 shrink-0 flex-col border-r'>
       <div className='flex items-center gap-2 p-3'>
@@ -214,11 +242,7 @@ export function WhatsappGroupSidebar({
         <CreateGroupDialog workspaceId={workspaceId} onCreated={onSelect} />
       </div>
       <div className='flex-1 overflow-y-auto'>
-        {filtered.length === 0 ? (
-          <p className='px-3 py-6 text-center text-muted-foreground text-sm'>
-            Nenhum grupo
-          </p>
-        ) : (
+        {emptyState ?? (
           filtered.map((group) => (
             <button
               key={group.id}

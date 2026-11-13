@@ -253,6 +253,184 @@ describe('WhatsAppBroadcastService', () => {
     })
   })
 
+  describe('cancel()', () => {
+    function asAdmin() {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+    }
+
+    it('should skip the pending recipients and close a running list', async () => {
+      asAdmin()
+      const running = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'RUNNING' },
+        2,
+      )
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(running))
+      mockedBroadcastRepo.cancelPendingRecipients.mockResolvedValue(ok(2))
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+
+      expectOk(await WhatsAppBroadcastService.cancel('u1', 'ws1', 'b1'))
+
+      expect(mockedBroadcastRepo.cancelPendingRecipients).toHaveBeenCalledWith(
+        'b1',
+      )
+      expect(mockedBroadcastRepo.updateStatus).toHaveBeenCalledWith(
+        'b1',
+        'DONE',
+      )
+    })
+
+    it('should refuse to cancel a draft', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'DRAFT' },
+            1,
+          ),
+        ),
+      )
+
+      expectErr(
+        await WhatsAppBroadcastService.cancel('u1', 'ws1', 'b1'),
+        'WHATSAPP_BROADCAST_LOCKED',
+      )
+    })
+
+    it('should return NOT_FOUND for an unknown list', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(null))
+      expectErr(
+        await WhatsAppBroadcastService.cancel('u1', 'ws1', 'x'),
+        'WHATSAPP_BROADCAST_NOT_FOUND',
+      )
+    })
+
+    it('should forbid a MEMBER', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      expectErr(
+        await WhatsAppBroadcastService.cancel('u1', 'ws1', 'b1'),
+        'FORBIDDEN',
+      )
+    })
+
+    it('should propagate repository failures', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'QUEUED' },
+            1,
+          ),
+        ),
+      )
+      mockedBroadcastRepo.cancelPendingRecipients.mockResolvedValue(
+        err(databaseError('x')),
+      )
+      expectErr(
+        await WhatsAppBroadcastService.cancel('u1', 'ws1', 'b1'),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
+  describe('retryFailed()', () => {
+    function asAdmin() {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'ADMIN' })),
+      )
+    }
+
+    it('should re-enqueue the failed recipients and mark the list RUNNING', async () => {
+      asAdmin()
+      addBulk.mockClear()
+      const done = createFakeWhatsAppBroadcastListWithRecipients(
+        { id: 'b1', status: 'DONE' },
+        2,
+      )
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(done))
+      mockedBroadcastRepo.resetFailedRecipients.mockResolvedValue(
+        ok(['r1', 'r2']),
+      )
+      mockedBroadcastRepo.updateStatus.mockResolvedValue(ok(undefined))
+
+      expectOk(await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'b1'))
+
+      const jobs = addBulk.mock.calls[0][0] as {
+        data: { recipientId: string }
+      }[]
+      expect(jobs.map((job) => job.data.recipientId)).toEqual(['r1', 'r2'])
+      expect(mockedBroadcastRepo.updateStatus).toHaveBeenCalledWith(
+        'b1',
+        'RUNNING',
+      )
+    })
+
+    it('should refuse while the list is still running', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'RUNNING' },
+            1,
+          ),
+        ),
+      )
+      expectErr(
+        await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'b1'),
+        'WHATSAPP_BROADCAST_LOCKED',
+      )
+    })
+
+    it('should fail when nothing failed', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'FAILED' },
+            1,
+          ),
+        ),
+      )
+      mockedBroadcastRepo.resetFailedRecipients.mockResolvedValue(ok([]))
+      expectErr(
+        await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'b1'),
+        'WHATSAPP_BROADCAST_NO_RECIPIENTS',
+      )
+    })
+
+    it('should return NOT_FOUND for an unknown list', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(ok(null))
+      expectErr(
+        await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'x'),
+        'WHATSAPP_BROADCAST_NOT_FOUND',
+      )
+    })
+
+    it('should propagate a failure resetting the recipients', async () => {
+      asAdmin()
+      mockedBroadcastRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppBroadcastListWithRecipients(
+            { id: 'b1', status: 'DONE' },
+            1,
+          ),
+        ),
+      )
+      mockedBroadcastRepo.resetFailedRecipients.mockResolvedValue(
+        err(databaseError('x')),
+      )
+      expectErr(
+        await WhatsAppBroadcastService.retryFailed('u1', 'ws1', 'b1'),
+        'DATABASE_ERROR',
+      )
+    })
+  })
+
   describe('start()', () => {
     it('should enqueue one staggered job per recipient and mark the list RUNNING', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(

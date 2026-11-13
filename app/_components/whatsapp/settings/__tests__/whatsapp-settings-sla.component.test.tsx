@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkspacePermissionsProvider } from '@/app/_components/workspace/workspace-permissions'
 import {
@@ -161,6 +161,11 @@ describe('<WhatsappSettingsSla />', () => {
     expect(ana.getAttribute('aria-pressed')).toBe('false')
 
     fireEvent.click(screen.getByRole('button', { name: /Remover/ }))
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
     await waitFor(() =>
       expect(
         fetchSpy.mock.calls.some(

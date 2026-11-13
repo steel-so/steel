@@ -44,8 +44,8 @@ describe('POST /api/workspaces/[id]/whatsapp/broadcasts/import', () => {
     )
     const csv = [
       'telefone,nome,data_referencia,var_1,var_2',
-      '11987654321,Maria,2026-08-15T09:00:00.000Z,Maria,15/08 às 09h',
-      '11912345678,João,2026-08-16T14:00:00.000Z,João,16/08 às 14h',
+      '11987654321,Maria,2099-08-15T09:00:00.000Z,Maria,15/08 às 09h',
+      '11912345678,João,2099-08-16T14:00:00.000Z,João,16/08 às 14h',
     ].join('\n')
 
     const res = await postJson(
@@ -75,6 +75,41 @@ describe('POST /api/workspaces/[id]/whatsapp/broadcasts/import', () => {
     expect(list?.recipients[0].scheduledAt).not.toBeNull()
   })
 
+  it('should only preview on a dry run and create nothing', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    const { connection, template } = await seedConnectionAndTemplate(
+      workspace.id,
+      user.id,
+    )
+    const csv = [
+      'telefone,nome,data_referencia,var_1,var_2',
+      '11987654321,Maria,15/08/2099 09:30,Maria,09h30',
+    ].join('\n')
+
+    const res = await postJson(
+      `/api/workspaces/${workspace.id}/whatsapp/broadcasts/import`,
+      {
+        name: 'Lembretes',
+        connectionId: connection.id,
+        templateId: template.id,
+        sendOffsetHours: 24,
+        csv,
+        dryRun: true,
+      },
+      user.cookie,
+    )
+
+    expect(res.status).toBe(201)
+    const body = await res.json()
+    expect(body.data.validCount).toBe(1)
+    expect(body.data.preview[0].scheduledAt).toBe('2099-08-14T12:30:00.000Z')
+    expect(
+      await prisma.whatsAppBroadcastList.count({
+        where: { workspaceId: workspace.id },
+      }),
+    ).toBe(0)
+  })
+
   it('should return 422 for an invalid payload', async () => {
     const { user, workspace } = await authenticatedOwner()
 
@@ -100,7 +135,7 @@ describe('POST /api/workspaces/[id]/whatsapp/broadcasts/import', () => {
         name: 'Lembretes',
         connectionId: connection.id,
         templateId: 'nonexistent',
-        csv: 'telefone,data_referencia,var_1\n11987654321,2026-08-15,Maria',
+        csv: 'telefone,data_referencia,var_1\n11987654321,2099-08-15,Maria',
       },
       user.cookie,
     )
@@ -116,8 +151,8 @@ describe('POST /api/workspaces/[id]/whatsapp/broadcasts/import', () => {
     )
     const csv = [
       'telefone,data_referencia,var_1,var_2',
-      '11987654321,2026-08-15T09:00:00.000Z,Maria,09h',
-      'telefone-invalido,2026-08-16T14:00:00.000Z,João,14h',
+      '11987654321,2099-08-15T09:00:00.000Z,Maria,09h',
+      'telefone-invalido,2099-08-16T14:00:00.000Z,João,14h',
     ].join('\n')
 
     const res = await postJson(

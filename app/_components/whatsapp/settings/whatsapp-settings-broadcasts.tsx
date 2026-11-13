@@ -7,6 +7,7 @@ import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -37,14 +38,18 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import {
+  useCancelWhatsAppBroadcast,
   useCreateWhatsAppBroadcast,
   useImportWhatsAppBroadcast,
+  useRetryFailedWhatsAppBroadcast,
   useStartWhatsAppBroadcast,
+  useWhatsAppBroadcast,
   useWhatsAppBroadcasts,
 } from '@/src/hooks/use-whatsapp-broadcasts'
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import { useWhatsAppContacts } from '@/src/hooks/use-whatsapp-contacts'
 import { useUploadWhatsAppMedia } from '@/src/hooks/use-whatsapp-media-upload'
+import { useWhatsAppSpendCaps } from '@/src/hooks/use-whatsapp-spend-caps'
 import { useWhatsAppTemplates } from '@/src/hooks/use-whatsapp-templates'
 import {
   BROADCAST_MEDIA_ACCEPT,
@@ -53,8 +58,15 @@ import {
   mediaKindFromMime,
   validateBroadcastMedia,
 } from '@/src/lib/whatsapp/broadcast-media'
+import { REFERENCE_PRICES } from '@/src/lib/whatsapp/cost'
 import { findTemplateFlowButton } from '@/src/lib/whatsapp/flows/template-button'
+import {
+  extractTemplateFillableFields,
+  parseMetaTemplateComponents,
+} from '@/src/lib/whatsapp/template-variables'
+import type { WhatsAppBroadcastListDTO } from '@/types/whatsapp-broadcast'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
+import { formatBrl } from '../costs/whatsapp-costs-format'
 import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
 import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
@@ -63,10 +75,41 @@ import { WhatsappSettingsMarketingLite } from './whatsapp-settings-marketing-lit
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Rascunho',
-  QUEUED: 'Na fila',
+  QUEUED: 'Agendada',
   RUNNING: 'Enviando',
   DONE: 'Concluída',
   FAILED: 'Falhou',
+}
+
+const BR_DATETIME = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: 'America/Sao_Paulo',
+  dateStyle: 'short',
+  timeStyle: 'short',
+})
+
+/** Spreadsheet model: header for the template's variables plus one example. */
+export function buildImportModelCsv(variableCount: number): string {
+  const vars = Array.from({ length: variableCount }, (_, i) => i + 1)
+  const header = ['telefone', 'nome', 'data_referencia', ...vars.map((n) => `var_${n}`)]
+  const example = [
+    '11999998888',
+    'Maria',
+    '15/12/2099 09:30',
+    ...vars.map((n) => `Exemplo ${n}`),
+  ]
+  return `${header.join(',')}\n${example.join(',')}\n`
+}
+
+function downloadModelCsv(variableCount: number) {
+  const blob = new Blob([`\uFEFF${buildImportModelCsv(variableCount)}`], {
+    type: 'text/csv;charset=utf-8',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'modelo-transmissao.csv'
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 /** Interruptor "Pular números sem WhatsApp" (só faz sentido com Z-API). */
@@ -117,8 +160,12 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(
     new Set(),
   )
+  const [contactQuery, setContactQuery] = useState('')
 
   const connections = useWhatsAppConnections(workspaceId)
+  const selectedConnection = (connections.data ?? []).find(
+    (connection) => connection.id === connectionId,
+  )
   const hasZapi = (connections.data ?? []).some(
     (connection) => connection.provider === 'ZAPI',
   )
@@ -160,6 +207,31 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const selectedEligibleCount = Array.from(selectedContactIds).filter(
     (id) => !optedOutIds.has(id),
   ).length
+
+  const normalizedQuery = contactQuery.trim().toLowerCase()
+  const visibleContacts = (contacts.data ?? []).filter(
+    (contact) =>
+      normalizedQuery === '' ||
+      contactRecordTitle(contact).toLowerCase().includes(normalizedQuery) ||
+      contact.waId.includes(normalizedQuery.replace(/\D/g, '') || '\0'),
+  )
+  const visibleEligibleIds = visibleContacts
+    .filter((contact) => !optedOutIds.has(contact.id))
+    .map((contact) => contact.id)
+  const allVisibleSelected =
+    visibleEligibleIds.length > 0 &&
+    visibleEligibleIds.every((id) => selectedContactIds.has(id))
+
+  function toggleAllVisible() {
+    setSelectedContactIds((prev) => {
+      const next = new Set(prev)
+      for (const id of visibleEligibleIds) {
+        if (allVisibleSelected) next.delete(id)
+        else next.add(id)
+      }
+      return next
+    })
+  }
 
   function toggleContact(contactId: string) {
     if (optedOutIds.has(contactId)) return
@@ -214,6 +286,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
           setSkipNoWhatsapp(false)
           setMedia(null)
           setSelectedContactIds(new Set())
+          setContactQuery('')
           setOpen(false)
         },
         onError: (error) => notify.error(error, 'Não foi possível criar'),
@@ -259,6 +332,16 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               </SelectContent>
             </Select>
           </div>
+
+          {selectedConnection?.provider === 'META' ? (
+            <p className='rounded-md border bg-muted/40 p-2.5 text-muted-foreground text-xs'>
+              Pela API oficial da Meta, texto livre só chega a quem falou com
+              você nas últimas 24 horas. Para os demais, o envio falha. Para
+              avisar quem está fora desse prazo, use{' '}
+              <strong>Importar planilha</strong> com um modelo (template)
+              aprovado.
+            </p>
+          ) : null}
 
           <div className='space-y-1.5'>
             <Label htmlFor='broadcastMessage'>Mensagem</Label>
@@ -315,8 +398,26 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
 
           <div className='space-y-1.5'>
             <Label>Contatos ({selectedEligibleCount} selecionados)</Label>
+            <div className='flex items-center gap-2'>
+              <Input
+                aria-label='Buscar contato'
+                placeholder='Buscar por nome ou número'
+                value={contactQuery}
+                onChange={(event) => setContactQuery(event.target.value)}
+              />
+              <Button
+                type='button'
+                size='sm'
+                variant='outline'
+                className='shrink-0'
+                disabled={visibleEligibleIds.length === 0}
+                onClick={toggleAllVisible}
+              >
+                {allVisibleSelected ? 'Limpar seleção' : 'Selecionar todos'}
+              </Button>
+            </div>
             <div className='max-h-48 space-y-1 overflow-y-auto rounded-md border p-2'>
-              {(contacts.data ?? []).map((contact) => {
+              {visibleContacts.map((contact) => {
                 const optedOut = optedOutIds.has(contact.id)
                 return (
                   <label
@@ -343,12 +444,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                       {contactRecordTitle(contact)}
                     </span>
                     {optedOut ? (
-                      <Badge
-                        variant='outline'
-                        className='border-amber-500/40 bg-amber-500/10 text-amber-700'
-                      >
-                        Descadastrado
-                      </Badge>
+                      <Badge variant='outline'>Descadastrado</Badge>
                     ) : contact.hasWhatsapp === false ? (
                       <Badge variant='destructive'>Sem WhatsApp</Badge>
                     ) : null}
@@ -360,6 +456,12 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                   Cadastre contatos antes de criar uma lista
                 </p>
               )}
+              {(contacts.data?.length ?? 0) > 0 &&
+                visibleContacts.length === 0 && (
+                  <p className='text-muted-foreground text-xs'>
+                    Nenhum contato encontrado para essa busca.
+                  </p>
+                )}
             </div>
           </div>
 
@@ -390,6 +492,11 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const [validateWhatsapp, setValidateWhatsapp] = useState(false)
   const [skipNoWhatsapp, setSkipNoWhatsapp] = useState(false)
   const [file, setFile] = useState<File | null>(null)
+  // Step 2: what the spreadsheet would schedule, before anything is created.
+  const [preview, setPreview] = useState<WhatsAppBroadcastImportResultDTO | null>(
+    null,
+  )
+  const [csvText, setCsvText] = useState('')
   const [result, setResult] = useState<WhatsAppBroadcastImportResultDTO | null>(
     null,
   )
@@ -407,6 +514,11 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const importHasZapi = (connections.data ?? []).some(
     (connection) => connection.provider === 'ZAPI',
   )
+  const variableCount = selectedTemplate
+    ? extractTemplateFillableFields(
+        parseMetaTemplateComponents(selectedTemplate.components),
+      ).body.variableCount
+    : 1
 
   function resetAndClose() {
     setValidateWhatsapp(false)
@@ -416,11 +528,26 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     setTemplateId(undefined)
     setSendOffsetHours(24)
     setFile(null)
+    setPreview(null)
+    setCsvText('')
     setResult(null)
     setOpen(false)
   }
 
-  async function handleSubmit(event: FormEvent) {
+  function payload(csv: string, dryRun: boolean) {
+    return {
+      name,
+      connectionId: connectionId as string,
+      templateId: templateId as string,
+      sendOffsetHours,
+      csv,
+      ...(dryRun ? { dryRun: true } : {}),
+      ...(validateWhatsapp ? { validateWhatsapp: true } : {}),
+      ...(skipNoWhatsapp ? { skipNoWhatsapp: true } : {}),
+    }
+  }
+
+  async function handleCheck(event: FormEvent) {
     event.preventDefault()
     if (!connectionId || !templateId || !file) {
       notify.error('Selecione a conexão, o template e o arquivo CSV')
@@ -428,21 +555,33 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     }
 
     const csv = await file.text()
-    importBroadcast.mutate(
-      {
-        name,
-        connectionId,
-        templateId,
-        sendOffsetHours,
-        csv,
-        ...(validateWhatsapp ? { validateWhatsapp: true } : {}),
-        ...(skipNoWhatsapp ? { skipNoWhatsapp: true } : {}),
+    setCsvText(csv)
+    importBroadcast.mutate(payload(csv, true), {
+      onSuccess: (data) => setPreview(data),
+      onError: (error) => notify.error(error, 'Não foi possível ler a planilha'),
+    })
+  }
+
+  function handleConfirm() {
+    importBroadcast.mutate(payload(csvText, false), {
+      onSuccess: (data) => {
+        setPreview(null)
+        setResult(data)
       },
-      {
-        onSuccess: (data) => setResult(data),
-        onError: (error) => notify.error(error, 'Não foi possível importar'),
-      },
-    )
+      onError: (error) => notify.error(error, 'Não foi possível importar'),
+    })
+  }
+
+  function rejectedList(rows: WhatsAppBroadcastImportResultDTO['rejectedRows']) {
+    return rows.length > 0 ? (
+      <div className='max-h-48 space-y-1 overflow-y-auto rounded-md border p-2 text-xs'>
+        {rows.map((row) => (
+          <p key={row.rowNumber} className='text-destructive'>
+            Linha {row.rowNumber}: {row.reason}
+          </p>
+        ))}
+      </div>
+    ) : null
   }
 
   return (
@@ -467,15 +606,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
             <p className='text-sm'>
               {result.createdCount} destinatário(s) agendado(s) com sucesso.
             </p>
-            {result.rejectedRows.length > 0 && (
-              <div className='max-h-48 space-y-1 overflow-y-auto rounded-md border p-2 text-xs'>
-                {result.rejectedRows.map((row) => (
-                  <p key={row.rowNumber} className='text-destructive'>
-                    Linha {row.rowNumber}: {row.reason}
-                  </p>
-                ))}
-              </div>
-            )}
+            {rejectedList(result.rejectedRows)}
             {result.validation ? (
               <WhatsappNumberValidationProgress
                 workspaceId={workspaceId}
@@ -492,14 +623,92 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               <Button onClick={resetAndClose}>Fechar</Button>
             </DialogFooter>
           </div>
+        ) : preview ? (
+          <div className='space-y-3'>
+            <p className='text-sm'>
+              {preview.validCount ?? 0} envio(s) serão agendados.
+              {(preview.rejectedRows.length ?? 0) > 0
+                ? ` ${preview.rejectedRows.length} linha(s) com problema ficam de fora.`
+                : ''}
+            </p>
+            {(preview.preview?.length ?? 0) > 0 ? (
+              <div className='overflow-x-auto rounded-md border'>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Linha</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Consulta/evento</TableHead>
+                      <TableHead>Envio</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.preview?.map((row) => (
+                      <TableRow key={row.rowNumber}>
+                        <TableCell>{row.rowNumber}</TableCell>
+                        <TableCell>
+                          {row.contactName ?? row.phone}
+                          {row.contactName ? (
+                            <span className='block text-muted-foreground text-xs'>
+                              {row.phone}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className='whitespace-nowrap text-xs'>
+                          {BR_DATETIME.format(new Date(row.appointmentAt))}
+                        </TableCell>
+                        <TableCell className='whitespace-nowrap text-xs'>
+                          {BR_DATETIME.format(new Date(row.scheduledAt))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : null}
+            <p className='text-muted-foreground text-xs'>
+              Mostrando as primeiras linhas. Horários no fuso de Brasília.
+            </p>
+            {rejectedList(preview.rejectedRows)}
+            <DialogFooter>
+              <Button
+                type='button'
+                variant='ghost'
+                disabled={importBroadcast.isPending}
+                onClick={() => setPreview(null)}
+              >
+                Voltar
+              </Button>
+              <Button
+                type='button'
+                disabled={
+                  importBroadcast.isPending || (preview.validCount ?? 0) === 0
+                }
+                onClick={handleConfirm}
+              >
+                {importBroadcast.isPending
+                  ? 'Agendando...'
+                  : `Confirmar e agendar ${preview.validCount ?? 0} envio(s)`}
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className='space-y-3'>
+          <form onSubmit={handleCheck} className='space-y-3'>
             <p className='text-muted-foreground text-xs'>
               Colunas obrigatórias: <code>telefone</code>,{' '}
               <code>data_referencia</code> e uma coluna <code>var_1</code>,{' '}
               <code>var_2</code>... para cada variável do BODY do template.
-              Coluna <code>nome</code> é opcional.
+              Coluna <code>nome</code> é opcional. Escreva a data como{' '}
+              <code>15/12/2026 09:30</code> (horário de Brasília).
             </p>
+            <Button
+              type='button'
+              size='xs'
+              variant='outline'
+              onClick={() => downloadModelCsv(variableCount)}
+            >
+              Baixar planilha modelo
+            </Button>
 
             <div className='space-y-1.5'>
               <Label htmlFor='importName'>Nome</Label>
@@ -640,10 +849,123 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
 
             <DialogFooter>
               <Button type='submit' disabled={importBroadcast.isPending}>
-                {importBroadcast.isPending ? 'Importando...' : 'Importar'}
+                {importBroadcast.isPending ? 'Lendo...' : 'Conferir planilha'}
               </Button>
             </DialogFooter>
           </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Start with a confirmation: recipients, estimated cost and cap balance. */
+function StartBroadcastButton({
+  workspaceId,
+  broadcast,
+}: {
+  workspaceId: string
+  broadcast: WhatsAppBroadcastListDTO
+}) {
+  const startBroadcast = useStartWhatsAppBroadcast(workspaceId)
+  const connections = useWhatsAppConnections(workspaceId)
+  const connection = (connections.data ?? []).find(
+    (item) => item.id === broadcast.connectionId,
+  )
+  const isMeta = connection?.provider === 'META'
+  const spendCaps = useWhatsAppSpendCaps(workspaceId, isMeta)
+  const cap = (spendCaps.data ?? []).find(
+    (row) => row.connectionId === broadcast.connectionId,
+  )
+
+  const recipients = broadcast.recipientCount
+  const parts = [
+    `A mensagem vai para ${recipients} contato(s)${connection ? ` pelo número "${connection.label}"` : ''}, com um intervalo de poucos segundos entre cada envio. Quem se descadastrou é ignorado.`,
+  ]
+  if (isMeta) {
+    const estimate = recipients * REFERENCE_PRICES.MARKETING
+    parts.push(
+      `Custo estimado: até ${formatBrl(estimate)} (tabela de referência da Meta; o valor real depende do tipo de mensagem e da janela de 24 horas).`,
+    )
+    if (cap?.monthlyCapAmount != null) {
+      const left = Math.max(cap.monthlyCapAmount - cap.spent, 0)
+      parts.push(
+        `Limite de gasto do número: restam ${formatBrl(left)} de ${formatBrl(cap.monthlyCapAmount)} neste mês.${cap.capMode === 'BLOCK' ? ' Se o limite acabar, os envios restantes são bloqueados.' : ''}`,
+      )
+    }
+  }
+  parts.push('Depois de iniciar, você ainda pode cancelar o que não foi enviado.')
+
+  return (
+    <ConfirmAction
+      trigger={
+        <Button size='xs' disabled={startBroadcast.isPending}>
+          Iniciar
+        </Button>
+      }
+      title={`Iniciar o envio de "${broadcast.name}"?`}
+      description={parts.join(' ')}
+      confirmLabel='Iniciar envio'
+      destructive={false}
+      pending={startBroadcast.isPending}
+      onConfirm={() =>
+        startBroadcast.mutateAsync(broadcast.id).then(
+          () => notify.success('Envio iniciado'),
+          (error) => notify.error(error, 'Não foi possível iniciar'),
+        )
+      }
+    />
+  )
+}
+
+function BroadcastFailuresDialog({
+  workspaceId,
+  broadcastId,
+  onClose,
+}: {
+  workspaceId: string
+  broadcastId: string
+  onClose: () => void
+}) {
+  const detail = useWhatsAppBroadcast(workspaceId, broadcastId)
+  const failed = (detail.data?.recipients ?? []).filter(
+    (recipient) => recipient.status === 'FAILED',
+  )
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className='max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>Envios que falharam</DialogTitle>
+        </DialogHeader>
+        {detail.isError ? (
+          <p className='text-destructive text-sm'>
+            Não foi possível carregar os destinatários. Feche e tente de novo.
+          </p>
+        ) : detail.isLoading ? (
+          <p className='text-muted-foreground text-sm'>Carregando...</p>
+        ) : failed.length === 0 ? (
+          <p className='text-muted-foreground text-sm'>
+            Nenhum envio falhou nesta lista.
+          </p>
+        ) : (
+          <ul className='max-h-80 space-y-2 overflow-y-auto text-sm'>
+            {failed.map((recipient) => (
+              <li key={recipient.id} className='rounded-md border p-2'>
+                <span className='font-medium'>
+                  {recipient.contactName ?? recipient.contactWaId}
+                </span>
+                {recipient.contactName ? (
+                  <span className='ml-2 text-muted-foreground text-xs'>
+                    {recipient.contactWaId}
+                  </span>
+                ) : null}
+                <p className='text-destructive text-xs'>
+                  {recipient.errorMessage ?? 'A Meta ou a Z-API recusou o envio.'}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </DialogContent>
     </Dialog>
@@ -656,12 +978,14 @@ export function WhatsappSettingsBroadcasts({
   workspaceId: string
 }) {
   const broadcasts = useWhatsAppBroadcasts(workspaceId)
-  const startBroadcast = useStartWhatsAppBroadcast(workspaceId)
+  const cancelBroadcast = useCancelWhatsAppBroadcast(workspaceId)
+  const retryFailed = useRetryFailedWhatsAppBroadcast(workspaceId)
   // Criar, importar e disparar transmissões é restrito a admins.
   const canManage = useCan('broadcasts', 'CREATE')
   const canValidate = useCan('contacts', 'EDIT')
   const [validatingId, setValidatingId] = useState<string | null>(null)
   const [metricsId, setMetricsId] = useState<string | null>(null)
+  const [failuresId, setFailuresId] = useState<string | null>(null)
 
   return (
     <div className='space-y-4'>
@@ -691,7 +1015,7 @@ export function WhatsappSettingsBroadcasts({
               <TableHead>Nome</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Progresso</TableHead>
-              <TableHead className='w-60' />
+              <TableHead className='w-72' />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -716,7 +1040,7 @@ export function WhatsappSettingsBroadcasts({
                     ? ` · ${broadcast.failedCount} falhas`
                     : ''}
                   {broadcast.skippedCount > 0
-                    ? ` · ${broadcast.skippedCount} descadastrados`
+                    ? ` · ${broadcast.skippedCount} ignorados`
                     : ''}
                   {broadcast.noWhatsappCount > 0
                     ? ` · ${broadcast.noWhatsappCount} sem WhatsApp`
@@ -724,8 +1048,13 @@ export function WhatsappSettingsBroadcasts({
                   {broadcast.skipNoWhatsapp ? (
                     <span className='block'>Pula números sem WhatsApp</span>
                   ) : null}
+                  {broadcast.failedCount > 0 && broadcast.failureReason ? (
+                    <span className='block text-destructive'>
+                      Motivo: {broadcast.failureReason}
+                    </span>
+                  ) : null}
                 </TableCell>
-                <TableCell className='space-x-1.5 whitespace-nowrap'>
+                <TableCell className='space-x-1.5'>
                   {canValidate &&
                   (broadcast.status === 'DRAFT' ||
                     broadcast.status === 'QUEUED') ? (
@@ -746,20 +1075,74 @@ export function WhatsappSettingsBroadcasts({
                       Métricas
                     </Button>
                   ) : null}
-                  {canManage && broadcast.status === 'DRAFT' && (
+                  {broadcast.failedCount > 0 ? (
                     <Button
                       size='xs'
-                      disabled={startBroadcast.isPending}
-                      onClick={() =>
-                        startBroadcast.mutate(broadcast.id, {
-                          onSuccess: () => notify.success('Envio iniciado'),
-                          onError: (error) =>
-                            notify.error(error, 'Não foi possível iniciar'),
-                        })
-                      }
+                      variant='outline'
+                      onClick={() => setFailuresId(broadcast.id)}
                     >
-                      Iniciar
+                      Ver falhas
                     </Button>
+                  ) : null}
+                  {canManage &&
+                  broadcast.failedCount > 0 &&
+                  (broadcast.status === 'DONE' ||
+                    broadcast.status === 'FAILED') ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          size='xs'
+                          variant='outline'
+                          disabled={retryFailed.isPending}
+                        >
+                          Reenviar falhos
+                        </Button>
+                      }
+                      title='Reenviar para quem falhou?'
+                      description={`${broadcast.failedCount} contato(s) vão receber a mensagem de novo. Confira o motivo em "Ver falhas" antes: se o problema continuar (ex.: janela de 24 horas ou limite de gasto), eles vão falhar outra vez.`}
+                      confirmLabel='Reenviar'
+                      destructive={false}
+                      pending={retryFailed.isPending}
+                      onConfirm={() =>
+                        retryFailed.mutateAsync(broadcast.id).then(
+                          () => notify.success('Reenvio iniciado'),
+                          (error) =>
+                            notify.error(error, 'Não foi possível reenviar'),
+                        )
+                      }
+                    />
+                  ) : null}
+                  {canManage &&
+                  (broadcast.status === 'QUEUED' ||
+                    broadcast.status === 'RUNNING') ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          size='xs'
+                          variant='outline'
+                          disabled={cancelBroadcast.isPending}
+                        >
+                          Cancelar envio
+                        </Button>
+                      }
+                      title={`Cancelar o envio de "${broadcast.name}"?`}
+                      description='O que ainda não foi enviado será descartado. As mensagens que já saíram não podem ser desfeitas.'
+                      confirmLabel='Cancelar envio'
+                      pending={cancelBroadcast.isPending}
+                      onConfirm={() =>
+                        cancelBroadcast.mutateAsync(broadcast.id).then(
+                          () => notify.success('Envio cancelado'),
+                          (error) =>
+                            notify.error(error, 'Não foi possível cancelar'),
+                        )
+                      }
+                    />
+                  ) : null}
+                  {canManage && broadcast.status === 'DRAFT' && (
+                    <StartBroadcastButton
+                      workspaceId={workspaceId}
+                      broadcast={broadcast}
+                    />
                   )}
                 </TableCell>
               </TableRow>
@@ -777,6 +1160,14 @@ export function WhatsappSettingsBroadcasts({
           </TableBody>
         </Table>
       </div>
+
+      {failuresId ? (
+        <BroadcastFailuresDialog
+          workspaceId={workspaceId}
+          broadcastId={failuresId}
+          onClose={() => setFailuresId(null)}
+        />
+      ) : null}
 
       {metricsId ? (
         <WhatsappBroadcastMarketingMetrics

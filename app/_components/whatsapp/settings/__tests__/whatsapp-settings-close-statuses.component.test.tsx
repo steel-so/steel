@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkspacePermissionsProvider } from '@/app/_components/workspace/workspace-permissions'
 import {
@@ -62,6 +62,11 @@ describe('<WhatsappSettingsCloseStatuses />', () => {
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Remover Venda realizada' }),
+    )
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
     )
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Status removido'),

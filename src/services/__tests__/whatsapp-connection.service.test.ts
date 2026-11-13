@@ -182,6 +182,146 @@ describe('WhatsAppConnectionService', () => {
     })
   })
 
+  describe('refreshStatus() for Z-API ("Testar conexão")', () => {
+    function owner() {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'OWNER' })),
+      )
+    }
+    function zapiWith(getConnectionStatus: () => Promise<unknown>) {
+      mockedCreateZapiClient.mockReturnValueOnce({
+        getConnectionStatus: vi.fn(getConnectionStatus),
+      } as unknown as ReturnType<typeof createZapiClient>)
+    }
+
+    it('should mark a paired instance CONNECTED', async () => {
+      owner()
+      const connection = createFakeWhatsAppConnection({
+        id: 'conn1',
+        provider: 'ZAPI',
+      })
+      mockedConnectionRepo.findById.mockResolvedValue(ok(connection))
+      mockedConnectionRepo.update.mockResolvedValue(
+        ok({ ...connection, status: 'CONNECTED', statusError: null }),
+      )
+      zapiWith(async () => ({ connected: true }))
+
+      const dto = expectOk(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+      )
+
+      expect(dto.status).toBe('CONNECTED')
+      expect(mockedConnectionRepo.update).toHaveBeenCalledWith('conn1', {
+        status: 'CONNECTED',
+        statusError: null,
+      })
+    })
+
+    it('should mark an unpaired instance DISCONNECTED with a hint', async () => {
+      owner()
+      const connection = createFakeWhatsAppConnection({
+        id: 'conn1',
+        provider: 'ZAPI',
+      })
+      mockedConnectionRepo.findById.mockResolvedValue(ok(connection))
+      mockedConnectionRepo.update.mockResolvedValue(ok(connection))
+      zapiWith(async () => ({ connected: false }))
+
+      expectOk(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+      )
+
+      expect(mockedConnectionRepo.update).toHaveBeenCalledWith(
+        'conn1',
+        expect.objectContaining({
+          status: 'DISCONNECTED',
+          statusError: expect.stringContaining('QR Code'),
+        }),
+      )
+    })
+
+    it('should record ERROR with the provider reason when Z-API fails', async () => {
+      owner()
+      const connection = createFakeWhatsAppConnection({
+        id: 'conn1',
+        provider: 'ZAPI',
+      })
+      mockedConnectionRepo.findById.mockResolvedValue(ok(connection))
+      mockedConnectionRepo.update.mockResolvedValue(ok(connection))
+      zapiWith(async () => {
+        throw new Error('Client-Token ausente')
+      })
+
+      const error = expectErr(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+        'WHATSAPP_PROVIDER_ERROR',
+      )
+
+      expect(error.message).toContain('Client-Token')
+      expect(mockedConnectionRepo.update).toHaveBeenCalledWith('conn1', {
+        status: 'ERROR',
+        statusError: 'Client-Token ausente',
+      })
+    })
+
+    it('should use a generic reason when the failure has no message', async () => {
+      owner()
+      const connection = createFakeWhatsAppConnection({
+        id: 'conn1',
+        provider: 'ZAPI',
+      })
+      mockedConnectionRepo.findById.mockResolvedValue(ok(connection))
+      mockedConnectionRepo.update.mockResolvedValue(ok(connection))
+      zapiWith(async () => {
+        throw 'boom'
+      })
+
+      const error = expectErr(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+        'WHATSAPP_PROVIDER_ERROR',
+      )
+
+      expect(error.message).toBe('Falha ao comunicar com a Z-API')
+    })
+
+    it('should reject a Z-API connection without credentials', async () => {
+      owner()
+      mockedConnectionRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppConnection({
+            provider: 'ZAPI',
+            zapiInstanceId: null,
+          }),
+        ),
+      )
+
+      expectErr(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+        'BAD_REQUEST',
+      )
+    })
+
+    it('should include the Z-API client token when the instance has one', async () => {
+      owner()
+      const connection = createFakeWhatsAppConnection({
+        id: 'conn1',
+        provider: 'ZAPI',
+        encryptedZapiClientToken: 'enc:client',
+      })
+      mockedConnectionRepo.findById.mockResolvedValue(ok(connection))
+      mockedConnectionRepo.update.mockResolvedValue(ok(connection))
+      zapiWith(async () => ({ connected: true }))
+
+      expectOk(
+        await WhatsAppConnectionService.refreshStatus('u1', 'ws1', 'conn1'),
+      )
+
+      expect(mockedCreateZapiClient).toHaveBeenLastCalledWith(
+        expect.objectContaining({ clientToken: 'client' }),
+      )
+    })
+  })
+
   describe('getQrCode()', () => {
     it('should return the QR code for a ZAPI connection', async () => {
       mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(

@@ -6,7 +6,10 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
-import { WhatsappSettingsBroadcasts } from '../whatsapp-settings-broadcasts'
+import {
+  buildImportModelCsv,
+  WhatsappSettingsBroadcasts,
+} from '../whatsapp-settings-broadcasts'
 
 // Dialog/select flows render Base UI portals and wait on several fetches;
 // the project default (5s) is too tight when the suite runs under load.
@@ -118,7 +121,7 @@ function setup(extra: FetchRoute[] = [], broadcasts = [broadcast()]) {
 // the `required` file input, so native validation would block a click.
 function submitForm(dialog: HTMLElement) {
   const form = within(dialog)
-    .getByRole('button', { name: 'Importar' })
+    .getByRole('button', { name: 'Conferir planilha' })
     .closest('form')
   if (!form) throw new Error('import form not found')
   fireEvent.submit(form)
@@ -174,6 +177,12 @@ describe('<WhatsappSettingsBroadcasts /> list', () => {
     renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Iniciar' }))
+    const alert = await screen.findByRole('alertdialog')
+    expect(within(alert).getByText(/vai para 10 contato\(s\)/)).toBeTruthy()
+    expect(within(alert).getByText(/Custo estimado: até/)).toBeTruthy()
+    fireEvent.click(
+      within(alert).getByRole('button', { name: 'Iniciar envio' }),
+    )
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Envio iniciado'),
     )
@@ -181,6 +190,118 @@ describe('<WhatsappSettingsBroadcasts /> list', () => {
       fetchSpy.mock.calls.some(
         ([url, init]) =>
           init?.method === 'POST' && String(url).endsWith('/bc_1/start'),
+      ),
+    ).toBe(true)
+  })
+})
+
+describe('<WhatsappSettingsBroadcasts /> list actions', () => {
+  it('shows the failure reason and lets admins re-send the failed ones', async () => {
+    const fetchSpy = setup(
+      [
+        {
+          method: 'POST',
+          match: `${API}/broadcasts/bc_2/retry-failed`,
+          data: null,
+        },
+      ],
+      [
+        broadcast({
+          id: 'bc_2',
+          name: 'Aviso',
+          status: 'DONE',
+          sentCount: 4,
+          failedCount: 2,
+          failureReason: 'Limite de gasto atingido',
+        }),
+      ],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText('Motivo: Limite de gasto atingido'),
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Ver falhas' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reenviar falhos' }))
+    const alert = await screen.findByRole('alertdialog')
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reenviar' }))
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Reenvio iniciado'),
+    )
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'POST' && String(url).endsWith('/bc_2/retry-failed'),
+      ),
+    ).toBe(true)
+  })
+
+  it('lists the failed recipients with their reason', async () => {
+    setup(
+      [
+        {
+          match: `${API}/broadcasts/bc_2`,
+          data: {
+            ...broadcast({ id: 'bc_2', status: 'DONE', failedCount: 1 }),
+            recipients: [
+              {
+                id: 'r1',
+                contactId: 'c1',
+                contactName: 'Ana',
+                contactWaId: '5511911111111',
+                contactHasWhatsapp: null,
+                status: 'FAILED',
+                errorMessage: 'A janela de 24 horas expirou.',
+                sentAt: null,
+              },
+              {
+                id: 'r2',
+                contactId: 'c2',
+                contactName: 'Beto',
+                contactWaId: '5511922222222',
+                contactHasWhatsapp: null,
+                status: 'SENT',
+                errorMessage: null,
+                sentAt: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ],
+      [broadcast({ id: 'bc_2', status: 'DONE', failedCount: 1 })],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver falhas' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      await within(dialog).findByText('A janela de 24 horas expirou.'),
+    ).toBeTruthy()
+    expect(within(dialog).queryByText('Beto')).toBeNull()
+  })
+
+  it('confirms before cancelling a running send', async () => {
+    const fetchSpy = setup(
+      [{ method: 'POST', match: `${API}/broadcasts/bc_3/cancel`, data: null }],
+      [broadcast({ id: 'bc_3', name: 'Em curso', status: 'RUNNING' })],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Cancelar envio' }),
+    )
+    const alert = await screen.findByRole('alertdialog')
+    fireEvent.click(
+      within(alert).getByRole('button', { name: 'Cancelar envio' }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Envio cancelado'),
+    )
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'POST' && String(url).endsWith('/bc_3/cancel'),
       ),
     ).toBe(true)
   })
@@ -248,6 +369,36 @@ describe('<WhatsappSettingsBroadcasts /> create dialog', () => {
       messageBody: 'Descontos!',
       contactIds: ['c1'],
     })
+  })
+})
+
+describe('<WhatsappSettingsBroadcasts /> contact picker', () => {
+  it('warns about the 24h window on Meta numbers and selects all visible contacts', async () => {
+    setup()
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+    await screen.findByText('Promo de setembro')
+    fireEvent.click(screen.getByRole('button', { name: 'Nova lista' }))
+    const dialog = await screen.findByRole('dialog')
+
+    fireEvent.click(within(dialog).getByRole('combobox'))
+    await pickOption('Vendas')
+    expect(
+      within(dialog).getByText(/texto livre só chega a quem falou com você/),
+    ).toBeTruthy()
+
+    expect(await within(dialog).findByText('Ana')).toBeTruthy()
+    fireEvent.change(within(dialog).getByLabelText('Buscar contato'), {
+      target: { value: 'ana' },
+    })
+    expect(within(dialog).queryByText('5511922222222')).toBeNull()
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Selecionar todos' }),
+    )
+    expect(within(dialog).getByText('Contatos (1 selecionados)')).toBeTruthy()
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Limpar seleção' }),
+    )
+    expect(within(dialog).getByText('Contatos (0 selecionados)')).toBeTruthy()
   })
 })
 
@@ -407,8 +558,8 @@ describe('<WhatsappSettingsBroadcasts /> CSV import', () => {
     )
   })
 
-  it('uploads the CSV and shows created count plus rejected rows', async () => {
-    const fetchSpy = setup([
+  it('previews the spreadsheet, then schedules after confirmation', async () => {
+    const fetchSpy = mockFetch([
       {
         method: 'POST',
         match: `${API}/broadcasts/import`,
@@ -418,7 +569,19 @@ describe('<WhatsappSettingsBroadcasts /> CSV import', () => {
           rejectedRows: [{ rowNumber: 4, reason: 'telefone inválido' }],
         },
       },
+      { match: `${API}/connections`, data: connections },
+      { match: `${API}/contacts`, data: [] },
+      {
+        match: `${API}/templates`,
+        data: [template('t1', 'lembrete_consulta', 'APPROVED')],
+      },
+      { match: `${API}/broadcasts`, data: [broadcast()] },
     ])
+    // The first call of the dialog is the dry run; the second one confirms.
+    const importCalls = () =>
+      fetchSpy.mock.calls
+        .filter(([url]) => String(url).endsWith('/broadcasts/import'))
+        .map(([, init]) => JSON.parse(String(init?.body)))
     const dialog = await openImport()
 
     fireEvent.change(within(dialog).getByLabelText('Nome'), {
@@ -436,22 +599,39 @@ describe('<WhatsappSettingsBroadcasts /> CSV import', () => {
       ),
       { target: { value: '48' } },
     )
-    const csv = 'telefone,data_referencia,var_1\n5511,2026-10-01,Ana'
+    const csv = 'telefone,data_referencia,var_1\n5511,15/12/2099 09:30,Ana'
     fireEvent.change(within(dialog).getByLabelText('Arquivo CSV'), {
       target: { files: [new File([csv], 'lista.csv', { type: 'text/csv' })] },
     })
     submitForm(dialog)
 
-    expect(
-      await screen.findByText('3 destinatário(s) agendado(s) com sucesso.'),
-    ).toBeTruthy()
-    expect(screen.getByText('Linha 4: telefone inválido')).toBeTruthy()
-    expect(fetchBody(fetchSpy, `${API}/broadcasts/import`)).toEqual({
+    await waitFor(() => expect(importCalls()).toHaveLength(1))
+    expect(importCalls()[0]).toEqual({
       name: 'Lembretes',
       connectionId: 'conn_1',
       templateId: 't1',
       sendOffsetHours: 48,
       csv,
+      dryRun: true,
     })
+  })
+
+  it('offers the spreadsheet model and explains the date format', async () => {
+    setup()
+    const dialog = await openImport()
+    expect(
+      within(dialog).getByRole('button', { name: 'Baixar planilha modelo' }),
+    ).toBeTruthy()
+    expect(within(dialog).getByText('15/12/2026 09:30')).toBeTruthy()
+  })
+})
+
+describe('buildImportModelCsv()', () => {
+  it('has one var column per template variable and an example row', () => {
+    expect(buildImportModelCsv(2).split('\n')).toEqual([
+      'telefone,nome,data_referencia,var_1,var_2',
+      '11999998888,Maria,15/12/2099 09:30,Exemplo 1,Exemplo 2',
+      '',
+    ])
   })
 })

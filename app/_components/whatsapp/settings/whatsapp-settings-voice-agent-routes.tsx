@@ -3,6 +3,7 @@
 import { type FormEvent, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -153,20 +154,29 @@ export function WhatsappSettingsVoiceAgentRoutes({
                       )
                     }
                   />
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    disabled={remove.isPending}
-                    onClick={() =>
-                      remove.mutate(route.id, {
-                        onError: (error) =>
-                          notify.error(error, 'Não foi possível remover'),
-                      })
+                  <ConfirmAction
+                    trigger={
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        disabled={remove.isPending}
+                      >
+                        Remover
+                      </Button>
                     }
-                  >
-                    Remover
-                  </Button>
+                    title='Remover esta rota?'
+                    description='O agente de voz deixa de usar esta rota para encaminhar chamadas.'
+                    confirmLabel='Remover'
+                    pending={remove.isPending}
+                    onConfirm={() =>
+                      remove.mutateAsync(route.id).then(
+                        () => undefined,
+                        (error) =>
+                          notify.error(error, 'Não foi possível remover'),
+                      )
+                    }
+                  />
                 </div>
               </li>
             ))}

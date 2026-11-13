@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   fetchBody,
@@ -471,6 +471,11 @@ describe('cost settings form', () => {
     await screen.findByText('Referência')
     fireEvent.click(
       screen.getByRole('button', { name: 'Excluir preço de Utilidade (BR)' }),
+    )
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Excluir',
+      }),
     )
     await waitFor(() =>
       expect(spy.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(

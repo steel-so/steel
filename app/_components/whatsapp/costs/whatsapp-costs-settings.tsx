@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -181,16 +182,23 @@ function PriceTable({ workspaceId }: { workspaceId: string }) {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='icon-sm'
-                        aria-label={`Excluir preço de ${CATEGORY_LABEL[row.category]} (${row.country})`}
-                        disabled={deletePrice.isPending}
-                        onClick={() => handleDelete(row.id)}
-                      >
-                        <SteelIcon icon={Delete02Icon} />
-                      </Button>
+                      <ConfirmAction
+                        trigger={
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            size='icon-sm'
+                            aria-label={`Excluir preço de ${CATEGORY_LABEL[row.category]} (${row.country})`}
+                            disabled={deletePrice.isPending}
+                          >
+                            <SteelIcon icon={Delete02Icon} />
+                          </Button>
+                        }
+                        title='Excluir este preço?'
+                        description='As estimativas de custo passam a usar o preço anterior desta categoria. Os envios já feitos guardam o valor da época.'
+                        pending={deletePrice.isPending}
+                        onConfirm={() => handleDelete(row.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -188,22 +189,29 @@ export function WhatsappSettingsCloseStatuses({
                   )
                 }
               />
-              <Button
-                type='button'
-                variant='ghost'
-                size='icon-sm'
-                aria-label={`Remover ${status.label}`}
-                disabled={archiveStatus.isPending}
-                onClick={() =>
-                  archiveStatus.mutate(status.id, {
-                    onSuccess: () => notify.success('Status removido'),
-                    onError: (error) =>
-                      notify.error(error, 'Não foi possível remover'),
-                  })
+              <ConfirmAction
+                trigger={
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label={`Remover ${status.label}`}
+                    disabled={archiveStatus.isPending}
+                  >
+                    <SteelIcon icon={Delete02Icon} size={14} />
+                  </Button>
                 }
-              >
-                <SteelIcon icon={Delete02Icon} size={14} />
-              </Button>
+                title={`Remover o status "${status.label}"?`}
+                description='Ele deixa de aparecer ao encerrar conversas. As conversas já encerradas com ele continuam como estão.'
+                confirmLabel='Remover'
+                pending={archiveStatus.isPending}
+                onConfirm={() =>
+                  archiveStatus.mutateAsync(status.id).then(
+                    () => notify.success('Status removido'),
+                    (error) => notify.error(error, 'Não foi possível remover'),
+                  )
+                }
+              />
             </li>
           ))
         )}

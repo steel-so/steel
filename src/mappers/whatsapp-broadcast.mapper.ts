@@ -8,6 +8,16 @@ import type {
   WhatsAppBroadcastRecipientDTO,
 } from '@/types/whatsapp-broadcast'
 
+/** The reason of the first failed recipient, to show on the list row. */
+function failureReason(
+  recipients: { status: string; errorMessage: string | null }[],
+): string | null {
+  return (
+    recipients.find((r) => r.status === 'FAILED' && r.errorMessage)
+      ?.errorMessage ?? null
+  )
+}
+
 export function toWhatsAppBroadcastListDTO(
   list: WhatsAppBroadcastListWithCounts,
 ): WhatsAppBroadcastListDTO {
@@ -31,6 +41,7 @@ export function toWhatsAppBroadcastListDTO(
       (r) => r.status === 'SKIPPED_NO_WHATSAPP',
     ).length,
     skipNoWhatsapp: list.skipNoWhatsapp,
+    failureReason: failureReason(list.recipients),
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString(),
   }
@@ -72,6 +83,7 @@ export function toWhatsAppBroadcastListDetailDTO(
       (r) => r.status === 'SKIPPED_NO_WHATSAPP',
     ).length,
     skipNoWhatsapp: list.skipNoWhatsapp,
+    failureReason: failureReason(recipients),
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString(),
     recipients,
