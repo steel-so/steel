@@ -39,13 +39,81 @@ export const CrmCampaignAudienceRepository = {
             })
           : []
         const byId = new Map(people.map((p) => [p.id, p]))
+
+        // Members are e-mail rows with no phone of their own. When there is no
+        // linked person, resolve the full CRM record by e-mail (person first,
+        // then lead) so the contact keeps its phone and is linked to it.
+        const unlinked = members.filter(
+          (m) => !(m.personId && byId.has(m.personId)),
+        )
+        const emailVariants = [
+          ...new Set(
+            unlinked.flatMap((m) => [m.email, m.email.trim().toLowerCase()]),
+          ),
+        ]
+        const [peopleByEmail, leadsByEmail] = emailVariants.length
+          ? await Promise.all([
+              prisma.crmPerson.findMany({
+                where: {
+                  workspaceId,
+                  deletedAt: null,
+                  emails: { hasSome: emailVariants },
+                },
+                select: { id: true, name: true, emails: true, phones: true },
+                orderBy: { createdAt: 'asc' },
+              }),
+              prisma.crmLead.findMany({
+                where: {
+                  workspaceId,
+                  deletedAt: null,
+                  emails: { hasSome: emailVariants },
+                },
+                select: {
+                  id: true,
+                  name: true,
+                  emails: true,
+                  phones: true,
+                  convertedPersonId: true,
+                },
+                orderBy: { createdAt: 'asc' },
+              }),
+            ])
+          : [[], []]
+        const personByEmail = new Map<string, (typeof peopleByEmail)[number]>()
+        for (const person of peopleByEmail) {
+          for (const email of person.emails) {
+            const key = email.trim().toLowerCase()
+            if (!personByEmail.has(key)) personByEmail.set(key, person)
+          }
+        }
+        const leadByEmail = new Map<string, (typeof leadsByEmail)[number]>()
+        for (const lead of leadsByEmail) {
+          for (const email of lead.emails) {
+            const key = email.trim().toLowerCase()
+            if (!leadByEmail.has(key)) leadByEmail.set(key, lead)
+          }
+        }
+
         for (const member of members) {
-          const person = member.personId ? byId.get(member.personId) : undefined
+          const linked = member.personId ? byId.get(member.personId) : undefined
+          if (linked) {
+            candidates.push({
+              personId: linked.id,
+              name: linked.name ?? member.name ?? member.email,
+              email: member.email,
+              phone: linked.phones[0] ?? null,
+            })
+            continue
+          }
+          const key = member.email.trim().toLowerCase()
+          const person = personByEmail.get(key)
+          const lead = leadByEmail.get(key)
           candidates.push({
-            personId: person?.id ?? null,
-            name: person?.name ?? member.name ?? member.email,
+            personId: person?.id ?? lead?.convertedPersonId ?? null,
+            leadId: lead?.id ?? null,
+            name: member.name ?? person?.name ?? lead?.name ?? member.email,
             email: member.email,
-            phone: person?.phones[0] ?? null,
+            phone: person?.phones[0] ?? lead?.phones[0] ?? null,
           })
         }
       }
