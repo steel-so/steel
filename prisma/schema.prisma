@@ -1292,10 +1292,14 @@ model WhatsAppContact {
   whatsappCheckedAt     DateTime?             @map("whatsapp_checked_at")
   /// Identificador privado (LID) devolvido pela Z-API na checagem.
   whatsappLid           String?               @map("whatsapp_lid")
+  /// Cadastro único (ADR 0066): pessoa do CRM que é este contato. Opcional;
+  /// sem vínculo, o casamento por telefone continua valendo como reserva.
+  crmPersonId           String?               @map("crm_person_id")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
   workspace            Workspace                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmPerson            CrmPerson?                    @relation("WhatsAppContactCrmPerson", fields: [crmPersonId], references: [id], onDelete: SetNull)
   conversations        WhatsAppConversation[]
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
@@ -1308,6 +1312,7 @@ model WhatsAppContact {
   @@unique([workspaceId, waId])
   @@unique([workspaceId, bsuid])
   @@index([workspaceId])
+  @@index([crmPersonId])
   @@map("whatsapp_contacts")
 }
 
@@ -2526,6 +2531,8 @@ model CrmCompany {
   enrichment    CrmCompanyEnrichment?
   health        CrmCustomerHealth?
   contracts     CrmContract[]
+  // cadastro-unico (ADR 0066): ServiceDesk customers linked to this company
+  sdCustomers   SdCustomer[]  @relation("SdCustomerCrmCompany")
 
   @@unique([workspaceId, domain])
   @@unique([workspaceId, cnpj])
@@ -2571,6 +2578,9 @@ model CrmPerson {
   proposalsAsContact            CrmProposal[]       @relation("CrmProposalContact")
   phoneCalls                    WhatsAppPhoneCall[]
   newsletterSubscriptions       CrmNewsletterSubscriber[]
+  // cadastro-unico (ADR 0066)
+  sdContacts                    SdContact[]         @relation("SdContactCrmPerson")
+  whatsappContacts              WhatsAppContact[]   @relation("WhatsAppContactCrmPerson")
 
   @@index([workspaceId])
   @@index([companyId])
@@ -6139,12 +6149,16 @@ model SdCustomer {
   notes        String?
   customFields Json           @default("{}") @map("custom_fields")
   active       Boolean        @default(true)
+  /// Cadastro único (ADR 0066): empresa do CRM que é este cliente. Opcional;
+  /// sem vínculo, o casamento por CNPJ/nome continua valendo como reserva.
+  crmCompanyId String?        @map("crm_company_id")
   createdById  String         @map("created_by_id")
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   deletedAt    DateTime?      @map("deleted_at")
 
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmCompany       CrmCompany?         @relation("SdCustomerCrmCompany", fields: [crmCompanyId], references: [id], onDelete: SetNull)
   createdBy        User                @relation("SdCustomerCreatedBy", fields: [createdById], references: [id])
   contacts         SdContactCustomer[]
   ticketsAsClient  SdTicket[]          @relation("SdTicketCustomer")
@@ -6155,6 +6169,7 @@ model SdCustomer {
 
   @@index([workspaceId, kind])
   @@index([workspaceId, document])
+  @@index([crmCompanyId])
   @@index([deletedAt])
   @@map("sd_customers")
 }
@@ -6170,6 +6185,8 @@ model SdContact {
   whatsapp     String?
   /// Usuário da plataforma que é este contato (chat interno / portal).
   userId       String?   @map("user_id")
+  /// Cadastro único (ADR 0066): pessoa do CRM que é este contato.
+  crmPersonId  String?   @map("crm_person_id")
   notes        String?
   customFields Json      @default("{}") @map("custom_fields")
   active       Boolean   @default(true)
@@ -6179,6 +6196,7 @@ model SdContact {
   deletedAt    DateTime? @map("deleted_at")
 
   workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmPerson      CrmPerson?          @relation("SdContactCrmPerson", fields: [crmPersonId], references: [id], onDelete: SetNull)
   user           User?               @relation("SdContactUser", fields: [userId], references: [id], onDelete: SetNull)
   createdBy      User                @relation("SdContactCreatedBy", fields: [createdById], references: [id])
   customers      SdContactCustomer[]
@@ -6190,6 +6208,7 @@ model SdContact {
   @@index([workspaceId, email])
   @@index([workspaceId, whatsapp])
   @@index([userId])
+  @@index([crmPersonId])
   @@index([deletedAt])
   @@map("sd_contacts")
 }
