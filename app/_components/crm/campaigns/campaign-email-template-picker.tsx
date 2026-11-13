@@ -23,6 +23,7 @@ import {
 } from '@/src/lib/crm-email-builder/variables'
 import type { CrmCampaignOptionsDTO } from '@/types/crm-campaign'
 import type { CrmEmailTemplateDTO } from '@/types/crm-email-marketing'
+import { CreateCallout } from './campaign-create-callout'
 
 type TemplateOption = CrmCampaignOptionsDTO['emailTemplates'][number]
 
@@ -138,6 +139,19 @@ export function EmailTemplatePicker({
       template.subject.toLowerCase().includes(needle),
   )
   const selected = templates.find((template) => template.id === value)
+
+  if (templates.length === 0) {
+    return (
+      <CreateCallout
+        title='Você ainda não tem um e-mail pronto'
+        description='O template é o visual do e-mail: textos, imagens e botão. Monte o seu no editor, a partir de um modelo, e ele volta já escolhido nesta campanha.'
+      >
+        <Button type='button' onClick={onCreate}>
+          <SteelIcon icon={Add01Icon} /> Criar meu primeiro e-mail
+        </Button>
+      </CreateCallout>
+    )
+  }
 
   return (
     <div className='flex min-w-0 flex-col gap-3'>

@@ -31,6 +31,7 @@ import {
 } from './campaign-labels'
 import { EmailPreview } from './campaign-previews'
 import {
+  AdvancedOptions,
   campaignLinks,
   destinationUrlOf,
   EmailChecklistList,
@@ -43,7 +44,7 @@ export function destinationLabel(
   options: CrmCampaignOptionsDTO,
   campaign: CrmCampaignDetailDTO,
 ): string {
-  if (!draft.destinationType) return '—'
+  if (!draft.destinationType) return 'Sem link: a campanha é só um aviso'
   let name: string | undefined
   if (draft.destinationType === 'SITE_PAGE') {
     const site = options.sites.find((item) => item.id === draft.siteId)
@@ -176,7 +177,7 @@ export function ReviewStep({
   }
 
   const summary = [
-    { label: 'Destino', value: destinationLabel(draft, options, campaign) },
+    { label: 'Link', value: destinationLabel(draft, options, campaign) },
     {
       label: 'E-mail',
       value: draft.emailSubject
@@ -197,16 +198,22 @@ export function ReviewStep({
     {
       label: 'Base legal',
       value:
-        [
-          draft.emailLegalBasis
-            ? `E-mail: ${LEGAL_BASIS_LABEL[draft.emailLegalBasis]}`
-            : null,
-          draft.whatsappEnabled && draft.whatsappLegalBasis
-            ? `WhatsApp: ${LEGAL_BASIS_LABEL[draft.whatsappLegalBasis]}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · ') || '—',
+        // One line when both channels share it (the usual case).
+        (draft.emailLegalBasis &&
+        (!draft.whatsappEnabled ||
+          !draft.whatsappLegalBasis ||
+          draft.whatsappLegalBasis === draft.emailLegalBasis)
+          ? LEGAL_BASIS_LABEL[draft.emailLegalBasis]
+          : [
+              draft.emailLegalBasis
+                ? `E-mail: ${LEGAL_BASIS_LABEL[draft.emailLegalBasis]}`
+                : null,
+              draft.whatsappEnabled && draft.whatsappLegalBasis
+                ? `WhatsApp: ${LEGAL_BASIS_LABEL[draft.whatsappLegalBasis]}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')) || '—',
     },
   ]
 
@@ -224,7 +231,7 @@ export function ReviewStep({
                     <Badge variant='outline'>{row.badge}</Badge>
                   ) : null}
                 </dd>
-                {row.label === 'Destino' && destinationUrl ? (
+                {row.label === 'Link' && destinationUrl ? (
                   <a
                     href={destinationUrl}
                     target='_blank'
@@ -369,7 +376,7 @@ export function ReviewStep({
             </div>
           ) : null}
 
-          <div className='flex flex-col gap-3 rounded-xl border p-4'>
+          <AdvancedOptions label='Opções avançadas de envio'>
             <Label className='flex items-center justify-between gap-4 font-normal'>
               <span>
                 <span className='block font-medium'>Janela de envio</span>
@@ -447,7 +454,7 @@ export function ReviewStep({
                 </Label>
               </div>
             ) : null}
-          </div>
+          </AdvancedOptions>
         </div>
       </div>
     </div>

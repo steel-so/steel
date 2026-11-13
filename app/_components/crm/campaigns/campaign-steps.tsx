@@ -1,6 +1,7 @@
 'use client'
 
 import { Copy01Icon } from '@hugeicons-pro/core-stroke-rounded'
+import type { ReactNode } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -95,6 +96,27 @@ export function CopyLinkRow({ label, url }: { label: string; url: string }) {
   )
 }
 
+/**
+ * What most campaigns never touch, folded away. A native `<details>`: it
+ * opens without state and keeps its fields in the form.
+ */
+export function AdvancedOptions({
+  label = 'Opções avançadas',
+  children,
+}: {
+  label?: string
+  children: ReactNode
+}) {
+  return (
+    <details className='group rounded-xl border'>
+      <summary className='cursor-pointer select-none px-4 py-3 font-medium text-muted-foreground text-sm hover:text-foreground'>
+        {label}
+      </summary>
+      <div className='flex flex-col gap-4 border-t p-4'>{children}</div>
+    </details>
+  )
+}
+
 /** The e-mail checklist of the chosen template (errors block the launch). */
 export function EmailChecklistList({
   items,
@@ -184,16 +206,6 @@ export function ContentStep({
             />
           </div>
           <div className='flex flex-col gap-2'>
-            <Label htmlFor='email-preheader'>Pré-cabeçalho</Label>
-            <Input
-              id='email-preheader'
-              value={draft.emailPreheader ?? ''}
-              maxLength={200}
-              onChange={(e) => onChange({ emailPreheader: e.target.value })}
-              placeholder='Aparece ao lado do assunto na caixa de entrada'
-            />
-          </div>
-          <div className='flex flex-col gap-2'>
             <span className='font-medium text-sm'>Visual do e-mail</span>
             <EmailTemplatePicker
               workspaceId={workspaceId}
@@ -211,6 +223,18 @@ export function ContentStep({
               para cada contato no envio.
             </p>
           </div>
+          <AdvancedOptions>
+            <div className='flex flex-col gap-2'>
+              <Label htmlFor='email-preheader'>Pré-cabeçalho</Label>
+              <Input
+                id='email-preheader'
+                value={draft.emailPreheader ?? ''}
+                maxLength={200}
+                onChange={(e) => onChange({ emailPreheader: e.target.value })}
+                placeholder='Aparece ao lado do assunto na caixa de entrada'
+              />
+            </div>
+          </AdvancedOptions>
         </div>
         <div className='flex min-w-0 flex-col gap-3'>
           <span className='font-medium text-sm'>Prévia</span>
@@ -230,6 +254,7 @@ export function ContentStep({
         onChange={onChange}
         options={options}
         sampleLink={sampleLink}
+        workspaceSlug={workspaceSlug}
       />
     </div>
   )

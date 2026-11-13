@@ -28,6 +28,7 @@ import type {
   CrmCampaignWhatsAppTemplateOptionDTO,
   CrmCampaignWhatsAppVariablesDTO,
 } from '@/types/crm-campaign'
+import { CreateCallout, CreateLinkButton } from './campaign-create-callout'
 import type { CampaignDraft, DraftChange } from './campaign-draft'
 import { VARIABLE_SOURCE_LABEL } from './campaign-labels'
 import {
@@ -184,13 +185,16 @@ function MetaContent({
   connection,
   baseUrl,
   sampleLink,
+  workspaceSlug,
 }: {
   draft: CampaignDraft
   onChange: DraftChange
   connection: CrmCampaignOptionsDTO['whatsapp']['connections'][number]
   baseUrl: string
   sampleLink: string
+  workspaceSlug?: string
 }) {
+  const templatesHref = workspaceSlug ? `/${workspaceSlug}/zap/templates` : null
   const template = connection.templates.find(
     (t) => t.id === draft.whatsappTemplateId,
   )
@@ -218,10 +222,21 @@ function MetaContent({
         qualidade baixa ficam bloqueados.
       </p>
       {connection.templates.length === 0 ? (
-        <p className='rounded-xl border border-dashed p-4 text-center text-muted-foreground text-sm'>
-          Nenhum template aprovado nesta conexão. Crie ou sincronize em
-          Comunicação › Templates.
-        </p>
+        templatesHref ? (
+          <CreateCallout
+            title='Este número ainda não tem um template aprovado'
+            description='O template é a mensagem que a Meta aprova antes do envio. Crie o seu, espere a aprovação (costuma levar alguns minutos) e volte para esta aba: ele aparece aqui.'
+          >
+            <CreateLinkButton href={templatesHref} variant='default'>
+              Criar template do WhatsApp
+            </CreateLinkButton>
+          </CreateCallout>
+        ) : (
+          <p className='rounded-xl border border-dashed p-4 text-center text-muted-foreground text-sm'>
+            Nenhum template aprovado nesta conexão. Crie ou sincronize em
+            Comunicação › Templates.
+          </p>
+        )
       ) : (
         <ul
           aria-label='Templates da Meta'
@@ -417,8 +432,9 @@ function ZapiContent({
             }
           />
           <p className='text-muted-foreground text-xs'>
-            Use {'{nome}'}, {'{primeiro_nome}'} e {'{link}'} (o link rastreado
-            da campanha — obrigatório, no texto ou num botão).
+            {draft.destinationType
+              ? 'Use {nome}, {primeiro_nome} e {link} (o link rastreado da campanha — obrigatório, no texto ou num botão).'
+              : 'Use {nome} e {primeiro_nome}. Para mandar um link rastreado com {link}, escolha o destino no passo Link.'}
           </p>
         </div>
         <div className='flex flex-col gap-2'>
@@ -455,12 +471,15 @@ export function CampaignWhatsAppPanel({
   onChange,
   options,
   sampleLink,
+  workspaceSlug,
 }: {
   draft: CampaignDraft
   onChange: DraftChange
   options: CrmCampaignOptionsDTO
   /** Link shown in the previews (the campaign's WhatsApp link). */
   sampleLink?: string | null
+  /** Links the empty states to Comunicação › Templates. */
+  workspaceSlug?: string
 }) {
   const { whatsapp } = options
   const connection = whatsapp.connections.find(
@@ -532,6 +551,7 @@ export function CampaignWhatsAppPanel({
               connection={connection}
               baseUrl={options.baseUrl}
               sampleLink={link}
+              workspaceSlug={workspaceSlug}
             />
           ) : connection?.provider === 'ZAPI' ? (
             <ZapiContent

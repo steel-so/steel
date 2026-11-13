@@ -73,6 +73,9 @@ export function draftToPatch(draft: CampaignDraft): CampaignDraft {
     emailFrom: blank(draft.emailFrom),
     emailSubject: blank(draft.emailSubject),
     emailPreheader: blank(draft.emailPreheader),
+    // One legal basis is asked; WhatsApp follows the e-mail's unless a
+    // campaign saved before that already had its own.
+    whatsappLegalBasis: draft.whatsappLegalBasis ?? draft.emailLegalBasis,
     whatsappText: draft.whatsappText?.trim() ? draft.whatsappText : null,
     whatsappMediaUrl: blank(draft.whatsappMediaUrl),
   }
