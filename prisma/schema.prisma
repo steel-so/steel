@@ -1341,6 +1341,8 @@ model WhatsAppConversation {
   /// (negativo) a 1 (positivo). Nulo até a primeira classificação.
   avgSentimentScore  Float?                     @map("avg_sentiment_score")
   lastMessageAt      DateTime?                  @map("last_message_at")
+  /// Última mensagem recebida do contato (IN): base da janela de 24h da Meta.
+  lastInboundAt      DateTime?                  @map("last_inbound_at")
   pinnedAt           DateTime?                  @map("pinned_at")
   archivedAt         DateTime?                  @map("archived_at")
   deletedAt          DateTime?                  @map("deleted_at")
@@ -1969,6 +1971,8 @@ model WhatsAppMessage {
   /// pelo job de análise de sentimento (não bloqueia o envio/recebimento).
   sentiment         WhatsAppSentiment?
   sentimentScore    Float?                   @map("sentiment_score")
+  /// Motivo da falha informado pelo provedor (status FAILED), "código: texto".
+  failureReason     String?                  @map("failure_reason")
   deletedAt         DateTime?                @map("deleted_at")
   createdAt         DateTime                 @default(now()) @map("created_at")
   updatedAt         DateTime                 @updatedAt @map("updated_at")

@@ -53,6 +53,9 @@ export function toWhatsAppConversationDTO(
     lastMessageAt: conversation.lastMessageAt
       ? conversation.lastMessageAt.toISOString()
       : null,
+    lastInboundAt: conversation.lastInboundAt
+      ? conversation.lastInboundAt.toISOString()
+      : null,
     lastMessagePreview: lastMessage
       ? (lastMessage.text ?? previewForType(lastMessage.type))
       : null,

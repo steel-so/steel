@@ -48,4 +48,17 @@ describe('toWhatsAppMessageDTO()', () => {
     expect(dto.mediaUrl).toBe('https://minio.internal/whatsapp-media/img.jpg')
     expect(dto.text).toBeNull()
   })
+
+  it('should expose the provider failure reason', () => {
+    const failed = createFakeWhatsAppMessage({
+      status: 'FAILED',
+      failureReason: '131047: Re-engagement message',
+    })
+    expect(toWhatsAppMessageDTO(failed).failureReason).toBe(
+      '131047: Re-engagement message',
+    )
+    expect(
+      toWhatsAppMessageDTO(createFakeWhatsAppMessage()).failureReason,
+    ).toBeNull()
+  })
 })

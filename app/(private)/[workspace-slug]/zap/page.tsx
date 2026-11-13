@@ -64,6 +64,7 @@ export default async function ZapPage({
         <WhatsappPageClient
           workspaceId={membership.value.workspaceId}
           initialConversation={initial?.ok ? initial.value : null}
+          conversationUnavailable={Boolean(conversa) && !initial?.ok}
         />
       </div>
     </div>

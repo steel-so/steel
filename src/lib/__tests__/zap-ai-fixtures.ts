@@ -52,6 +52,7 @@ export function conversation(
     closeStatusIds: [],
     closeStatusLabels: [],
     contactSince: ISO,
+    lastInboundAt: null,
     createdAt: ISO,
     updatedAt: ISO,
     ...overrides,

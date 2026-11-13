@@ -141,6 +141,10 @@ export const WhatsAppConversationDTO = dto(
       description: 'Média de sentimento das mensagens (-1 a 1).',
     }),
     lastMessageAt: nullableDateTime(),
+    lastInboundAt: nullableDateTime().meta({
+      description:
+        'Última mensagem recebida do contato. Em conexões Meta, a janela de 24h para texto livre conta daqui.',
+    }),
     lastMessagePreview: z.string().nullable(),
     pinned: z.boolean(),
     archived: z.boolean(),
@@ -274,6 +278,10 @@ export const WhatsAppMessageDTO = dto(
     buttonPayload: z.string().nullable().meta({
       description:
         'Clique recebido (IN, tipo `BUTTON`): payload do botão (`stl:t:<templateId>:<botão>` ou `stl:q:<respostaId>:<botão>`) ou o id cru de um botão de fora do Steel.',
+    }),
+    failureReason: z.string().nullable().optional().meta({
+      description:
+        'Motivo da falha informado pelo provedor (status `FAILED`), no formato `código: texto`.',
     }),
     createdAt: dateTime(),
   }),

@@ -32,6 +32,7 @@ import {
   QuotedMessageThumbnail,
 } from '@/components/ui/chat/quoted-message-preview'
 import { cn } from '@/lib/utils'
+import { explainSendFailure } from '@/src/lib/whatsapp/failure-reason'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
@@ -49,7 +50,11 @@ function MessageStatusTicks({
   status: WhatsAppMessageDTO['status']
 }) {
   if (status === 'FAILED') {
-    return <span className='text-[10px] text-destructive'>Falhou</span>
+    return (
+      <span className='text-[10px] text-destructive' title='A mensagem não foi entregue'>
+        Falhou
+      </span>
+    )
   }
   if (status === 'READ') {
     return <SteelIcon icon={Tick02Icon} size={14} className='text-primary' />
@@ -166,19 +171,67 @@ function MessageButtons({ message }: { message: WhatsAppMessageDTO }) {
   )
 }
 
+/** Under a failed OUT message: what happened, what to do, and the way out. */
+function MessageFailure({
+  message,
+  onResend,
+  onUseTemplate,
+}: {
+  message: WhatsAppMessageDTO
+  onResend?: (message: WhatsAppMessageDTO) => void
+  onUseTemplate?: () => void
+}) {
+  const explanation = explainSendFailure(message.failureReason)
+  const canResend =
+    onResend && message.type === 'TEXT' && Boolean(message.text?.trim())
+  return (
+    <div
+      role='alert'
+      className='mt-1 flex max-w-xs flex-col items-end gap-1 text-right text-xs'
+    >
+      <p className='text-destructive'>{explanation.title}</p>
+      <p className='text-muted-foreground'>{explanation.action}</p>
+      <div className='flex flex-wrap justify-end gap-1.5'>
+        {explanation.needsTemplate && onUseTemplate ? (
+          <Button type='button' size='xs' onClick={onUseTemplate}>
+            Usar modelo
+          </Button>
+        ) : null}
+        {canResend && !explanation.needsTemplate ? (
+          <Button
+            type='button'
+            size='xs'
+            variant='outline'
+            onClick={() => onResend(message)}
+          >
+            Reenviar
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export function MessageBubble({
   message,
   replyToMessage,
   onReply,
   onReact,
   onDelete,
+  onResend,
+  onUseTemplate,
   onStartConversationWithContact,
 }: {
   message: WhatsAppMessageDTO
   replyToMessage?: WhatsAppMessageDTO
   onReply?: (message: WhatsAppMessageDTO) => void
   onReact?: (messageId: string, emoji: string) => void
+  /** Asks to remove the message (the caller confirms). */
   onDelete?: (messageId: string) => void
+  /** Failed text message: send the same text again. */
+  onResend?: (message: WhatsAppMessageDTO) => void
+  /** Failed by the 24h window: open the template picker. */
+  onUseTemplate?: () => void
   onStartConversationWithContact?: (contact: {
     name: string
     waId: string
@@ -277,6 +330,13 @@ export function MessageBubble({
                 {isOutbound && <MessageStatusTicks status={message.status} />}
               </div>
             </div>
+            {isOutbound && message.status === 'FAILED' && (
+              <MessageFailure
+                message={message}
+                onResend={onResend}
+                onUseTemplate={onUseTemplate}
+              />
+            )}
             {isOutbound && <MessageButtons message={message} />}
             {message.reactionEmoji && (
               <span className='-mt-1.5 rounded-full border bg-background px-1.5 py-0.5 text-xs shadow-sm'>

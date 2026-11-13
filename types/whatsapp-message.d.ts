@@ -44,5 +44,7 @@ export interface WhatsAppMessageDTO {
   buttons: WhatsAppMessageButtonDTO[] | null
   /** IN click: the clicked button id (or the provider's raw payload). */
   buttonPayload: string | null
+  /** Provider detail of a FAILED message ("131047: Re-engagement message"). */
+  failureReason?: string | null
   createdAt: string
 }

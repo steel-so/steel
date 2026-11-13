@@ -17,6 +17,8 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { PhoneCallCard } from '@/app/_components/phone-calls/phone-call-card'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
@@ -36,6 +38,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { MessageBubble } from '@/components/ui/chat/message-bubble'
 import { MessageScroller } from '@/components/ui/chat/message-scroller'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,7 +98,10 @@ import {
   useWhatsAppConversationScope,
   useWhatsAppTeams,
 } from '@/src/hooks/use-whatsapp-teams'
+import { canSeeConversation } from '@/src/lib/whatsapp/conversation-scope'
+import { serviceWindowState } from '@/src/lib/whatsapp/service-window'
 import type { WhatsAppBoletoChargeDTO } from '@/types/whatsapp-boleto'
+import type { WhatsAppConnectionDTO } from '@/types/whatsapp-connection'
 import type {
   WhatsAppConversationDTO,
   WhatsAppConversationEventDTO,
@@ -206,11 +212,14 @@ function callTaskTarget(call: PhoneCallRecordDTO): PhoneCallTaskTarget | null {
 export function WhatsappConversationView({
   workspaceId,
   conversation,
+  connection = null,
   onSelectConversation,
   onBack,
 }: {
   workspaceId: string
   conversation: WhatsAppConversationDTO
+  /** The number this conversation runs on (provider drives the 24h rule). */
+  connection?: WhatsAppConnectionDTO | null
   onSelectConversation?: (conversation: WhatsAppConversationDTO) => void
   /** `U`: close the conversation and go back to the list. */
   onBack?: () => void
@@ -226,6 +235,18 @@ export function WhatsappConversationView({
     null,
   )
   const roomName = `steel-${conversation.id}`
+  const params = useParams<{ 'workspace-slug'?: string }>()
+  const slug = params?.['workspace-slug'] ?? ''
+  // Message pending a delete confirmation, and a nudge to open the
+  // composer's template picker from a failed message.
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [templatePickerRequest, setTemplatePickerRequest] = useState(0)
+  // The 24h window closes while the chat is open: re-evaluate every minute.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
 
   const currentUser = useUser()
   const messages = useWhatsAppMessages(workspaceId, conversation.id)
@@ -269,6 +290,12 @@ export function WhatsappConversationView({
   const canUnblock = Boolean(blockState.data?.canUnblock) && isBlocked
   const businessHours = useWhatsAppBusinessHours(workspaceId)
   const outsideHours = businessHours.data?.open === false
+  // Meta only accepts free text within 24h of the contact's last message.
+  const windowClosed =
+    connection?.provider === 'META' &&
+    !serviceWindowState(conversation.lastInboundAt, now).open
+  const connectionDown =
+    connection?.status === 'DISCONNECTED' || connection?.status === 'ERROR'
 
   // Conversation shortcuts (registry `zap.*`).
   useShortcut('zap.reply', () => {
@@ -287,6 +314,11 @@ export function WhatsappConversationView({
   const removeFromAi = useRemoveWhatsAppConversationFromAi(workspaceId)
   const resumeAi = useResumeWhatsAppConversationAi(workspaceId)
   const assignableMembers = useWhatsAppAssignableMembers(workspaceId)
+  const assignee = conversation.assignedUserId
+    ? (assignableMembers.data ?? []).find(
+        (member) => member.id === conversation.assignedUserId,
+      )
+    : null
   const assignConversation = useAssignWhatsAppConversation(
     workspaceId,
     conversation.id,
@@ -318,8 +350,26 @@ export function WhatsappConversationView({
   function handleAssign(assignedUserId: string | null) {
     assignConversation.mutate(assignedUserId, {
       onSuccess: (updated) => {
+        // A scoped agent loses sight of what goes to someone outside their
+        // reach: say so, or the conversation seems to vanish.
+        const stillVisible = viewerScope
+          ? canSeeConversation(viewerScope, updated)
+          : true
+        const target = assignedUserId
+          ? (assignableMembers.data ?? []).find((m) => m.id === assignedUserId)
+          : null
         notify.success(
-          assignedUserId ? 'Conversa transferida' : 'Conversa devolvida à fila',
+          assignedUserId
+            ? `Conversa transferida${target ? ` para ${target.name}` : ''}.${
+                stillVisible
+                  ? ''
+                  : ' Você deixará de ver esta conversa na sua lista.'
+              }`
+            : `Conversa devolvida à fila.${
+                stillVisible
+                  ? ''
+                  : ' Você deixará de ver esta conversa na sua lista.'
+              }`,
         )
         onSelectConversation?.(updated)
       },
@@ -343,8 +393,15 @@ export function WhatsappConversationView({
   function handleSetTeam(teamId: string | null) {
     setTeam.mutate(teamId, {
       onSuccess: (updated) => {
+        const stillVisible = viewerScope
+          ? canSeeConversation(viewerScope, updated)
+          : true
         notify.success(
-          teamId ? 'Conversa movida de equipe' : 'Conversa sem equipe',
+          `${teamId ? 'Conversa movida de equipe.' : 'Conversa sem equipe.'}${
+            stillVisible
+              ? ''
+              : ' Você deixará de ver esta conversa na sua lista.'
+          }`,
         )
         onSelectConversation?.(updated)
       },
@@ -369,8 +426,8 @@ export function WhatsappConversationView({
         connectionId: conversation.connectionId,
       })
       onSelectConversation?.(started)
-    } catch {
-      notify.error('Erro ao iniciar conversa com o contato')
+    } catch (error) {
+      notify.error(error, 'Erro ao iniciar conversa com o contato')
     }
   }
 
@@ -500,14 +557,26 @@ export function WhatsappConversationView({
     }
   }
 
+  function handleResend(failed: WhatsAppMessageDTO) {
+    if (!failed.text?.trim()) return
+    sendText.mutate(
+      { text: failed.text },
+      {
+        onSuccess: () => notify.success('Mensagem reenviada'),
+        onError: (error) =>
+          notify.error(error, 'Não foi possível reenviar a mensagem'),
+      },
+    )
+  }
+
   async function handleStartCall() {
     try {
       await sendText.mutateAsync({
         text: `Vamos iniciar uma videochamada. Entre pelo link: https://meet.jit.si/${roomName}`,
       })
       setCallOpen(true)
-    } catch {
-      notify.error('Erro ao iniciar chamada')
+    } catch (error) {
+      notify.error(error, 'Erro ao iniciar chamada')
     }
   }
 
@@ -554,6 +623,18 @@ export function WhatsappConversationView({
                   </p>
                   <p className='text-muted-foreground text-xs'>
                     {contactSubtitle(conversation)}
+                    <span data-testid='conversation-assignee'>
+                      {' · '}
+                      {conversation.assignedUserId
+                        ? assignee
+                          ? `Com ${
+                              assignee.id === currentUser.data?.id
+                                ? 'você'
+                                : assignee.name
+                            }`
+                          : 'Com outro atendente'
+                        : 'Sem responsável (na fila)'}
+                    </span>
                   </p>
                 </div>
               </button>
@@ -662,7 +743,9 @@ export function WhatsappConversationView({
                   ? 'Remova a conversa do atendimento da IA para cobrar'
                   : isClosed
                     ? 'Reabra a conversa para cobrar'
-                    : 'Cobrar via Pix'
+                    : outsideHours
+                      ? 'Fora do horário de atendimento: a cobrança só pode ser enviada dentro do horário'
+                      : 'Cobrar via Pix'
               }
               disabled={conversation.aiActive || isClosed || outsideHours}
               onClick={() => setPixOpen(true)}
@@ -680,7 +763,9 @@ export function WhatsappConversationView({
                   ? 'Remova a conversa do atendimento da IA para cobrar'
                   : isClosed
                     ? 'Reabra a conversa para cobrar'
-                    : 'Enviar boleto'
+                    : outsideHours
+                      ? 'Fora do horário de atendimento: o boleto só pode ser enviado dentro do horário'
+                      : 'Enviar boleto'
               }
               disabled={conversation.aiActive || isClosed || outsideHours}
               onClick={() => setBoletoOpen(true)}
@@ -920,8 +1005,41 @@ export function WhatsappConversationView({
               )}`
             : ''}
           .
+          {isAdmin && slug ? (
+            <>
+              {' '}
+              <Link
+                href={`/${slug}/zap/configuracoes/hours-sla`}
+                className='font-medium text-foreground underline underline-offset-2'
+              >
+                Alterar horário
+              </Link>
+            </>
+          ) : null}
         </div>
       )}
+
+      {connectionDown && connection ? (
+        <div
+          role='alert'
+          className='border-b bg-muted px-4 py-2 text-destructive text-sm'
+        >
+          O número {connection.label} ({connection.phoneNumber}) está
+          desconectado: as mensagens não são enviadas nem recebidas. Avise o
+          administrador do WhatsApp.
+          {isAdmin && slug ? (
+            <>
+              {' '}
+              <Link
+                href={`/${slug}/settings/whatsapp`}
+                className='font-medium underline underline-offset-2'
+              >
+                Reconectar
+              </Link>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       <WhatsappPhoneCallBanner call={phoneCall.data} />
 
@@ -984,12 +1102,33 @@ export function WhatsappConversationView({
         )}
       </MessageScroller>
       <WhatsappComposer
+        key={conversation.id}
         workspaceId={workspaceId}
         conversationId={conversation.id}
         contactName={contactTitle(conversation)}
         disabled={
-          conversation.aiActive || isClosed || outsideHours || isBlocked
+          conversation.aiActive ||
+          isClosed ||
+          outsideHours ||
+          isBlocked ||
+          connectionDown
         }
+        disabledReason={
+          isClosed
+            ? 'Conversa fechada. Reabra para responder.'
+            : isBlocked
+              ? 'Contato bloqueado. Desbloqueie para responder.'
+              : conversation.aiActive
+                ? 'A IA está atendendo esta conversa. Remova-a do atendimento para responder.'
+                : outsideHours
+                  ? 'Fora do horário de atendimento: os envios voltam quando o expediente abrir.'
+                  : connectionDown
+                    ? 'O número está desconectado. Avise o administrador.'
+                    : undefined
+        }
+        windowClosed={windowClosed}
+        connection={connection}
+        templatePickerRequest={templatePickerRequest}
         replyTarget={replyTarget}
         onClearReply={() => setReplyTarget(null)}
       />
@@ -1045,6 +1184,25 @@ export function WhatsappConversationView({
         roomName={roomName}
         displayName={currentUser.data?.name ?? 'Atendente'}
       />
+      <ConfirmAction
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTargetId(null)
+        }}
+        title='Apagar esta mensagem?'
+        description='Ela é removida só do Steel. O cliente continua vendo a mensagem no WhatsApp dele.'
+        confirmLabel='Apagar'
+        pending={deleteMessage.isPending}
+        onConfirm={async () => {
+          if (!deleteTargetId) return
+          try {
+            await deleteMessage.mutateAsync(deleteTargetId)
+            notify.success('Mensagem apagada do Steel')
+          } catch (error) {
+            notify.error(error, 'Não foi possível apagar a mensagem')
+          }
+        }}
+      />
     </div>
   )
 
@@ -1060,9 +1218,17 @@ export function WhatsappConversationView({
         }
         onReply={setReplyTarget}
         onReact={(messageId, emoji) =>
-          reactToMessage.mutate({ messageId, emoji })
+          reactToMessage.mutate(
+            { messageId, emoji },
+            {
+              onError: (error) =>
+                notify.error(error, 'Não foi possível reagir à mensagem'),
+            },
+          )
         }
-        onDelete={(messageId) => deleteMessage.mutate(messageId)}
+        onDelete={setDeleteTargetId}
+        onResend={handleResend}
+        onUseTemplate={() => setTemplatePickerRequest((n) => n + 1)}
         onStartConversationWithContact={handleStartConversationWithContact}
       />
     )

@@ -9,13 +9,18 @@ import {
   Search01Icon,
   UserSwitchIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import {
   contactRecordTitle,
   contactTitle,
 } from '@/app/_components/whatsapp/whatsapp-contact-label'
-import { useCan } from '@/app/_components/workspace/workspace-permissions'
+import {
+  useCan,
+  useIsPrivileged,
+} from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -160,6 +165,9 @@ function NewConversationDialog({
   }, [])
   const [contactId, setContactId] = useState<string>()
   const [connectionId, setConnectionId] = useState<string>()
+  const [contactSearch, setContactSearch] = useState('')
+  const params = useParams<{ 'workspace-slug'?: string }>()
+  const slug = params?.['workspace-slug'] ?? ''
 
   const contacts = useWhatsAppContacts(workspaceId)
   const connections = useWhatsAppConnections(workspaceId)
@@ -204,6 +212,14 @@ function NewConversationDialog({
         <form onSubmit={handleSubmit} className='space-y-3'>
           <div className='space-y-1.5'>
             <Label htmlFor='newConvContact'>Contato</Label>
+            {(contacts.data?.length ?? 0) > 5 ? (
+              <Input
+                value={contactSearch}
+                onChange={(event) => setContactSearch(event.target.value)}
+                placeholder='Buscar contato por nome ou número'
+                aria-label='Buscar contato'
+              />
+            ) : null}
             <Select
               value={contactId}
               onValueChange={(value) => setContactId(value ?? undefined)}
@@ -213,17 +229,40 @@ function NewConversationDialog({
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
-                  {(contacts.data ?? []).map((contact) => (
-                    <SelectItem key={contact.id} value={contact.id}>
-                      {contactRecordTitle(contact)}
-                    </SelectItem>
-                  ))}
+                  {(contacts.data ?? [])
+                    .filter((contact) => {
+                      const term = contactSearch.trim().toLowerCase()
+                      return (
+                        !term ||
+                        contact.id === contactId ||
+                        contactRecordTitle(contact)
+                          .toLowerCase()
+                          .includes(term) ||
+                        contact.waId.includes(term.replace(/\D/g, '') || term)
+                      )
+                    })
+                    .map((contact) => (
+                      <SelectItem key={contact.id} value={contact.id}>
+                        {contactRecordTitle(contact)}
+                      </SelectItem>
+                    ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
             {contacts.data?.length === 0 && (
               <p className='text-muted-foreground text-xs'>
-                Cadastre um contato em Configurações primeiro.
+                Você ainda não tem contatos.{' '}
+                {slug ? (
+                  <Link
+                    href={`/${slug}/zap/contatos`}
+                    className='font-medium text-foreground underline underline-offset-2'
+                  >
+                    Cadastre um contato
+                  </Link>
+                ) : (
+                  'Cadastre um contato'
+                )}{' '}
+                e volte aqui para iniciar a conversa.
               </p>
             )}
           </div>
@@ -251,7 +290,14 @@ function NewConversationDialog({
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className='items-center'>
+            {!contactId || !connectionId ? (
+              <p className='mr-auto text-muted-foreground text-xs'>
+                {!contactId
+                  ? 'Escolha um contato para iniciar.'
+                  : 'Nenhum número do WhatsApp disponível para enviar.'}
+              </p>
+            ) : null}
             <Button
               type='submit'
               disabled={
@@ -290,6 +336,7 @@ export function WhatsappConversationSidebar({
   onConnectionChange,
   selectedConversationId,
   onSelect,
+  onSelectedRefresh,
 }: {
   workspaceId: string
   connections: WhatsAppConnectionDTO[]
@@ -297,7 +344,13 @@ export function WhatsappConversationSidebar({
   onConnectionChange: (connectionId: string | undefined) => void
   selectedConversationId: string | null
   onSelect: (conversation: WhatsAppConversationDTO) => void
+  /** Fresh copy of the open conversation whenever the list refetches. */
+  onSelectedRefresh?: (conversation: WhatsAppConversationDTO) => void
 }) {
+  const params = useParams<{ 'workspace-slug'?: string }>()
+  const slug = params?.['workspace-slug'] ?? ''
+  const isAdmin = useIsPrivileged()
+  const conversationScope = useWhatsAppConversationScope(workspaceId)
   const [search, setSearch] = useState('')
   // Ativas = abertas (NEW/IN_PROGRESS); fechadas saem da caixa de entrada.
   const [tab, setTab] = useState<'active' | 'closed' | 'archived'>('active')
@@ -321,6 +374,23 @@ export function WhatsappConversationSidebar({
   const clearChat = useClearWhatsAppChat(workspaceId)
   // Limpar/excluir conversa é ação de admin (a API negaria ao Membro).
   const canDeleteConversation = useCan('conversations', 'DELETE')
+
+  // The open conversation is a snapshot: keep it in step with the list so
+  // the 24h window, assignee and status shown in the chat are not stale.
+  useEffect(() => {
+    if (!onSelectedRefresh || !selectedConversationId) return
+    const fresh = conversations.data?.find(
+      (conversation) => conversation.id === selectedConversationId,
+    )
+    if (fresh) onSelectedRefresh(fresh)
+  }, [conversations.data, selectedConversationId, onSelectedRefresh])
+
+  const downConnections = connections.filter(
+    (connection) =>
+      connection.status === 'DISCONNECTED' || connection.status === 'ERROR',
+  )
+  const hasActiveFilters =
+    search !== '' || inboxFilter !== 'all' || slaFilter !== 'all'
 
   const filtered = (conversations.data ?? []).filter((conversation) => {
     if (
@@ -432,6 +502,27 @@ export function WhatsappConversationSidebar({
           </Select>
         </div>
       )}
+      {downConnections.length > 0 ? (
+        <div
+          role='alert'
+          className='mx-3 mt-3 space-y-1 rounded-md border bg-muted px-2.5 py-2 text-xs'
+        >
+          {downConnections.map((connection) => (
+            <p key={connection.id} className='text-destructive'>
+              O número {connection.label} está desconectado: ele não envia nem
+              recebe mensagens. Avise o administrador.
+            </p>
+          ))}
+          {isAdmin && slug ? (
+            <Link
+              href={`/${slug}/settings/whatsapp`}
+              className='font-medium underline underline-offset-2'
+            >
+              Reconectar em Configurações
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
       <div className='flex items-center gap-2 p-3'>
         <div className='relative flex-1'>
           <SteelIcon
@@ -480,10 +571,63 @@ export function WhatsappConversationSidebar({
         />
       </div>
       <div className='flex-1 overflow-y-auto'>
-        {filtered.length === 0 ? (
-          <p className='px-3 py-6 text-center text-muted-foreground text-sm'>
-            Nenhuma conversa
-          </p>
+        {conversations.isError ? (
+          <div className='space-y-2 px-3 py-6 text-center text-sm'>
+            <p className='text-destructive'>
+              Não foi possível carregar as conversas.
+            </p>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => conversations.refetch()}
+            >
+              Tentar de novo
+            </Button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className='space-y-2 px-3 py-6 text-center'>
+            <p className='text-muted-foreground text-sm'>
+              {connections.length === 0
+                ? 'Nenhum número conectado'
+                : 'Nenhuma conversa'}
+            </p>
+            <p className='text-muted-foreground text-xs'>
+              {connections.length === 0
+                ? isAdmin
+                  ? 'Conecte um número de WhatsApp para começar a atender.'
+                  : 'Peça a um administrador para conectar um número de WhatsApp.'
+                : hasActiveFilters
+                  ? 'Nenhum resultado para a busca ou os filtros aplicados.'
+                  : tab === 'closed'
+                    ? 'Nenhuma conversa fechada até agora.'
+                    : tab === 'archived'
+                      ? 'Nenhuma conversa arquivada.'
+                      : conversationScope.data?.mode === 'SCOPED'
+                        ? 'Você só vê as conversas da sua equipe e as atribuídas a você.'
+                        : 'As conversas aparecem aqui quando um contato escrever ou quando você iniciar uma pelo botão +.'}
+            </p>
+            {connections.length === 0 && isAdmin && slug ? (
+              <Link
+                href={`/${slug}/settings/whatsapp`}
+                className='inline-block font-medium text-sm underline underline-offset-2'
+              >
+                Conectar um número
+              </Link>
+            ) : null}
+            {connections.length > 0 && hasActiveFilters ? (
+              <Button
+                size='sm'
+                variant='outline'
+                onClick={() => {
+                  setSearch('')
+                  setInboxFilter('all')
+                  setSlaFilter('all')
+                }}
+              >
+                Limpar filtros
+              </Button>
+            ) : null}
+          </div>
         ) : (
           filtered.map((conversation) => (
             <div
