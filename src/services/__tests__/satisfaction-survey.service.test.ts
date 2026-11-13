@@ -18,6 +18,10 @@ import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conv
 import { WhatsAppTeamRepository } from '@/src/repositories/whatsapp-team.repository'
 import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { assertModuleMember, assertModulePrivileged } from '../authz'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from '../crm-retention.service'
 import { SatisfactionSurveyService as Service } from '../satisfaction-survey.service'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from '../whatsapp-notify'
 
@@ -42,6 +46,10 @@ vi.mock('@/src/lib/queue/queues', () => ({
 vi.mock('../authz', () => ({
   assertModuleMember: vi.fn(),
   assertModulePrivileged: vi.fn(),
+}))
+vi.mock('../crm-retention.service', () => ({
+  CrmRetentionService: { onSurveyDetractor: vi.fn() },
+  runRetentionSafely: vi.fn(),
 }))
 vi.mock('../whatsapp-notify', () => ({
   notifyWhatsAppUsers: vi.fn(),
@@ -1138,6 +1146,37 @@ describe('SatisfactionSurveyService detractor alert', () => {
         title: 'Cliente insatisfeito: Ana',
       }),
     )
+  })
+
+  it('opens the CRM retention follow-up for a detractor, even with the admin notice off', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1' })),
+    )
+    vi.mocked(Repo.findConfig).mockResolvedValue(
+      ok(createFakeSurveyConfig({ alertDetractors: false })),
+    )
+    expectOk(await answer('s1', 1))
+    expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+    expect(runRetentionSafely).toHaveBeenCalledWith(
+      'survey_detractor',
+      expect.any(Function),
+    )
+    const run = vi.mocked(runRetentionSafely).mock.calls[0][1]
+    await run()
+    expect(CrmRetentionService.onSurveyDetractor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        survey: expect.objectContaining({ id: 's1' }),
+        score: 1,
+      }),
+    )
+  })
+
+  it('does not open a retention follow-up for a happy answer', async () => {
+    vi.mocked(Repo.findById).mockResolvedValue(
+      ok(createFakeSurvey({ id: 's1' })),
+    )
+    expectOk(await answer('s1', 5))
+    expect(runRetentionSafely).not.toHaveBeenCalled()
   })
 
   it('stays quiet for a happy answer', async () => {
