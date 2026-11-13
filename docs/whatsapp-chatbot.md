@@ -73,6 +73,19 @@ que entra pelo caminho normal do `nfm_reply`. Publicar exige formulário
 existente, publicado na Meta e não descontinuado. Detalhes e o preenchimento:
 [docs/whatsapp-flows.md](./whatsapp-flows.md).
 
+## Criar lead e abrir chamado (`create-lead`, `open-ticket`)
+
+Blocos entre módulos. O motor monta o pedido (`ChatbotActionRequest`, com as
+variáveis já interpoladas) e o runtime o executa em `runChatbotAction` por
+`CrossEngineActions` (`src/services/cross-engine-actions.service.ts`): o lead
+entra por `CrmLeadService.intake` (ator de sistema, `via: whatsapp_chatbot`,
+deduplicado por telefone/e-mail) e o chamado por `SdTicketEngine.create` (canal
+`WHATSAPP`, conversa ligada em `SdTicket.whatsappConversationId`). Um passo
+repetido pela fila não abre segundo chamado: se a conversa já tem um chamado
+aberto, ele é devolvido. Falha vai pela saída `error` (ou `next`). O simulador
+não executa os blocos: devolve o valor `simulado`. Publicar exige o módulo
+(CRM ou ServiceDesk) habilitado.
+
 ## Integração (webhook)
 
 `callChatbotWebhook` reaproveita a trava SSRF dos botões

@@ -81,6 +81,7 @@ export function sdAutomationActionRefs(actions: SdAutomationAction[]): {
         userIds.push(...action.params.userIds)
         break
       case 'create_task':
+      case 'create_crm_task':
         if (action.params.assigneeId) userIds.push(action.params.assigneeId)
         break
       case 'apply_template':

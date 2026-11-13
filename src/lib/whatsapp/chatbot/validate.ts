@@ -29,6 +29,8 @@ export function nodeHandles(node: ChatbotNode): string[] {
     case 'question':
       return ['next', 'invalid']
     case 'webhook':
+    case 'create-lead':
+    case 'open-ticket':
       return ['next', 'error']
     case 'menu':
       return [...node.data.options.map((option) => option.id), 'invalid']
@@ -71,6 +73,10 @@ function describe(node: ChatbotNode): string {
       return 'Integração'
     case 'send-form':
       return 'Enviar formulário'
+    case 'create-lead':
+      return 'Criar lead'
+    case 'open-ticket':
+      return 'Abrir chamado'
     case 'handoff-human':
       return 'Passar para atendente'
     case 'handoff-ai':
@@ -155,6 +161,25 @@ export function validateChatbotFlow(flow: ChatbotFlow): ChatbotFlowIssue[] {
     }
     if (node.type === 'send-form' && !node.data.flowId) {
       error('Enviar formulário: escolha o formulário', node.id)
+    }
+    if (
+      (node.type === 'create-lead' || node.type === 'open-ticket') &&
+      node.data.resultVariable &&
+      reserved.has(node.data.resultVariable)
+    ) {
+      error(`${describe(node)}: este nome de variável é reservado`, node.id)
+    }
+    if (node.type === 'create-lead' && !node.data.phone && !node.data.email) {
+      error('Criar lead: informe o telefone ou o e-mail do contato', node.id)
+    }
+    if (
+      (node.type === 'create-lead' || node.type === 'open-ticket') &&
+      !used.has(`${node.id}:error`)
+    ) {
+      warn(
+        `${describe(node)} sem caminho de erro: segue pela saída normal`,
+        node.id,
+      )
     }
     if (node.type === 'set-variable' && reserved.has(node.data.variable)) {
       error('Definir variável: este nome é reservado', node.id)

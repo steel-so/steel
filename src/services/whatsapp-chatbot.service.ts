@@ -55,6 +55,7 @@ import type {
 } from '@/types/whatsapp-chatbot'
 import {
   assertMember,
+  assertModuleEnabled,
   assertModuleMember,
   assertModulePrivileged,
 } from './authz'
@@ -135,6 +136,24 @@ async function referenceIssues(
           severity: 'error',
           nodeId: node.id,
           message: `Enviar formulário: ${problem}`,
+        })
+      }
+      continue
+    }
+    if (node.type === 'create-lead' || node.type === 'open-ticket') {
+      const target = node.type === 'create-lead' ? 'CRM' : 'SERVICE_DESK'
+      const enabled = await assertModuleEnabled(workspaceId, target)
+      if (!enabled.ok && enabled.error.code !== 'MODULE_DISABLED') {
+        return enabled
+      }
+      if (!enabled.ok) {
+        issues.push({
+          severity: 'error',
+          nodeId: node.id,
+          message:
+            node.type === 'create-lead'
+              ? 'Criar lead: o módulo CRM não está habilitado neste workspace'
+              : 'Abrir chamado: o módulo ServiceDesk não está habilitado neste workspace',
         })
       }
       continue

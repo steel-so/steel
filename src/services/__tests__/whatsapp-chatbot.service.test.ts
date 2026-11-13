@@ -22,6 +22,7 @@ vi.mock('@/src/repositories/whatsapp-button-action.repository')
 vi.mock('@/src/repositories/whatsapp-flow.repository')
 
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
 import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
@@ -503,6 +504,76 @@ describe('WhatsAppChatbotService', () => {
         await WhatsAppChatbotService.publish('u', 'ws', 'b'),
         'DATABASE_ERROR',
       )
+    })
+
+    describe('cross-engine blocks', () => {
+      const bridgeDraft = (type: 'create-lead' | 'open-ticket') =>
+        ({
+          nodes: [
+            { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
+            {
+              id: 'b',
+              type,
+              position: { x: 0, y: 0 },
+              data:
+                type === 'create-lead'
+                  ? { name: 'Ana', phone: '5511', origin: 'Bot' }
+                  : { ticketType: 'INCIDENT', title: 'Sem sinal' },
+            },
+          ],
+          edges: [
+            { id: 'e', source: 'start', sourceHandle: 'next', target: 'b' },
+          ],
+        }) as never
+      const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
+      const onlyCommunication = async (_ws: string, module: string) =>
+        ok(module === 'COMMUNICATION')
+
+      it.each([
+        ['create-lead', 'Criar lead'],
+        ['open-ticket', 'Abrir chamado'],
+      ] as const)(
+        'refuses %s when the target module is off',
+        async (type, label) => {
+          botRepo.findById.mockResolvedValue(
+            ok(createFakeChatbot({ draft: bridgeDraft(type) })),
+          )
+          moduleAccess.isEnabled.mockImplementation(onlyCommunication as never)
+          const error = expectErr(
+            await WhatsAppChatbotService.publish('u', 'ws', 'b'),
+            'WHATSAPP_CHATBOT_INVALID_FLOW',
+          )
+          expect(error.message).toContain(label)
+        },
+      )
+
+      it.each(['create-lead', 'open-ticket'] as const)(
+        'accepts %s when the module is on',
+        async (type) => {
+          botRepo.findById.mockResolvedValue(
+            ok(createFakeChatbot({ draft: bridgeDraft(type) })),
+          )
+          moduleAccess.isEnabled.mockResolvedValue(ok(true))
+          expectOk(await WhatsAppChatbotService.publish('u', 'ws', 'b'))
+        },
+      )
+
+      it('propagates a failure while checking the module', async () => {
+        botRepo.findById.mockResolvedValue(
+          ok(createFakeChatbot({ draft: bridgeDraft('open-ticket') })),
+        )
+        moduleAccess.isEnabled.mockImplementation((async (
+          _ws: string,
+          module: string,
+        ) =>
+          module === 'COMMUNICATION'
+            ? ok(true)
+            : err({ code: 'DATABASE_ERROR', message: 'x' })) as never)
+        expectErr(
+          await WhatsAppChatbotService.publish('u', 'ws', 'b'),
+          'DATABASE_ERROR',
+        )
+      })
     })
 
     it('refuses a handoff to an agent outside the workspace', async () => {

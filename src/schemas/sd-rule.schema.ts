@@ -103,6 +103,15 @@ export const SdConditionsSchema = z.array(SdConditionSchema).max(50)
 
 const id = z.string().min(1).max(64)
 
+/** O que preenche cada {{n}} do modelo de WhatsApp de uma ação. */
+export const SD_WHATSAPP_VARIABLES = [
+  'code',
+  'title',
+  'requester',
+  'phase',
+] as const
+export type SdWhatsappVariable = (typeof SD_WHATSAPP_VARIABLES)[number]
+
 export const SdAutomationActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('set_field'),
@@ -162,6 +171,34 @@ export const SdAutomationActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('apply_template'),
     params: z.object({ templateId: id }),
+  }),
+  z.object({
+    type: z.literal('send_whatsapp_template'),
+    params: z.object({
+      connectionId: id,
+      /** Modelo aprovado (Meta). Vale a qualquer hora. */
+      templateId: id.optional(),
+      /** Valores de {{1}}, {{2}}…, na ordem. */
+      variables: z.array(z.enum(SD_WHATSAPP_VARIABLES)).max(20).default([]),
+      /** Texto livre: Z-API, ou Meta dentro da janela de 24 horas. */
+      text: z.string().max(2000).optional(),
+    }),
+  }),
+  z.object({
+    type: z.literal('create_crm_task'),
+    params: z.object({
+      title: z.string().min(1).max(200),
+      description: z.string().max(5000).optional(),
+      assigneeId: id.optional(),
+      dueInMinutes: z.number().int().min(1).max(525_600).optional(),
+    }),
+  }),
+  z.object({
+    type: z.literal('create_crm_lead'),
+    params: z.object({
+      /** Origem exibida no lead. */
+      origin: z.string().min(1).max(100).default('ServiceDesk'),
+    }),
   }),
   z.object({
     type: z.literal('escalate'),

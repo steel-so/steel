@@ -31,9 +31,18 @@ import {
  *    `resumeCrmWorkflowAfterDelay`; a test run only records the delay)
  *  - send-email (via lib de mail já existente do Steel)
  *  - draft-email (não persiste nada — apenas retorna o rascunho resolvido)
+ *  - send-whatsapp-template / create-ticket (cross-engine: WhatsApp respeita
+ *    opt-out e janela de 24 h; chamado do ServiceDesk)
  *  - iterator (relata tamanho/amostra da fonte; não expande o loop)
  *  - form (pausa o run — WAITING; retomado via resumeCrmWorkflow)
  */
+
+/**
+ * Loaded on demand: the cross-engine service pulls in the CRM, ServiceDesk
+ * and WhatsApp services, which import this module back.
+ */
+const crossEngine = () =>
+  import('./cross-engine-actions.service').then((m) => m.CrossEngineActions)
 
 type RunContext = {
   runId: string
@@ -349,6 +358,80 @@ async function executeNode(
       const subject = String(resolveExpression(data.subject, scope) ?? '')
       const body = String(resolveExpression(data.body, scope) ?? '')
       return { output: { drafted: true, to, subject, body } }
+    }
+    case 'send-whatsapp-template': {
+      const phone = String(resolveExpression(data.to, scope) ?? '')
+      const variables = data.variables.map((value) =>
+        String(resolveExpression(value, scope) ?? ''),
+      )
+      const text = data.text
+        ? String(resolveExpression(data.text, scope) ?? '')
+        : ''
+      if (ctx.testMode) {
+        return { output: { simulated: true, to: phone, variables, text } }
+      }
+      if (!phone) return { output: { skipped: true, reason: 'no recipient' } }
+      const sent = await (await crossEngine()).sendWhatsApp({
+        workspaceId: ctx.workspaceId,
+        source: 'crm_workflow',
+        refId: ctx.runId,
+        connectionId: data.connectionId,
+        phone,
+        templateId: data.templateId,
+        variables,
+        text,
+      })
+      if (!sent.ok) throw new Error(`sendWhatsApp: ${sent.error.message}`)
+      // An opt-out or a closed window skips the send but the flow goes on.
+      if (sent.value.status === 'skipped') {
+        return {
+          output: {
+            skipped: true,
+            reason: sent.value.reason,
+            message: sent.value.message,
+          },
+        }
+      }
+      return {
+        output: {
+          sent: true,
+          to: phone,
+          providerMessageId: sent.value.providerMessageId,
+          mode: sent.value.mode,
+        },
+      }
+    }
+    case 'create-ticket': {
+      const title = String(resolveExpression(data.title, scope) ?? '').trim()
+      const description = data.description
+        ? String(resolveExpression(data.description, scope) ?? '')
+        : ''
+      const phone = data.phone
+        ? String(resolveExpression(data.phone, scope) ?? '')
+        : ''
+      const email = data.email
+        ? String(resolveExpression(data.email, scope) ?? '')
+        : ''
+      if (ctx.testMode) {
+        return {
+          output: { simulated: true, title, type: data.ticketType, phone },
+        }
+      }
+      if (!title) return { output: { skipped: true, reason: 'no title' } }
+      const opened = await (await crossEngine()).openTicket({
+        workspaceId: ctx.workspaceId,
+        source: 'crm_workflow',
+        refId: ctx.runId,
+        type: data.ticketType,
+        title,
+        description,
+        phone,
+        email,
+      })
+      if (!opened.ok) throw new Error(`openTicket: ${opened.error.message}`)
+      return {
+        output: { id: opened.value.ticketId, code: opened.value.code, title },
+      }
     }
     case 'iterator': {
       const source = resolveExpression(data.source, scope)
