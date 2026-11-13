@@ -25,6 +25,10 @@ import { ProductPickerControl } from '@/app/_components/crm/email-editor/product
 import { SavedBlocksPanel } from '@/app/_components/crm/email-editor/saved-blocks-panel'
 import { createTemplateMetaStore } from '@/app/_components/crm/email-editor/template-meta'
 import { VariablesPanel } from '@/app/_components/crm/email-editor/variables-panel'
+import {
+  EMAIL_IMAGE_BLOCK,
+  useEmailMediaProvider,
+} from '@/app/_components/media/use-email-media'
 import { notify } from '@/lib/notify'
 import {
   uploadCrmEmailImage,
@@ -247,6 +251,7 @@ export function NewsletterIssueCanvasEditor({
     [saveBrand],
   )
 
+  const mediaProvider = useEmailMediaProvider(workspaceId)
   const onUploadImage = useCallback(
     async (file: File) => {
       try {
@@ -374,6 +379,8 @@ export function NewsletterIssueCanvasEditor({
           onSave={onSave}
           darkPreview
           onUploadImage={onUploadImage}
+        mediaProvider={mediaProvider}
+        imageBlock={EMAIL_IMAGE_BLOCK}
           colorTokens={colorTokens}
           fonts={EMAIL_TYPOGRAPHY_FONTS}
         />

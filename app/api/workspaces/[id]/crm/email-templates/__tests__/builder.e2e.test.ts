@@ -412,4 +412,13 @@ describe('visual e-mail builder — brand and links', () => {
     )
     expect(res.status).toBe(422)
   })
+
+  it('requires a session to list the image library', async () => {
+    const { workspace } = await authenticatedOwner()
+    const res = await fetch(
+      `${BASE_URL}/api/workspaces/${workspace.id}/crm/email-builder/images`,
+      { headers: defaultHeaders },
+    )
+    expect(res.status).toBe(401)
+  })
 })

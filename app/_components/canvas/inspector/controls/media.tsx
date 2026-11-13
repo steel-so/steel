@@ -16,7 +16,11 @@ import {
   Upload01Icon,
   WebDesign01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import { type DragEvent, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { IMAGE_ACCEPT } from '@/app/_components/media/image-file'
+import { MediaLibraryPicker } from '@/app/_components/media/media-library-picker'
+import type { MediaItem } from '@/app/_components/media/media-types'
+import { useFileDropTarget } from '@/app/_components/media/use-file-drop-target'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   Select,
@@ -41,6 +45,7 @@ import {
 } from '@/src/lib/canvas/values'
 import { useCanvasEditor } from '../../editor-context'
 import { BREAKPOINT_LABELS } from '../../lib/messages'
+import { useImageUpload } from '../../lib/use-image-upload'
 import {
   type ControlProps,
   inputClass,
@@ -49,8 +54,9 @@ import {
 } from './primitives'
 
 /**
- * Image source picker: preview, upload (button or drop a file — only with
- * `onUploadImage`) and a URL field.
+ * Image source picker: preview, upload (button or drop a file — only when
+ * the editor can upload), "Escolher da biblioteca" (only with a media
+ * provider) and a URL field.
  */
 export function ImagePicker({
   id,
@@ -62,45 +68,41 @@ export function ImagePicker({
   id?: string
   label: string
   src: string
-  onChange: (src: string) => void
+  onChange: (src: string, item?: MediaItem) => void
   accept?: string[]
 }) {
   const { props } = useCanvasEditor()
-  const upload = props.onUploadImage
+  const upload = useImageUpload()
+  const provider = props.mediaProvider
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
-  const [over, setOver] = useState(false)
+  const [library, setLibrary] = useState(false)
 
   const send = async (file: File | undefined) => {
     if (!file || !upload) return
     setBusy(true)
     try {
-      const url = await upload(file)
+      const url = await upload(file, accept)
       if (url) onChange(url)
     } finally {
       setBusy(false)
     }
   }
 
-  const onDrop = (event: DragEvent) => {
-    event.preventDefault()
-    setOver(false)
-    void send(event.dataTransfer.files?.[0])
-  }
+  const drop = useFileDropTarget({
+    onFiles: (files) => send(files[0]),
+    disabled: !upload,
+    multiple: false,
+    accept,
+  })
 
   return (
     <div className='flex flex-col gap-2'>
       <div
-        onDragOver={(event) => {
-          if (!upload) return
-          event.preventDefault()
-          setOver(true)
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={onDrop}
+        {...drop.bind}
         className={cn(
           'group relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-lg border bg-[repeating-conic-gradient(var(--muted)_0%_25%,transparent_0%_50%)] bg-[length:12px_12px] transition-colors',
-          over && 'border-primary ring-2 ring-primary/30',
+          drop.over && 'border-primary ring-2 ring-primary/30',
         )}
       >
         {src ? (
@@ -134,30 +136,53 @@ export function ImagePicker({
           </button>
         )}
       </div>
-      {upload && (
-        <>
-          <input
-            ref={fileRef}
-            type='file'
-            accept={(accept ?? ['image/*']).join(',')}
-            className='hidden'
-            aria-hidden
-            tabIndex={-1}
-            onChange={(event) => {
-              void send(event.target.files?.[0])
-              event.target.value = ''
-            }}
-          />
-          <button
-            type='button'
-            disabled={busy}
-            onClick={() => fileRef.current?.click()}
-            className='inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-background text-xs font-medium shadow-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50'
-          >
-            <SteelIcon icon={Upload01Icon} className='size-3.5' />
-            {src ? 'Trocar imagem' : 'Enviar imagem'}
-          </button>
-        </>
+      {(upload || provider) && (
+        <div className='grid gap-1.5'>
+          {upload && (
+            <>
+              <input
+                ref={fileRef}
+                type='file'
+                accept={(accept ?? [IMAGE_ACCEPT]).join(',')}
+                className='hidden'
+                aria-hidden
+                tabIndex={-1}
+                onChange={(event) => {
+                  void send(event.target.files?.[0])
+                  event.target.value = ''
+                }}
+              />
+              <button
+                type='button'
+                disabled={busy}
+                onClick={() => fileRef.current?.click()}
+                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-background text-xs font-medium shadow-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50'
+              >
+                <SteelIcon icon={Upload01Icon} className='size-3.5' />
+                {src ? 'Trocar imagem' : 'Enviar imagem'}
+              </button>
+            </>
+          )}
+          {provider && (
+            <>
+              <button
+                type='button'
+                disabled={busy}
+                onClick={() => setLibrary(true)}
+                className='inline-flex h-8 items-center justify-center gap-1.5 rounded-md border bg-background text-xs font-medium shadow-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50'
+              >
+                <SteelIcon icon={Image02Icon} className='size-3.5' />
+                Escolher da biblioteca
+              </button>
+              <MediaLibraryPicker
+                open={library}
+                onOpenChange={setLibrary}
+                provider={provider}
+                onSelect={(item) => onChange(item.url, item)}
+              />
+            </>
+          )}
+        </div>
       )}
       <input
         id={id}
@@ -179,6 +204,7 @@ export function ImageControl({
   control,
 }: ControlProps<'image', CanvasImage>) {
   const current = value ?? { src: '', alt: '' }
+  const missingAlt = !!current.src && !current.alt.trim() && !current.decorative
   return (
     <div className='flex flex-col gap-2'>
       <ImagePicker
@@ -186,19 +212,76 @@ export function ImageControl({
         label={label}
         src={current.src}
         accept={control.accept}
-        onChange={(src) => onChange({ ...current, src })}
+        onChange={(src, item) =>
+          onChange({
+            ...current,
+            src,
+            alt: current.alt.trim() || !item?.alt ? current.alt : item.alt,
+          })
+        }
       />
+      <ImageAltField
+        label={label}
+        alt={current.alt}
+        decorative={!!current.decorative}
+        missing={missingAlt}
+        onChange={(alt, decorative) =>
+          onChange({ ...current, alt, decorative: decorative || undefined })
+        }
+      />
+    </div>
+  )
+}
+
+/**
+ * Alt text of an image: required, unless the image is marked as decorative
+ * (then readers skip it). Shared by every image control so the rule reads
+ * the same in sites, e-mails and documents.
+ */
+export function ImageAltField({
+  label,
+  alt,
+  decorative,
+  missing,
+  onChange,
+}: {
+  label: string
+  alt: string
+  decorative: boolean
+  missing: boolean
+  onChange: (alt: string, decorative: boolean) => void
+}) {
+  return (
+    <div className='flex flex-col gap-1.5'>
       <SubField label='Texto alternativo'>
         <input
           aria-label={`${label}: texto alternativo`}
-          value={current.alt}
-          placeholder='Descreva a imagem para leitores de tela'
-          onChange={(event) =>
-            onChange({ ...current, alt: event.target.value })
+          aria-invalid={missing || undefined}
+          value={decorative ? '' : alt}
+          disabled={decorative}
+          placeholder={
+            decorative
+              ? 'Imagem decorativa: sem descrição'
+              : 'Descreva a imagem para leitores de tela'
           }
-          className={inputClass}
+          onChange={(event) => onChange(event.target.value, false)}
+          className={cn(inputClass, missing && 'border-destructive')}
         />
       </SubField>
+      {missing && (
+        <p role='alert' className='text-[11px] text-destructive'>
+          Descreva a imagem ou marque como decorativa.
+        </p>
+      )}
+      <div className='flex items-center justify-between text-xs text-muted-foreground'>
+        Imagem decorativa (só enfeite)
+        <Switch
+          aria-label={`${label}: imagem decorativa`}
+          size='sm'
+          checked={decorative}
+          onCheckedChange={(checked) => onChange('', checked)}
+        />
+      </div>
     </div>
   )
 }

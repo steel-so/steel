@@ -25,6 +25,7 @@ import {
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
 import type { CanvasCollaboration } from '@/app/_components/canvas/collab/collab-context'
 import type {
+  CanvasImageBlock,
   CanvasPresetItem,
   CanvasSidebarTab,
 } from '@/app/_components/canvas/types'
@@ -41,15 +42,17 @@ import { ApiError } from '@/src/hooks/_fetch'
 import {
   crmSitesApi,
   crmSitesKeys,
+  crmSitesMediaProvider,
   useCrmSite,
   useSiteForms,
 } from '@/src/hooks/use-crm-sites'
 import { useLiveSiteNewsletters } from '@/src/hooks/use-site-newsletters'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import type { CanvasImage } from '@/src/lib/canvas/values'
 import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
 import { createSiteCatalog, siteCatalog } from '@/src/lib/canvas-site/catalog'
-import { SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
+import { SITE_TYPES, SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
 import type { SiteLiveForm } from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SITE_PRESETS } from '@/src/lib/canvas-site/presets'
@@ -288,6 +291,16 @@ function useLiveForms(workspaceId: string): Record<string, SiteLiveForm> {
   }, [forms.data])
 }
 
+/** The site image block, for dropping or pasting a picture on the canvas.
+ * Keeps the alt text (and the decorative mark) of the picture it replaces. */
+const SITE_IMAGE_BLOCK: CanvasImageBlock = {
+  type: SITE_TYPES.image,
+  toProps: (src, current) => {
+    const image = (current?.image ?? { alt: '' }) as CanvasImage
+    return { image: { ...image, src } }
+  },
+}
+
 /** The canvas of the current target (remounted when it changes). */
 function SiteCanvas({
   document,
@@ -299,6 +312,10 @@ function SiteCanvas({
   const { site, globals, target, theme, api, workspaceId, pageLinks } =
     useSiteEditor()
   const queryClient = useQueryClient()
+  const mediaProvider = useMemo(
+    () => crmSitesMediaProvider(workspaceId),
+    [workspaceId],
+  )
   const canEmbed = useIsPrivileged()
   const forms = useLiveForms(workspaceId)
   const newsletters = useLiveSiteNewsletters(workspaceId)
@@ -463,6 +480,8 @@ function SiteCanvas({
       title={<SiteEditorTitle />}
       actions={() => <SiteEditorActions />}
       onSave={onSave}
+      mediaProvider={mediaProvider}
+      imageBlock={SITE_IMAGE_BLOCK}
       onUploadImage={async (file) => {
         try {
           const item = await api.uploadMedia(file)

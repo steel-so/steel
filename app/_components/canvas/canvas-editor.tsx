@@ -23,6 +23,7 @@ import { CanvasInspector } from './inspector/inspector'
 import { createDragStore } from './lib/drag-store'
 import { createFrameHandle } from './lib/frame-handle'
 import { historySkipMessage, opErrorMessage } from './lib/messages'
+import { useCanvasImageInput } from './lib/use-canvas-image-input'
 import { CanvasSidebar } from './sidebar/sidebar'
 import { CanvasTopBar } from './top-bar'
 import type { CanvasEditorProps } from './types'
@@ -139,6 +140,7 @@ function useOpErrors() {
 function EditorLayout({ title }: { title: CanvasEditorProps['title'] }) {
   useCanvasShortcuts()
   useOpErrors()
+  const imageInput = useCanvasImageInput()
   const dragging = useDragState((state) => state.source !== null)
   return (
     <>
@@ -154,8 +156,18 @@ function EditorLayout({ title }: { title: CanvasEditorProps['title'] }) {
         <CanvasTopBar title={title} />
         <div className='flex min-h-0 flex-1'>
           <CanvasSidebar />
-          <main aria-label='Canvas' className='min-w-0 flex-1'>
+          <main aria-label='Canvas' className='relative min-w-0 flex-1'>
             <CanvasStage />
+            {imageInput.over && (
+              <div
+                aria-hidden
+                className='pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-xl border-2 border-primary border-dashed bg-primary/5'
+              >
+                <span className='rounded-md bg-background px-3 py-1.5 font-medium text-sm shadow-sm'>
+                  Solte a imagem para usar aqui
+                </span>
+              </div>
+            )}
           </main>
           <CanvasInspector />
         </div>

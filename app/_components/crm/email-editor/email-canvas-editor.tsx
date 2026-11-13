@@ -8,6 +8,10 @@ import type {
   CanvasPresetItem,
   CanvasSidebarTab,
 } from '@/app/_components/canvas/types'
+import {
+  EMAIL_IMAGE_BLOCK,
+  useEmailMediaProvider,
+} from '@/app/_components/media/use-email-media'
 import { notify } from '@/lib/notify'
 import {
   emailTemplateKey,
@@ -293,6 +297,7 @@ export function EmailCanvasEditor({
     [saveBrand],
   )
 
+  const mediaProvider = useEmailMediaProvider(workspaceId)
   const onUploadImage = useCallback(
     async (file: File) => {
       try {
@@ -404,6 +409,8 @@ export function EmailCanvasEditor({
         onSave={onSave}
         darkPreview
         onUploadImage={onUploadImage}
+        mediaProvider={mediaProvider}
+        imageBlock={EMAIL_IMAGE_BLOCK}
         colorTokens={colorTokens}
         fonts={EMAIL_TYPOGRAPHY_FONTS}
       />

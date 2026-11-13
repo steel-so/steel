@@ -11,6 +11,8 @@ import { type DragEvent, useMemo, useRef, useState } from 'react'
 import { useCanvasDraggable } from '@/app/_components/canvas/dnd/canvas-dnd'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import { findInsertLocation } from '@/app/_components/canvas/lib/drop-target'
+import { IMAGE_ACCEPT } from '@/app/_components/media/image-file'
+import { acceptImageFiles } from '@/app/_components/media/use-file-drop-target'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -40,9 +42,6 @@ import { SITE_TYPES } from '@/src/lib/canvas-site/constants'
 import type { SiteMediaItemDTO } from '@/types/site-studio'
 import { formatBytes } from './format'
 import { useSiteEditor } from './site-editor-context'
-
-const ACCEPT = 'image/jpeg,image/png,image/webp'
-const MAX_BYTES = 5 * 1024 * 1024
 
 /** A `site.image` fragment showing `url`. */
 export function imageFragment(
@@ -188,17 +187,7 @@ export function MediaPanel() {
   const [removing, setRemoving] = useState<SiteMediaItemDTO | null>(null)
 
   async function upload(files: FileList | File[]) {
-    const list = [...files].filter((file) => {
-      if (!ACCEPT.split(',').includes(file.type)) {
-        notify.error(`${file.name}: use JPEG, PNG ou WebP.`)
-        return false
-      }
-      if (file.size > MAX_BYTES) {
-        notify.error(`${file.name}: o limite é 5 MB.`)
-        return false
-      }
-      return true
-    })
+    const list = acceptImageFiles([...files])
     if (list.length === 0) return
     setUploading((count) => count + list.length)
     await Promise.all(
@@ -276,7 +265,7 @@ export function MediaPanel() {
         <input
           ref={input}
           type='file'
-          accept={ACCEPT}
+          accept={IMAGE_ACCEPT}
           multiple
           hidden
           aria-label='Escolher imagens'
