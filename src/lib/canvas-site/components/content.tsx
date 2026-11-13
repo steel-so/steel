@@ -548,6 +548,13 @@ export const dividerDefinition = defineComponent<SiteDividerProps>({
     margin: spacing(16, 0),
   }),
   accepts: false,
+  resizable: {
+    widthPath: 'width',
+    widthFormat: 'size',
+    widthUnit: '%',
+    min: { width: 5 },
+    max: { width: 100 },
+  },
   inspector: [
     {
       id: 'style',
@@ -611,6 +618,7 @@ export const spacerDefinition = defineComponent<SiteSpacerProps>({
   propsSchema: siteSpacerSchema,
   defaultProps: () => ({ height: { base: 48, mobile: 32 } }),
   accepts: false,
+  resizable: { heightPath: 'height', min: { height: 0 }, max: { height: 800 } },
   inspector: [
     {
       id: 'size',

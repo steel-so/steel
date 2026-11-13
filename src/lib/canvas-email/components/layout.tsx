@@ -484,6 +484,12 @@ export const columnDefinition = defineComponent<EmailColumnProps>({
   // Filled in by the catalog with every block type.
   accepts: [],
   parents: [SECTION],
+  resizable: {
+    widthPath: 'width',
+    widthUnit: '%',
+    min: { width: 5 },
+    max: { width: 100 },
+  },
   inspector: [
     {
       id: 'column',
