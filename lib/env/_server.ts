@@ -63,6 +63,7 @@ const serverEnv = {
   WORKBENCH_USER: process.env.WORKBENCH_USER,
   WORKBENCH_PASS: process.env.WORKBENCH_PASS,
   STATUS_APP_PROBE_URL: process.env.STATUS_APP_PROBE_URL,
+  META_PUBLIC_URL: process.env.META_PUBLIC_URL,
   SLACK_ALERTS_WEBHOOK_URL: process.env.SLACK_ALERTS_WEBHOOK_URL,
   AXIOM_TRACES_TOKEN: process.env.AXIOM_TRACES_TOKEN,
   AXIOM_TRACES_DATASET: process.env.AXIOM_TRACES_DATASET,
@@ -329,6 +330,14 @@ export const serverEnvSchema = z.object({
     (v) => (v === '' ? undefined : v),
     z.url().startsWith('http').optional(),
   ),
+  // Base URL que a Meta enxerga: webhook do WhatsApp Cloud API, Embedded Signup
+  // e callback OAuth do Facebook/Instagram. Fica no host cadastrado no app da
+  // Meta quando o painel dele não pode mais ser alterado. Sem ela, cai em
+  // BETTER_AUTH_URL.
+  META_PUBLIC_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.url().startsWith('http').optional(),
+  ),
   // Incoming Webhook of the #alerts channel: status component transitions and
   // background job deaths (src/lib/alerts/slack.ts). Optional and lenient on
   // purpose -- a malformed webhook must never stop the app from booting. Unset
@@ -575,6 +584,7 @@ export const {
   WORKBENCH_USER,
   WORKBENCH_PASS,
   STATUS_APP_PROBE_URL,
+  META_PUBLIC_URL,
   SLACK_ALERTS_WEBHOOK_URL,
   AXIOM_TRACES_TOKEN,
   AXIOM_TRACES_DATASET,

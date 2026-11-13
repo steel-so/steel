@@ -38,8 +38,10 @@ confirmar que deu certo.
 | Logs centralizados | Axiom, dataset `NEXT_PUBLIC_AXIOM_DATASET` |
 | Segredos | `secrets/production.enc.env` (SOPS); decriptado em `/var/www/steel/.env` a cada deploy |
 
-> `<domínio>`: o CD publica hoje em `homologacao.stratustelecom.com.br`; o
-> domínio de marca é `steel.stratustelecom.com.br`. Use o que estiver ativo.
+> `<domínio>`: o CD publica em `steel.stratustelecom.com.br`. O nome
+> `homologacao.stratustelecom.com.br` **não sai do ar**: é o host cadastrado no app
+> da Meta (webhook do WhatsApp, Embedded Signup, OAuth do Facebook/Instagram) e
+> segue servindo o app inteiro (ADR 0065).
 
 Regras gerais:
 
