@@ -14,6 +14,7 @@ import {
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
 import { LeadCadencePanel } from '@/app/_components/crm/cadences/lead-cadence-panel'
 import {
@@ -27,8 +28,8 @@ import {
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
-import { CrmOnboardingChecklist } from '@/app/_components/onboarding-checklist/crm-onboarding-checklist'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
+import { CrmOnboardingChecklist } from '@/app/_components/onboarding-checklist/crm-onboarding-checklist'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
@@ -61,7 +62,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from 'sonner'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { apiFetch, isApiErrorCode } from '@/src/hooks/_fetch'
@@ -965,7 +965,6 @@ function ContactAttemptForm({
   const [historyReload, setHistoryReload] = useState(0)
   const registerAttempt = useRegisterCrmLeadContactAttempt(workspaceId)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: historyReload is the retry trigger
   useEffect(() => {
     setHistoryError(null)
     apiFetch<CrmLeadContactAttemptDTO[]>(

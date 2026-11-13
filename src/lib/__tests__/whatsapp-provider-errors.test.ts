@@ -29,9 +29,9 @@ describe('whatsappProviderMessage', () => {
   })
 
   it('does not trust a Meta code it does not know: falls to the message rules', () => {
-    expect(whatsappProviderMessage(metaError(999999, 'Some English'))).toContain(
-      'Não foi possível enviar',
-    )
+    expect(
+      whatsappProviderMessage(metaError(999999, 'Some English')),
+    ).toContain('Não foi possível enviar')
   })
 
   it('translates generic rate limit, invalid number and network failures', () => {
@@ -55,9 +55,9 @@ describe('whatsappProviderMessage', () => {
   })
 
   it('keeps messages that are already pt-BR or from the Z-API', () => {
-    expect(whatsappProviderMessage(new Error('Falha na requisição Meta API (500)'))).toBe(
-      'Falha na requisição Meta API (500)',
-    )
+    expect(
+      whatsappProviderMessage(new Error('Falha na requisição Meta API (500)')),
+    ).toBe('Falha na requisição Meta API (500)')
     expect(whatsappProviderMessage(new Error('Z-API said no'))).toBe(
       'Z-API said no',
     )

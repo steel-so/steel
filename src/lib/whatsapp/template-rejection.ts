@@ -36,5 +36,7 @@ export function translateTemplateRejection(
 ): string | null {
   const text = reason?.trim()
   if (!text) return null
-  return KNOWN_REASONS.find((entry) => entry.pattern.test(text))?.message ?? text
+  return (
+    KNOWN_REASONS.find((entry) => entry.pattern.test(text))?.message ?? text
+  )
 }

@@ -242,7 +242,7 @@ export function WhatsappGroupSidebar({
         <CreateGroupDialog workspaceId={workspaceId} onCreated={onSelect} />
       </div>
       <div className='flex-1 overflow-y-auto'>
-        {emptyState ?? (
+        {emptyState ??
           filtered.map((group) => (
             <button
               key={group.id}
@@ -269,8 +269,7 @@ export function WhatsappGroupSidebar({
                 </p>
               </div>
             </button>
-          ))
-        )}
+          ))}
       </div>
     </div>
   )

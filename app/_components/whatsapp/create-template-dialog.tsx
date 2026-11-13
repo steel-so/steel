@@ -99,9 +99,9 @@ function componentText(
   template: WhatsAppTemplateDTO,
   type: 'BODY' | 'FOOTER',
 ): string {
-  const found = (template.components as { type?: string; text?: string }[]).find(
-    (component) => component.type === type,
-  )
+  const found = (
+    template.components as { type?: string; text?: string }[]
+  ).find((component) => component.type === type)
   return found?.text ?? ''
 }
 
@@ -417,8 +417,8 @@ export function CreateTemplateDialog({
                 </SelectContent>
               </Select>
               <p className='text-muted-foreground text-xs'>
-                {CATEGORY_HELP[category]} Custo aproximado por mensagem
-                enviada: {formatBrlPrice(REFERENCE_PRICES[category])} (valor de
+                {CATEGORY_HELP[category]} Custo aproximado por mensagem enviada:{' '}
+                {formatBrlPrice(REFERENCE_PRICES[category])} (valor de
                 referência; confira a tabela da Meta). Se o texto parecer
                 promoção, a Meta pode trocar a categoria para Marketing.
               </p>

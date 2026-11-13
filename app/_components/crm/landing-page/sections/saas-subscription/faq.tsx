@@ -154,7 +154,11 @@ export function SaasSubscriptionFaq({
 
       <p className='mt-16 text-center text-[17px] text-white'>
         <GhostInput
-          value={textOf(content, 'support.prefix', 'Não encontrou sua resposta?')}
+          value={textOf(
+            content,
+            'support.prefix',
+            'Não encontrou sua resposta?',
+          )}
           onCommit={(v) => onChange?.(withText(content, 'support.prefix', v))}
           placeholder='Texto de apoio'
           readOnly={readOnly}
@@ -167,7 +171,11 @@ export function SaasSubscriptionFaq({
           className='text-[#68d585]'
         >
           <GhostInput
-            value={textOf(content, 'support.link', 'Fale com o nosso suporte agora')}
+            value={textOf(
+              content,
+              'support.link',
+              'Fale com o nosso suporte agora',
+            )}
             onCommit={(v) => onChange?.(withText(content, 'support.link', v))}
             placeholder='Texto do link'
             readOnly={readOnly}

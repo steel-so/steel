@@ -125,8 +125,8 @@ export function CrmOpportunityLineItems({
         <div className='flex flex-col'>
           <span className='font-medium text-sm'>Itens</span>
           <span className='text-muted-foreground text-xs'>
-            O total dos itens é uma referência: o valor da oportunidade
-            continua sendo o campo Valor.
+            O total dos itens é uma referência: o valor da oportunidade continua
+            sendo o campo Valor.
           </span>
         </div>
         <Button size='sm' variant='outline' onClick={handleAdd} disabled={busy}>

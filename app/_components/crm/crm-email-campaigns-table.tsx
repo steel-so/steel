@@ -506,10 +506,7 @@ function CampaignComposer({
       const date = scheduledAtLocal ? new Date(scheduledAtLocal) : null
       if (!date) {
         next.schedule = 'Informe a data e a hora do envio.'
-      } else if (
-        Number.isNaN(date.getTime()) ||
-        date.getTime() <= Date.now()
-      ) {
+      } else if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
         next.schedule = 'Escolha uma data e hora no futuro.'
       } else {
         scheduledAt = date.toISOString()

@@ -147,7 +147,8 @@ export const jobSiteTemplate: LandingPageTemplateDefinition = {
             imageUrl: '/landing-page-templates/job-site/job-logo-askimat.png',
           },
           {
-            title: 'Desenvolvedor(a) Web Full-stack — Greener, Belo Horizonte, MG',
+            title:
+              'Desenvolvedor(a) Web Full-stack — Greener, Belo Horizonte, MG',
             category: 'Meio período',
             imageUrl: '/landing-page-templates/job-site/job-logo-greener.svg',
           },

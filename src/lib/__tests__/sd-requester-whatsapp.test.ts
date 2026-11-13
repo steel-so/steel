@@ -146,9 +146,9 @@ describe('decideSdRequesterSend', () => {
   })
 
   it('skips with the right reason when text is not possible', () => {
-    expect(
-      decideSdRequesterSend({ ...base, templateApproved: false }),
-    ).toEqual({ action: 'skip', reason: 'template_unavailable' })
+    expect(decideSdRequesterSend({ ...base, templateApproved: false })).toEqual(
+      { action: 'skip', reason: 'template_unavailable' },
+    )
     expect(
       decideSdRequesterSend({
         ...base,
@@ -169,9 +169,9 @@ describe('decideSdRequesterSend', () => {
   })
 
   it('has no templates or window on Z-API', () => {
-    expect(
-      decideSdRequesterSend({ ...base, provider: 'ZAPI' }),
-    ).toEqual({ action: 'text' })
+    expect(decideSdRequesterSend({ ...base, provider: 'ZAPI' })).toEqual({
+      action: 'text',
+    })
     expect(
       decideSdRequesterSend({
         ...base,

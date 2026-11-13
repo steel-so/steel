@@ -27,7 +27,10 @@ import {
   zapConversationUnassignTool,
 } from './whatsapp/conversations'
 import { zapDashboardTool } from './whatsapp/dashboard'
-import { zapMessageSendTextTool, zapTemplateSendTool } from './whatsapp/messages'
+import {
+  zapMessageSendTextTool,
+  zapTemplateSendTool,
+} from './whatsapp/messages'
 import {
   zapQuickRepliesListTool,
   zapQuickReplyCreateTool,

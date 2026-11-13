@@ -10,7 +10,9 @@ function draftKey(workspaceId: string, conversationId: string): string {
 
 export function readDraft(workspaceId: string, conversationId: string): string {
   try {
-    return window.localStorage.getItem(draftKey(workspaceId, conversationId)) ?? ''
+    return (
+      window.localStorage.getItem(draftKey(workspaceId, conversationId)) ?? ''
+    )
   } catch {
     return ''
   }

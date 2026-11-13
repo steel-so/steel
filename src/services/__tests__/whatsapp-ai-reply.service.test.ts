@@ -341,15 +341,15 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
 
   it('adds KB and Wiki sources found for the customer message to the prompt', async () => {
     arrange()
-    vi.mocked(WhatsAppReplyKnowledgeService.forCustomerReply).mockResolvedValueOnce(
-      [
-        {
-          sourceLabel: 'Página da Wiki',
-          title: 'Política de troca',
-          text: 'Trocas em até 7 dias.',
-        },
-      ],
-    )
+    vi.mocked(
+      WhatsAppReplyKnowledgeService.forCustomerReply,
+    ).mockResolvedValueOnce([
+      {
+        sourceLabel: 'Página da Wiki',
+        title: 'Política de troca',
+        text: 'Trocas em até 7 dias.',
+      },
+    ])
     const chat = vi.fn(async () => response('Trocamos em até 7 dias.'))
     mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
 
@@ -361,9 +361,10 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     )
 
     expect(outcome).toMatchObject({ status: 'sent' })
-    expect(
-      WhatsAppReplyKnowledgeService.forCustomerReply,
-    ).toHaveBeenCalledWith(WS, 'Oi')
+    expect(WhatsAppReplyKnowledgeService.forCustomerReply).toHaveBeenCalledWith(
+      WS,
+      'Oi',
+    )
     const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
     expect(call.system).toContain('### Página da Wiki: Política de troca')
     expect(call.system).toContain('Trocas em até 7 dias.')

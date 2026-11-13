@@ -102,7 +102,9 @@ describe('CrmRetentionService settings', () => {
       ok(settingsRow({ createOpportunity: true }) as never),
     )
     const dto = expectOk(
-      await CrmRetentionService.update('u', 'ws-1', { createOpportunity: true }),
+      await CrmRetentionService.update('u', 'ws-1', {
+        createOpportunity: true,
+      }),
     )
     expect(dto).toMatchObject({ createOpportunity: true, isDefault: false })
     expect(Repo.upsertSettings).toHaveBeenCalledWith('ws-1', {
@@ -166,7 +168,10 @@ describe('CrmRetentionService.onSurveyDetractor', () => {
       opportunityId: null,
     })
     expect(notifyCrmRetentionTask).toHaveBeenCalledWith(
-      expect.objectContaining({ assigneeId: 'owner1', dedupeKey: 'survey:sv1' }),
+      expect.objectContaining({
+        assigneeId: 'owner1',
+        dedupeKey: 'survey:sv1',
+      }),
     )
     expect(auditMutation).toHaveBeenCalledWith(
       expect.objectContaining({ entity: 'crm_task', targetId: 't1' }),

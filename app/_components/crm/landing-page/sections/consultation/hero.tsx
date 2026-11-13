@@ -71,7 +71,11 @@ function AlertStrip({
           className='underline underline-offset-2'
         >
           <GhostInput
-            value={textOf(content, 'alert.link', 'Garanta o seu agora por R$ 49')}
+            value={textOf(
+              content,
+              'alert.link',
+              'Garanta o seu agora por R$ 49',
+            )}
             onCommit={(v) => onChange?.(withText(content, 'alert.link', v))}
             placeholder='Texto do link'
             readOnly={readOnly}

@@ -267,12 +267,7 @@ export const CrmImportService = {
       if (dto.entity === 'leads') {
         outcome = await importLead(actorId, workspaceId, row)
       } else if (dto.entity === 'people') {
-        outcome = await importPerson(
-          actorId,
-          workspaceId,
-          row,
-          companiesByName,
-        )
+        outcome = await importPerson(actorId, workspaceId, row, companiesByName)
       } else {
         outcome = await importCompany(actorId, workspaceId, row)
       }

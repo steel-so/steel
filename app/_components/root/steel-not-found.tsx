@@ -18,7 +18,8 @@ export default function Page() {
         Página não encontrada
       </h1>
       <p className='text-sm font-normal leading-5 mb-5 text-[#ededed]'>
-        A página que você procura não existe ou foi movida. Confira o endereço ou volte para o início.
+        A página que você procura não existe ou foi movida. Confira o endereço
+        ou volte para o início.
       </p>
       <div className='flex items-center gap-2'>
         <Button size={'sm'} onClick={() => (window.location.href = '/')}>

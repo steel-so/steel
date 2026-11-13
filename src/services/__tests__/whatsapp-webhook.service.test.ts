@@ -643,40 +643,45 @@ describe('WhatsAppWebhookService', () => {
           provider: 'META',
         }),
       ],
-    ])('should drop a message from a contact blocked on the %s number before anything else', async (_provider, line) => {
-      const { WhatsAppContactBlockRepository } = await import(
-        '@/src/repositories/whatsapp-contact-block.repository'
-      )
-      const blocks = vi.mocked(WhatsAppContactBlockRepository)
-      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
-      blocks.findActive.mockResolvedValueOnce(
-        ok({ id: 'blk1', providerStatus: 'APPLIED' } as never),
-      )
+    ])(
+      'should drop a message from a contact blocked on the %s number before anything else',
+      async (_provider, line) => {
+        const { WhatsAppContactBlockRepository } = await import(
+          '@/src/repositories/whatsapp-contact-block.repository'
+        )
+        const blocks = vi.mocked(WhatsAppContactBlockRepository)
+        mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+        blocks.findActive.mockResolvedValueOnce(
+          ok({ id: 'blk1', providerStatus: 'APPLIED' } as never),
+        )
 
-      expectOk(
-        await WhatsAppWebhookService.ingestInboundMessage(
-          baseInbound({ connection: line, bsuid: 'BR.1' }),
-        ),
-      )
+        expectOk(
+          await WhatsAppWebhookService.ingestInboundMessage(
+            baseInbound({ connection: line, bsuid: 'BR.1' }),
+          ),
+        )
 
-      expect(blocks.findActive).toHaveBeenCalledWith(line.id, [
-        '5511988887777',
-        '551188887777',
-        'BR.1',
-      ])
-      expect(blocks.recordDropped).toHaveBeenCalledWith(
-        'blk1',
-        expect.any(Date),
-      )
-      expect(mockedContactRepo.upsertByWaId).not.toHaveBeenCalled()
-      expect(SatisfactionSurveyService.handleInbound).not.toHaveBeenCalled()
-      expect(mockedConversationRepo.create).not.toHaveBeenCalled()
-      expect(mockedConversationRepo.update).not.toHaveBeenCalled()
-      expect(mockedMessageRepo.create).not.toHaveBeenCalled()
-      expect(aiReplyAdd).not.toHaveBeenCalled()
-      expect(WhatsAppChatbotRuntimeService.claimInbound).not.toHaveBeenCalled()
-      expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
-    })
+        expect(blocks.findActive).toHaveBeenCalledWith(line.id, [
+          '5511988887777',
+          '551188887777',
+          'BR.1',
+        ])
+        expect(blocks.recordDropped).toHaveBeenCalledWith(
+          'blk1',
+          expect.any(Date),
+        )
+        expect(mockedContactRepo.upsertByWaId).not.toHaveBeenCalled()
+        expect(SatisfactionSurveyService.handleInbound).not.toHaveBeenCalled()
+        expect(mockedConversationRepo.create).not.toHaveBeenCalled()
+        expect(mockedConversationRepo.update).not.toHaveBeenCalled()
+        expect(mockedMessageRepo.create).not.toHaveBeenCalled()
+        expect(aiReplyAdd).not.toHaveBeenCalled()
+        expect(
+          WhatsAppChatbotRuntimeService.claimInbound,
+        ).not.toHaveBeenCalled()
+        expect(notifyWhatsAppUsers).not.toHaveBeenCalled()
+      },
+    )
 
     it('should never screen a ServiceDesk number', async () => {
       const { WhatsAppContactBlockRepository } = await import(

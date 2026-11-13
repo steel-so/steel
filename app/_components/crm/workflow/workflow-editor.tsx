@@ -777,11 +777,7 @@ export function WorkflowTopBar({
         </Button>
         <ConfirmAction
           trigger={
-            <Button
-              size='sm'
-              variant='ghost'
-              aria-label='Descartar alterações'
-            >
+            <Button size='sm' variant='ghost' aria-label='Descartar alterações'>
               <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
               <span className='hidden lg:inline'>Descartar</span>
             </Button>

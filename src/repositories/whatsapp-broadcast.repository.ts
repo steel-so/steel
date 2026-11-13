@@ -395,7 +395,9 @@ export const WhatsAppBroadcastRepository = {
       })
       return ok(result.count)
     } catch (error) {
-      return err(dbError('Failed to cancel pending broadcast recipients', error))
+      return err(
+        dbError('Failed to cancel pending broadcast recipients', error),
+      )
     }
   },
 

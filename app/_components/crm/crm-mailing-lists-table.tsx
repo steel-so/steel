@@ -29,7 +29,6 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
-import { parsePastedEmails } from '@/src/lib/crm-email-paste'
 import {
   useAddCrmMailingListMember,
   useCreateCrmMailingList,
@@ -39,6 +38,7 @@ import {
 } from '@/src/hooks/use-crm-email-marketing'
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
 import { useCrmWorkspaceLookups } from '@/src/hooks/use-crm-workspace-lookups'
+import { parsePastedEmails } from '@/src/lib/crm-email-paste'
 import type {
   CrmMailingListDTO,
   CrmMailingListMemberDTO,
@@ -615,7 +615,8 @@ function ListDetailPanel({
             </Label>
             {isLoading ? null : members.length === 0 ? (
               <div className='rounded-lg border border-dashed border-border p-6 text-center text-muted-foreground text-xs'>
-                Esta lista ainda não tem membros. Escolha leads existentes, cole e-mails ou importe um arquivo CSV acima.
+                Esta lista ainda não tem membros. Escolha leads existentes, cole
+                e-mails ou importe um arquivo CSV acima.
               </div>
             ) : (
               <ul className='max-h-96 divide-y divide-border overflow-auto rounded-lg border border-border'>

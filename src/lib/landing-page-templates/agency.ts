@@ -44,7 +44,8 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'SERVICES',
       content: {
         type: 'SERVICES',
-        title: 'Entregamos serviços de excelência, sob medida para cada cliente',
+        title:
+          'Entregamos serviços de excelência, sob medida para cada cliente',
         items: [
           {
             title: 'Design Gráfico',
@@ -81,8 +82,7 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'ABOUT',
         eyebrow: 'Nossa história',
-        title:
-          'Sabemos como tudo funciona e por que o seu negócio não decola.',
+        title: 'Sabemos como tudo funciona e por que o seu negócio não decola.',
         description:
           'Compartilhamos tendências e estratégias para aumentar a sua receita e manter a sua empresa sempre em alta demanda. Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: '/landing-page-templates/agency/about-photo-main.png',
@@ -99,7 +99,8 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
         items: [
           {
             value: '1M+',
-            label: 'Clientes nos procuram todo mês para resolver suas demandas.',
+            label:
+              'Clientes nos procuram todo mês para resolver suas demandas.',
           },
           {
             value: '92%',

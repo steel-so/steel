@@ -110,7 +110,9 @@ describe('<WorkflowTopBar />', () => {
       screen.getByRole('button', { name: 'Descartar alterações' }),
     )
     fireEvent.click(
-      screen.getAllByRole('button', { name: 'Descartar alterações' }).at(-1) as HTMLElement,
+      screen
+        .getAllByRole('button', { name: 'Descartar alterações' })
+        .at(-1) as HTMLElement,
     )
     // The discard confirmation closes asynchronously (ConfirmAction awaits onConfirm).
     fireEvent.click(await screen.findByRole('button', { name: 'Ativar' }))

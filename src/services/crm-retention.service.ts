@@ -123,7 +123,9 @@ async function createFollowUp(
     createdById: assigneeId,
     title: input.title,
     body: input.body,
-    dueDate: new Date(input.now.getTime() + input.settings.taskDueDays * DAY_MS),
+    dueDate: new Date(
+      input.now.getTime() + input.settings.taskDueDays * DAY_MS,
+    ),
     assigneeId,
     companyId: input.companyId ?? undefined,
     personId: input.personId ?? undefined,
@@ -196,7 +198,10 @@ async function findSurveyPersonId(
 
 const contextOf = (
   person: RetentionPersonContext,
-): Pick<FollowUpInput, 'companyId' | 'companyName' | 'personId' | 'ownerId'> => ({
+): Pick<
+  FollowUpInput,
+  'companyId' | 'companyName' | 'personId' | 'ownerId'
+> => ({
   companyId: person.companyId,
   companyName: person.companyName,
   personId: person.personId,

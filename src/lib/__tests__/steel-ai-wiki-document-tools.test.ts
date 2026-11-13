@@ -118,14 +118,10 @@ describe('wiki_pages_list', () => {
       ]),
     )
 
-    const all = expectOk(
-      await runWikiList(),
-    )
+    const all = expectOk(await runWikiList())
     expect((all.data as { total: number }).total).toBe(2)
 
-    const filtered = expectOk(
-      await runWikiList({ query: 'POLITICA' }),
-    )
+    const filtered = expectOk(await runWikiList({ query: 'POLITICA' }))
     expect(filtered.data).toMatchObject({
       total: 1,
       items: [{ id: 'a', title: 'Política de troca', published: false }],
@@ -135,14 +131,9 @@ describe('wiki_pages_list', () => {
 
   it('should surface a service error and label untitled pages', async () => {
     wiki.list.mockResolvedValueOnce(err(forbidden()))
-    expectErr(
-      await runWikiList(),
-      'FORBIDDEN',
-    )
+    expectErr(await runWikiList(), 'FORBIDDEN')
     wiki.list.mockResolvedValueOnce(ok([wikiPage({ title: '' })]))
-    const out = expectOk(
-      await runWikiList(),
-    )
+    const out = expectOk(await runWikiList())
     expect(out.data).toMatchObject({ items: [{ title: 'Sem título' }] })
   })
 })
@@ -168,17 +159,12 @@ describe('wiki_page_get', () => {
   it('should omit the link when the workspace cannot be read and keep errors', async () => {
     wiki.getById.mockResolvedValueOnce(ok(wikiPage({ title: '' })))
     workspaces.getById.mockResolvedValueOnce(err(databaseError('x')))
-    const out = expectOk(
-      await wikiPageGetTool.execute(ctx, { pageId: 'p1' }),
-    )
+    const out = expectOk(await wikiPageGetTool.execute(ctx, { pageId: 'p1' }))
     expect((out.data as { href?: string }).href).toBeUndefined()
     expect(out.summary).toBe('Página “Sem título”')
 
     wiki.getById.mockResolvedValueOnce(err(forbidden()))
-    expectErr(
-      await wikiPageGetTool.execute(ctx, { pageId: 'p1' }),
-      'FORBIDDEN',
-    )
+    expectErr(await wikiPageGetTool.execute(ctx, { pageId: 'p1' }), 'FORBIDDEN')
     expectErr(wikiPageGetTool.parse({}), 'VALIDATION_ERROR')
   })
 })
@@ -190,9 +176,7 @@ describe('wiki_page_create', () => {
     const args = expectOk(
       wikiPageCreateTool.parse({ title: 'Nova', text: 'a\n\nb' }),
     )
-    const preview = expectOk(
-      await previewOf(wikiPageCreateTool)(ctx, args),
-    )
+    const preview = expectOk(await previewOf(wikiPageCreateTool)(ctx, args))
     expect(preview.title).toBe('Criar a página “Nova” na Wiki')
     expect(preview.fields).toEqual([
       { label: 'Título', after: 'Nova' },
@@ -241,7 +225,10 @@ describe('wiki_page_create', () => {
     expect(wiki.update).not.toHaveBeenCalled()
 
     wiki.create.mockResolvedValueOnce(err(forbidden()))
-    expectErr(await wikiPageCreateTool.execute(ctx, { title: 'x' }), 'FORBIDDEN')
+    expectErr(
+      await wikiPageCreateTool.execute(ctx, { title: 'x' }),
+      'FORBIDDEN',
+    )
 
     wiki.create.mockResolvedValueOnce(ok(wikiPage({ id: 'n2' })))
     wiki.update.mockResolvedValueOnce(err(databaseError('x')))
@@ -315,9 +302,7 @@ describe('documents_list', () => {
     docs.list.mockResolvedValueOnce(
       ok({ items: [], total: 0, page: 1, pageSize: 20 }),
     )
-    const out = expectOk(
-      await runDocList(),
-    )
+    const out = expectOk(await runDocList())
     expect(docs.list).toHaveBeenCalledWith(
       'u1',
       'ws1',
@@ -326,10 +311,7 @@ describe('documents_list', () => {
     expect(out.data).toMatchObject({ hasMore: false })
 
     docs.list.mockResolvedValueOnce(err(forbidden()))
-    expectErr(
-      await runDocList(),
-      'FORBIDDEN',
-    )
+    expectErr(await runDocList(), 'FORBIDDEN')
   })
 })
 

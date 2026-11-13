@@ -119,11 +119,15 @@ export const WhatsAppReplyKnowledgeService = {
     const q = query.trim()
     if (q.length < 2) return []
     try {
-      const found = await AiKnowledgeSearchService.search(actorId, workspaceId, {
-        q,
-        sources: SOURCES,
-        limit: REPLY_KNOWLEDGE_MAX_SOURCES,
-      })
+      const found = await AiKnowledgeSearchService.search(
+        actorId,
+        workspaceId,
+        {
+          q,
+          sources: SOURCES,
+          limit: REPLY_KNOWLEDGE_MAX_SOURCES,
+        },
+      )
       if (!found.ok) return []
       return found.value.results.map((r) => ({
         sourceLabel: r.sourceLabel,

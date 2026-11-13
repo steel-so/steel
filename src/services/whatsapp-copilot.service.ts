@@ -38,11 +38,11 @@ import type {
 } from '@/types/whatsapp-copilot'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
 import { assertModuleMember } from './authz'
-import { WhatsAppReplyKnowledgeService } from './whatsapp-reply-knowledge.service'
 import {
   loadVisibleConversation,
   resolveConversationScope,
 } from './whatsapp-conversation-scope.service'
+import { WhatsAppReplyKnowledgeService } from './whatsapp-reply-knowledge.service'
 
 /**
  * Z7 — agent copilot. Three on-demand helpers for a human agent working a

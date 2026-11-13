@@ -34,7 +34,9 @@ export function WhatsappPageClient({
   const refreshSelected = useCallback(
     (fresh: WhatsAppConversationDTO) =>
       setSelected((current) =>
-        current && current.id === fresh.id && current.updatedAt !== fresh.updatedAt
+        current &&
+        current.id === fresh.id &&
+        current.updatedAt !== fresh.updatedAt
           ? fresh
           : current,
       ),
@@ -92,7 +94,9 @@ export function WhatsappPageClient({
               role='alert'
               className='max-w-md space-y-2 rounded-md border bg-muted px-4 py-3 text-foreground'
             >
-              <p className='font-medium'>Essa conversa não está disponível para você.</p>
+              <p className='font-medium'>
+                Essa conversa não está disponível para você.
+              </p>
               <p className='text-muted-foreground text-xs'>
                 Ela pode ter sido transferida para outra equipe ou outro
                 atendente, ter sido apagada, ou você não tem acesso a ela. Fale

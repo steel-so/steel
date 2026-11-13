@@ -145,7 +145,9 @@ describe('<WhatsappSettingsTemplates /> rejections', () => {
     ])
     renderWithQuery(<WhatsappSettingsTemplates workspaceId='ws_1' />)
 
-    expect(await screen.findByText(/O formato do texto não foi aceito/)).toBeTruthy()
+    expect(
+      await screen.findByText(/O formato do texto não foi aceito/),
+    ).toBeTruthy()
   })
 
   it('opens "Corrigir e reenviar" prefilled with a new version name', async () => {
@@ -164,8 +166,11 @@ describe('<WhatsappSettingsTemplates /> rejections', () => {
         .value,
     ).toBe('promo natal 2')
     expect(
-      (within(dialog).getByLabelText('Corpo da mensagem') as HTMLTextAreaElement)
-        .value,
+      (
+        within(dialog).getByLabelText(
+          'Corpo da mensagem',
+        ) as HTMLTextAreaElement
+      ).value,
     ).toBe('Olá {{1}}, aproveite!')
   })
 

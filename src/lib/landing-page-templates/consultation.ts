@@ -160,7 +160,8 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Receba agora uma consultoria gratuita com nossos especialistas!',
+        title:
+          'Receba agora uma consultoria gratuita com nossos especialistas!',
         description:
           'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page rapidinho.',
         imageUrls: [],

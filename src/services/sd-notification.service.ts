@@ -14,13 +14,13 @@ import {
 import { sendSdTicketNotificationEmail } from '@/src/lib/mail/servicedesk/send-sd-ticket-notification'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
-  parseSdRequesterTemplates,
-  type SdRequesterTemplates,
-} from '@/src/lib/servicedesk/requester-whatsapp'
-import {
   type SdNotifyTicket,
   sdTicketNotificationHref,
 } from '@/src/lib/servicedesk/notify'
+import {
+  parseSdRequesterTemplates,
+  type SdRequesterTemplates,
+} from '@/src/lib/servicedesk/requester-whatsapp'
 import { normalizeSdWhatsappNumber } from '@/src/lib/servicedesk/whatsapp'
 import {
   sdNotificationWebhookData,

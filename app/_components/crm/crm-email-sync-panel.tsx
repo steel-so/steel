@@ -224,7 +224,9 @@ function CrmEmailAccountsSection({ workspaceId }: { workspaceId: string }) {
             )}
             {accounts?.map((account) => (
               <TableRow key={account.id}>
-                <TableCell>{PROVIDER_LABELS[account.provider] ?? account.provider}</TableCell>
+                <TableCell>
+                  {PROVIDER_LABELS[account.provider] ?? account.provider}
+                </TableCell>
                 <TableCell>{account.email}</TableCell>
                 <TableCell>
                   {canDelete ? (

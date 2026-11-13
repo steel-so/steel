@@ -141,7 +141,9 @@ describe('<CrmMailingListsTable /> detail', () => {
       await screen.findByRole('button', { name: 'abrir Clientes VIP' }),
     )
     expect(
-      await screen.findByText('Esta lista ainda não tem membros. Escolha leads existentes, cole e-mails ou importe um arquivo CSV acima.'),
+      await screen.findByText(
+        'Esta lista ainda não tem membros. Escolha leads existentes, cole e-mails ou importe um arquivo CSV acima.',
+      ),
     ).toBeTruthy()
   })
 

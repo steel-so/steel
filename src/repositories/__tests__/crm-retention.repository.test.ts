@@ -131,9 +131,9 @@ describe('CrmRetentionRepository', () => {
         expectOk(await Repo.findPersonIdByEmail(workspace.id, 'x@y.com')),
       ).toBeNull()
 
-      expect(expectOk(await Repo.findCompany(workspace.id, company.id))).toEqual(
-        { id: company.id, name: 'Acme', accountOwnerId: user.id },
-      )
+      expect(
+        expectOk(await Repo.findCompany(workspace.id, company.id)),
+      ).toEqual({ id: company.id, name: 'Acme', accountOwnerId: user.id })
       expect(expectOk(await Repo.findCompany('other', company.id))).toBeNull()
     })
 
@@ -238,21 +238,64 @@ describe('CrmRetentionRepository', () => {
 
   describe('failures', () => {
     it.each([
-      ['findSettings', () => Repo.findSettings('w'), 'crmRetentionSettings', 'findUnique'],
-      ['findPersonContext', () => Repo.findPersonContext('w', 'p'), 'crmPerson', 'findFirst'],
-      ['findPersonIdByEmail', () => Repo.findPersonIdByEmail('w', 'a@b.c'), 'crmPerson', 'findFirst'],
-      ['findContactPhone', () => Repo.findContactPhone('w', 'c'), 'whatsAppContact', 'findFirst'],
-      ['findCompany', () => Repo.findCompany('w', 'c'), 'crmCompany', 'findFirst'],
-      ['findRetentionStage', () => Repo.findRetentionStage('w'), 'crmPipeline', 'findFirst'],
-      ['findOpenOpportunityOfCompany', () => Repo.findOpenOpportunityOfCompany('w', 'c'), 'crmOpportunity', 'findFirst'],
-      ['findFallbackUserId', () => Repo.findFallbackUserId('w'), 'membership', 'findFirst'],
-    ] as const)('%s should return DATABASE_ERROR', async (_name, call, model, method) => {
-      vi.spyOn(
-        prisma[model] as unknown as Record<string, () => unknown>,
-        method,
-      ).mockRejectedValueOnce(new Error('boom'))
-      expectErr(await call(), 'DATABASE_ERROR')
-    })
+      [
+        'findSettings',
+        () => Repo.findSettings('w'),
+        'crmRetentionSettings',
+        'findUnique',
+      ],
+      [
+        'findPersonContext',
+        () => Repo.findPersonContext('w', 'p'),
+        'crmPerson',
+        'findFirst',
+      ],
+      [
+        'findPersonIdByEmail',
+        () => Repo.findPersonIdByEmail('w', 'a@b.c'),
+        'crmPerson',
+        'findFirst',
+      ],
+      [
+        'findContactPhone',
+        () => Repo.findContactPhone('w', 'c'),
+        'whatsAppContact',
+        'findFirst',
+      ],
+      [
+        'findCompany',
+        () => Repo.findCompany('w', 'c'),
+        'crmCompany',
+        'findFirst',
+      ],
+      [
+        'findRetentionStage',
+        () => Repo.findRetentionStage('w'),
+        'crmPipeline',
+        'findFirst',
+      ],
+      [
+        'findOpenOpportunityOfCompany',
+        () => Repo.findOpenOpportunityOfCompany('w', 'c'),
+        'crmOpportunity',
+        'findFirst',
+      ],
+      [
+        'findFallbackUserId',
+        () => Repo.findFallbackUserId('w'),
+        'membership',
+        'findFirst',
+      ],
+    ] as const)(
+      '%s should return DATABASE_ERROR',
+      async (_name, call, model, method) => {
+        vi.spyOn(
+          prisma[model] as unknown as Record<string, () => unknown>,
+          method,
+        ).mockRejectedValueOnce(new Error('boom'))
+        expectErr(await call(), 'DATABASE_ERROR')
+      },
+    )
 
     it('upsertSettings should return DATABASE_ERROR for a missing workspace', async () => {
       expectErr(

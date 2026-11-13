@@ -837,14 +837,19 @@ describe('<WhatsappComposer /> usability guards', () => {
     ).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Escolher modelo' }))
-    expect(await screen.findByRole('button', { name: /boas_vindas/ })).toBeTruthy()
+    expect(
+      await screen.findByRole('button', { name: /boas_vindas/ }),
+    ).toBeTruthy()
   })
 
   it('lists only the templates of the conversation number, with the reason', async () => {
     setup([], {
       templates: [
         template('t1', 'boas_vindas', 'APPROVED'),
-        { ...template('t2', 'outro_numero', 'APPROVED'), connectionId: 'other' },
+        {
+          ...template('t2', 'outro_numero', 'APPROVED'),
+          connectionId: 'other',
+        },
         {
           ...template('t3', 'recusado', 'REJECTED'),
           statusReason: 'Texto promocional demais',
@@ -854,7 +859,9 @@ describe('<WhatsappComposer /> usability guards', () => {
     renderComposer({ connection: META })
 
     fireEvent.click(screen.getByRole('button', { name: 'Template' }))
-    expect(await screen.findByRole('button', { name: /boas_vindas/ })).toBeTruthy()
+    expect(
+      await screen.findByRole('button', { name: /boas_vindas/ }),
+    ).toBeTruthy()
     expect(screen.queryByRole('button', { name: /outro_numero/ })).toBeNull()
     const rejected = screen.getByRole('button', { name: /recusado/ })
     expect((rejected as HTMLButtonElement).disabled).toBe(true)
@@ -873,7 +880,10 @@ describe('<WhatsappComposer /> usability guards', () => {
   it('restores the draft of this conversation only', () => {
     setup()
     window.localStorage.setItem('steel:zap-draft:ws_1:cv_1', 'rascunho salvo')
-    window.localStorage.setItem('steel:zap-draft:ws_1:cv_2', 'de outra conversa')
+    window.localStorage.setItem(
+      'steel:zap-draft:ws_1:cv_2',
+      'de outra conversa',
+    )
     renderComposer()
     expect(textarea().value).toBe('rascunho salvo')
   })

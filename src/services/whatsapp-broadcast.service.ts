@@ -558,7 +558,10 @@ export const WhatsAppBroadcastService = {
     const existing = await WhatsAppBroadcastRepository.findById(id, workspaceId)
     if (!existing.ok) return existing
     if (!existing.value) return err(whatsappBroadcastNotFound())
-    if (existing.value.status !== 'DONE' && existing.value.status !== 'FAILED') {
+    if (
+      existing.value.status !== 'DONE' &&
+      existing.value.status !== 'FAILED'
+    ) {
       return err(
         whatsappBroadcastLocked(
           'Espere o envio terminar para reenviar os que falharam.',
@@ -570,7 +573,9 @@ export const WhatsAppBroadcastService = {
     if (!reset.ok) return reset
     if (reset.value.length === 0) {
       return err(
-        whatsappBroadcastNoRecipients('Nenhum destinatário falhou nesta lista.'),
+        whatsappBroadcastNoRecipients(
+          'Nenhum destinatário falhou nesta lista.',
+        ),
       )
     }
 
