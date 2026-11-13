@@ -89,7 +89,7 @@ export interface SdNotifyOutcome {
    * Destinos de WhatsApp pulados por opt-out (LGPD) ou por não ser possível
    * confirmá-lo: o envio não acontece e o motivo vai para o log.
    */
-  whatsappSkippedOptOut: number
+  whatsappSkippedOptOut?: number
   /** Motivo de não ter avisado ninguém. */
   skipped: 'no_recipients' | null
 }
