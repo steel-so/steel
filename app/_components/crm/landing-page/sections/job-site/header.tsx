@@ -15,15 +15,15 @@ type HeaderContent = Extract<CrmLandingPageSectionContent, { type: 'HEADER' }>
 export function headerDefaultContent(): HeaderContent {
   return {
     type: 'HEADER',
-    logoText: 'Brainwave.io',
+    logoText: 'Sua Empresa',
     navLinks: [
-      { label: 'Demos', href: '#' },
-      { label: 'Pages', href: '#' },
-      { label: 'Support', href: '#' },
-      { label: 'Contact', href: '#footer' },
-      { label: 'Login', href: '#' },
+      { label: 'Demonstrações', href: '#' },
+      { label: 'Páginas', href: '#' },
+      { label: 'Suporte', href: '#' },
+      { label: 'Contato', href: '#footer' },
+      { label: 'Entrar', href: '#' },
     ],
-    ctaLabel: 'Sign up',
+    ctaLabel: 'Cadastre-se',
     ctaHref: '#subscribe',
   }
 }

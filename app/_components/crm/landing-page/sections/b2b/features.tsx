@@ -23,14 +23,14 @@ const BASE = '/landing-page-templates/b2b'
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'Reasons you should choose us to grow today.',
+    title: 'Motivos para nos escolher e crescer hoje mesmo.',
     subtitle:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+      'Compartilhamos tendências e estratégias para aumentar a sua receita e manter a sua empresa sempre em alta demanda.',
     items: [
-      { title: 'Fully Responsive', description: '' },
-      { title: 'Beautiful Layouts', description: '' },
-      { title: 'Easy to Edit', description: '' },
-      { title: 'Google Font Included', description: '' },
+      { title: 'Totalmente Responsivo', description: '' },
+      { title: 'Layouts Elegantes', description: '' },
+      { title: 'Fácil de Editar', description: '' },
+      { title: 'Fontes do Google Incluídas', description: '' },
     ],
   }
 }

@@ -24,49 +24,49 @@ const SOCIAL_ICONS: Record<string, string> = {
 
 // "Contact us" recebe o mesmo tratamento visual (link em negrito/azul) que o
 // Figma dá a esse grupo especificamente — os demais grupos são links comuns.
-const CONTACT_GROUP_TITLE = 'Contact us'
+const CONTACT_GROUP_TITLE = 'Fale conosco'
 
 export function footerDefaultContent(): FooterContent {
   return {
     type: 'FOOTER',
-    ctaTitle: 'Ready to have a decorated lifestyle?',
-    ctaLabel: 'Start Shopping',
+    ctaTitle: 'Pronto para decorar a sua casa?',
+    ctaLabel: 'Começar a comprar',
     ctaHref: '#',
     linkGroups: [
       {
-        title: 'Company',
+        title: 'Empresa',
         links: [
-          { label: 'About us', href: '#' },
-          { label: 'Contact us', href: '#' },
-          { label: 'Careers', href: '#' },
-          { label: 'Press', href: '#' },
+          { label: 'Sobre nós', href: '#' },
+          { label: 'Fale conosco', href: '#' },
+          { label: 'Carreiras', href: '#' },
+          { label: 'Imprensa', href: '#' },
         ],
       },
       {
-        title: 'Product',
+        title: 'Produto',
         links: [
-          { label: 'Features', href: '#' },
-          { label: 'Pricing', href: '#' },
-          { label: 'News', href: '#' },
-          { label: 'Help desk', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Recursos', href: '#' },
+          { label: 'Preços', href: '#' },
+          { label: 'Novidades', href: '#' },
+          { label: 'Central de ajuda', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
       {
-        title: 'Services',
+        title: 'Serviços',
         links: [
-          { label: 'Digital Marketing', href: '#' },
-          { label: 'Content Writing', href: '#' },
-          { label: 'SEO for Business', href: '#' },
-          { label: 'UI Design', href: '#' },
+          { label: 'Marketing digital', href: '#' },
+          { label: 'Redação de conteúdo', href: '#' },
+          { label: 'SEO para negócios', href: '#' },
+          { label: 'Design de interface', href: '#' },
         ],
       },
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Return Policy', href: '#' },
+          { label: 'Política de privacidade', href: '#' },
+          { label: 'Termos e condições', href: '#' },
+          { label: 'Política de devolução', href: '#' },
         ],
       },
       {

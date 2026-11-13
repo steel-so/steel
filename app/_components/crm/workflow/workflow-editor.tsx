@@ -61,6 +61,7 @@ import {
 import { WorkflowRunsDrawer } from '@/app/_components/crm/workflow/workflow-runs-drawer'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -132,7 +133,7 @@ const TRIGGER_META: Record<
   },
   webhook: {
     label: WORKFLOW_TRIGGER_LABELS.webhook,
-    description: 'Chamada POST em um endereço público',
+    description: 'Outro sistema avisa o Steel por um endereço (URL) público',
     icon: WebhookIcon,
   },
   'newsletter-subscribed': {
@@ -196,7 +197,7 @@ const NODE_META: Record<
   },
   iterator: {
     label: WORKFLOW_NODE_LABELS.iterator,
-    description: 'Executa o ramo para cada item',
+    description: 'Repete as etapas seguintes para cada item de uma lista',
     icon: WaterPumpIcon,
     group: 'Controle',
   },
@@ -266,7 +267,7 @@ function TriggerNodeView({ data, selected }: NodeProps<TriggerXyNode>) {
     >
       <div className='flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-[0.12em]'>
         <SteelIcon icon={PlayIcon} strokeWidth={2} size={14} />
-        <span>Gatilho</span>
+        <span>Quando isto acontecer</span>
       </div>
       <div className='mt-2 flex items-center gap-2'>
         <div className='grid size-9 place-items-center rounded-lg bg-primary/10 text-primary'>
@@ -274,7 +275,7 @@ function TriggerNodeView({ data, selected }: NodeProps<TriggerXyNode>) {
         </div>
         <div className='min-w-0'>
           <div className='truncate font-semibold text-sm'>
-            {meta?.label ?? 'Selecione um gatilho'}
+            {meta?.label ?? 'Escolha o que inicia o workflow'}
           </div>
           <div className='truncate text-muted-foreground text-xs'>
             {(trigger && triggerSubtitle(trigger)) ??
@@ -398,6 +399,7 @@ function WorkflowEditorInner({
     data: workflow,
     isLoading: loadingWorkflow,
     error: workflowError,
+    refetch: refetchWorkflow,
   } = useCrmWorkflow(workspaceId, workflowId)
   const {
     data: draftVersion,
@@ -564,24 +566,21 @@ function WorkflowEditorInner({
       await setActive.mutateAsync({ workflowId, active: true })
       notify.success('Workflow ativado')
       refetchDraft()
-    } catch {
-      notify.error('Não foi possível ativar — verifique o gatilho.')
+    } catch (err) {
+      notify.error(
+        err,
+        'Não foi possível ativar. Confira se o gatilho está escolhido e se cada etapa está preenchida.',
+      )
     }
   }
 
   const onDiscard = async () => {
-    if (
-      !window.confirm(
-        'Descartar todas as alterações desde a última versão ativa?',
-      )
-    )
-      return
     try {
       await discardDraft.mutateAsync(workflowId)
       notify.success('Alterações descartadas')
       refetchDraft()
-    } catch {
-      notify.error('Não foi possível descartar as alterações.')
+    } catch (err) {
+      notify.error(err, 'Não foi possível descartar as alterações.')
     }
   }
 
@@ -590,8 +589,8 @@ function WorkflowEditorInner({
       await triggerWorkflow.mutateAsync({ workflowId, test: true, payload: {} })
       notify.success('Execução de teste iniciada')
       setRunsOpen(true)
-    } catch {
-      notify.error('Não foi possível iniciar a execução de teste.')
+    } catch (err) {
+      notify.error(err, 'Não foi possível iniciar a execução de teste.')
     }
   }
 
@@ -614,10 +613,33 @@ function WorkflowEditorInner({
       </div>
     )
   }
-  if (error || !workflow || !definition) {
+  if (error) {
+    // A load failure is not "not found": the workflow may be fine, so offer a retry.
+    return (
+      <div className='flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm'>
+        <p className='font-medium'>Não foi possível carregar este workflow.</p>
+        <p className='max-w-md text-muted-foreground'>
+          {error instanceof Error && error.message
+            ? error.message
+            : 'Verifique a sua conexão e tente de novo.'}
+        </p>
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={() => {
+            refetchDraft()
+            refetchWorkflow()
+          }}
+        >
+          Tentar de novo
+        </Button>
+      </div>
+    )
+  }
+  if (!workflow || !definition) {
     return (
       <div className='flex h-full items-center justify-center text-muted-foreground text-sm'>
-        Workflow não encontrado.
+        Este workflow não existe mais ou foi removido.
       </div>
     )
   }
@@ -753,15 +775,22 @@ export function WorkflowTopBar({
           <SteelIcon icon={PlayIcon} strokeWidth={2} />
           <span className='hidden lg:inline'>Testar</span>
         </Button>
-        <Button
-          size='sm'
-          variant='ghost'
-          onClick={onDiscard}
-          aria-label='Descartar alterações'
-        >
-          <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
-          <span className='hidden lg:inline'>Descartar</span>
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button
+              size='sm'
+              variant='ghost'
+              aria-label='Descartar alterações'
+            >
+              <SteelIcon icon={Cancel01Icon} strokeWidth={2} />
+              <span className='hidden lg:inline'>Descartar</span>
+            </Button>
+          }
+          title='Descartar as alterações?'
+          description='O rascunho volta para a última versão que estava ativa. O que você mudou desde então será perdido.'
+          confirmLabel='Descartar alterações'
+          onConfirm={onDiscard}
+        />
         <Button size='sm' onClick={onActivate} aria-label='Ativar'>
           <SteelIcon icon={CheckmarkCircle02Icon} strokeWidth={2} />
           <span className='hidden lg:inline'>Ativar</span>

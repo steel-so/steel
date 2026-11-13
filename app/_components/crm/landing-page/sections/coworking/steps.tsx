@@ -22,19 +22,19 @@ const CHECK_ICON = '/landing-page-templates/coworking/check-icon.svg'
 export function stepsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'We are always here for your backup.',
+    title: 'Estamos sempre aqui para apoiar você.',
     subtitle:
-      'We share common trends and strategies for creating & improving your rental income.',
+      'Compartilhamos tendências e estratégias para criar e aumentar a sua receita com locação.',
     items: [
       {
-        title: 'Noise Free Locations',
+        title: 'Locais Sem Barulho',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos prontos, você monta sua página sem escrever código.',
       },
       {
-        title: '24/7 Hour Support',
+        title: 'Suporte 24 Horas, 7 Dias por Semana',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos prontos, você monta sua página sem escrever código.',
       },
     ],
   }

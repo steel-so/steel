@@ -24,10 +24,10 @@ const DEFAULT_VIDEO = '/landing-page-templates/web-application/hero-video.png'
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    title: 'Get more visitors, get more sales.',
+    title: 'Mais visitantes, mais vendas.',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Start a free trial',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie seu próximo site em poucos minutos.',
+    ctaLabel: 'Teste grátis',
     ctaHref: '#footer',
     imageUrl: DEFAULT_VIDEO,
   }

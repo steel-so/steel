@@ -17,27 +17,27 @@ const BADGE = '/landing-page-templates/saas-subscription/faq-question-badge.svg'
 export function faqDefaultContent(): FaqContent {
   return {
     type: 'FAQ',
-    title: 'Frequently Asked Questions',
+    title: 'Perguntas frequentes',
     items: [
       {
-        question: 'Can I use Albino for my clients?',
+        question: 'Posso usar o Albino para os meus clientes?',
         answer:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
       },
       {
-        question: 'Does it work with WordPress?',
+        question: 'Funciona com WordPress?',
         answer:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
       },
       {
-        question: 'Do I get free updates?',
+        question: 'Recebo atualizações gratuitas?',
         answer:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
       },
       {
-        question: 'Will you provide support?',
+        question: 'Vocês oferecem suporte?',
         answer:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
       },
     ],
   }
@@ -154,7 +154,7 @@ export function SaasSubscriptionFaq({
 
       <p className='mt-16 text-center text-[17px] text-white'>
         <GhostInput
-          value={textOf(content, 'support.prefix', 'Haven’t got your answer?')}
+          value={textOf(content, 'support.prefix', 'Não encontrou sua resposta?')}
           onCommit={(v) => onChange?.(withText(content, 'support.prefix', v))}
           placeholder='Texto de apoio'
           readOnly={readOnly}
@@ -167,7 +167,7 @@ export function SaasSubscriptionFaq({
           className='text-[#68d585]'
         >
           <GhostInput
-            value={textOf(content, 'support.link', 'Contact our support now')}
+            value={textOf(content, 'support.link', 'Fale com o nosso suporte agora')}
             onCommit={(v) => onChange?.(withText(content, 'support.link', v))}
             placeholder='Texto do link'
             readOnly={readOnly}

@@ -14,21 +14,21 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const consultationTemplate: LandingPageTemplateDefinition = {
   key: 'consultation',
-  name: 'Consultation',
+  name: 'Consultoria',
   description: 'Modelo para consultorias e escritórios de assessoria.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'shadepro',
+        logoText: 'Sua Empresa',
         navLinks: [
           { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Get started now',
+        ctaLabel: 'Comece agora',
         ctaHref: '#footer',
       },
     },
@@ -36,10 +36,10 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        title: 'Get help from the expert consultants.',
+        title: 'Conte com a ajuda de consultores especialistas.',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Get started now',
+          'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+        ctaLabel: 'Comece agora',
         ctaHref: '#footer',
         imageUrl: '/landing-page-templates/consultation/hero-bg.png',
       },
@@ -49,9 +49,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'FACTS',
         items: [
-          { value: '1M+', label: 'Customers visit Albino every months' },
-          { value: '93%', label: 'Satisfaction rate from our customers.' },
-          { value: '4.9', label: 'Average customer ratings out of 5.00!' },
+          { value: '1M+', label: 'Clientes nos visitam todos os meses' },
+          { value: '93%', label: 'Índice de satisfação dos nossos clientes.' },
+          { value: '4.9', label: 'Nota média dos clientes, em 5,00!' },
         ],
       },
     },
@@ -59,30 +59,30 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'SERVICES',
       content: {
         type: 'SERVICES',
-        title: 'Services we offer for you',
+        title: 'Serviços que oferecemos para você',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         items: [
           {
-            title: 'Digital Marketing',
+            title: 'Marketing Digital',
             description: '',
             imageUrl:
               '/landing-page-templates/consultation/services-digital-marketing.png',
           },
           {
-            title: 'Content Writing',
+            title: 'Produção de Conteúdo',
             description: '',
             imageUrl:
               '/landing-page-templates/consultation/services-content-writing.png',
           },
           {
-            title: 'Graphic Design',
+            title: 'Design Gráfico',
             description: '',
             imageUrl:
               '/landing-page-templates/consultation/services-graphic-design.png',
           },
           {
-            title: 'SEO for Business',
+            title: 'SEO para Empresas',
             description: '',
             imageUrl: '/landing-page-templates/consultation/services-seo.png',
           },
@@ -93,26 +93,26 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Why you should choose us?',
+        title: 'Por que escolher a gente?',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl:
           '/landing-page-templates/consultation/steps-video-preview.png',
         items: [
           {
-            title: 'Easy Booking',
+            title: 'Agendamento Fácil',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos prontos, você monta sua página sem escrever código.',
           },
           {
-            title: 'Free Expert Opinion',
+            title: 'Opinião Gratuita de Especialistas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos prontos, você monta sua página sem escrever código.',
           },
           {
-            title: 'Get Your Results',
+            title: 'Receba Seus Resultados',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos prontos, você monta sua página sem escrever código.',
           },
         ],
       },
@@ -122,9 +122,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'You made it so simple. My new site is so much faster & easier to work with Albino.',
+          'Vocês deixaram tudo muito simples. Meu novo site ficou bem mais rápido e fácil de usar.',
         authorName: 'Ilya Vasin',
-        authorRole: 'Software Engineer',
+        authorRole: 'Engenheiro de Software',
         avatarUrl:
           '/landing-page-templates/consultation/testimonial-logo-amazon.png',
         style: 'default',
@@ -135,9 +135,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'Must have book for students, who want to be a great Product Designer.',
+          'Leitura indispensável para estudantes que querem ser grandes Product Designers.',
         authorName: 'Mariano Rasgado',
-        authorRole: 'Software Engineer',
+        authorRole: 'Engenheiro de Software',
         avatarUrl:
           '/landing-page-templates/consultation/testimonial-logo-google.png',
         style: 'default',
@@ -148,9 +148,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'You made it so simple. My new site is so much faster & easier to work with Albino.',
+          'Vocês deixaram tudo muito simples. Meu novo site ficou bem mais rápido e fácil de usar.',
         authorName: 'Oka Tomoaki',
-        authorRole: 'Software Engineer',
+        authorRole: 'Engenheiro de Software',
         avatarUrl:
           '/landing-page-templates/consultation/testimonial-logo-amazon.png',
         style: 'default',
@@ -160,9 +160,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Get a free consultancy from our expert right now!',
+        title: 'Receba agora uma consultoria gratuita com nossos especialistas!',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page so quickly with Albino.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page rapidinho.',
         imageUrls: [],
       },
     },
@@ -170,9 +170,9 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
       type: 'NEWSLETTER',
       content: {
         type: 'NEWSLETTER',
-        title: 'Subscribe to our newsletter to get latest news on your inbox.',
-        placeholder: 'Enter your email',
-        ctaLabel: 'Subscribe',
+        title: 'Assine nossa newsletter e receba as novidades no seu e-mail.',
+        placeholder: 'Digite seu e-mail',
+        ctaLabel: 'Assinar',
       },
     },
     {
@@ -181,43 +181,43 @@ export const consultationTemplate: LandingPageTemplateDefinition = {
         type: 'FOOTER',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing Digital', href: '#' },
+              { label: 'Produção de Conteúdo', href: '#' },
+              { label: 'SEO para Empresas', href: '#' },
+              { label: 'Design de Interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
           {
-            title: 'Contact us',
+            title: 'Fale conosco',
             links: [
               {
                 label: 'contato@suaempresa.com.br',

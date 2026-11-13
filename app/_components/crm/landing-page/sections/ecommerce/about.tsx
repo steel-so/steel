@@ -19,9 +19,9 @@ const BASE = '/landing-page-templates/ecommerce'
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Track your progress with our advanced site.',
+    title: 'Acompanhe seu pedido de ponta a ponta.',
     description:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+      'Compartilhamos tendências e estratégias para valorizar seus ambientes e manter a sua casa sempre em alta.',
     imageUrl: `${BASE}/content-photo-main.png`,
     imageUrls: [`${BASE}/content-photo-float.png`],
   }
@@ -104,7 +104,7 @@ export function EcommerceAbout({
             className='inline-flex w-fit items-center gap-2 font-bold text-[17px] text-white tracking-[-0.6px]'
           >
             <GhostInput
-              value={textOf(content, 'cta', 'Start shopping')}
+              value={textOf(content, 'cta', 'Começar a comprar')}
               onCommit={(v) => onChange?.(withText(content, 'cta', v))}
               placeholder='Texto do botão'
               readOnly={readOnly}

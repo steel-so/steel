@@ -78,7 +78,9 @@ describe('workflow labels', () => {
     expect(workflowNodeLabel('legacy-node')).toBe('legacy-node')
     expect(workflowTriggerLabel('legacy-trigger')).toBe('legacy-trigger')
     expect(workflowNodeLabel('delay')).toBe('Atraso')
-    expect(workflowTriggerLabel('webhook')).toBe('Webhook')
+    expect(workflowTriggerLabel('webhook')).toBe(
+      'Chamada de outro sistema (webhook)',
+    )
   })
 })
 
@@ -106,6 +108,9 @@ describe('<WorkflowTopBar />', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Testar' }))
     fireEvent.click(
       screen.getByRole('button', { name: 'Descartar alterações' }),
+    )
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Descartar alterações' }).at(-1) as HTMLElement,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Ativar' }))
     expect(screen.getByRole('button', { name: 'Adicionar etapa' })).toBeTruthy()

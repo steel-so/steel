@@ -23,27 +23,27 @@ const BASE = '/landing-page-templates/agency'
 export function worksDefaultContent(): WorksContent {
   return {
     type: 'WORKS',
-    title: 'Our works describe why we are the best in the business',
-    subtitle: 'Case studies',
+    title: 'Nossos trabalhos mostram por que somos referência no mercado',
+    subtitle: 'Estudos de caso',
     items: [
       {
-        title: 'Aura Branding Design',
-        category: 'Graphic Design',
+        title: 'Identidade Visual Aura',
+        category: 'Design Gráfico',
         imageUrl: `${BASE}/work-1.png`,
       },
       {
-        title: 'AB.S Snack Packaging',
-        category: 'Graphic Design',
+        title: 'Embalagem de Snacks AB.S',
+        category: 'Design Gráfico',
         imageUrl: `${BASE}/work-3.png`,
       },
       {
-        title: 'Gradient Website Development',
-        category: 'Web Development',
+        title: 'Site Gradient',
+        category: 'Desenvolvimento Web',
         imageUrl: `${BASE}/work-2.png`,
       },
       {
-        title: 'Magazine Content Writing',
-        category: 'Content Writing',
+        title: 'Conteúdo para Revista',
+        category: 'Produção de Conteúdo',
         imageUrl: `${BASE}/work-4.png`,
       },
     ],

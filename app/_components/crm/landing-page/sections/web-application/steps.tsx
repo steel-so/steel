@@ -26,9 +26,9 @@ const BASE = '/landing-page-templates/web-application'
 export function stepsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Understand your visitors fast. Take quick actions.',
+    title: 'Entenda seus visitantes rápido. Aja com agilidade.',
     subtitle:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+      'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
     imageUrl: `${BASE}/content-02-front.png`,
     items: [],
   }
@@ -36,7 +36,7 @@ export function stepsDefaultContent(): StepsContent {
 
 // Defaults for the "Start a free trial →" link — STEPS has no CTA field, so
 // the label and target live in the `texts.cta`/`hrefs.cta` overrides.
-const CTA_LABEL = 'Start a free trial'
+const CTA_LABEL = 'Teste grátis'
 const CTA_HREF = '#footer'
 
 export function WebApplicationSteps({

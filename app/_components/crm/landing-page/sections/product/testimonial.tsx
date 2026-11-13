@@ -20,7 +20,7 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'You made it so simple. My new site is so much faster and easier to work with than my old site.',
+      'Vocês deixaram tudo muito simples. Meu novo site é muito mais rápido e fácil de usar que o antigo.',
     authorName: 'Rhoda Brady',
     avatarUrl: `${BASE}/testimonial-avatar.png`,
     style: 'spotlight',
@@ -58,7 +58,7 @@ export function ProductTestimonial({
             value={textOf(
               content,
               'heading',
-              'Comfortable buds with better sound.',
+              'Fones confortáveis com som melhor.',
             )}
             onCommit={(v) => onChange?.(withText(content, 'heading', v))}
             placeholder='Título da seção'
@@ -69,7 +69,7 @@ export function ProductTestimonial({
             value={textOf(
               content,
               'description',
-              'We share common trends and strategies for improving your rental income.',
+              'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
             )}
             onCommit={(v) => onChange?.(withText(content, 'description', v))}
             placeholder='Descrição de apoio'

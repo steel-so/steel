@@ -15,11 +15,11 @@ type NewsletterContent = Extract<
 export function newsletterDefaultContent(): NewsletterContent {
   return {
     type: 'NEWSLETTER',
-    title: 'Get latest updates',
+    title: 'Receba as últimas novidades',
     description:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-    placeholder: 'Enter your email',
-    ctaLabel: 'Subscribe',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+    placeholder: 'Digite seu e-mail',
+    ctaLabel: 'Assinar',
   }
 }
 
@@ -57,7 +57,7 @@ export function CoworkingNewsletter({
             <input
               type='email'
               readOnly
-              placeholder={content.placeholder || 'Enter your email'}
+              placeholder={content.placeholder || 'Digite seu e-mail'}
               className='w-full rounded-[8px] border border-[#e7e9ed] bg-white px-[22px] py-[15px] text-[#161c2d] text-[17px] tracking-[-0.2px] outline-none placeholder:text-[#161c2d]/70 focus-visible:ring-2 focus-visible:ring-ring/50'
             />
           ) : (
@@ -69,7 +69,7 @@ export function CoworkingNewsletter({
                 onCommit={(v) =>
                   onChange?.({ ...content, placeholder: v || undefined })
                 }
-                placeholder='Enter your email'
+                placeholder='Digite seu e-mail'
                 className='text-[#161c2d]/70 text-[17px] tracking-[-0.2px]'
               />
             </div>
@@ -97,7 +97,7 @@ export function CoworkingNewsletter({
           value={textOf(
             content,
             'disclaimer',
-            "We'll never share your details with third parties.\nView our Privacy Policy for more info.",
+            'Nunca compartilharemos seus dados com terceiros.\nConsulte nossa Política de Privacidade para saber mais.',
           )}
           onCommit={(v) => onChange?.(withText(content, 'disclaimer', v))}
           placeholder='Aviso de privacidade'

@@ -20,24 +20,24 @@ const BASE = '/landing-page-templates/b2b'
 const FACTS = [
   {
     value: '1M+',
-    label: 'Customers visit Albino every month to get their service done.',
+    label: 'Clientes nos procuram todo mês para resolver suas demandas.',
   },
   {
     value: '92%',
-    label: 'Satisfaction rate comes from our awesome customers.',
+    label: 'Índice de satisfação dos nossos clientes incríveis.',
   },
   {
     value: '4.9/5.0',
-    label: 'Average customer ratings we have got all over internet.',
+    label: 'Nota média que recebemos dos clientes em toda a internet.',
   },
 ]
 
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Experienced experts are giving advices.',
+    title: 'Especialistas experientes prontos para orientar você.',
     description:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
     imageUrl: `${BASE}/content01-photo.png`,
     imageUrls: [],
   }
@@ -86,7 +86,7 @@ export function B2bAbout({
             className='inline-flex w-fit items-center justify-center rounded-lg bg-[#473bf0] px-6 py-4 font-bold text-[17px] text-white tracking-[-0.6px] transition-opacity hover:opacity-90'
           >
             <GhostInput
-              value={textOf(content, 'cta', 'Learn how we work')}
+              value={textOf(content, 'cta', 'Conheça nosso jeito de trabalhar')}
               onCommit={(v) => onChange?.(withText(content, 'cta', v))}
               placeholder='Texto do botão'
               readOnly={readOnly}

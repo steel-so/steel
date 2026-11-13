@@ -21,11 +21,11 @@ const DEFAULT_PORTRAIT = '/landing-page-templates/agency/hero-portrait.png'
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    eyebrow: "Let's shift your business",
-    title: 'Shift your business fast with Shade Pro.',
+    eyebrow: 'Vamos transformar o seu negócio',
+    title: 'Acelere o seu negócio com a Sua Empresa.',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Get started a project',
+      'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+    ctaLabel: 'Iniciar um projeto',
     ctaHref: '#footer',
     imageUrl: DEFAULT_PORTRAIT,
   }

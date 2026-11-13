@@ -11,11 +11,12 @@ import {
   Globe02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useRouter } from 'next/navigation'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CrmFormStatsPanel } from '@/app/_components/crm/crm-form-stats-panel'
 import { CrmPublicFormRenderer } from '@/app/_components/crm/crm-public-form-renderer'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -51,6 +52,14 @@ const ACTION_LABELS: Record<CrmFormActionDTO, string> = {
   COMPANY: 'Empresa',
   PERSON: 'Pessoa',
   LEAD: 'Lead',
+}
+
+const ACTION_HELP: Record<CrmFormActionDTO, string> = {
+  LEAD: 'Cada resposta vira um lead novo no funil de vendas, pronto para ser atendido.',
+  PERSON:
+    'Cada resposta cria (ou atualiza) uma pessoa no CRM, sem entrar no funil de vendas.',
+  COMPANY:
+    'Cada resposta cria (ou atualiza) uma empresa no CRM. Use quando o formulário pede dados da empresa.',
 }
 
 const TYPE_LABELS: Record<CrmFormFieldTypeDTO, string> = {
@@ -243,6 +252,25 @@ function CrmFormBuilderInner({
     return `${window.location.origin}/f/${initial.publicToken}`
   }, [initial.publicToken])
 
+  // Why the form cannot go live yet (empty when it can). A form without a way
+  // to reach the person would collect answers nobody can follow up.
+  const publishBlocker = useMemo(() => {
+    if (fields.length === 0) {
+      return 'Adicione pelo menos um campo antes de publicar.'
+    }
+    const hasContact = fields.some(
+      (f) =>
+        f.type === 'email' ||
+        f.type === 'phone' ||
+        f.mapping.attribute === 'email' ||
+        f.mapping.attribute === 'phone',
+    )
+    if (!hasContact) {
+      return 'Adicione um campo de e-mail ou de telefone: sem ele, você não consegue falar com quem respondeu.'
+    }
+    return ''
+  }, [fields])
+
   const keyCounter = useRef(initial.fields.length)
   const phaseCounter = useRef(initial.phases.length)
 
@@ -258,11 +286,24 @@ function CrmFormBuilderInner({
     }
   }
 
+  const snapshot = JSON.stringify(buildPayload())
+  const savedSnapshot = useRef(snapshot)
+  const dirty = snapshot !== savedSnapshot.current
+
+  useEffect(() => {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (dirty) event.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+
   async function onSave() {
     setSaving(true)
     const res = await saveCrmForm(workspaceId, initial.id, buildPayload())
     setSaving(false)
     if (res.ok) {
+      savedSnapshot.current = snapshot
       notify.success('Formulário salvo')
       onSaved()
     } else {
@@ -271,6 +312,10 @@ function CrmFormBuilderInner({
   }
 
   async function onTogglePublish(next: boolean) {
+    if (next && publishBlocker) {
+      notify.error(publishBlocker)
+      return
+    }
     const desired = next ? 'PUBLISHED' : 'DRAFT'
     setPublishing(true)
     const res = await saveCrmForm(workspaceId, initial.id, {
@@ -279,6 +324,7 @@ function CrmFormBuilderInner({
     })
     setPublishing(false)
     if (res.ok) {
+      savedSnapshot.current = snapshot
       setStatus(desired)
       notify.success(next ? 'Formulário publicado' : 'Formulário despublicado')
       onSaved()
@@ -377,14 +423,28 @@ function CrmFormBuilderInner({
   return (
     <div className='flex h-full flex-col'>
       <header className='flex h-14 shrink-0 items-center gap-2 border-b px-3'>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          aria-label='Voltar'
-          onClick={() => router.push(`/${slug}/crm/forms`)}
-        >
-          <SteelIcon icon={ArrowLeft02Icon} strokeWidth={2} />
-        </Button>
+        {dirty ? (
+          <ConfirmAction
+            trigger={
+              <Button variant='ghost' size='icon-sm' aria-label='Voltar'>
+                <SteelIcon icon={ArrowLeft02Icon} strokeWidth={2} />
+              </Button>
+            }
+            title='Sair sem salvar?'
+            description='Há alterações que ainda não foram salvas. Se sair agora, elas serão perdidas.'
+            confirmLabel='Sair sem salvar'
+            onConfirm={() => router.push(`/${slug}/crm/forms`)}
+          />
+        ) : (
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label='Voltar'
+            onClick={() => router.push(`/${slug}/crm/forms`)}
+          >
+            <SteelIcon icon={ArrowLeft02Icon} strokeWidth={2} />
+          </Button>
+        )}
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -420,7 +480,7 @@ function CrmFormBuilderInner({
           ) : null}
         </Button>
         <Button size='sm' onClick={onSave} disabled={saving} data-shortcut-save>
-          {saving ? 'Salvando…' : 'Salvar'}
+          {saving ? 'Salvando…' : dirty ? 'Salvar alterações' : 'Salvar'}
         </Button>
       </header>
 
@@ -450,7 +510,7 @@ function CrmFormBuilderInner({
               </div>
 
               <div className='flex flex-col gap-1.5'>
-                <Label>Ação no envio</Label>
+                <Label>O que acontece quando alguém responde</Label>
                 <Select
                   value={action}
                   onValueChange={(v) => onChangeAction(v as CrmFormActionDTO)}
@@ -466,6 +526,9 @@ function CrmFormBuilderInner({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className='text-muted-foreground text-xs'>
+                  {ACTION_HELP[action]}
+                </p>
               </div>
 
               <div className='flex flex-col gap-1.5'>
@@ -520,10 +583,16 @@ function CrmFormBuilderInner({
                 </div>
                 <Switch
                   checked={online}
-                  disabled={publishing}
+                  disabled={publishing || (!online && Boolean(publishBlocker))}
+                  aria-label='Publicar formulário'
                   onCheckedChange={onTogglePublish}
                 />
               </div>
+              {!online && publishBlocker ? (
+                <p role='note' className='text-amber-600 text-xs'>
+                  {publishBlocker}
+                </p>
+              ) : null}
               {online ? (
                 <div className='flex items-center gap-2'>
                   <Input readOnly value={publicUrl} className='text-xs' />
@@ -705,14 +774,21 @@ function FieldEditor({
         >
           <SteelIcon icon={ArrowDown01Icon} strokeWidth={2} />
         </Button>
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          aria-label='Remover campo'
-          onClick={onRemove}
-        >
-          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label={`Remover o campo ${field.label || 'sem nome'}`}
+            >
+              <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+            </Button>
+          }
+          title={`Remover o campo "${field.label || 'sem nome'}"?`}
+          description='O campo some do formulário. As respostas já recebidas continuam guardadas.'
+          confirmLabel='Remover campo'
+          onConfirm={onRemove}
+        />
       </div>
 
       <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>

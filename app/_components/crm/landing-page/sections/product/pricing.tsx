@@ -33,23 +33,23 @@ const BASE = '/landing-page-templates/product'
 export function pricingDefaultContent(): ProductsContent {
   return {
     type: 'PRODUCTS',
-    title: 'Get your airpod now.',
+    title: 'Garanta o seu agora.',
     subtitle:
-      'We share common trends and strategies for improving your rental income.',
+      'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
     items: [
       {
-        title: 'AirPods — Midnight Green',
-        price: '$99',
+        title: 'AirPods — Verde-meia-noite',
+        price: 'R$ 99',
         imageUrl: `${BASE}/product-midnight-green.png`,
       },
       {
-        title: 'AirPods — Silver',
-        price: '$99',
+        title: 'AirPods — Prata',
+        price: 'R$ 99',
         imageUrl: `${BASE}/product-silver.png`,
       },
       {
-        title: 'AirPods — Gold',
-        price: '$99',
+        title: 'AirPods — Dourado',
+        price: 'R$ 99',
         imageUrl: `${BASE}/product-gold.png`,
       },
     ],
@@ -156,7 +156,7 @@ export function ProductPricing({
               value={textOf(
                 content,
                 `item.${index}.description`,
-                'AirPods (2nd gen) iPhone Colors with Wireless Charging Case',
+                'AirPods (2ª geração) nas cores do iPhone com estojo de recarga sem fio',
               )}
               onCommit={(v) =>
                 onChange?.(withText(content, `item.${index}.description`, v))
@@ -183,7 +183,7 @@ export function ProductPricing({
               className='inline-flex items-center justify-center gap-1 rounded-lg bg-[#473bf0] px-8 py-4 font-bold text-[17px] text-white tracking-[-0.5px] transition-opacity hover:opacity-90'
             >
               <GhostInput
-                value={textOf(content, `item.${index}.cta`, 'Buy now -')}
+                value={textOf(content, `item.${index}.cta`, 'Compre agora -')}
                 onCommit={(v) =>
                   onChange?.(withText(content, `item.${index}.cta`, v))
                 }

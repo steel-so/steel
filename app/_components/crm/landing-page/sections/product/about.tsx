@@ -15,9 +15,9 @@ const BASE = '/landing-page-templates/product'
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Trendy designs with better sound quality.',
+    title: 'Design moderno com mais qualidade de som.',
     description:
-      'We share common trends and strategies for improving your rental income.',
+      'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
     imageUrl: `${BASE}/about-earbuds-left.png`,
     imageUrls: [`${BASE}/about-earbuds-right.png`],
   }

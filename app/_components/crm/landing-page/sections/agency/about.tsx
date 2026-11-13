@@ -15,11 +15,10 @@ const BASE = '/landing-page-templates/agency'
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    eyebrow: 'Our Story',
-    title:
-      'We know how everything works and why your business is failing over and over again.',
+    eyebrow: 'Nossa história',
+    title: 'Sabemos como tudo funciona e por que o seu negócio não decola.',
     description:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand. With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Compartilhamos tendências e estratégias para aumentar a sua receita e manter a sua empresa sempre em alta demanda. Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
     imageUrl: `${BASE}/about-photo-main.png`,
     imageUrls: [`${BASE}/about-photo-2.png`, `${BASE}/about-photo-3.png`],
   }

@@ -28,43 +28,43 @@ export function consultationFooterDefaultContent(): FooterContent {
     type: 'FOOTER',
     linkGroups: [
       {
-        title: 'Company',
+        title: 'Empresa',
         links: [
-          { label: 'About us', href: '#' },
-          { label: 'Contact us', href: '#' },
-          { label: 'Careers', href: '#' },
-          { label: 'Press', href: '#' },
+          { label: 'Sobre nós', href: '#' },
+          { label: 'Fale conosco', href: '#' },
+          { label: 'Carreiras', href: '#' },
+          { label: 'Imprensa', href: '#' },
         ],
       },
       {
-        title: 'Product',
+        title: 'Produto',
         links: [
-          { label: 'Features', href: '#' },
-          { label: 'Pricing', href: '#' },
-          { label: 'News', href: '#' },
-          { label: 'Help desk', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Recursos', href: '#' },
+          { label: 'Preços', href: '#' },
+          { label: 'Novidades', href: '#' },
+          { label: 'Central de ajuda', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
       {
-        title: 'Services',
+        title: 'Serviços',
         links: [
-          { label: 'Digital Marketing', href: '#' },
-          { label: 'Content Writing', href: '#' },
-          { label: 'SEO for Business', href: '#' },
-          { label: 'UI Design', href: '#' },
+          { label: 'Marketing Digital', href: '#' },
+          { label: 'Produção de Conteúdo', href: '#' },
+          { label: 'SEO para Empresas', href: '#' },
+          { label: 'Design de Interface', href: '#' },
         ],
       },
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Return Policy', href: '#' },
+          { label: 'Política de Privacidade', href: '#' },
+          { label: 'Termos e Condições', href: '#' },
+          { label: 'Política de Devolução', href: '#' },
         ],
       },
       {
-        title: 'Contact us',
+        title: 'Fale conosco',
         links: [
           {
             label: 'contato@suaempresa.com.br',
@@ -155,7 +155,7 @@ export function ConsultationFooter({
     >
       <div className='mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-12 pb-16 sm:grid-cols-3 lg:grid-cols-5'>
         {content.linkGroups.map((group, groupIndex) => {
-          const isContact = group.title === 'Contact us'
+          const isContact = group.title === 'Fale conosco' || group.title === 'Contact us'
           return (
             <div key={groupIndex} className='flex flex-col gap-4'>
               <GhostInput
@@ -233,7 +233,7 @@ export function ConsultationFooter({
             value={textOf(
               content,
               'copyright',
-              `© ${new Date().getFullYear()} Copyright, All Right Reserved, Made with`,
+              `© ${new Date().getFullYear()} Todos os direitos reservados. Feito com`,
             )}
             onCommit={(v) => onChange?.(withText(content, 'copyright', v))}
             readOnly={readOnly}

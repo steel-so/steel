@@ -20,9 +20,9 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      '“You made it so simple.” My new site is so much faster and easier to work with than my old site.',
+      '“Vocês deixaram tudo muito simples.” Meu novo site é muito mais rápido e fácil de usar que o antigo.',
     authorName: 'Corey Valdez',
-    authorRole: 'Founder at Zenix',
+    authorRole: 'Fundador na Zenix',
     avatarUrl: `${BASE}/testimonial-avatar-1.png`,
     style: 'default',
   }
@@ -32,9 +32,9 @@ export function testimonialSpotlightDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      '“Simply the best.” Better than all the rest. I’d recommend this product to beginners.',
+      '“Simplesmente o melhor.” Superior a todos os outros. Eu recomendaria este produto para iniciantes.',
     authorName: 'Ian Klein',
-    authorRole: 'Digital Marketer',
+    authorRole: 'Profissional de marketing digital',
     avatarUrl: `${BASE}/testimonial-avatar-2.png`,
     style: 'spotlight',
   }

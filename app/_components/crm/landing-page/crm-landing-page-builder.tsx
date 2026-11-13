@@ -26,6 +26,7 @@ import {
   DragDropVerticalIcon,
   Globe02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { CrmLandingPageMetrics } from '@/app/_components/crm/crm-landing-page-metrics'
@@ -37,6 +38,17 @@ import {
 
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +61,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { getLandingPageTemplate } from '@/src/lib/landing-page-templates'
 import {
   useCrmLandingPage,
   useSetCrmLandingPagePublished,
@@ -156,29 +169,69 @@ function CrmLandingPageBuilderInner({
   const keyCounter = React.useRef(sections.length)
 
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  // What is waiting for the debounce. Kept so leaving the page never drops it.
+  const pendingSave = React.useRef<Parameters<
+    typeof updatePage.mutate
+  >[0] | null>(null)
+  const [saveState, setSaveState] = React.useState<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle')
+  const mutateRef = React.useRef(updatePage.mutate)
+  mutateRef.current = updatePage.mutate
+
+  function flushSave() {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = null
+    const payload = pendingSave.current
+    if (!payload) return
+    pendingSave.current = null
+    setSaveState('saving')
+    updatePage.mutate(payload, {
+      onSuccess: () => setSaveState('saved'),
+      onError: (error) => {
+        setSaveState('error')
+        notify.error(
+          error,
+          'Não foi possível salvar as alterações. Confira a conexão e tente de novo.',
+        )
+      },
+    })
+  }
+
+  function queueSave(payload: NonNullable<typeof pendingSave.current>) {
+    pendingSave.current = { ...pendingSave.current, ...payload }
+    setSaveState('saving')
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(flushSave, 600)
+  }
+
   React.useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
+      // Leaving the editor with an edit still waiting: save it now.
+      const payload = pendingSave.current
+      if (payload) mutateRef.current(payload)
     }
   }, [])
 
+  // Warns the browser tab close while an edit has not reached the server.
+  React.useEffect(() => {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (pendingSave.current) event.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
   function scheduleSectionsSave(next: SectionItem[]) {
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      updatePage.mutate(
-        {
-          sections: next.map((s, index) => ({
-            type: s.type,
-            order: index,
-            enabled: s.enabled,
-            content: s.content,
-          })),
-        },
-        {
-          onError: () => notify.error('Não foi possível salvar a página.'),
-        },
-      )
-    }, 600)
+    queueSave({
+      sections: next.map((s, index) => ({
+        type: s.type,
+        order: index,
+        enabled: s.enabled,
+        content: s.content,
+      })),
+    })
   }
 
   function updateSection(key: string, content: CrmLandingPageSectionContent) {
@@ -238,24 +291,65 @@ function CrmLandingPageBuilderInner({
   function onTitleChange(next: string) {
     setTitle(next)
     if (!next.trim()) return
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(() => {
-      updatePage.mutate(
-        { title: next.trim() },
-        { onError: () => notify.error('Não foi possível salvar o título.') },
-      )
-    }, 600)
+    queueSave({ title: next.trim() })
   }
 
-  async function onToggleStatus(next: boolean) {
+  // Publishing checks: a page with no connected form collects nothing, and
+  // untouched template copy would go live as-is.
+  const publishWarnings = React.useMemo(() => {
+    const warnings: string[] = []
+    const hasForm = sections.some(
+      (s) =>
+        s.enabled &&
+        (s.content as { formId?: string }).formId !== undefined &&
+        (s.content as { formId?: string }).formId !== '',
+    )
+    if (!hasForm) {
+      warnings.push(
+        'Nenhum formulário está conectado: quem visitar a página não conseguirá deixar o contato.',
+      )
+    }
+    const original = getLandingPageTemplate(initial.templateKey)?.sections ?? []
+    const untouched = sections.filter(
+      (s) =>
+        s.enabled &&
+        original.some(
+          (o) =>
+            o.type === s.type &&
+            JSON.stringify(o.content) === JSON.stringify(s.content),
+        ),
+    ).length
+    if (untouched > 0) {
+      warnings.push(
+        `${untouched} ${untouched === 1 ? 'seção ainda tem' : 'seções ainda têm'} o texto de exemplo do modelo.`,
+      )
+    }
+    return warnings
+  }, [sections, initial.templateKey])
+  const [confirmPublish, setConfirmPublish] = React.useState(false)
+
+  async function applyStatus(next: boolean) {
     setStatus(next ? 'PUBLISHED' : 'DRAFT')
     try {
       await setPublished.mutateAsync(next)
       notify.success(next ? 'Página publicada' : 'Página despublicada')
-    } catch {
+    } catch (error) {
       setStatus(next ? 'DRAFT' : 'PUBLISHED')
-      notify.error('Não foi possível alterar a publicação.')
+      notify.error(
+        error,
+        'Não foi possível alterar a publicação. Tente de novo.',
+      )
     }
+  }
+
+  async function onToggleStatus(next: boolean) {
+    // Make sure the server has the latest content before it goes live.
+    flushSave()
+    if (next && publishWarnings.length > 0) {
+      setConfirmPublish(true)
+      return
+    }
+    await applyStatus(next)
   }
 
   return (
@@ -281,6 +375,25 @@ function CrmLandingPageBuilderInner({
           aria-label='Título da página'
           className='min-w-0 flex-1 bg-transparent font-semibold text-sm outline-none placeholder:text-muted-foreground/60'
         />
+
+        <span
+          role='status'
+          aria-live='polite'
+          className={cn(
+            'shrink-0 text-xs',
+            saveState === 'error'
+              ? 'text-destructive'
+              : 'text-muted-foreground',
+          )}
+        >
+          {saveState === 'saving'
+            ? 'Salvando…'
+            : saveState === 'saved'
+              ? 'Salvo'
+              : saveState === 'error'
+                ? 'Não salvo'
+                : ''}
+        </span>
 
         <Button variant='ghost' size='sm' onClick={() => setMetricsOpen(true)}>
           <SteelIcon icon={Analytics01Icon} strokeWidth={2} />
@@ -374,6 +487,44 @@ function CrmLandingPageBuilderInner({
         </GhostAiProvider>
       </div>
 
+      <AlertDialog open={confirmPublish} onOpenChange={setConfirmPublish}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar mesmo assim?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Antes de colocar a página no ar, confira:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className='list-disc space-y-1 pl-5 text-sm'>
+            {publishWarnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+          <p className='text-muted-foreground text-xs'>
+            Para receber contatos, conecte um formulário na seção de
+            newsletter. Ainda não tem um?{' '}
+            <Link
+              href={`/${slug}/crm/forms`}
+              className='text-primary underline underline-offset-2'
+            >
+              Criar um formulário
+            </Link>
+            .
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar e ajustar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmPublish(false)
+                applyStatus(true)
+              }}
+            >
+              Publicar assim mesmo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {metricsOpen ? (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4'>
           <div className='max-h-[80vh] w-full max-w-lg overflow-auto rounded-lg border bg-background p-4 shadow-lg'>
@@ -437,7 +588,7 @@ function SortableSection({
         isDragging && 'z-10 opacity-70',
       )}
     >
-      <div className='flex items-center gap-1 border-b px-2 py-1 opacity-0 transition-opacity group-hover/section:opacity-100'>
+      <div className='flex items-center gap-1 border-b px-2 py-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/section:opacity-100 pointer-coarse:opacity-100'>
         <button
           type='button'
           aria-label='Reordenar seção'
@@ -450,15 +601,22 @@ function SortableSection({
         <span className='text-muted-foreground text-xs'>
           {definition.label}
         </span>
-        <Button
-          variant='ghost'
-          size='icon-xs'
-          className='ml-auto'
-          aria-label='Remover seção'
-          onClick={onRemove}
-        >
-          <SteelIcon icon={Delete02Icon} strokeWidth={2} size={14} />
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button
+              variant='ghost'
+              size='icon-xs'
+              className='ml-auto'
+              aria-label={`Remover a seção ${definition.label}`}
+            >
+              <SteelIcon icon={Delete02Icon} strokeWidth={2} size={14} />
+            </Button>
+          }
+          title={`Remover a seção "${definition.label}"?`}
+          description='O conteúdo desta seção será apagado da página. Não dá para desfazer.'
+          confirmLabel='Remover seção'
+          onConfirm={onRemove}
+        />
       </div>
       <GhostAiSection value={definition.label}>
         <Component

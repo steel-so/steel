@@ -44,22 +44,22 @@ const CARD_VARIANTS = [
 export function servicesDefaultContent(): ServicesContent {
   return {
     type: 'SERVICES',
-    title: 'We provide great services for our customers based on needs',
+    title: 'Entregamos serviços de excelência, sob medida para cada cliente',
     items: [
       {
-        title: 'Graphic Design',
+        title: 'Design Gráfico',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Web Development',
+        title: 'Desenvolvimento Web',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Content Writing',
+        title: 'Produção de Conteúdo',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
     ],
   }
@@ -192,7 +192,7 @@ export function AgencyServices({
                 className='mt-2 inline-flex items-center gap-2 font-bold text-[17px] text-white tracking-[-0.6px] hover:opacity-90'
               >
                 <GhostInput
-                  value={textOf(content, `item.${index}.cta`, 'Learn more')}
+                  value={textOf(content, `item.${index}.cta`, 'Saiba mais')}
                   onCommit={(v) =>
                     onChange?.(withText(content, `item.${index}.cta`, v))
                   }

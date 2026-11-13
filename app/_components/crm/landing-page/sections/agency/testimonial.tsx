@@ -20,9 +20,9 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'OMG! I cannot believe that I have got a brand new landing page after getting Albino. It was super easy to edit and publish.',
+      'Uau! Nem acredito que ganhei uma landing page nova. Foi muito fácil de editar e publicar.',
     authorName: 'Franklin Hicks',
-    authorRole: 'Web Developer',
+    authorRole: 'Desenvolvedor Web',
     avatarUrl: `${BASE}/testimonial-avatar-1.png`,
     style: 'default',
   }
@@ -32,9 +32,9 @@ export function testimonialSpotlightDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users.",
+      'Simplesmente o melhor, muito acima dos concorrentes. Recomendo para iniciantes e para usuários avançados.',
     authorName: 'Ian Klein',
-    authorRole: 'Digital Marketer',
+    authorRole: 'Profissional de Marketing Digital',
     avatarUrl: `${BASE}/testimonial-avatar-2.png`,
     style: 'spotlight',
   }

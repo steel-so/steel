@@ -42,11 +42,11 @@ function PlayIcon() {
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    eyebrow: 'Non-stop music for long time',
-    title: 'Sound, that sounds better!',
+    eyebrow: 'Música sem parar por muito tempo',
+    title: 'Um som que soa melhor!',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Buy now - Starting at $99',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie seu próximo site em poucos minutos.',
+    ctaLabel: 'Compre agora - a partir de R$ 99',
     ctaHref: '#pricing',
     imageUrl: DEFAULT_PRODUCT_PHOTO,
   }
@@ -145,7 +145,7 @@ export function ProductHero({
           >
             <PlayIcon />
             <GhostInput
-              value={textOf(content, 'cta.secondary', 'Watch in action')}
+              value={textOf(content, 'cta.secondary', 'Veja em ação')}
               onCommit={(v) =>
                 onChange?.(withText(content, 'cta.secondary', v))
               }

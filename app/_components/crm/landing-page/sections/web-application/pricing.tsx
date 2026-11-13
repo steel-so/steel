@@ -23,53 +23,53 @@ type Plan = PricingContent['plans'][number]
 export function pricingDefaultContent(): PricingContent {
   return {
     type: 'PRICING',
-    title: 'Pricing & Plans',
+    title: 'Planos e preços',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
     plans: [
       {
-        name: 'Starter',
-        price: '$19',
-        period: '/ month',
-        yearlyPrice: '$190',
-        yearlyPeriod: '/ year',
+        name: 'Inicial',
+        price: 'R$ 19',
+        period: '/ mês',
+        yearlyPrice: 'R$ 190',
+        yearlyPeriod: '/ ano',
         features: [
-          'Commercial License',
-          '100+ HTML UI Elements',
-          '01 Domain Support',
+          'Licença comercial',
+          'Mais de 100 elementos de interface',
+          'Suporte a 1 domínio',
         ],
-        ctaLabel: 'Start Free Trial',
+        ctaLabel: 'Teste grátis',
         highlighted: false,
       },
       {
-        name: 'Standard',
-        price: '$49',
-        period: '/ month',
-        yearlyPrice: '$490',
-        yearlyPeriod: '/ year',
+        name: 'Padrão',
+        price: 'R$ 49',
+        period: '/ mês',
+        yearlyPrice: 'R$ 490',
+        yearlyPeriod: '/ ano',
         features: [
-          'Commercial License',
-          '100+ HTML UI Elements',
-          'Unlimited Domain Support',
-          '6 Month Premium Support',
+          'Licença comercial',
+          'Mais de 100 elementos de interface',
+          'Suporte a domínios ilimitados',
+          '6 meses de suporte premium',
         ],
-        ctaLabel: 'Start Free Trial',
+        ctaLabel: 'Teste grátis',
         highlighted: true,
       },
       {
         name: 'Premium',
-        price: '$99',
-        period: '/ month',
-        yearlyPrice: '$990',
-        yearlyPeriod: '/ year',
+        price: 'R$ 99',
+        period: '/ mês',
+        yearlyPrice: 'R$ 990',
+        yearlyPeriod: '/ ano',
         features: [
-          'Commercial License',
-          '100+ HTML UI Elements',
-          'Unlimited Domain Support',
-          '6 Month Premium Support',
-          'Lifetime Updates',
+          'Licença comercial',
+          'Mais de 100 elementos de interface',
+          'Suporte a domínios ilimitados',
+          '6 meses de suporte premium',
+          'Atualizações vitalícias',
         ],
-        ctaLabel: 'Start Free Trial',
+        ctaLabel: 'Teste grátis',
         highlighted: false,
       },
     ],
@@ -100,8 +100,8 @@ export function WebApplicationPricing({
         ...content.plans,
         {
           name: 'Plano',
-          price: '$0',
-          period: '/ month',
+          price: 'R$ 0',
+          period: '/ mês',
           features: [],
           highlighted: false,
         },
@@ -261,7 +261,7 @@ export function WebApplicationPricing({
                     onCommit={(v) =>
                       updatePlan(planIndex, { [periodField]: v || undefined })
                     }
-                    placeholder={isYearly ? '/ year' : '/ month'}
+                    placeholder={isYearly ? '/ ano' : '/ mês'}
                     readOnly={readOnly}
                     className='text-[#161c2d] text-[17px]'
                   />

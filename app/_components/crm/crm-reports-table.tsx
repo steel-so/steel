@@ -56,6 +56,44 @@ const SOURCE_STYLES: Record<CrmReportSource, string> = {
   whatsapp_broadcast: 'bg-lime-500/15 text-lime-600',
 }
 
+/** Ready-made reports: pick one and the builder opens already filled. */
+const REPORT_PRESETS: {
+  key: string
+  name: string
+  description: string
+  source: CrmReportSource
+  columns: string[]
+}[] = [
+  {
+    key: 'leads',
+    name: 'Lista de leads',
+    description: 'Todos os leads com origem, status e pontuação.',
+    source: 'lead',
+    columns: ['name', 'emails', 'company', 'source', 'status', 'score'],
+  },
+  {
+    key: 'opportunities',
+    name: 'Oportunidades e valores',
+    description: 'Oportunidades com valor, origem e data de fechamento.',
+    source: 'opportunity',
+    columns: ['name', 'amount', 'source', 'closeDate'],
+  },
+  {
+    key: 'people-by-city',
+    name: 'Contatos por cidade',
+    description: 'Pessoas com e-mail, telefone e cidade.',
+    source: 'person',
+    columns: ['name', 'emails', 'phones', 'city'],
+  },
+  {
+    key: 'tasks',
+    name: 'Tarefas e prazos',
+    description: 'Tarefas com status e data de vencimento.',
+    source: 'task',
+    columns: ['title', 'status', 'dueDate'],
+  },
+]
+
 const COLUMNS: GridColumn[] = [
   {
     key: 'name',
@@ -135,11 +173,22 @@ function CreateCrmReportDialog({
   const [open, setOpen] = React.useState(false)
   const [name, setName] = React.useState('')
   const [source, setSource] = React.useState<CrmReportSource>('company')
+  const [presetKey, setPresetKey] = React.useState<string | null>(null)
   const createReport = useCreateCrmReport(workspaceId)
+  const preset = REPORT_PRESETS.find((p) => p.key === presetKey)
 
   function reset() {
     setName('')
     setSource('company')
+    setPresetKey(null)
+  }
+
+  function pickPreset(key: string) {
+    const next = REPORT_PRESETS.find((p) => p.key === key)
+    if (!next) return
+    setPresetKey(key)
+    setSource(next.source)
+    setName((cur) => cur.trim() || next.name)
   }
 
   async function handleCreate() {
@@ -152,7 +201,10 @@ function CreateCrmReportDialog({
         name: name.trim(),
         source,
         // Começa com a primeira coluna da fonte; o usuário ajusta no construtor.
-        columns: [CRM_REPORT_FIELDS[source][0].key],
+        columns:
+          preset && preset.source === source
+            ? preset.columns
+            : [CRM_REPORT_FIELDS[source][0].key],
       })
       setOpen(false)
       router.push(`/${slug}/crm/reports/${created.id}`)
@@ -188,6 +240,30 @@ function CreateCrmReportDialog({
 
         <div className='flex flex-col gap-4'>
           <div className='flex flex-col gap-1.5'>
+            <Label>Comece por um relatório pronto (opcional)</Label>
+            <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+              {REPORT_PRESETS.map((item) => (
+                <button
+                  key={item.key}
+                  type='button'
+                  aria-pressed={presetKey === item.key}
+                  onClick={() => pickPreset(item.key)}
+                  className={`flex flex-col gap-0.5 rounded-lg border p-2.5 text-left transition-colors ${
+                    presetKey === item.key
+                      ? 'border-primary bg-primary/10'
+                      : 'hover:bg-muted/60'
+                  }`}
+                >
+                  <span className='font-medium text-sm'>{item.name}</span>
+                  <span className='text-muted-foreground text-xs'>
+                    {item.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className='flex flex-col gap-1.5'>
             <Label htmlFor='report-name'>Nome</Label>
             <Input
               id='report-name'
@@ -201,7 +277,10 @@ function CreateCrmReportDialog({
             <Label>Fonte</Label>
             <Select
               value={source}
-              onValueChange={(v) => setSource(v as CrmReportSource)}
+              onValueChange={(v) => {
+                setSource(v as CrmReportSource)
+                setPresetKey(null)
+              }}
             >
               <SelectTrigger className='w-full'>
                 <span>{CRM_REPORT_SOURCE_LABELS[source]}</span>

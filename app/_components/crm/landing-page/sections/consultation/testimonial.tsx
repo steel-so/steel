@@ -19,9 +19,9 @@ export function consultationTestimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'You made it so simple. My new site is so much faster & easier to work with Albino.',
+      'Vocês deixaram tudo muito simples. Meu novo site ficou bem mais rápido e fácil de usar.',
     authorName: 'Ilya Vasin',
-    authorRole: 'Software Engineer',
+    authorRole: 'Engenheiro de Software',
     avatarUrl: `${BASE}/testimonial-logo-amazon.png`,
     style: 'default',
   }
@@ -31,9 +31,9 @@ export function consultationTestimonialGoogleDefaultContent(): TestimonialConten
   return {
     type: 'TESTIMONIAL',
     quote:
-      'Must have book for students, who want to be a great Product Designer.',
+      'Leitura indispensável para estudantes que querem ser grandes Product Designers.',
     authorName: 'Mariano Rasgado',
-    authorRole: 'Software Engineer',
+    authorRole: 'Engenheiro de Software',
     avatarUrl: `${BASE}/testimonial-logo-google.png`,
     style: 'default',
   }
@@ -43,9 +43,9 @@ export function consultationTestimonialAmazon2DefaultContent(): TestimonialConte
   return {
     type: 'TESTIMONIAL',
     quote:
-      'You made it so simple. My new site is so much faster & easier to work with Albino.',
+      'Vocês deixaram tudo muito simples. Meu novo site ficou bem mais rápido e fácil de usar.',
     authorName: 'Oka Tomoaki',
-    authorRole: 'Software Engineer',
+    authorRole: 'Engenheiro de Software',
     avatarUrl: `${BASE}/testimonial-logo-amazon.png`,
     style: 'default',
   }

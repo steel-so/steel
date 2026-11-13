@@ -26,9 +26,9 @@ const BASE = '/landing-page-templates/web-application'
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Track your progress with our advanced site.',
+    title: 'Acompanhe seu progresso com nosso site avançado.',
     description:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+      'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
     imageUrl: `${BASE}/content-01-laptop.png`,
     imageUrls: [],
   }
@@ -37,9 +37,9 @@ export function aboutDefaultContent(): AboutContent {
 export function aboutCollageDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Make your customers happy by giving services.',
+    title: 'Encante seus clientes com um ótimo atendimento.',
     description:
-      'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+      'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
     imageUrl: `${BASE}/content-03-photo-1.png`,
     imageUrls: [
       `${BASE}/content-03-photo-2.png`,
@@ -54,7 +54,7 @@ export function aboutCollageDefaultContent(): AboutContent {
  * tem um link "Start a free trial →" embaixo de cada bloco Content. Texto e
  * destino ficam nos overrides `texts.cta`/`hrefs.cta`; estes são os padrões.
  */
-const CTA_LABEL = 'Start a free trial'
+const CTA_LABEL = 'Teste grátis'
 const CTA_HREF = '#footer'
 
 export function WebApplicationAbout({

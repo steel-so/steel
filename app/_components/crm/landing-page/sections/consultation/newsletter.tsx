@@ -26,9 +26,9 @@ const NO_FORM = '__none__'
 export function consultationNewsletterDefaultContent(): NewsletterContent {
   return {
     type: 'NEWSLETTER',
-    title: 'Subscribe to our newsletter to get latest news on your inbox.',
-    placeholder: 'Enter your email',
-    ctaLabel: 'Subscribe',
+    title: 'Assine nossa newsletter e receba as novidades no seu e-mail.',
+    placeholder: 'Digite seu e-mail',
+    ctaLabel: 'Assinar',
   }
 }
 
@@ -98,7 +98,7 @@ export function ConsultationNewsletter({
                   onCommit={(v) =>
                     onChange?.({ ...content, placeholder: v || undefined })
                   }
-                  placeholder='Enter your email'
+                  placeholder='Digite seu e-mail'
                   readOnly={readOnly}
                   className='w-[290px] rounded-lg border border-[#e7e9ed] px-[19px] py-4 text-[#161c2d]/70 text-[15px] tracking-[-0.18px]'
                 />
@@ -108,7 +108,7 @@ export function ConsultationNewsletter({
                     onCommit={(v) =>
                       onChange?.({ ...content, ctaLabel: v || undefined })
                     }
-                    placeholder='Subscribe'
+                    placeholder='Assinar'
                     readOnly={readOnly}
                     className='text-inherit'
                   />

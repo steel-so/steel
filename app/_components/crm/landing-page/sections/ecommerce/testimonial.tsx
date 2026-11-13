@@ -21,9 +21,9 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'OMG! I cannot believe that I have got a brand new room after getting your services. It was super easy to order and get started.',
+      'Uau! Nem acredito que ganhei um quarto novinho depois de contratar vocês. Foi superfácil comprar e começar.',
     authorName: 'Maria José Botín',
-    authorRole: 'Interior Designer',
+    authorRole: 'Designer de interiores',
     avatarUrl: `${BASE}/testimonial-avatar.png`,
     style: 'default',
   }

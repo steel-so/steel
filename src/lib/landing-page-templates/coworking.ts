@@ -20,9 +20,9 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        eyebrow: 'Shared space in your town',
-        title: 'Rent desk space in a shared office environment',
-        ctaLabel: 'Search Place',
+        eyebrow: 'Espaço compartilhado na sua cidade',
+        title: 'Alugue uma mesa em um escritório compartilhado',
+        ctaLabel: 'Buscar espaço',
         ctaHref: '#locations',
         imageUrl: '/landing-page-templates/coworking/hero-bg.jpg',
       },
@@ -34,15 +34,15 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
         items: [
           {
             value: '06',
-            label: 'Offices are available on different countries',
+            label: 'Escritórios disponíveis em diferentes países',
           },
           {
             value: '238',
-            label: 'Seats are available right now with dedicated support',
+            label: 'Lugares disponíveis agora, com suporte dedicado',
           },
           {
             value: '1,395',
-            label: 'People are using our co-work spaces right now',
+            label: 'Pessoas usando nossos espaços de coworking agora',
           },
         ],
       },
@@ -51,23 +51,23 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'WORKS',
       content: {
         type: 'WORKS',
-        title: 'Popular locations',
+        title: 'Locais mais procurados',
         subtitle:
-          'With lots of unique blocks, you can easily build a page easily without any coding.',
+          'Com vários blocos prontos, você monta sua página facilmente, sem escrever código.',
         items: [
           {
             title: 'Beauview',
-            category: '37 seats',
+            category: '37 lugares',
             imageUrl: '/landing-page-templates/coworking/location-1.jpg',
           },
           {
             title: 'Haleyborough',
-            category: '12 seats',
+            category: '12 lugares',
             imageUrl: '/landing-page-templates/coworking/location-2.jpg',
           },
           {
             title: 'Jeromyshire',
-            category: '28 seats',
+            category: '28 lugares',
             imageUrl: '/landing-page-templates/coworking/location-3.jpg',
           },
         ],
@@ -77,9 +77,9 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Work around very talented people.',
+        title: 'Trabalhe ao lado de pessoas muito talentosas.',
         description:
-          'With lots of unique blocks, you can easily build a page easily without any coding.',
+          'Com vários blocos prontos, você monta sua página facilmente, sem escrever código.',
         imageUrl: '/landing-page-templates/coworking/about-photo-1.jpg',
         imageUrls: ['/landing-page-templates/coworking/about-photo-2.jpg'],
       },
@@ -88,22 +88,22 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: "Everything you'll need",
+        title: 'Tudo o que você precisa',
         items: [
           {
-            title: 'Dedicated Desk',
+            title: 'Mesa Dedicada',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'High Speed Internet',
+            title: 'Internet de Alta Velocidade',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Unlimited Coffee',
+            title: 'Café à Vontade',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
         ],
       },
@@ -112,19 +112,19 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'We are always here for your backup.',
+        title: 'Estamos sempre aqui para apoiar você.',
         subtitle:
-          'We share common trends and strategies for creating & improving your rental income.',
+          'Compartilhamos tendências e estratégias para criar e aumentar a sua receita com locação.',
         items: [
           {
-            title: 'Noise Free Locations',
+            title: 'Locais Sem Barulho',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos prontos, você monta sua página sem escrever código.',
           },
           {
-            title: '24/7 Hour Support',
+            title: 'Suporte 24 Horas, 7 Dias por Semana',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos prontos, você monta sua página sem escrever código.',
           },
         ],
       },
@@ -133,23 +133,23 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'FAQ',
       content: {
         type: 'FAQ',
-        title: 'Frequently asked questions',
+        title: 'Perguntas frequentes',
         items: [
           {
-            question: 'How to setup Shade Pro?',
+            question: 'Como configurar a Sua Empresa?',
             answer:
-              'With lots of unique blocks, you can easily build a page with coding. Build your next landing page. Integer ut obe ryn. Sed feugiat vitae turpis a porta.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page. Integer ut obe ryn. Sed feugiat vitae turpis a porta.',
           },
           {
-            question: 'Can I use Shade Pro for my clients?',
+            question: 'Posso usar a Sua Empresa para os meus clientes?',
             answer: '',
           },
           {
-            question: 'How often do you release update?',
+            question: 'Com que frequência vocês lançam atualizações?',
             answer: '',
           },
           {
-            question: 'How can I access to old version?',
+            question: 'Como acesso uma versão antiga?',
             answer: '',
           },
         ],
@@ -159,11 +159,11 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
       type: 'NEWSLETTER',
       content: {
         type: 'NEWSLETTER',
-        title: 'Get latest updates',
+        title: 'Receba as últimas novidades',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        placeholder: 'Enter your email',
-        ctaLabel: 'Subscribe',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+        placeholder: 'Digite seu e-mail',
+        ctaLabel: 'Assinar',
       },
     },
     {
@@ -172,43 +172,43 @@ export const coworkingTemplate: LandingPageTemplateDefinition = {
         type: 'FOOTER',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing Digital', href: '#' },
+              { label: 'Produção de Conteúdo', href: '#' },
+              { label: 'SEO para Empresas', href: '#' },
+              { label: 'Design de Interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
           {
-            title: 'Contact us',
+            title: 'Fale conosco',
             links: [
               {
                 label: 'contato@suaempresa.com.br',

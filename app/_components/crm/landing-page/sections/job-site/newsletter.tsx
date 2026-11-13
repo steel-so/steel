@@ -27,11 +27,11 @@ type NewsletterContent = Extract<
 export function newsletterDefaultContent(): NewsletterContent {
   return {
     type: 'NEWSLETTER',
-    title: 'Get our latest updates',
+    title: 'Receba nossas novidades',
     description:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-    placeholder: 'Enter your email',
-    ctaLabel: 'Subscribe',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
+    placeholder: 'Digite o seu e-mail',
+    ctaLabel: 'Inscrever-se',
   }
 }
 
@@ -155,7 +155,7 @@ export function JobSiteNewsletter({
         value={textOf(
           content,
           'disclaimer',
-          'We’ll never share your details with third parties. View our Privacy Policy for more info.',
+          'Nunca compartilharemos seus dados com terceiros. Consulte nossa Política de Privacidade para saber mais.',
         )}
         onCommit={(v) => onChange?.(withText(content, 'disclaimer', v))}
         placeholder='Aviso de privacidade'

@@ -36,7 +36,7 @@ export function PricingSection({
       ...content,
       plans: [
         ...content.plans,
-        { name: 'Plano', price: '$0', features: [], highlighted: false },
+        { name: 'Plano', price: 'R$ 0', features: [], highlighted: false },
       ],
     })
   }
@@ -127,7 +127,7 @@ export function PricingSection({
               <GhostInput
                 value={plan.price}
                 onCommit={(v) => updatePlan(planIndex, { price: v })}
-                placeholder='$0'
+                placeholder='R$ 0'
                 readOnly={readOnly}
                 className='font-semibold text-3xl'
               />

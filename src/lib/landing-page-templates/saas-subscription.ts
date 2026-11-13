@@ -16,21 +16,21 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
   key: 'saas-subscription',
-  name: 'SaaS Subscription',
+  name: 'Assinatura de software (SaaS)',
   description: 'Modelo para produtos SaaS com planos e assinatura.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         navLinks: [
-          { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Demonstrações', href: '#' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Get started free',
+        ctaLabel: 'Comece grátis',
         ctaHref: '#footer',
       },
     },
@@ -38,10 +38,10 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        title: 'Get things done by awesome remote team',
+        title: 'Entregue resultados com um time remoto incrível',
         subtitle:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
-        ctaLabel: 'Get started for free',
+          'Compartilhamos tendências e estratégias para você aumentar sua receita e continuar sempre em alta demanda.',
+        ctaLabel: 'Comece grátis',
         ctaHref: '#footer',
         imageUrl: '/landing-page-templates/saas-subscription/hero-mockup.png',
       },
@@ -50,22 +50,22 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'Everything you need to manage projects',
+        title: 'Tudo o que você precisa para gerenciar projetos',
         items: [
           {
-            title: 'Project management',
+            title: 'Gestão de projetos',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Time tracking',
+            title: 'Controle de horas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Beautiful mobile app',
+            title: 'Aplicativo mobile elegante',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
           },
         ],
       },
@@ -74,9 +74,9 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Getting started with Albino is easier than ever',
+        title: 'Começar com o Albino nunca foi tão fácil',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page so quickly with Albino.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page rapidamente com o Albino.',
         imageUrl: '/landing-page-templates/saas-subscription/steps1-user-1.png',
         items: [],
       },
@@ -86,9 +86,9 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'FACTS',
         items: [
-          { value: '1M+', label: 'Customers visit Albino every months' },
-          { value: '93%', label: 'Satisfaction rate from our customers.' },
-          { value: '4.9', label: 'Average customer ratings out of 5.00!' },
+          { value: '1M+', label: 'Clientes visitam o Albino todo mês' },
+          { value: '93%', label: 'Índice de satisfação dos nossos clientes.' },
+          { value: '4.9', label: 'Avaliação média dos clientes, em 5,00!' },
         ],
       },
     },
@@ -96,25 +96,25 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Manage your projects fast',
+        title: 'Gerencie seus projetos com rapidez',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
         imageUrl: '/landing-page-templates/saas-subscription/steps2-event.png',
         items: [
           {
-            title: 'Create a project',
+            title: 'Crie um projeto',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código.',
           },
           {
-            title: 'Assign related people',
+            title: 'Atribua as pessoas envolvidas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código.',
           },
           {
-            title: 'Make it done on-time',
+            title: 'Entregue dentro do prazo',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código.',
           },
         ],
       },
@@ -124,9 +124,9 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          '“You made it so simple.” My new site is so much faster and easier to work with than my old site.',
+          '“Vocês deixaram tudo muito simples.” Meu novo site é muito mais rápido e fácil de usar que o antigo.',
         authorName: 'Corey Valdez',
-        authorRole: 'Founder at Zenix',
+        authorRole: 'Fundador na Zenix',
         avatarUrl:
           '/landing-page-templates/saas-subscription/testimonial-avatar-1.png',
         style: 'default',
@@ -137,9 +137,9 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          '“Simply the best.” Better than all the rest. I’d recommend this product to beginners.',
+          '“Simplesmente o melhor.” Superior a todos os outros. Eu recomendaria este produto para iniciantes.',
         authorName: 'Ian Klein',
-        authorRole: 'Digital Marketer',
+        authorRole: 'Profissional de marketing digital',
         avatarUrl:
           '/landing-page-templates/saas-subscription/testimonial-avatar-2.png',
         style: 'spotlight',
@@ -149,40 +149,40 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'PRICING',
       content: {
         type: 'PRICING',
-        title: 'Pricing & Plans',
+        title: 'Planos e preços',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
         plans: [
           {
-            name: 'Basic',
-            price: '$29',
-            period: 'One time purchase',
+            name: 'Básico',
+            price: 'R$ 29',
+            period: 'Pagamento único',
             features: [
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
             ],
-            ctaLabel: 'Get started for free',
+            ctaLabel: 'Comece grátis',
             ctaHref: '#footer',
             highlighted: false,
           },
           {
-            name: 'Standard',
-            price: '$49',
-            period: 'One time purchase',
+            name: 'Padrão',
+            price: 'R$ 49',
+            period: 'Pagamento único',
             features: [
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
             ],
-            ctaLabel: 'Get started for free',
+            ctaLabel: 'Comece grátis',
             ctaHref: '#footer',
             highlighted: false,
           },
           {
             name: 'Premium',
-            price: '$99',
-            period: 'One time purchase',
+            price: 'R$ 99',
+            period: 'Pagamento único',
             features: [
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
             ],
-            ctaLabel: 'Get started for free',
+            ctaLabel: 'Comece grátis',
             ctaHref: '#footer',
             highlighted: false,
           },
@@ -193,27 +193,27 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'FAQ',
       content: {
         type: 'FAQ',
-        title: 'Frequently Asked Questions',
+        title: 'Perguntas frequentes',
         items: [
           {
-            question: 'Can I use Albino for my clients?',
+            question: 'Posso usar o Albino para os meus clientes?',
             answer:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
           },
           {
-            question: 'Does it work with WordPress?',
+            question: 'Funciona com WordPress?',
             answer:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
           },
           {
-            question: 'Do I get free updates?',
+            question: 'Recebo atualizações gratuitas?',
             answer:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
           },
           {
-            question: 'Will you provide support?',
+            question: 'Vocês oferecem suporte?',
             answer:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
+              'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page. Integer ut Oberyn massa. Sed feugiat vitae turpis a porta.',
           },
         ],
       },
@@ -222,48 +222,48 @@ export const saasSubscriptionTemplate: LandingPageTemplateDefinition = {
       type: 'FOOTER',
       content: {
         type: 'FOOTER',
-        logoText: 'Brainwave.io',
-        text: 'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaTitle: 'Build better landing page fast',
+        logoText: 'Sua Empresa',
+        text: 'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
+        ctaTitle: 'Crie landing pages melhores, mais rápido',
         ctaDescription:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaLabel: 'Get it now',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
+        ctaLabel: 'Quero agora',
         ctaHref: '#footer',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing digital', href: '#' },
+              { label: 'Redação de conteúdo', href: '#' },
+              { label: 'SEO para empresas', href: '#' },
+              { label: 'Design de interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
         ],
