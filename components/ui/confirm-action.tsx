@@ -15,8 +15,12 @@ import {
 } from "@/components/ui/alert-dialog"
 
 type ConfirmActionProps = {
-  /** The element that opens the dialog (usually the icon/delete button). */
-  trigger: ReactElement
+  /** The element that opens the dialog (usually the icon/delete button).
+   * Omit it to drive the dialog with `open`/`onOpenChange` instead — for
+   * actions that start in a menu item that unmounts when it closes. */
+  trigger?: ReactElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   title: string
   /** Say what is lost, e.g. "Os 12 membros da lista também serão removidos." */
   description: string
@@ -39,6 +43,8 @@ type ConfirmActionProps = {
  */
 export function ConfirmAction({
   trigger,
+  open: controlledOpen,
+  onOpenChange,
   title,
   description,
   confirmLabel = "Excluir",
@@ -47,11 +53,16 @@ export function ConfirmAction({
   pending = false,
   onConfirm,
 }: ConfirmActionProps) {
-  const [open, setOpen] = useState(false)
+  const [innerOpen, setInnerOpen] = useState(false)
+  const open = controlledOpen ?? innerOpen
+  const setOpen = (next: boolean) => {
+    onOpenChange?.(next)
+    if (controlledOpen === undefined) setInnerOpen(next)
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger render={trigger} />
+      {trigger ? <AlertDialogTrigger render={trigger} /> : null}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
