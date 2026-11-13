@@ -15,6 +15,7 @@ import {
 import type {
   ApolloBulkMatchResult,
   ApolloReply,
+  ApolloWebhookResult,
 } from '@/src/lib/integrations/apollo-client'
 import { err, ok, type Result } from '@/src/lib/result'
 
@@ -403,7 +404,7 @@ describe('CrmApolloImportRunner.run', () => {
 })
 
 describe('CrmApolloImportRunner.run reading phones back from Apollo', () => {
-  const ready = (people: unknown[]) =>
+  const ready = (people: ApolloWebhookResult['people']) =>
     ok({
       data: { ready: true, creditsConsumed: 8, people },
       rateLimit: RATE,
