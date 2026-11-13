@@ -63,6 +63,7 @@ export default async function ZapPage({
       <div className='min-h-0 flex-1'>
         <WhatsappPageClient
           workspaceId={membership.value.workspaceId}
+          slug={slug}
           initialConversation={initial?.ok ? initial.value : null}
           conversationUnavailable={Boolean(conversa) && !initial?.ok}
         />

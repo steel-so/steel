@@ -17,6 +17,7 @@ import {
 } from '@/app/_components/crm/health/health-parts'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { CustomerContactButtons } from '@/app/_components/customer-360/customer-contact-buttons'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import {
@@ -254,6 +255,12 @@ export function CrmOpportunitiesTable({
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-5'>
+              <CustomerContactButtons
+                workspaceId={workspaceId}
+                slug={slug}
+                target={{ opportunityId: record.id }}
+                hasPhone={Boolean(record.pointOfContactId)}
+              />
               <OpportunityProposalButton
                 workspaceId={workspaceId}
                 opportunityId={record.id}

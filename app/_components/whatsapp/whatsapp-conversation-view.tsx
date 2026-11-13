@@ -10,6 +10,7 @@ import {
   MoneyReceive01Icon,
   MoreVerticalIcon,
   RefreshIcon,
+  SidebarRightIcon,
   StarIcon,
   UserBlock01Icon,
   UserGroup03Icon,
@@ -215,6 +216,8 @@ export function WhatsappConversationView({
   connection = null,
   onSelectConversation,
   onBack,
+  contextOpen,
+  onToggleContext,
 }: {
   workspaceId: string
   conversation: WhatsAppConversationDTO
@@ -223,6 +226,9 @@ export function WhatsappConversationView({
   onSelectConversation?: (conversation: WhatsAppConversationDTO) => void
   /** `U`: close the conversation and go back to the list. */
   onBack?: () => void
+  /** Customer 360 side panel: open state and toggle (button hidden without it). */
+  contextOpen?: boolean
+  onToggleContext?: () => void
 }) {
   const [callOpen, setCallOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
@@ -771,6 +777,22 @@ export function WhatsappConversationView({
               onClick={() => setBoletoOpen(true)}
             >
               <SteelIcon icon={Invoice01Icon} size={18} />
+            </Button>
+          )}
+          {onToggleContext && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Contexto do cliente'
+              aria-pressed={contextOpen === true}
+              title={
+                contextOpen
+                  ? 'Ocultar o contexto do cliente'
+                  : 'Ver o contexto do cliente: CRM, oportunidades e chamados'
+              }
+              onClick={onToggleContext}
+            >
+              <SteelIcon icon={SidebarRightIcon} size={18} />
             </Button>
           )}
           {canEdit && (

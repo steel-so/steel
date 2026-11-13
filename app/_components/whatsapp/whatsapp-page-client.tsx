@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { ZapContextSlot } from '@/app/_components/customer-360/zap-context-slot'
 import { ZapOnboardingChecklist } from '@/app/_components/onboarding-checklist/zap-onboarding-checklist'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,10 +13,13 @@ import { WhatsappConversationView } from './whatsapp-conversation-view'
 
 export function WhatsappPageClient({
   workspaceId,
+  slug,
   initialConversation = null,
   conversationUnavailable = false,
 }: {
   workspaceId: string
+  /** Workspace slug, for the links of the customer context panel. */
+  slug: string
   initialConversation?: WhatsAppConversationDTO | null
   /** A `?conversa=` link pointed at a conversation this user cannot open. */
   conversationUnavailable?: boolean
@@ -27,6 +31,7 @@ export function WhatsappPageClient({
     undefined,
   )
   const [unavailableDismissed, setUnavailableDismissed] = useState(false)
+  const [contextOpen, setContextOpen] = useState(false)
   const connections = useWhatsAppConnections(workspaceId)
 
   // Keep the open conversation in step with the refetched list (new inbound
@@ -73,18 +78,33 @@ export function WhatsappPageClient({
         />
       </div>
       {selected ? (
-        <WhatsappConversationView
-          key={selected.id}
-          workspaceId={workspaceId}
-          conversation={selected}
-          connection={
-            connections.data?.find(
-              (connection) => connection.id === selected.connectionId,
-            ) ?? null
-          }
-          onSelectConversation={setSelected}
-          onBack={() => setSelected(null)}
-        />
+        <>
+          <WhatsappConversationView
+            key={selected.id}
+            workspaceId={workspaceId}
+            conversation={selected}
+            connection={
+              connections.data?.find(
+                (connection) => connection.id === selected.connectionId,
+              ) ?? null
+            }
+            onSelectConversation={setSelected}
+            onBack={() => setSelected(null)}
+            contextOpen={contextOpen}
+            onToggleContext={() => setContextOpen((open) => !open)}
+          />
+          <ZapContextSlot
+            workspaceId={workspaceId}
+            slug={slug}
+            conversation={{
+              id: selected.id,
+              contactName: selected.contactName,
+              contactWaId: selected.contactWaId,
+            }}
+            open={contextOpen}
+            onOpenChange={setContextOpen}
+          />
+        </>
       ) : (
         <div className='flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto p-6 text-center text-muted-foreground text-sm max-lg:hidden'>
           {conversationUnavailable && !unavailableDismissed ? (

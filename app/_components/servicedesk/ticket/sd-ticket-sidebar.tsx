@@ -7,6 +7,7 @@ import {
   Cancel01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { type ReactNode, useState } from 'react'
+import { TicketCrmCardBody } from '@/app/_components/customer-360/ticket-crm-card'
 import { SdAiCopilotPanel } from '@/app/_components/servicedesk/ai/copilot-panel'
 import { SdPortalAccessButton } from '@/app/_components/servicedesk/external-portal'
 import { SdTicketIntegrationLinks } from '@/app/_components/servicedesk/integrations/sd-ticket-integration-links'
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/collapsible'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { useCustomer360 } from '@/src/hooks/use-customer-360'
 import { useSdTicketKbLinks } from '@/src/hooks/use-sd-knowledge'
 import { useSdTicketApprovals } from '@/src/hooks/use-sd-ticket-approvals'
 import { useSdTicketCosts } from '@/src/hooks/use-sd-ticket-costs'
@@ -231,6 +233,44 @@ export function SdSidebarSection({
   )
 }
 
+/**
+ * "Cliente no CRM": owner, ARR, health and open deals of the customer behind
+ * the ticket. Stays out of the way (renders nothing) when the workspace has no
+ * CRM, the viewer cannot read it or no CRM record matches the ticket customer.
+ */
+function CrmCustomerSection({
+  workspaceId,
+  ticket,
+  slug,
+}: {
+  workspaceId: string
+  ticket: SdTicketDTO
+  slug: string
+}) {
+  const hasCustomer = Boolean(
+    ticket.customer || ticket.company || ticket.contact,
+  )
+  const crm = useCustomer360(
+    workspaceId,
+    { ticketId: ticket.id },
+    { enabled: hasCustomer },
+  )
+  const data = crm.data
+  if (!data || (!data.company && !data.person)) return null
+  return (
+    <SdSidebarSection
+      title='Cliente no CRM'
+      aside={
+        data.health && data.health.level !== 'LOW'
+          ? data.health.levelLabel
+          : undefined
+      }
+    >
+      <TicketCrmCardBody data={data} slug={slug} />
+    </SdSidebarSection>
+  )
+}
+
 function ReadRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className={cn(ROW, 'items-baseline')}>
@@ -421,6 +461,7 @@ function Participants({
  */
 export function SdTicketSidebar({
   workspaceId,
+  slug,
   ticket,
   config,
   agents,
@@ -428,6 +469,8 @@ export function SdTicketSidebar({
   onTab,
 }: {
   workspaceId: string
+  /** Workspace slug, for the links of the CRM card; the card is hidden without it. */
+  slug?: string
   ticket: SdTicketDTO
   config: SdConfigBootstrapDTO
   agents: SdAgentDTO[]
@@ -592,6 +635,14 @@ export function SdTicketSidebar({
         ) : null}
         {field('configItemId', 'Item de configuração')}
       </SdSidebarSection>
+
+      {slug ? (
+        <CrmCustomerSection
+          workspaceId={workspaceId}
+          ticket={ticket}
+          slug={slug}
+        />
+      ) : null}
 
       {customFields.length > 0 ? (
         <SdSidebarSection title='Campos customizados'>
