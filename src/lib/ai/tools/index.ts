@@ -1,12 +1,14 @@
 import { SKILL_AI_TOOLS } from '../context/skill-tool'
 import { ACTION_AI_TOOLS } from './actions'
 import { CRM_AI_TOOLS } from './crm'
+import { DOCUMENT_AI_TOOLS } from './documents'
 import { INSIGHT_AI_TOOLS } from './insights'
 import { KNOWLEDGE_AI_TOOLS } from './knowledge'
 import { PLATFORM_AI_TOOLS } from './platform'
 import { SERVICEDESK_AI_TOOLS } from './servicedesk'
 import type { AnySteelAiTool } from './types'
 import { WHATSAPP_AI_TOOLS } from './whatsapp'
+import { WIKI_AI_TOOLS } from './wiki'
 
 /**
  * Every Steel AI tool. Each module owns its own file; the runtime
@@ -18,6 +20,8 @@ export const STEEL_AI_TOOLS: readonly AnySteelAiTool[] = [
   ...INSIGHT_AI_TOOLS,
   ...SERVICEDESK_AI_TOOLS,
   ...CRM_AI_TOOLS,
+  ...DOCUMENT_AI_TOOLS,
+  ...WIKI_AI_TOOLS,
   ...WHATSAPP_AI_TOOLS,
   ...SKILL_AI_TOOLS,
   ...ACTION_AI_TOOLS,

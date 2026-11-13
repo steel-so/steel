@@ -189,7 +189,7 @@ uma ferramenta de escrita chamada mesmo assim responde como desconhecida
 - **Ações internas** (criar tarefa, registrar nota, mover etapa, atribuir)
   executam na hora, com o usuário que conectou, e voltam
   `status: "executed"` com `actionId`, `target` e o `href` do registro.
-- **Ações com cliente final** (`zap_message_send_text`,
+- **Ações com cliente final** (`zap_message_send_text`, `zap_template_send`,
   `sd_reply_to_requester`, `sd_request_approval`, `sd_move_ticket_phase` e
   `sd_cancel_ticket`) não executam pela chamada: voltam
   `status: "pending_confirmation"` com um `confirmUrl`. A pessoa que conectou

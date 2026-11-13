@@ -30,7 +30,7 @@ Há dois tipos de escrita:
 | Tipo | Exemplos | O que acontece |
 | --- | --- | --- |
 | **Interna** | `crm_create_task`, `sd_add_internal_note`, mover etapa, atribuir | Executa na hora, com o usuário que conectou. Volta `status: "executed"` |
-| **Com cliente final** (`openWorldHint: true`) | `zap_message_send_text`, `sd_reply_to_requester`, `sd_request_approval`, `sd_move_ticket_phase`, `sd_cancel_ticket` | Não executa. Cria uma pendência e volta `status: "pending_confirmation"` com um `confirmUrl` |
+| **Com cliente final** (`openWorldHint: true`) | `zap_message_send_text`, `zap_template_send`, `sd_reply_to_requester`, `sd_request_approval`, `sd_move_ticket_phase`, `sd_cancel_ticket` | Não executa. Cria uma pendência e volta `status: "pending_confirmation"` com um `confirmUrl` |
 
 ## Uma conversa de exemplo
 

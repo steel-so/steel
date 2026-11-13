@@ -20,6 +20,12 @@ vi.mock('@/src/services/whatsapp-business-hours.service', () => ({
     })),
   },
 }))
+vi.mock('@/src/services/whatsapp-reply-knowledge.service', () => ({
+  WhatsAppReplyKnowledgeService: {
+    forCustomerReply: vi.fn(async () => []),
+    forAgent: vi.fn(async () => []),
+  },
+}))
 vi.mock('@/src/services/whatsapp-sla.service', () => ({
   WhatsAppSlaService: { onOutbound: vi.fn(async () => undefined) },
 }))
@@ -77,6 +83,7 @@ import {
   type PreparedAiCall,
 } from '@/src/services/ai-usage.service'
 import { WhatsAppBusinessHoursService } from '@/src/services/whatsapp-business-hours.service'
+import { WhatsAppReplyKnowledgeService } from '@/src/services/whatsapp-reply-knowledge.service'
 import { WhatsAppSlaService } from '@/src/services/whatsapp-sla.service'
 import { WhatsAppAiReplyService } from '../whatsapp-ai-reply.service'
 import { WhatsAppDistributionService } from '../whatsapp-distribution.service'
@@ -330,6 +337,36 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
       senderUserId: null,
       byAi: true,
     })
+  })
+
+  it('adds KB and Wiki sources found for the customer message to the prompt', async () => {
+    arrange()
+    vi.mocked(WhatsAppReplyKnowledgeService.forCustomerReply).mockResolvedValueOnce(
+      [
+        {
+          sourceLabel: 'Página da Wiki',
+          title: 'Política de troca',
+          text: 'Trocas em até 7 dias.',
+        },
+      ],
+    )
+    const chat = vi.fn(async () => response('Trocamos em até 7 dias.'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+
+    expect(outcome).toMatchObject({ status: 'sent' })
+    expect(
+      WhatsAppReplyKnowledgeService.forCustomerReply,
+    ).toHaveBeenCalledWith(WS, 'Oi')
+    const call = (chat.mock.calls[0] as unknown as [{ system: string }])[0]
+    expect(call.system).toContain('### Página da Wiki: Política de troca')
+    expect(call.system).toContain('Trocas em até 7 dias.')
   })
 
   it('answers a button AI instruction even with the AI off', async () => {

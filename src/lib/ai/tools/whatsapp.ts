@@ -27,7 +27,7 @@ import {
   zapConversationUnassignTool,
 } from './whatsapp/conversations'
 import { zapDashboardTool } from './whatsapp/dashboard'
-import { zapMessageSendTextTool } from './whatsapp/messages'
+import { zapMessageSendTextTool, zapTemplateSendTool } from './whatsapp/messages'
 import {
   zapQuickRepliesListTool,
   zapQuickReplyCreateTool,
@@ -69,4 +69,5 @@ export const WHATSAPP_AI_TOOLS: AnySteelAiTool[] = [
   zapQuickReplyDeleteTool,
   zapBroadcastCreateDraftTool,
   zapMessageSendTextTool,
+  zapTemplateSendTool,
 ]
