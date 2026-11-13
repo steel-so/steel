@@ -68513,6 +68513,135 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/retention": {
+      "get": {
+        "tags": ["CRM · Configurações"],
+        "summary": "Obter regras de retenção",
+        "operationId": "getWorkspacesByIdCrmRetention",
+        "description": "Regras da tarefa automática de retenção (nota baixa na pesquisa e queda de saúde do cliente). Sem registro salvo, devolve os valores padrão com `isDefault: true`.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado (sem permissão específica).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Regras.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmRetentionSettings"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["CRM · Configurações"],
+        "summary": "Atualizar regras de retenção",
+        "operationId": "patchWorkspacesByIdCrmRetention",
+        "description": "Atualização parcial — informe ao menos um campo.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado; restrito a **OWNER/ADMIN**.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "onDetractor": {
+                    "type": "boolean"
+                  },
+                  "onHealthDrop": {
+                    "type": "boolean"
+                  },
+                  "createOpportunity": {
+                    "type": "boolean"
+                  },
+                  "taskDueDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Regras atualizadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmRetentionSettings"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/sales-metrics": {
       "get": {
         "tags": ["CRM · Relatórios e dashboards"],
@@ -227313,6 +227442,68 @@
         },
         "required": ["columns", "rows", "grouped", "total"],
         "description": "Resultado processado: `columns` (chave + rótulo) e `rows` indexadas por `column.key`; `total` = número de linhas."
+      },
+      "CrmRetentionSettings": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string"
+          },
+          "onDetractor": {
+            "type": "boolean",
+            "description": "Uma resposta detratora (NPS/CSAT) cria uma tarefa de retenção para o responsável da conta."
+          },
+          "onHealthDrop": {
+            "type": "boolean",
+            "description": "Uma queda de saúde do cliente cria uma tarefa de retenção para o responsável da conta."
+          },
+          "createOpportunity": {
+            "type": "boolean",
+            "description": "Abre também uma oportunidade de retenção."
+          },
+          "taskDueDays": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Prazo da tarefa, em dias.",
+            "example": 2
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "`true` enquanto o workspace nunca salvou as regras (valores padrão)."
+          },
+          "updatedById": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "workspaceId",
+          "onDetractor",
+          "onHealthDrop",
+          "createOpportunity",
+          "taskDueDays",
+          "isDefault",
+          "updatedById",
+          "updatedAt"
+        ]
       },
       "CrmSalesMetric": {
         "oneOf": [
