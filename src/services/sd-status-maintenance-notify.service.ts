@@ -16,6 +16,7 @@ import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-maintenance.repository'
 import { SdStatusPageRepository } from '@/src/repositories/sd-status-page.repository'
 import { activeWhatsappConnection } from './sd-notification.service'
+import { checkWhatsAppOptOut } from './whatsapp-opt-out'
 
 export interface SdMaintenanceNotifyResult {
   /** Nothing was sent: the window is gone, was already announced or is off. */
@@ -110,6 +111,19 @@ export const SdStatusMaintenanceNotifyService = {
           })
           sent += 1
         } else if (connection) {
+          // LGPD: a number that opted out (or whose opt-out we could not read)
+          // is not messaged; it counts as neither sent nor failed.
+          const optOut = await checkWhatsAppOptOut(
+            window.workspaceId,
+            subscriber.address,
+          )
+          if (optOut !== 'allowed') {
+            logger.info('servicedesk.status.maintenance_whatsapp_opted_out', {
+              maintenanceId,
+              reason: optOut,
+            })
+            continue
+          }
           const result = await WhatsAppSend.text(connection, {
             to: subscriber.address,
             text: sdMaintenanceNoticeText({
