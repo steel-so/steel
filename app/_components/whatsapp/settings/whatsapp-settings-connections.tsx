@@ -2,6 +2,7 @@
 
 import { QrCodeIcon, TradeMarkIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useState } from 'react'
+import { CopyLinkButton } from '@/app/_components/documents/copy-link-button'
 import { ConnectionSpendCapButton } from '@/app/_components/whatsapp/costs/whatsapp-spend-caps'
 import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
@@ -118,7 +119,63 @@ const EMPTY_FORM = {
   metaAccessToken: '',
 }
 
-function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
+function ZapiWebhookDialog({
+  connection,
+  onClose,
+}: {
+  connection: WhatsAppConnectionDTO | null
+  onClose: () => void
+}) {
+  return (
+    <Dialog
+      open={connection !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <DialogContent className='max-w-lg'>
+        <DialogHeader>
+          <DialogTitle>Configurar na Z-API</DialogTitle>
+          <DialogDescription>
+            Para receber as mensagens de "{connection?.label}", cole o endereço
+            abaixo no painel da Z-API.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='space-y-3'>
+          <div className='flex items-center gap-2'>
+            <Input
+              readOnly
+              value={connection?.webhookUrl ?? ''}
+              aria-label='Endereço do webhook'
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <CopyLinkButton url={connection?.webhookUrl ?? ''} label='Copiar' />
+          </div>
+          <ol className='list-decimal space-y-1 pl-5 text-muted-foreground text-sm'>
+            <li>No painel da Z-API, abra a instância e vá em Webhooks.</li>
+            <li>
+              Cole este endereço em "Ao receber", "Ao enviar" e "Status da
+              mensagem".
+            </li>
+            <li>Salve. As mensagens passam a chegar aqui.</li>
+          </ol>
+          <p className='text-muted-foreground text-xs'>
+            O endereço tem uma chave secreta: não compartilhe com ninguém fora
+            da sua equipe.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CreateConnectionDialog({
+  workspaceId,
+  onCreated,
+}: {
+  workspaceId: string
+  onCreated: (connection: WhatsAppConnectionDTO) => void
+}) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [advanced, setAdvanced] = useState(false)
@@ -154,11 +211,12 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
           }
 
     createConnection.mutate(payload, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         notify.success('Conexão criada')
         setForm(EMPTY_FORM)
         setAdvanced(false)
         setOpen(false)
+        onCreated(created)
       },
       onError: (error) =>
         notify.error(error, 'Não foi possível criar a conexão'),
@@ -533,6 +591,8 @@ export function WhatsappSettingsConnections({
 }) {
   const [deletingConnection, setDeletingConnection] =
     useState<WhatsAppConnectionDTO | null>(null)
+  const [webhookConnection, setWebhookConnection] =
+    useState<WhatsAppConnectionDTO | null>(null)
   const connections = useWhatsAppConnections(workspaceId)
   const deleteConnection = useDeleteWhatsAppConnection(workspaceId)
   const refreshStatus = useRefreshWhatsAppConnectionStatus(workspaceId)
@@ -553,7 +613,12 @@ export function WhatsappSettingsConnections({
             data-tour='zap-connections-actions'
           >
             <MetaSignupButton workspaceId={workspaceId} />
-            <CreateConnectionDialog workspaceId={workspaceId} />
+            <CreateConnectionDialog
+              workspaceId={workspaceId}
+              onCreated={(created) => {
+                if (created.webhookUrl) setWebhookConnection(created)
+              }}
+            />
           </div>
         ) : (
           <p className='max-w-56 text-right text-muted-foreground text-xs'>
@@ -593,6 +658,15 @@ export function WhatsappSettingsConnections({
                   workspaceId={workspaceId}
                   connectionId={connection.id}
                 />
+              )}
+              {canManage && connection.webhookUrl && (
+                <Button
+                  size='xs'
+                  variant='outline'
+                  onClick={() => setWebhookConnection(connection)}
+                >
+                  Configurar na Z-API
+                </Button>
               )}
               {canManage &&
                 (connection.provider === 'META' ||
@@ -662,6 +736,11 @@ export function WhatsappSettingsConnections({
           </div>
         )}
       </div>
+
+      <ZapiWebhookDialog
+        connection={webhookConnection}
+        onClose={() => setWebhookConnection(null)}
+      />
 
       <AlertDialog
         open={deletingConnection !== null}

@@ -3,6 +3,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { NEXT_PUBLIC_META_APP_ID } from '@/lib/env/env'
 import {
+  BETTER_AUTH_URL,
   WHATSAPP_META_APP_ID,
   WHATSAPP_META_APP_SECRET,
 } from '@/lib/env/server'
@@ -143,7 +144,14 @@ export const WhatsAppConnectionService = {
       await WhatsAppConnectionRepository.listByWorkspace(workspaceId)
     if (!result.ok) return result
 
-    return ok(result.value.map(toWhatsAppConnectionDTO))
+    const webhookBase = membership.value.isPrivileged
+      ? BETTER_AUTH_URL
+      : undefined
+    return ok(
+      result.value.map((connection) =>
+        toWhatsAppConnectionDTO(connection, webhookBase),
+      ),
+    )
   },
 
   async create(
@@ -222,7 +230,7 @@ export const WhatsAppConnectionService = {
       if (checked.ok) created = checked.value
     }
 
-    return ok(toWhatsAppConnectionCreatedDTO(created))
+    return ok(toWhatsAppConnectionCreatedDTO(created, BETTER_AUTH_URL))
   },
 
   /** Re-checks a Meta connection on the Graph API (button "Atualizar status"). */
@@ -254,7 +262,7 @@ export const WhatsAppConnectionService = {
         targetId: id,
         meta: { refreshedStatus: zapi.value.status },
       })
-      return ok(toWhatsAppConnectionDTO(zapi.value))
+      return ok(toWhatsAppConnectionDTO(zapi.value, BETTER_AUTH_URL))
     }
     if (existing.value.provider !== 'META') {
       return err(
@@ -271,7 +279,7 @@ export const WhatsAppConnectionService = {
       targetId: id,
       meta: { refreshedStatus: checked.value.status },
     })
-    return ok(toWhatsAppConnectionDTO(checked.value))
+    return ok(toWhatsAppConnectionDTO(checked.value, BETTER_AUTH_URL))
   },
 
   /**
@@ -440,7 +448,7 @@ export const WhatsAppConnectionService = {
       meta: { fields: Object.keys(dto) },
     })
 
-    return ok(toWhatsAppConnectionDTO(result.value))
+    return ok(toWhatsAppConnectionDTO(result.value, BETTER_AUTH_URL))
   },
 
   async remove(
