@@ -6,6 +6,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import type { PermissionMap } from '@/src/lib/permissions'
 import { WorkspacePermissionsProvider } from '../../workspace/workspace-permissions'
 import { WhatsappContactsPage } from '../whatsapp-contacts-page'
 
@@ -306,6 +307,56 @@ describe('<WhatsappContactsPage />', () => {
         optedOut: false,
         contactRequested: true,
       })
+    })
+  })
+  describe('CRM link panel (ADR 0066)', () => {
+    const LINKS = '/api/workspaces/ws_1/crm/customer-links/suggestions'
+    const state = {
+      kind: 'whatsapp-contact',
+      id: 'c1',
+      sourceName: 'Ana Souza',
+      linked: { id: 'p1', name: 'Ana Souza', detail: 'ana@acme.com' },
+      suggestions: [],
+    }
+
+    function renderWith(permissions: PermissionMap) {
+      renderWithQuery(
+        <WorkspacePermissionsProvider
+          value={{ isPrivileged: false, permissions }}
+        >
+          <WhatsappContactsPage workspaceId='ws_1' />
+        </WorkspacePermissionsProvider>,
+      )
+    }
+
+    it('shows the CRM registration of the contact in the edit dialog', async () => {
+      setup([{ match: LINKS, data: state }])
+      renderWith({ contacts: ['VIEW', 'EDIT'], people: ['VIEW', 'EDIT'] })
+
+      fireEvent.click(
+        (await screen.findAllByRole('button', { name: 'Editar' }))[0],
+      )
+      const dialog = await screen.findByRole('dialog')
+      const panel = await within(dialog).findByLabelText('Vínculo com o CRM')
+      expect(within(panel).getByText('Cadastro no CRM')).toBeTruthy()
+      expect(within(panel).getByText(/Ana Souza/)).toBeTruthy()
+    })
+
+    it('hides the panel from users who cannot edit CRM people', async () => {
+      const fetchSpy = setup([{ match: LINKS, data: state }])
+      renderWith({ contacts: ['VIEW', 'EDIT'], people: ['VIEW'] })
+
+      fireEvent.click(
+        (await screen.findAllByRole('button', { name: 'Editar' }))[0],
+      )
+      const dialog = await screen.findByRole('dialog')
+      expect(
+        within(dialog).getByLabelText('Número (DDD + número)'),
+      ).toBeTruthy()
+      expect(within(dialog).queryByLabelText('Vínculo com o CRM')).toBeNull()
+      expect(
+        fetchSpy.mock.calls.some(([url]) => String(url).includes(LINKS)),
+      ).toBe(false)
     })
   })
 })

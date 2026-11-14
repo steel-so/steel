@@ -349,8 +349,9 @@ chave de telefone). Casamento ambíguo não grava nada.
 - UI: painel **Cadastro no CRM** (`CustomerLinkPanel`) nas telas de cliente e
   de contato do ServiceDesk, com "Vincular" e "Desvincular". Desvincular não
   impede o casamento por texto se CNPJ, e-mail ou telefone ainda coincidem.
-  O painel do contato do WhatsApp existe como componente, mas **não está
-  montado** na tela de contatos do zap.
+  O vínculo do contato do WhatsApp se vê e se corrige em Comunicação >
+  Contatos > Editar (painel "Cadastro no CRM", para quem edita pessoas do
+  CRM).
 - Os DTOs de cliente e contato da API v1 **não** expõem `crmCompanyId` nem
   `crmPersonId`: o vínculo é gerido só pelo aplicativo.
 
@@ -358,8 +359,8 @@ chave de telefone). Casamento ambíguo não grava nada.
 
 `GET /api/workspaces/{id}/customer-360?personId|companyId|phone|ticketId|conversationId`
 (`Customer360Service`, `types/customer-360.d.ts`) devolve num só pedido:
-`match` (como achou: `person`, `company`, `phone`, `email`, `cnpj`, `name` ou
-`none`), `available` (`crm`, `servicedesk`, `whatsapp`: o que o usuário pode
+`match` (como achou: `link`, `person`, `company`, `phone`, `email`, `cnpj`,
+`name` ou `none`), `available` (`crm`, `servicedesk`, `whatsapp`: o que o usuário pode
 ver), pessoa, empresa (com ARR e dono da conta), saúde, oportunidades, leads
 abertos, chamados (com SLA e CSAT), `openTickets`, conversas, ligações e
 documentos. A rota exige CRM com `people` VIEW; o bloco de um módulo
@@ -373,10 +374,14 @@ CRM, o cartão **Cliente no CRM** na lateral do chamado (dono da conta, ARR,
 saúde e até 3 negócios abertos) e o painel de contexto da conversa do zap,
 com os botões de WhatsApp e Ligar.
 
-> Hoje a Visão 360 ainda acha o cliente por **texto** (chave de telefone,
-> CNPJ, e-mail, nome exato, em `Customer360Repository.resolveIdentity`) e não
-> lê os vínculos gravados pelo cadastro único. O ADR 0066 prevê a troca; até
-> lá, desvincular no painel não muda o que a Visão 360 mostra.
+A Visão 360 (`Customer360Repository.resolveIdentity`) identifica o cliente
+**primeiro pelo vínculo gravado** do cadastro único (`SdCustomer.crmCompanyId`,
+`SdContact.crmPersonId`, `WhatsAppContact.crmPersonId`; origem `link` na dica da
+tela) e só então pelo casamento por texto (telefone, e-mail, CNPJ, nome exato),
+como o `CustomerLinkService.resolve`. Um vínculo vence um casamento por texto
+que aponte para outro cadastro, e um cliente ou contato vinculado a outra
+empresa ou pessoa não entra na visão por coincidência de texto. Desvincular
+devolve o registro ao casamento por texto.
 
 ### Ações entre motores (`CrossEngineActions`)
 

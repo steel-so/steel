@@ -62,6 +62,21 @@ describe('shortcut registry', () => {
     expect(getShortcut('global.shortcuts').keys).toEqual(['?'])
   })
 
+  it('documents the Canvas select-all and nudge keys', () => {
+    expect(getShortcut('canvas.select-all').keys).toEqual(['mod+a'])
+    expect(getShortcut('canvas.select-all').scope).toBe('editor.canvas')
+    expect(getShortcut('canvas.nudge').keys).toContain('arrowleft')
+    expect(getShortcut('canvas.nudge-big').keys).toEqual([
+      'shift+arrowup',
+      'shift+arrowdown',
+      'shift+arrowleft',
+      'shift+arrowright',
+    ])
+    expect(getShortcut('canvas.nudge').shadows).toContain(
+      'canvas.select-sibling',
+    )
+  })
+
   it('moves editor headings off Ctrl+Alt on Windows/Linux only', () => {
     const heading = getShortcut('editor.heading')
     expect(shortcutKeys(heading, false)[0]).toBe('mod+shift+1')

@@ -190,6 +190,123 @@ describe('resolveIdentity', () => {
     expect(who.sdCustomerIds).toEqual([])
   })
 
+  describe('stored links', () => {
+    it('lets the customer link beat a conflicting CNPJ or name match', async () => {
+      const { workspace, user, company } = await setup()
+      const other = await seedCrmCompany(workspace.id, user.id, {
+        name: 'Outra Empresa',
+      })
+      const customer = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Acme',
+        document: '11222333000181',
+        crmCompanyId: other.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdCustomerId: customer.id }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.company?.id).toBe(other.id)
+      expect(who.company?.id).not.toBe(company.id)
+    })
+
+    it('falls back to the text match once the customer is unlinked', async () => {
+      const { workspace, user, company } = await setup()
+      const customer = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Qualquer',
+        document: '11222333000181',
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdCustomerId: customer.id }),
+      )
+      expect(who.match).toBe('cnpj')
+      expect(who.company?.id).toBe(company.id)
+    })
+
+    it('lets the contact link beat the e-mail match', async () => {
+      const { workspace, user, person } = await setup()
+      const other = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Beto',
+        emails: ['beto@outra.com'],
+      })
+      const contact = await seedSdContact(workspace.id, user.id, {
+        email: 'ana@acme.com',
+        crmPersonId: other.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdContactId: contact.id }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.person?.id).toBe(other.id)
+      expect(who.person?.id).not.toBe(person.id)
+    })
+
+    it('lets a linked WhatsApp contact beat the phone key', async () => {
+      const { workspace, user, person } = await setup()
+      const other = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Caio',
+        phones: ['(21) 97777-6666'],
+      })
+      await prisma.whatsAppContact.create({
+        data: {
+          workspaceId: workspace.id,
+          waId: '5511988887777',
+          crmPersonId: other.id,
+        },
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { phone: '11 98888-7777' }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.person?.id).toBe(other.id)
+      expect(who.person?.id).not.toBe(person.id)
+    })
+
+    it('ignores a WhatsApp contact without a link and keeps the phone match', async () => {
+      const { workspace, person } = await setup()
+      await prisma.whatsAppContact.create({
+        data: { workspaceId: workspace.id, waId: '5511988887777' },
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { phone: '5511988887777' }),
+      )
+      expect(who.match).toBe('phone')
+      expect(who.person?.id).toBe(person.id)
+    })
+
+    it('brings the linked ServiceDesk records of a company and person, not those linked elsewhere', async () => {
+      const { workspace, user, company, person } = await setup()
+      const other = await seedCrmCompany(workspace.id, user.id, {
+        name: 'Outra Empresa',
+      })
+      const otherPerson = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Dani',
+      })
+      const linked = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Nome diferente',
+        crmCompanyId: company.id,
+      })
+      await seedSdCustomer(workspace.id, user.id, {
+        name: 'Acme',
+        crmCompanyId: other.id,
+      })
+      const linkedContact = await seedSdContact(workspace.id, user.id, {
+        name: 'Ligado',
+        email: 'outro@x.com',
+        crmPersonId: person.id,
+      })
+      await seedSdContact(workspace.id, user.id, {
+        name: 'Ligado a outra',
+        email: 'ana@acme.com',
+        crmPersonId: otherPerson.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { personId: person.id }),
+      )
+      expect(who.sdCustomerIds).toEqual([linked.id])
+      expect(who.sdContactIds).toEqual([linkedContact.id])
+    })
+  })
+
   it('reports a database failure', async () => {
     vi.spyOn(prisma.crmPerson, 'findFirst').mockRejectedValueOnce(
       new Error('boom'),
@@ -590,6 +707,123 @@ describe('phoneTargets', () => {
       ),
     ).toBeNull()
     expect(expectOk(await Repo.phoneTargets(workspace.id, {}))).toBeNull()
+  })
+
+  describe('stored links', () => {
+    it('lets the customer link beat a conflicting CNPJ or name match', async () => {
+      const { workspace, user, company } = await setup()
+      const other = await seedCrmCompany(workspace.id, user.id, {
+        name: 'Outra Empresa',
+      })
+      const customer = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Acme',
+        document: '11222333000181',
+        crmCompanyId: other.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdCustomerId: customer.id }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.company?.id).toBe(other.id)
+      expect(who.company?.id).not.toBe(company.id)
+    })
+
+    it('falls back to the text match once the customer is unlinked', async () => {
+      const { workspace, user, company } = await setup()
+      const customer = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Qualquer',
+        document: '11222333000181',
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdCustomerId: customer.id }),
+      )
+      expect(who.match).toBe('cnpj')
+      expect(who.company?.id).toBe(company.id)
+    })
+
+    it('lets the contact link beat the e-mail match', async () => {
+      const { workspace, user, person } = await setup()
+      const other = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Beto',
+        emails: ['beto@outra.com'],
+      })
+      const contact = await seedSdContact(workspace.id, user.id, {
+        email: 'ana@acme.com',
+        crmPersonId: other.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { sdContactId: contact.id }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.person?.id).toBe(other.id)
+      expect(who.person?.id).not.toBe(person.id)
+    })
+
+    it('lets a linked WhatsApp contact beat the phone key', async () => {
+      const { workspace, user, person } = await setup()
+      const other = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Caio',
+        phones: ['(21) 97777-6666'],
+      })
+      await prisma.whatsAppContact.create({
+        data: {
+          workspaceId: workspace.id,
+          waId: '5511988887777',
+          crmPersonId: other.id,
+        },
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { phone: '11 98888-7777' }),
+      )
+      expect(who.match).toBe('link')
+      expect(who.person?.id).toBe(other.id)
+      expect(who.person?.id).not.toBe(person.id)
+    })
+
+    it('ignores a WhatsApp contact without a link and keeps the phone match', async () => {
+      const { workspace, person } = await setup()
+      await prisma.whatsAppContact.create({
+        data: { workspaceId: workspace.id, waId: '5511988887777' },
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { phone: '5511988887777' }),
+      )
+      expect(who.match).toBe('phone')
+      expect(who.person?.id).toBe(person.id)
+    })
+
+    it('brings the linked ServiceDesk records of a company and person, not those linked elsewhere', async () => {
+      const { workspace, user, company, person } = await setup()
+      const other = await seedCrmCompany(workspace.id, user.id, {
+        name: 'Outra Empresa',
+      })
+      const otherPerson = await seedCrmPerson(workspace.id, user.id, {
+        name: 'Dani',
+      })
+      const linked = await seedSdCustomer(workspace.id, user.id, {
+        name: 'Nome diferente',
+        crmCompanyId: company.id,
+      })
+      await seedSdCustomer(workspace.id, user.id, {
+        name: 'Acme',
+        crmCompanyId: other.id,
+      })
+      const linkedContact = await seedSdContact(workspace.id, user.id, {
+        name: 'Ligado',
+        email: 'outro@x.com',
+        crmPersonId: person.id,
+      })
+      await seedSdContact(workspace.id, user.id, {
+        name: 'Ligado a outra',
+        email: 'ana@acme.com',
+        crmPersonId: otherPerson.id,
+      })
+      const who = expectOk(
+        await Repo.resolveIdentity(workspace.id, { personId: person.id }),
+      )
+      expect(who.sdCustomerIds).toEqual([linked.id])
+      expect(who.sdContactIds).toEqual([linkedContact.id])
+    })
   })
 
   it('reports a database failure', async () => {

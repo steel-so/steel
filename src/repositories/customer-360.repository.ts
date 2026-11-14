@@ -9,9 +9,11 @@ import { dbError } from './db-error'
 /**
  * Read-only joins behind the "Visão 360". CRM, ServiceDesk and WhatsApp keep
  * independent tables with no foreign key between them, so the link is
- * resolved here by phone key (DDD + last 8 digits), CNPJ, e-mail and exact
- * name. The whole matching sits behind `resolveIdentity`, so a persisted
- * link (cadastro-unico) can replace it without touching the callers.
+ * resolved here. A stored link (ADR 0066: `SdCustomer.crmCompanyId`,
+ * `SdContact.crmPersonId`, `WhatsAppContact.crmPersonId`) always wins; only
+ * when there is none does the text matching apply: phone key (DDD + last 8
+ * digits), CNPJ, e-mail and exact name. The whole matching sits behind
+ * `resolveIdentity`, so callers never see which path found the customer.
  */
 
 const SECTION_LIMIT = 15
@@ -152,7 +154,27 @@ export const Customer360Repository = {
 
       if (!person && seed.phone) {
         const key = phoneMatchKey(seed.phone)
-        if (key) {
+        // A WhatsApp contact linked to a person wins over the phone key.
+        const waIds = uniq([
+          ...waIdCandidates(seed.phone),
+          seed.phone.replace(/\D/g, ''),
+        ]).filter(Boolean)
+        const linked = waIds.length
+          ? await prisma.whatsAppContact.findFirst({
+              where: {
+                workspaceId,
+                waId: { in: waIds },
+                crmPersonId: { not: null },
+              },
+              select: { crmPersonId: true },
+              orderBy: { updatedAt: 'desc' },
+            })
+          : null
+        if (linked?.crmPersonId) {
+          person = await loadPerson(linked.crmPersonId)
+          if (person) match = 'link'
+        }
+        if (!person && key) {
           const [personId] = await idsByPhoneKey('crm_people', workspaceId, key)
           if (personId) {
             person = await loadPerson(personId)
@@ -166,11 +188,17 @@ export const Customer360Repository = {
         id: string
         name: string
         document: string | null
+        crmCompanyId: string | null
       } | null = null
       if (seed.sdCustomerId) {
         sdCustomer = await prisma.sdCustomer.findFirst({
           where: { id: seed.sdCustomerId, workspaceId, deletedAt: null },
-          select: { id: true, name: true, document: true },
+          select: {
+            id: true,
+            name: true,
+            document: true,
+            crmCompanyId: true,
+          },
         })
         if (sdCustomer) sdCustomerIds.push(sdCustomer.id)
       }
@@ -178,13 +206,23 @@ export const Customer360Repository = {
       if (seed.sdContactId) {
         const contact = await prisma.sdContact.findFirst({
           where: { id: seed.sdContactId, workspaceId, deletedAt: null },
-          select: { id: true, email: true, phone: true, whatsapp: true },
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            whatsapp: true,
+            crmPersonId: true,
+          },
         })
         if (contact) {
           sdContactIds.push(contact.id)
           if (contact.email) emails.push(contact.email)
           for (const value of [contact.whatsapp, contact.phone]) {
             if (value) phones.push(value)
+          }
+          if (!person && contact.crmPersonId) {
+            person = await loadPerson(contact.crmPersonId)
+            if (person) match = 'link'
           }
           if (!person && contact.email) {
             const email = contact.email.trim()
@@ -229,6 +267,11 @@ export const Customer360Repository = {
         if (company && match === 'none') match = 'company'
       }
 
+      if (!company && sdCustomer?.crmCompanyId) {
+        company = await loadCompany(sdCustomer.crmCompanyId)
+        if (company) match = 'link'
+      }
+
       if (!company && sdCustomer) {
         const document = sdCustomer.document
           ? normalizeDocument(sdCustomer.document)
@@ -256,6 +299,8 @@ export const Customer360Repository = {
 
       if (company) {
         const document = company.cnpj ? normalizeDocument(company.cnpj) : ''
+        // Linked to this company always counts; text matching only for the
+        // customers that have no link (one linked elsewhere is not ours).
         const matchers: Prisma.SdCustomerWhereInput[] = []
         if (document) matchers.push({ document })
         if (company.name.trim()) {
@@ -263,32 +308,47 @@ export const Customer360Repository = {
             name: { equals: company.name.trim(), mode: 'insensitive' },
           })
         }
+        const customerWhere: Prisma.SdCustomerWhereInput[] = [
+          { crmCompanyId: company.id },
+        ]
         if (matchers.length > 0) {
-          const customers = await prisma.sdCustomer.findMany({
-            where: { workspaceId, deletedAt: null, OR: matchers },
-            select: { id: true },
-            take: SECTION_LIMIT,
-          })
-          sdCustomerIds.push(...customers.map((customer) => customer.id))
+          customerWhere.push({ crmCompanyId: null, OR: matchers })
         }
+        const customers = await prisma.sdCustomer.findMany({
+          where: {
+            workspaceId,
+            deletedAt: null,
+            OR: customerWhere,
+          },
+          select: { id: true },
+          take: SECTION_LIMIT,
+        })
+        sdCustomerIds.push(...customers.map((customer) => customer.id))
       }
 
       if (person) {
         phones.push(...person.phones)
         emails.push(...person.emails)
         const email = person.emails[0]
+        const contactWhere: Prisma.SdContactWhereInput[] = [
+          { crmPersonId: person.id },
+        ]
         if (email) {
-          const contacts = await prisma.sdContact.findMany({
-            where: {
-              workspaceId,
-              deletedAt: null,
-              email: { equals: email.trim(), mode: 'insensitive' },
-            },
-            select: { id: true },
-            take: SECTION_LIMIT,
+          contactWhere.push({
+            crmPersonId: null,
+            email: { equals: email.trim(), mode: 'insensitive' },
           })
-          sdContactIds.push(...contacts.map((contact) => contact.id))
         }
+        const contacts = await prisma.sdContact.findMany({
+          where: {
+            workspaceId,
+            deletedAt: null,
+            OR: contactWhere,
+          },
+          select: { id: true },
+          take: SECTION_LIMIT,
+        })
+        sdContactIds.push(...contacts.map((contact) => contact.id))
       }
 
       return ok({

@@ -66,3 +66,11 @@ Rotas em `app/api/workspaces/[id]/crm/customer-links/{suggestions,resolve}` e
   identificados só por BSUID não casa por telefone até o número aparecer.
 - A tela de contato do WhatsApp (`zap`) ainda não mostra o painel
   (`CustomerLinkPanel kind="whatsapp-contact"` está pronto para ser usado).
+
+## Atualização (2026-11-13)
+
+O comportamento descrito acima passou a valer de fato: a Visão 360
+(`Customer360Repository.resolveIdentity`) lê primeiro o vínculo gravado
+(origem `link`) e só usa o casamento por texto como reserva. O painel
+"Cadastro no CRM" também aparece na edição do contato em Comunicação >
+Contatos, para quem pode editar pessoas do CRM.
