@@ -83,6 +83,7 @@ import {
   findExactQuickReply,
   mediaTypeFromUrl,
 } from '@/src/lib/whatsapp/quick-reply-match'
+import { translateTemplateRejection } from '@/src/lib/whatsapp/template-rejection'
 import {
   extractTemplateFillableFields,
   hasFillableFields,
@@ -179,7 +180,7 @@ function templateBlockedReason(template: WhatsAppTemplateDTO): string | null {
       return 'Em análise pela Meta. Costuma levar alguns minutos.'
     case 'REJECTED':
       return template.statusReason
-        ? `Rejeitado pela Meta: ${template.statusReason}`
+        ? `Rejeitado pela Meta: ${translateTemplateRejection(template.statusReason)}`
         : 'Rejeitado pela Meta. Peça ao administrador para corrigir e reenviar.'
     case 'PAUSED':
       return 'Pausado pela Meta por baixa qualidade. Escolha outro modelo.'

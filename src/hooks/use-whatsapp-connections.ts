@@ -116,6 +116,7 @@ export function useWhatsAppConnectionQrCode(
         'Erro ao buscar QR code',
       ),
     enabled,
+    retry: false,
     // Stop polling once connected or after a failure: retrying every 4 s on
     // an error only trips the rate limiter ("Muitas tentativas").
     refetchInterval: (query) =>
