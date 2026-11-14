@@ -530,7 +530,11 @@ export function SdTicketSidebar({
   const risk = ticket.risk
 
   return (
-    <div className='flex flex-col py-2' data-testid='sd-ticket-details'>
+    <div
+      className='flex flex-col py-2'
+      data-testid='sd-ticket-details'
+      data-tour='sd-ticket-sidebar'
+    >
       <section
         aria-label='SLA'
         className='flex flex-col gap-1.5 px-4 pt-1 pb-3'

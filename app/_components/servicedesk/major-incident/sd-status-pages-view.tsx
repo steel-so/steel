@@ -488,7 +488,7 @@ export function SdStatusPagesView({
   return (
     <div className='mx-auto flex w-full max-w-4xl flex-col gap-4 p-4 sm:p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex flex-col'>
+        <div data-tour='sd-status-title' className='flex flex-col'>
           <h1 className='font-semibold text-lg'>Páginas de status</h1>
           <p className='text-muted-foreground text-sm'>
             Uma página pública por cliente ou serviço, com as atualizações dos
@@ -503,7 +503,7 @@ export function SdStatusPagesView({
             Incidentes maiores
           </Button>
           {isAdmin ? (
-            <Button onClick={() => setEditing('new')}>
+            <Button data-tour='sd-status-new' onClick={() => setEditing('new')}>
               <SteelIcon icon={PlusSignIcon} />
               Nova página
             </Button>
@@ -527,7 +527,7 @@ export function SdStatusPagesView({
           </p>
         </div>
       ) : (
-        <ul className='flex flex-col gap-3'>
+        <ul data-tour='sd-status-list' className='flex flex-col gap-3'>
           {items.map((page) => (
             <PageCard
               key={page.id}

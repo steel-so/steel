@@ -37,6 +37,7 @@ function Section({
   icon,
   actions,
   children,
+  ...rest
 }: {
   title: string
   description?: string
@@ -44,9 +45,9 @@ function Section({
   /** Controls on the right of the section title (the view switch). */
   actions?: React.ReactNode
   children: React.ReactNode
-}) {
+} & Omit<React.ComponentProps<'section'>, 'title' | 'children'>) {
   return (
-    <section className='flex flex-col gap-3'>
+    <section className='flex flex-col gap-3' {...rest}>
       <div className='flex items-center gap-2'>
         <SteelIcon
           icon={icon}
@@ -107,7 +108,10 @@ export function SdPortalHome({
 
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-8 p-6'>
-      <header className='flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
+      <header
+        data-tour='sd-portal-welcome'
+        className='flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between'
+      >
         <div className='min-w-0'>
           <h1 className='font-semibold text-xl'>
             {greeting ? `Olá, ${greeting}!` : 'Olá!'}
@@ -119,6 +123,7 @@ export function SdPortalHome({
         </div>
         <Link
           href={`/${slug}/servicedesk/portal/new`}
+          data-tour='sd-portal-new'
           className={buttonVariants({
             size: 'lg',
             className: 'shrink-0 px-6 text-base',
@@ -140,6 +145,7 @@ export function SdPortalHome({
       ) : null}
 
       <Section
+        data-tour='sd-portal-tickets'
         title='Meus chamados'
         description='Acompanhe o andamento de cada pedido; a barra mostra o quanto já avançou.'
         icon={Ticket01Icon}
@@ -174,6 +180,7 @@ export function SdPortalHome({
       </Section>
 
       <Section
+        data-tour='sd-portal-help'
         title='Resolva sozinho'
         description='Passo a passo e respostas rápidas escritas pela equipe de TI.'
         icon={BookOpen01Icon}

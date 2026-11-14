@@ -175,7 +175,7 @@ export function SdChangeCalendar({
   return (
     <div className='flex h-full min-h-0 flex-col'>
       <div className='flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3'>
-        <div className='flex items-center gap-1'>
+        <div data-tour='sd-change-period' className='flex items-center gap-1'>
           <Button
             type='button'
             variant='ghost'
@@ -209,7 +209,10 @@ export function SdChangeCalendar({
             Hoje
           </Button>
         </div>
-        <div className='flex items-center gap-1 rounded-lg border p-0.5'>
+        <div
+          data-tour='sd-change-mode'
+          className='flex items-center gap-1 rounded-lg border p-0.5'
+        >
           <Button
             type='button'
             size='sm'
@@ -248,6 +251,7 @@ export function SdChangeCalendar({
                 ))}
               </div>
               <div
+                data-tour='sd-change-grid'
                 className={cn(
                   'grid min-h-0 flex-1 auto-rows-fr grid-cols-7 gap-1',
                   isLoading && 'opacity-60',
@@ -397,7 +401,10 @@ function DayPanel({
   const byId = new Map(changes.map((c) => [c.ticketId, c]))
 
   return (
-    <aside className='flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-t p-4 lg:w-80 lg:border-t-0 lg:border-l'>
+    <aside
+      data-tour='sd-change-day'
+      className='flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-t p-4 lg:w-80 lg:border-t-0 lg:border-l'
+    >
       <div>
         <h2 className='font-medium text-sm capitalize'>
           {DAY_LABEL.format(day)}

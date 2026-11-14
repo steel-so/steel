@@ -437,7 +437,7 @@ export function SdMaintenanceSection({ workspaceId }: { workspaceId: string }) {
   const items = list.data?.items ?? []
 
   return (
-    <section className='flex flex-col gap-3'>
+    <section data-tour='sd-status-maintenance' className='flex flex-col gap-3'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
         <div className='flex flex-col'>
           <h2 className='font-semibold text-base'>Manutenções programadas</h2>
