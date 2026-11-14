@@ -263,7 +263,7 @@ export function DashboardCanvas({
     <div className='flex h-full flex-col'>
       <div className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-b px-4 py-2'>
         {isCrm && dashboard ? (
-          <div className='mr-auto min-w-0'>
+          <div data-tour='crm-dashboard-screens' className='mr-auto min-w-0'>
             <DashboardScreens
               settings={settings}
               current={currentPage}
@@ -284,6 +284,7 @@ export function DashboardCanvas({
             <Link
               href={`/${slug}/crm/dashboards/${dashboardId}/tv`}
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              data-tour='crm-dashboard-tv'
             >
               <SteelIcon icon={Tv01Icon} strokeWidth={2} />
               Modo TV
@@ -292,13 +293,19 @@ export function DashboardCanvas({
               variant='outline'
               size='sm'
               onClick={() => setTvLinkOpen(true)}
+              data-tour='crm-dashboard-tv-link'
             >
               <SteelIcon icon={Link01Icon} strokeWidth={2} />
               Link da TV
             </Button>
           </>
         ) : null}
-        <Button variant='outline' size='sm' onClick={openNew}>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={openNew}
+          data-tour='crm-dashboard-add'
+        >
           <SteelIcon icon={Add01Icon} strokeWidth={2} />
           Adicionar widget
         </Button>
@@ -306,6 +313,7 @@ export function DashboardCanvas({
           variant={editMode ? 'default' : 'outline'}
           size='sm'
           onClick={() => setEditMode((v) => !v)}
+          data-tour='crm-dashboard-layout'
         >
           <SteelIcon
             icon={editMode ? Tick02Icon : PencilEdit02Icon}
@@ -315,7 +323,11 @@ export function DashboardCanvas({
         </Button>
       </div>
 
-      <div ref={containerRef} className='min-h-0 flex-1 overflow-auto p-3'>
+      <div
+        ref={containerRef}
+        data-tour='crm-dashboard-grid'
+        className='min-h-0 flex-1 overflow-auto p-3'
+      >
         {widgets.length === 0 && !isLoading ? (
           <div className='flex h-[60vh] flex-col items-center justify-center gap-3 text-center'>
             <p className='text-muted-foreground text-sm'>

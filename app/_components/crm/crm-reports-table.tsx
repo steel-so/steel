@@ -223,7 +223,7 @@ function CreateCrmReportDialog({
     >
       <DialogTrigger
         render={
-          <Button size='sm'>
+          <Button size='sm' data-tour='crm-reports-new'>
             <SteelIcon icon={Add01Icon} strokeWidth={2} />
             Novo relatório
           </Button>

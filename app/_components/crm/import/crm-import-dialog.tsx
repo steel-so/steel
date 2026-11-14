@@ -358,7 +358,12 @@ export function CrmImportButton({
 
   return (
     <>
-      <Button size='sm' variant='outline' onClick={() => setOpen(true)}>
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={() => setOpen(true)}
+        data-tour='crm-import-csv'
+      >
         <SteelIcon icon={Upload04Icon} strokeWidth={2} />
         Importar CSV
       </Button>
