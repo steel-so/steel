@@ -92,10 +92,19 @@ export function handleError(error: AppError): NextResponse<ErrorResponse> {
   // Repositories describe database failures in English; the user gets a
   // generic pt-BR message and the detail stays in the request log.
   const isDatabaseError = error.code === 'DATABASE_ERROR'
+  const retryAfter = (error.details as { retryAfterSeconds?: number } | undefined)
+    ?.retryAfterSeconds
+  // A rate limit tells the user how long to wait, on every screen.
+  const message =
+    error.code === 'RATE_LIMITED' &&
+    typeof retryAfter === 'number' &&
+    retryAfter > 0
+      ? `Muitas tentativas. Tente de novo em ${waitText(retryAfter)}.`
+      : error.message
   const response = errorResponse(
     error.code,
     status,
-    isDatabaseError ? DATABASE_ERROR_MESSAGE : error.message,
+    isDatabaseError ? DATABASE_ERROR_MESSAGE : message,
     isDatabaseError ? undefined : details,
   )
   if (isDatabaseError) {
@@ -111,4 +120,10 @@ export function handleError(error: AppError): NextResponse<ErrorResponse> {
   }
 
   return response
+}
+
+function waitText(seconds: number): string {
+  if (seconds < 60) return `${seconds} segundo${seconds === 1 ? '' : 's'}`
+  const minutes = Math.ceil(seconds / 60)
+  return `${minutes} minuto${minutes === 1 ? '' : 's'}`
 }

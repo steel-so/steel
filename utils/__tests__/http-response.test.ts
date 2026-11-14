@@ -138,6 +138,18 @@ describe('handleError()', () => {
     expect(body.error.details.retryAfterSeconds).toBe(30)
   })
 
+  it('should tell the user how long to wait in the RATE_LIMITED message', async () => {
+    expect((await handleError(rateLimited(30)).json()).message).toBe(
+      'Muitas tentativas. Tente de novo em 30 segundos.',
+    )
+    expect((await handleError(rateLimited(1)).json()).message).toBe(
+      'Muitas tentativas. Tente de novo em 1 segundo.',
+    )
+    expect((await handleError(rateLimited(120)).json()).message).toBe(
+      'Muitas tentativas. Tente de novo em 2 minutos.',
+    )
+  })
+
   it('should set Retry-After header for RATE_LIMITED with retryAfterSeconds', () => {
     const res = handleError(rateLimited(120))
 

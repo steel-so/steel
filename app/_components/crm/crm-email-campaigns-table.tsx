@@ -749,9 +749,15 @@ function CampaignComposer({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enviar a campanha agora?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {scheduleEnabled
+                ? 'Agendar o envio?'
+                : 'Enviar a campanha agora?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {`O e-mail "${subject.trim()}" será enviado agora para cerca de ${estimatedRecipients} ${estimatedRecipients === 1 ? 'pessoa' : 'pessoas'}, sem contar quem já pediu descadastro. Depois de enviado, não dá para cancelar.`}
+              {scheduleEnabled
+                ? `O e-mail "${subject.trim()}" será enviado em ${new Date(scheduledAtLocal).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} para cerca de ${estimatedRecipients} ${estimatedRecipients === 1 ? 'pessoa' : 'pessoas'}, sem contar quem já pediu descadastro.`
+                : `O e-mail "${subject.trim()}" será enviado agora para cerca de ${estimatedRecipients} ${estimatedRecipients === 1 ? 'pessoa' : 'pessoas'}, sem contar quem já pediu descadastro. Depois de enviado, não dá para cancelar.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -764,7 +770,7 @@ function CampaignComposer({
                 if (ready) perform(ready)
               }}
             >
-              Enviar agora
+              {scheduleEnabled ? 'Agendar envio' : 'Enviar agora'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

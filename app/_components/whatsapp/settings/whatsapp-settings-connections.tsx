@@ -69,7 +69,8 @@ const STATUS_HINT: Partial<Record<WhatsAppConnectionDTO['status'], string>> = {
     'Ainda não terminou de conectar. Se for Z-API, leia o QR Code com o celular.',
   DISCONNECTED:
     'Este número não está recebendo nem enviando mensagens agora. Reconecte para voltar a atender.',
-  ERROR: 'A conexão está com problema. Use "Testar conexão" para ver o motivo.',
+  ERROR:
+    'A conexão está com problema. Use "Testar conexão" (Z-API) ou "Atualizar status" (Meta) para ver o motivo.',
 }
 
 const PROVIDER_LABEL: Record<WhatsAppProviderDTO, string> = {
