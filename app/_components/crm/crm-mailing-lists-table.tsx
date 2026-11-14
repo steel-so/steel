@@ -270,7 +270,7 @@ function LeadPickerDropdown({
 }: {
   workspaceId: string
   existingEmails: Set<string>
-  onAdd: (leads: { email: string; name?: string }[]) => Promise<void>
+  onAdd: (leads: { email: string; name?: string }[]) => Promise<unknown>
   isAdding: boolean
 }) {
   const { items: leads, isLoading } = useCrmResourceList<CrmLeadDTO>(
@@ -420,7 +420,7 @@ function PasteEmailsBox({
   isAdding,
 }: {
   existingEmails: Set<string>
-  onAdd: (members: { email: string; name?: string }[]) => Promise<void>
+  onAdd: (members: { email: string; name?: string }[]) => Promise<string[]>
   isAdding: boolean
 }) {
   const [text, setText] = useState('')
@@ -440,8 +440,9 @@ function PasteEmailsBox({
   }
 
   async function handleAdd() {
-    await onAdd(parsed.members)
-    setText('')
+    const failed = await onAdd(parsed.members)
+    // Only what could not be added stays in the box, ready to try again.
+    setText(failed.join('\n'))
   }
 
   return (
@@ -544,9 +545,10 @@ function ListDetailPanel({
   )
 
   /** Adds one by one and reports what worked, so a failure never hides the rest. */
+  /** Adds the members one by one; returns the e-mails that could not be added. */
   async function addMembers(
     toAdd: { email: string; name?: string }[],
-  ): Promise<void> {
+  ): Promise<string[]> {
     let added = 0
     const failed: string[] = []
     let firstError: unknown
@@ -571,6 +573,7 @@ function ListDetailPanel({
         `${failed.length} e-mail(s) não puderam ser adicionados: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '…' : ''}`,
       )
     }
+    return failed
   }
 
   async function handleDeleteList() {
