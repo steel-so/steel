@@ -12,6 +12,11 @@ conteúdo, status (**A fazer**, **Em andamento**, **Concluído**), prazo e
 responsável, e pode ser ligada a uma pessoa, empresa ou oportunidade. Veja em
 tabela ou em kanban.
 
+Algumas tarefas nascem sozinhas: as de **retenção** (cliente com nota baixa, saúde
+em queda ou chamado com SLA estourado) são abertas pelo Steel para o responsável
+pela conta, conforme **Configurações › Retenção** (veja
+[Configurações](/docs/crm/configuracoes#retenção-de-clientes)).
+
 ## Calendário
 
 **Calendário** mostra as tarefas pelos prazos, para planejar a semana.
@@ -21,12 +26,26 @@ tabela ou em kanban.
 Em **Notas**, registre informações com título e conteúdo, ligadas a pessoas,
 empresas ou oportunidades. Elas aparecem na linha do tempo do registro.
 
-## E-mail e agenda
+## Registro manual de e-mails
 
-A tela **E-mail e agenda**, no menu lateral do CRM, registra contas
-Gmail ou Outlook para agrupar e-mails e eventos lançados à mão.
+A tela **Registro de e-mails**, no menu lateral do CRM, é um **registro manual,
+não uma sincronização**. O Steel ainda não lê a sua caixa de entrada do Gmail ou
+do Outlook: aqui você anota à mão e-mails e compromissos importantes, para que a
+equipe veja o histórico no CRM. Nada é enviado nem recebido a partir dela (para
+enviar, use [E-mail avulso](/docs/crm/campanhas-de-email)).
 
-<Callout type='aviso'>
-  Não há sincronização automática com o Gmail ou o Outlook: os e-mails e os
-  eventos dessa tela são registrados manualmente.
-</Callout>
+![Tela Registro manual de e-mails com o aviso de que não há sincronização e as seções Contas de e-mail, E-mails registrados e Agenda](/docs/crm/registro-manual-de-emails.webp)
+
+A tela tem três partes:
+
+- **Contas de e-mail**: **Nova conta** registra um endereço Gmail ou Outlook.
+  Registrar a conta não conecta a caixa de entrada; serve só para agrupar os
+  e-mails e eventos que você lançar.
+- **E-mails registrados**: **Registrar e-mail** anota um e-mail com a direção
+  (**Enviado** ou **Recebido**) e os endereços **De** (obrigatório) e **Para**. O
+  registro guarda só isso e a data em que foi anotado, não o conteúdo do e-mail.
+- **Agenda**: **Novo evento** anota um compromisso com título, início e fim.
+
+Remover uma conta, um e-mail ou um evento pede confirmação e não dá para
+desfazer. Os botões de criar ficam desabilitados, com a explicação, para quem não
+tem permissão.

@@ -7,12 +7,63 @@ order: 1
 
 ## Criar um lead
 
-Clique em **Novo lead** (ou <Kbd>C</Kbd> <Kbd>L</Kbd>) e informe **Nome**,
-**Origem** e pelo menos um contato: **Email** ou **Telefone**. O Steel recusa
-leads duplicados.
+Clique em **Novo lead** (ou <Kbd>C</Kbd> <Kbd>L</Kbd>). O formulário marca com
+`*` o que é obrigatório: **Nome**, **Origem** e pelo menos um contato, **E-mail**
+ou **Telefone**. Na **Origem**, escolha uma sugestão (Site, Indicação, WhatsApp,
+Instagram, Facebook, Google Ads, Evento, Ligação, E-mail) ou escreva a sua: é
+ela que mostra quais canais trazem mais clientes. Se faltar algo, o Steel diz o
+quê ("Informe o e-mail ou o telefone do lead."). O Steel recusa leads
+duplicados: o mesmo e-mail ou telefone, com ou sem o DDI do Brasil.
+
+![Quadro de leads com a barra de ferramentas: Filtrar, Ordenar, Importar da Apollo, Importar CSV e Novo lead](/docs/crm/leads-quadro.webp)
 
 Leads também chegam por [formulários](/docs/crm/formularios-e-paginas), pela
-[API](/docs/crm/configuracoes#chaves-de-api) e pelas automações.
+[API](/docs/crm/configuracoes#chaves-de-api), pelas automações e por
+[importação de planilha](#importar-uma-planilha-csv).
+
+Enquanto o workspace não tem nenhum lead, o quadro mostra **Você ainda não tem
+leads** com os botões **Novo lead** e **Importar da Apollo** e a lista
+**Primeiros passos no CRM**: montar o funil de vendas, cadastrar contatos,
+cadastrar o primeiro lead e conectar um número de WhatsApp (só administradores
+conectam). Cada passo tem um botão que leva à tela certa e é marcado como feito
+sozinho.
+
+Em **Filtrar** e **Ordenar**, o contador no botão mostra quantos filtros estão
+ativos, e **Limpar filtros** / **Limpar tudo** voltam ao quadro completo. Se a
+lista não carregar, o quadro mostra o motivo e **Tentar novamente**.
+
+## Importar uma planilha (CSV)
+
+**Importar CSV**, na barra do quadro, traz vários leads de uma vez. O mesmo
+botão existe em **Pessoas** e **Empresas**; só aparece para quem pode criar
+registros.
+
+1. Em **Baixar modelo**, pegue um arquivo de exemplo, ou use o seu: CSV com
+   vírgula ou ponto e vírgula, uma linha por registro, até **1.000 linhas** por
+   arquivo (divida os maiores).
+2. Os cabeçalhos são reconhecidos em português ou inglês: `nome`, `e-mail`,
+   `telefone`, `empresa`, `cargo`, `cidade`, `origem` (nas empresas: `nome`,
+   `CNPJ`, `site`, `funcionários`, `cidade`, `estado`). Leads e pessoas precisam
+   de ao menos uma coluna de nome e uma de e-mail ou telefone; sem isso o Steel
+   explica o que faltou e não avança.
+3. A **prévia** mostra o total de linhas, as colunas reconhecidas e as cinco
+   primeiras linhas. Marque **Confirmo que posso guardar e usar esses dados
+   (LGPD)**: sem a confirmação o botão **Importar** fica desabilitado. A
+   importação fica registrada na auditoria.
+4. O **resumo** mostra quantos registros foram **Criados** e **Recusados**. Cada
+   linha recusada aparece com o número da linha, o nome e o **motivo** (por
+   exemplo, já cadastrado ou "Repetido no arquivo"); as 50 primeiras são
+   listadas. Corrija essas linhas e importe só elas de novo: as demais já foram
+   criadas.
+
+![Janela Importar leads: escolher arquivo ou baixar o modelo, com até 1.000 linhas por arquivo](/docs/crm/importar-csv-escolher.webp)
+
+![Prévia da importação com as colunas reconhecidas, cinco linhas e a caixa de confirmação da LGPD](/docs/crm/importar-csv-previa.webp)
+
+![Resumo da importação com os contadores Criados e Recusados e a tabela de linhas recusadas com o motivo](/docs/crm/importar-csv-resumo.webp)
+
+Cada linha passa pelas mesmas regras da criação manual: bloqueio de
+duplicados e, nos leads, [pontuação e roteamento](#pontuação-e-roteamento).
 
 ## As etapas
 
@@ -36,6 +87,24 @@ registra o trabalho no painel lateral, que mostra o formulário da etapa atual.
 | Proposta | **Registrar apresentação** (data, forma, valor, termômetro de interesse, interações, negociações) e depois **Fechar como ganho** (data da assinatura, forma de cobrança, valor fechado) | *Fechado* como ganho |
 
 Ao fechar como ganho, o lead vira uma **Pessoa** no CRM.
+
+Os campos obrigatórios de cada formulário do painel vêm com `*` (por exemplo,
+com quem falou, e o nome e o cargo do decisor: sem o decisor o lead não avança).
+O botão de criar a proposta fica bloqueado, com a explicação ao passar o mouse,
+até existir ao menos uma reunião registrada. Se o histórico de contatos não
+carregar, o painel mostra o erro com **Tentar de novo**.
+
+### WhatsApp e chamados no painel do lead
+
+- Cada telefone do lead tem o ícone do WhatsApp: clique para abrir (ou iniciar)
+  a conversa com aquele número na **Comunicação**. Sem número conectado, o Steel
+  avisa e oferece **Conectar número**.
+- Com o módulo **ServiceDesk** ligado, o painel mostra **Chamados** ligados ao
+  lead e o botão **Criar chamado**. A janela traz título, tipo (requisição,
+  incidente, mudança ou problema), os dados do solicitante e uma observação
+  opcional; se já existe chamado aberto para o lead, pede para você confirmar
+  antes de criar outro. O chamado nasce ligado ao lead, e a abertura aparece na
+  linha do tempo do registro.
 
 ## Buscar com uma pergunta
 
@@ -70,14 +139,24 @@ registros estão faltando. Leads ganhos não são reabertos.
 ## Pontuação e roteamento
 
 <Callout type='admin'>
-  Configurados em **Configurações do CRM**.
+  Configurados em **CRM › Configurações › Regras de leads**.
 </Callout>
 
-- **Pontuação de leads**: regras "campo + operador + valor = pontos" (por
-  exemplo, origem é igual a "indicação" soma 20 pontos). Os campos são nome,
-  e-mail, telefone, empresa, cargo, origem e cidade; os operadores, é igual a, é
-  diferente de, contém, está vazio e não está vazio.
-- **Roteamento de leads**: a mesma condição define o **responsável** do lead
-  novo.
+![Tela Regras de leads com as seções Pontuação de leads e Roteamento de leads e a lista de regras](/docs/crm/regras-de-leads.webp)
 
-As regras rodam quando o lead é criado, inclusive pela API.
+- **Pontuação de leads**: mostra quais leads estão mais quentes. Cada regra é
+  "campo + operador + valor = pontos" e soma (ou tira) pontos quando o lead bate
+  com a condição; por exemplo, origem é igual a "Indicação" soma 20 pontos. Os
+  campos são nome, e-mail, telefone, empresa, cargo, origem e cidade; os
+  operadores, é igual a, é diferente de, contém, está vazio e não está vazio.
+  Também há regras por engajamento com a [newsletter](/docs/crm/newsletters)
+  (assinou, abriu, clicou em link), que pontuam uma vez por evento e não servem
+  para roteamento.
+- **Roteamento de leads**: a mesma condição define o **responsável** do lead
+  novo. Os leads que baterem com uma regra vão automaticamente para o
+  responsável escolhido (por exemplo, origem é igual a "Site" vai para a Ana); a
+  regra só pode ser criada depois de escolher o responsável.
+
+As regras rodam quando o lead é criado, inclusive pela API e pela importação de
+CSV. Excluir uma regra pede confirmação: a pontuação deixa de valer para os
+leads novos, e os pontos já somados continuam como estão.

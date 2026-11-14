@@ -10,9 +10,14 @@ order: 3
 Uma oportunidade tem nome, valor, funil, etapa, empresa, ponto de contato,
 responsável e data de fechamento. Na seção **Itens**, adicione produtos do
 catálogo (ou um item avulso) com quantidade, preço e desconto; o total é
-calculado.
+calculado. Remover um item pede confirmação (**Remover este item?**).
 
-Crie em **Oportunidades** (ou <Kbd>C</Kbd> <Kbd>O</Kbd>).
+Crie em **Oportunidades** (ou <Kbd>C</Kbd> <Kbd>O</Kbd>): a janela **Criar
+oportunidade** pede só o essencial e o resto você completa na ficha, como em
+[Pessoas e empresas](/docs/crm/pessoas-e-empresas#criar-importar-e-excluir). Na
+ficha, os botões **WhatsApp** e **Ligar** falam com o contato da oportunidade e,
+com o ServiceDesk ligado, **Criar chamado** abre um chamado ligado a ela. Os
+filtros e a ordem da tabela ficam guardados neste navegador.
 
 ### Buscar com uma pergunta
 
@@ -49,10 +54,16 @@ exemplos em [Leads](/docs/crm/leads) e em
 
 ## Funis (Pipelines)
 
-Em **Pipelines**, crie funis de venda (**Criar pipeline**) e as etapas de cada
-um (**Nova etapa**). O CRM já vem com um funil padrão. Os funis são das
-oportunidades; o quadro de leads tem as suas
-[seis etapas fixas](/docs/crm/leads#as-etapas).
+Em **Pipelines** (e em **Configurações › Pipelines**), crie funis de venda
+(**Criar funil**) e as etapas de cada um (**Nova etapa**). Selecione um funil
+para gerenciar as etapas. Cada etapa tem um nome e uma **chance de fechar o
+negócio** quando ele chega ali, que alimenta a [previsão](#previsão). O CRM já vem
+com um funil padrão. Os funis são das oportunidades; o quadro de leads tem as
+suas [seis etapas fixas](/docs/crm/leads#as-etapas).
+
+Remover um funil ou uma etapa pede confirmação e não dá para desfazer; se ainda
+houver leads ou oportunidades ali, a remoção pode ser recusada. Na lista de
+oportunidades, a coluna que indica o funil se chama **Funil**.
 
 <Callout type='nota'>
   Membros consultam os funis; criar e alterar funis é para administradores.
