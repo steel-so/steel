@@ -25,6 +25,7 @@ export function GlobalSidebarNavigation({
   return (
     <nav
       aria-label='Módulos'
+      data-tour='app-modules'
       className='hidden h-screen shrink-0 px-1.5 py-3 md:block lg:px-2'
     >
       <div className='h-fit flex flex-col justify-between gap-3'>

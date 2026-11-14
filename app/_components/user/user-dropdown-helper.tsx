@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { ShortcutKbd } from '@/app/_components/shortcuts/shortcut-kbd'
 import { useShortcuts } from '@/app/_components/shortcuts/shortcuts-provider'
+import { useTours } from '@/app/_components/tours/tour-provider'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +26,8 @@ export const SUPPORT_MAILTO = 'mailto:suporte@stratustelecom.com.br'
 
 export function UserDropdownHelper() {
   const shortcuts = useShortcuts()
+  const tours = useTours()
+  const currentTour = tours?.currentTour ?? null
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -73,6 +76,22 @@ export function UserDropdownHelper() {
             >
               <span className='flex-1'>Atalhos do teclado</span>
               <ShortcutKbd id='global.shortcuts' />
+            </DropdownMenuItem>
+          ) : null}
+          {tours && currentTour ? (
+            <DropdownMenuItem
+              className='text-xs'
+              onClick={() => tours.start(currentTour)}
+            >
+              Ver tour desta tela
+            </DropdownMenuItem>
+          ) : null}
+          {tours ? (
+            <DropdownMenuItem
+              className='text-xs'
+              onClick={() => tours.openList()}
+            >
+              Tours guiados
             </DropdownMenuItem>
           ) : null}
           <Link href='/changelog'>

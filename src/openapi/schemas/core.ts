@@ -95,6 +95,22 @@ export const UserDTO = dto(
     .meta({ description: 'Perfil do usuário autenticado.' }),
 )
 
+export const TourProgressDTO = dto(
+  'TourProgress',
+  z.object({
+    key: z.string().meta({
+      description: 'Chave do tour guiado.',
+      example: 'platform.home',
+    }),
+    version: z
+      .number()
+      .int()
+      .meta({ description: 'Versão do tour que o usuário viu.' }),
+    status: z.enum(['COMPLETED', 'SKIPPED']),
+    seenAt: dateTime(),
+  }),
+)
+
 export const UserPreferenceDTO = dto(
   'UserPreference',
   z.object({

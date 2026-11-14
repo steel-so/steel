@@ -42,6 +42,7 @@ model User {
   goals                UserGoal[]           @map("goals")
   preference           UserPreference?
   notificationSetting  NotificationSetting?
+  tourProgress         UserTourProgress[]
 
   memberships              Membership[]
   sessions                 Session[]
@@ -314,6 +315,30 @@ model UserPreference {
   updatedAt          DateTime          @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Guided tours a user has already seen. One row per user and tour: the tour
+/// reopens by itself only when its definition ships a higher `version`.
+model UserTourProgress {
+  id        String             @id @default(cuid())
+  userId    String             @map("user_id")
+  /// Key of the tour definition in `src/lib/tours` (e.g. "crm.sites.editor").
+  tourKey   String             @map("tour_key") @db.VarChar(80)
+  version   Int
+  status    UserTourStatus
+  seenAt    DateTime           @default(now()) @map("seen_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tourKey])
+  @@map("user_tour_progress")
+}
+
+enum UserTourStatus {
+  COMPLETED
+  SKIPPED
 }
 
 model NotificationSetting {
