@@ -8790,26 +8790,26 @@ enum SiteGlobalKind {
 /// lives in the pages/globals/theme rows; the public runtime only ever reads
 /// `publishedVersion` (an immutable snapshot).
 model Site {
-  id                  String     @id @default(cuid())
-  workspaceId         String     @map("workspace_id")
-  name                String
-  slug                String     @unique
-  status              SiteStatus @default(DRAFT)
+  id                      String     @id @default(cuid())
+  workspaceId             String     @map("workspace_id")
+  name                    String
+  slug                    String     @unique
+  status                  SiteStatus @default(DRAFT)
   /// Theme of the `site` catalog (palette, typography, buttons, spacing).
-  theme               Json       @default("{}")
+  theme                   Json       @default("{}")
   /// SEO defaults, favicon, social image, tracking ids, cookie banner.
-  settings            Json       @default("{}")
-  homePageId          String?    @map("home_page_id")
-  publishedVersionId  String?    @unique @map("published_version_id")
-  publishedAt         DateTime?  @map("published_at")
+  settings                Json       @default("{}")
+  homePageId              String?    @map("home_page_id")
+  publishedVersionId      String?    @unique @map("published_version_id")
+  publishedAt             DateTime?  @map("published_at")
   /// Share token of the legacy landing page this site replaced: keeps the
   /// old public `/l/<token>` address redirecting to the site.
-  legacyLandingShareToken String? @unique @map("legacy_landing_share_token")
-  createdById         String     @map("created_by_id")
-  updatedById         String?    @map("updated_by_id")
-  createdAt           DateTime   @default(now()) @map("created_at")
-  updatedAt           DateTime   @updatedAt @map("updated_at")
-  deletedAt           DateTime?  @map("deleted_at")
+  legacyLandingShareToken String?    @unique @map("legacy_landing_share_token")
+  createdById             String     @map("created_by_id")
+  updatedById             String?    @map("updated_by_id")
+  createdAt               DateTime   @default(now()) @map("created_at")
+  updatedAt               DateTime   @updatedAt @map("updated_at")
+  deletedAt               DateTime?  @map("deleted_at")
 
   workspace        Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy        User               @relation("SiteCreatedBy", fields: [createdById], references: [id])
