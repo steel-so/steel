@@ -1,0 +1,51 @@
+---
+title: "15 de novembro de 2026: webhook da Z-API pronto para copiar e ajustes nos Sites"
+slug: webhook-da-z-api-e-ajustes-nos-sites
+date: 2026-11-15
+summary: A conexão Z-API mostra o endereço do webhook com botão Copiar. Em Sites, o aviso do Antes de publicar leva direto ao bloco e a imagem em porcentagem ganha a caixa de seleção certa. O editor antigo de landing pages saiu.
+tags: [COMUNICACAO, CRM]
+version: 2026.11.15
+---
+
+Um número da Z-API só recebe mensagens depois que você cola, no painel dela, o
+endereço do Steel. Até agora esse endereço não aparecia em lugar nenhum. Esta
+atualização o coloca na tela, corrige dois detalhes do editor de Sites e tira
+do ar o editor antigo de landing pages.
+
+## Webhook da Z-API: copie e cole
+
+Em **Ajustes › WhatsApp**, cada conexão Z-API ganhou o botão **Configurar na
+Z-API**. Ele abre uma janela com o endereço completo do webhook, o botão
+**Copiar** e o passo a passo:
+
+1. No painel da Z-API, abra a instância e entre em **Webhooks e notificações**.
+2. Cole o endereço em **Ao receber**, **Ao enviar** e **Status da mensagem**.
+3. Salve e mande uma mensagem para o número: ela aparece em Comunicação.
+
+A janela abre sozinha logo depois de criar uma conexão Z-API. O endereço traz um
+segredo que identifica a sua conexão, por isso só o dono e os administradores do
+workspace o veem. Não compartilhe esse endereço.
+
+## Sites: o aviso do Antes de publicar leva ao bloco
+
+Ao clicar num aviso da lista **Antes de publicar**, o Steel abre a página certa,
+seleciona o bloco com o problema e rola até ele. Se o bloco está na página em
+que você já está, ele é selecionado na hora. Antes, só a página abria e você
+precisava procurar o bloco.
+
+## Sites: imagens em porcentagem
+
+Quando a largura de uma imagem está em porcentagem (por exemplo, 50%), a caixa
+de seleção e a dica de tamanho agora acompanham a própria imagem. Antes, elas
+ocupavam a largura inteira do espaço onde a imagem está. Se a imagem tem
+legenda, a caixa cobre só a imagem.
+
+## O editor antigo de landing pages saiu
+
+O editor antigo de landing pages foi removido: tudo o que ele fazia agora está
+em **CRM › Sites**. As páginas que já estavam no ar como Sites mantêm o mesmo
+link (`/l/<código>`) e continuam abrindo. As landing pages que nunca foram
+trazidas para Sites foram excluídas, junto com as visitas registradas. As
+campanhas que apontavam para uma página migrada passam a apontar para o site
+dela; as demais ficam sem destino até você escolher um site ou um formulário.
+O endereço `/crm/landing-pages` leva direto para a lista de Sites.
