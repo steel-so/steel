@@ -13,6 +13,7 @@ export function TourReplayButton() {
 
   return (
     <Button
+      data-tour='app-replay'
       variant='ghost'
       size='sm'
       aria-label='Ver tour desta tela'

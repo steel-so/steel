@@ -21,6 +21,8 @@ const TRACK_MS = 250
 const HIGHLIGHT_PADDING = 6
 const SCRIM = 'rgb(0 0 0 / 0.55)'
 const DEFAULT_CARD: Size = { width: 340, height: 220 }
+/** `data-tour` of the header's "Ver tour" button (see `TourReplayButton`). */
+export const TOUR_REPLAY_TARGET = 'app-replay'
 
 export type TourOverlayMode = 'steps' | 'summary'
 
@@ -123,6 +125,10 @@ export function TourOverlay({ tour, mode, onFinish }: TourOverlayProps) {
   const box = useTargetBox(step?.target)
   const total = steps?.length ?? 0
   const isLast = index >= total - 1
+  // The wrap-up points at the button that brings the tour back.
+  const replayBox = useTargetBox(
+    mode === 'steps' && isLast && step ? TOUR_REPLAY_TARGET : undefined,
+  )
   const visible = mode === 'summary' || step !== null
 
   // Nothing to show: close without recording, so it can open another time.
@@ -211,6 +217,20 @@ export function TourOverlay({ tour, mode, onFinish }: TourOverlayProps) {
           }}
         />
       )}
+      {replayBox && (
+        <div
+          aria-hidden='true'
+          data-slot='tour-replay-highlight'
+          className='pointer-events-none absolute animate-pulse rounded-lg ring-2 ring-primary motion-reduce:animate-none'
+          style={{
+            top: replayBox.top - HIGHLIGHT_PADDING,
+            left: replayBox.left - HIGHLIGHT_PADDING,
+            width: replayBox.width + HIGHLIGHT_PADDING * 2,
+            height: replayBox.height + HIGHLIGHT_PADDING * 2,
+            boxShadow: '0 0 0 4px rgb(255 255 255 / 0.9)',
+          }}
+        />
+      )}
       <div
         ref={cardRef}
         role='dialog'
@@ -238,6 +258,24 @@ export function TourOverlay({ tour, mode, onFinish }: TourOverlayProps) {
           {mode === 'summary' && (
             <p className='text-xs text-muted-foreground'>
               O passo a passo completo desta tela aparece no computador.
+            </p>
+          )}
+          {(mode === 'summary' || isLast) && (
+            <p
+              data-slot='tour-replay-hint'
+              className='rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground'
+            >
+              <strong className='font-medium text-foreground'>
+                Quer ver de novo?
+              </strong>{' '}
+              {replayBox
+                ? 'O botão “Ver tour” está em destaque no topo da tela. '
+                : 'Use o botão “Ver tour” no topo da tela. '}
+              Todos os tours ficam em{' '}
+              <span className='font-medium text-foreground'>
+                Ajuda › Tours guiados
+              </span>
+              , no menu do canto superior direito.
             </p>
           )}
           {(mode === 'summary' || isLast) && tour.docsHref && (

@@ -164,6 +164,11 @@ describe('<TourProvider />', () => {
     await user.click(screen.getByRole('button', { name: 'Próximo' }))
 
     expect(screen.getByRole('dialog')).toHaveTextContent('Novo lead')
+    // The last card says where to bring the tour back.
+    expect(screen.getByRole('dialog')).toHaveTextContent('Quer ver de novo?')
+    expect(screen.getByRole('dialog')).toHaveTextContent(
+      'Ajuda › Tours guiados',
+    )
     expect(screen.getByRole('link', { name: 'Ver no manual' })).toHaveAttribute(
       'href',
       '/docs/crm/leads',
