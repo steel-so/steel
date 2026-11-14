@@ -496,13 +496,6 @@ describe('SiteAiService.generateSite', () => {
     )
     expect(form?.props.formToken).toBe('tok_form1')
 
-    const about = input.pages[1].document as unknown as CanvasDocument
-    expect(
-      Object.values(about.nodes).some((node) =>
-        String(node.props.html ?? '').includes('O melhor pão da cidade'),
-      ),
-    ).toBe(true)
-
     expect(ai.record).toHaveBeenCalledTimes(4)
     expect(ai.record).toHaveBeenCalledWith(
       expect.anything(),

@@ -44,7 +44,6 @@ describe('AI site generator', () => {
       brand: { companyName: expect.any(String) },
       products: [],
       forms: [],
-      testimonials: 0,
       canCreateForm: true,
       quota: { exceeded: expect.any(Boolean) },
     })

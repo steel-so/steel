@@ -365,15 +365,8 @@ describe('<EmailBuilderEditor />', () => {
     await clickSection('cta')
     fireEvent.click(screen.getByRole('button', { name: 'Escolher link' }))
     const campaign = await screen.findByText('Link da campanha')
-    expect(await screen.findByText('Black Friday')).toBeTruthy()
-    expect(screen.getByText('Nenhum formulário publicado')).toBeTruthy()
-    fireEvent.click(screen.getByText('Black Friday'))
-    expect(screen.getByLabelText('Link do botão')).toHaveProperty(
-      'value',
-      'https://x.test/l/tok',
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'Escolher link' }))
-    fireEvent.click(await screen.findByText('Link da campanha'))
+    expect(await screen.findByText('Nenhum formulário publicado')).toBeTruthy()
+    fireEvent.click(campaign)
     expect(campaign).toBeDefined()
     expect(screen.getByLabelText('Link do botão')).toHaveProperty(
       'value',

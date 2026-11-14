@@ -39,6 +39,14 @@ const globals = vi.mocked(SiteGlobalRepository)
 const audit = vi.mocked(auditMutation)
 
 const WS = 'ws1'
+const site = createFakeSite({
+  id: 'site1',
+  workspaceId: WS,
+  slug: 'clinica',
+  homePageId: 'home',
+  theme: { colors: { primary: '#111111' } },
+})
+
 function asRole(role: Role) {
   membership.findByUserAndWorkspace.mockResolvedValue(
     ok(createFakeMembership({ role })),

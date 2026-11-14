@@ -8,6 +8,7 @@ import { err, ok } from '@/src/lib/result'
 const env = vi.hoisted(() => ({
   WHATSAPP_META_APP_ID: '123' as string | undefined,
   WHATSAPP_META_APP_SECRET: 'secret' as string | undefined,
+  BETTER_AUTH_URL: 'https://steel.test',
 }))
 vi.mock('@/lib/env/server', () => env)
 vi.mock('@/lib/env/env', () => ({ NEXT_PUBLIC_META_APP_ID: undefined }))

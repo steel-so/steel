@@ -60,6 +60,7 @@ export function createFakeSite(overrides?: Partial<Site>): Site {
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
+    legacyLandingShareToken: null,
     ...overrides,
   }
 }
