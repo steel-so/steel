@@ -55,6 +55,25 @@ A busca mostra a cada pessoa só o que ela já pode abrir no Steel:
 - documentos da IA do WhatsApp aparecem só para administradores;
 - a Wiki precisa estar ligada em **Ajustes › Wiki**.
 
+## Na IA do WhatsApp
+
+A IA da Comunicação também consulta artigos da base de conhecimento e páginas da
+Wiki, junto com os documentos enviados em **Comunicação › Configurações**:
+
+- **Resposta automática ao cliente**: como a resposta vai direto para quem está
+  fora da equipe, ela só enxerga o que foi feito para o público: **artigos
+  visíveis no portal** e **páginas da Wiki com link público**. Artigo interno,
+  rascunho e página sem link público **nunca** entram. A busca usa as duas
+  últimas mensagens do cliente, leva no máximo **3 fontes** e a IA é orientada a
+  não inventar, a não citar links nem dizer que a resposta veio de uma base
+  interna e a chamar um atendente quando as fontes não respondem.
+- **Sugestão de resposta para o atendente** (copiloto): a busca roda **como o
+  atendente** e segue as permissões dele, porque ele revisa o rascunho antes de
+  enviar.
+- Vale para os módulos habilitados; a Wiki só entra se estiver ligada em
+  **Ajustes › Wiki**, e nada é lido com a Steel AI desligada. Se a busca falhar,
+  a resposta sai sem essas fontes em vez de ser bloqueada.
+
 ## Atualização
 
 Um registro criado ou alterado entra na busca em até um minuto. Um registro

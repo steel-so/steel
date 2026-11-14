@@ -22,9 +22,59 @@ entram no histórico do chamado.
 ## WhatsApp
 
 Em **Configurações › WhatsApp**, conecte números (Z-API ou Meta) só para o
-ServiceDesk, separados do módulo Comunicação. No chamado, a aba **WhatsApp**
+ServiceDesk, separados do módulo Comunicação; as mensagens recebidas neles
+viram chamados. No chamado, a aba **WhatsApp**
 inicia uma conversa por número, vincula uma conversa existente ou envia um
 template aprovado. Arquivos de até 16 MB.
+
+### Avisos ao solicitante por WhatsApp
+
+Em **Configurações › WhatsApp**, a seção **Avisos ao solicitante** define o que
+o cliente recebe no WhatsApp quando algo acontece no chamado. Há uma linha para
+cada evento aberto ao cliente:
+
+| Evento | Quando avisa |
+| --- | --- |
+| **Chamado criado** | Confirmação de que o chamado foi aberto, com o número para acompanhar |
+| **Nova mensagem no chamado** | Resposta pública no histórico |
+| **Mudança de fase** | O chamado avançou ou voltou de fase |
+| **Chamado resolvido** | A solução foi registrada |
+
+Para cada evento, preencha o **Modelo aprovado** (o nome exato do modelo na
+Meta, por exemplo `chamado_criado`), o **Idioma** (padrão `pt_BR`) e marque as
+**variáveis** na ordem do modelo: a primeira marcada preenche `{{1}}`, a segunda
+`{{2}}`, e assim por diante. Estão disponíveis **Código do chamado**, **Título**,
+**Resumo do aviso**, **Mensagem** e **Nome do cliente**. Clique em **Salvar
+avisos**; só administradores editam. Esvaziar o nome do modelo desliga o aviso
+daquele evento.
+
+![Seção Avisos ao solicitante em Configurações › WhatsApp, com o evento Chamado criado configurado com o modelo chamado_criado e duas variáveis](/docs/servicedesk/sd-avisos-solicitante.webp)
+
+Como o aviso é entregue depende do tipo de número:
+
+- **Meta (API oficial)**: se o modelo existe e está **aprovado** na conta da Meta
+  do número do ServiceDesk, o aviso vai **por modelo, a qualquer hora**, mesmo
+  fora da janela de 24 horas. Sem modelo configurado ou aprovado, o Steel só
+  envia texto livre se o canal estiver permitido (o solicitante ligou o
+  WhatsApp nas preferências de notificação) **e** a janela de 24 horas estiver
+  aberta; fora dela, o aviso não sai. Contato externo (sem usuário no Steel) só
+  recebe WhatsApp quando há um modelo aprovado para o evento.
+- **Z-API**: não há modelos nem janela de 24 horas. Se o evento tem configuração
+  ou o canal está permitido, o aviso sai como **texto simples**, no formato
+  `*INC-000123* — resumo` seguido da mensagem.
+- **Quem pediu para sair nunca é avisado.** O contato que respondeu `SAIR`,
+  `PARAR`, `STOP` ou `DESCADASTRAR` não recebe nenhum aviso, e o mesmo vale
+  quando o Steel não consegue confirmar a situação do contato. Veja
+  [LGPD e privacidade](/docs/seguranca/lgpd-e-privacidade).
+- Os avisos usam o número do **ServiceDesk** e só saem com ele conectado.
+
+<Callout type='nota' title='Chamado criado só quando um agente abre'>
+  O aviso **Chamado criado** sai quando alguém da equipe abre o chamado, inclusive
+  pelo botão [Criar chamado](/docs/servicedesk/chamados#abrir-a-partir-de-uma-conversa-ou-do-crm)
+  numa conversa ou no CRM. Chamados que o próprio cliente inicia (e-mail,
+  WhatsApp, portal, monitoramento ou IA) já têm a sua resposta e não disparam
+  esse aviso.
+</Callout>
 
 ## Monitoramento
 
@@ -57,12 +107,60 @@ Em **Configurações › Automações**, monte regras **evento → condições �
 - Ações: alterar campo, atribuir departamento ou responsável, distribuir por
   round-robin, adicionar participante ou tag, notificar, publicar mensagem
   (interna ou pública), criar tarefa, aplicar modelo e escalonar.
-- Ações entre módulos: **Enviar WhatsApp** (modelo aprovado ou texto ao contato
-  do chamado), **Criar tarefa no CRM** e **Criar lead no CRM** (reaproveita o
-  lead aberto com o mesmo telefone ou e-mail). O WhatsApp respeita quem pediu
-  para não receber mensagens e a janela de 24 horas da Meta: quando não pode
-  sair, a automação registra "automação ignorada" na rastreabilidade do chamado
-  e segue para as próximas ações.
+- Ações entre módulos (ver abaixo): **Enviar WhatsApp**, **Criar tarefa no CRM**
+  e **Criar lead no CRM**.
+
+### Ações entre módulos
+
+Em **Adicionar ação**, escolha uma das três. Os campos aparecem logo abaixo, e a
+tela já avisa que contatos que pediram para não receber mensagens são ignorados.
+
+![Painel Nova automação com a ação Enviar WhatsApp adicionada, mostrando o campo Número que envia e o aviso sobre contatos descadastrados](/docs/servicedesk/sd-automacao-acao-whatsapp.webp)
+
+- **Enviar WhatsApp**: escolha o **Número que envia**, um **modelo aprovado**
+  (com as variáveis do chamado) e, opcionalmente, um **texto livre**. O destino
+  é o contato do chamado.
+  - Na **Meta**, o modelo aprovado sai a qualquer hora; o texto livre só sai
+    com a janela de 24 horas aberta e é usado quando não há modelo aprovado.
+  - No **Z-API**, que não usa modelos, escreva o texto da mensagem.
+  - Quem pediu para não receber mensagens (LGPD) nunca recebe.
+- **Criar tarefa no CRM**: abre uma tarefa de acompanhamento com título e
+  descrição (aceitam `{{code}}`, `{{title}}`, `{{requester}}` e `{{phase}}`),
+  responsável e prazo em minutos.
+- **Criar lead no CRM**: cadastra o contato do chamado como lead, com a
+  **Origem do lead** escolhida (padrão *ServiceDesk*). Se já existe um lead
+  aberto com o mesmo telefone ou e-mail, ele é reaproveitado, sem duplicar.
+
+Cada ação deixa um registro na [rastreabilidade](/docs/servicedesk/chamados#as-abas)
+do chamado, com o filtro **Automação**: a tarefa criada (com o título dela) e o
+lead criado ou reaproveitado. Se uma etapa falha, por exemplo porque o número
+escolhido não consegue enviar, a linha do tempo mostra **automação falhou** com
+o nome da regra.
+
+![Aba Rastreabilidade de um chamado com os registros de uma regra: automação falhou, lead criado, tarefa criada e a abertura do chamado](/docs/servicedesk/sd-automacao-rastreabilidade.webp)
+
+<Callout type='nota' title='Como esses registros aparecem hoje'>
+  Os registros de lead e tarefa ainda aparecem com o nome técnico do evento
+  (`crm_lead.created`, `crm_task.created`), sem texto em português.
+</Callout>
+
+#### Etapa ignorada
+
+Quando uma etapa **não pode** ser executada, a automação não falha e segue para
+as próximas ações. O motivo fica registrado no chamado (evento
+`automation.skipped`) e no log do Steel. Os motivos são:
+
+- o chamado não tem contato com telefone (WhatsApp) ou com telefone ou e-mail
+  (lead);
+- o contato pediu para não receber mensagens, ou o Steel não conseguiu
+  confirmar isso;
+- nenhuma mensagem configurada para o número escolhido;
+- o modelo escolhido não está aprovado e a janela de 24 horas está fechada, ou
+  só havia texto livre e a janela expirou.
+
+Hoje a linha do tempo mostra esse registro como **automação aplicada**, sem
+repetir o motivo; confira o resultado esperado (a mensagem enviada ou o lead
+criado) em vez de depender desse texto.
 
 ## Chamados recorrentes
 

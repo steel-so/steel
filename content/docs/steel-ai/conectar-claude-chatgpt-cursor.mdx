@@ -212,14 +212,19 @@ ServiceDesk**, **Pipeline da semana** e **Conversas sem resposta**.
 - **Consultar** chamados, filas e SLA; leads, oportunidades, funis, tarefas e
   previsão de vendas; conversas e contatos; artigos **publicados** da base de
   conhecimento e páginas da Wiki que você pode ler.
+- **Wiki e documentos**: listar e ler páginas da Wiki (`wiki_pages_list`,
+  `wiki_page_get`) e documentos do CRM (`documents_list`, `document_get`). Com
+  **Ler e alterar**, também criar uma página da Wiki (`wiki_page_create`, interna
+  e sem link público) e um documento em rascunho (`document_create`, nada é
+  enviado).
 - **Alterar, quando liberado**: criar um lead ou uma tarefa, atualizar um
   chamado, registrar uma nota interna, mover uma oportunidade de etapa. Só
   acontece se você escolheu **Ler e alterar** e um administrador ligou
   **Permitir escrita via MCP** em **Ajustes › Steel IA**.
 
 A IA **nunca exclui** nada pelo conector. E o que fala com o seu cliente (uma
-mensagem de WhatsApp, uma resposta ao solicitante, um link de aprovação, a
-mudança de fase ou o cancelamento de um chamado) não sai direto: o assistente
+mensagem de WhatsApp ou **modelo aprovado** (`zap_template_send`), uma resposta
+ao solicitante, um link de aprovação, a mudança de fase ou o cancelamento de um chamado) não sai direto: o assistente
 devolve um link para você conferir e confirmar no Steel.
 
 ## Confirmar uma ação pedida pelo assistente

@@ -14,6 +14,8 @@ Escolha o modo no seletor **Modo do Steel AI**, ao lado do campo de mensagem.
 | **Autopilot** | Executa as ações sozinho e registra tudo. Só existe se um administrador liberar. |
 | **Teste** | Faz as consultas de verdade e **simula** as ações, sem alterar nada. |
 
+![Campo de mensagem da Steel AI com o seletor de modo mostrando Ask, Build, Autopilot (indisponível neste workspace) e Teste, e o seletor de modelo](/docs/steel-ai/steel-ai-seletor-de-modo.webp)
+
 ## Build: confirmação antes de mudar
 
 Quando a Steel AI quer criar, alterar, excluir ou enviar algo, ela mostra um
@@ -31,6 +33,34 @@ cartão com a prévia do que vai mudar e espera:
 
 Se o modo Build foi desligado, o seletor avisa: *"O modo Build foi desativado por
 um administrador em Ajustes > Steel IA."*
+
+## Wiki, documentos e modelos de WhatsApp
+
+Além de chamados, leads e conversas, a Steel AI trabalha com três coisas que
+vêm de outras áreas do Steel:
+
+| O que pedir | O que a IA faz | Confirmação |
+| --- | --- | --- |
+| **Wiki**: "liste as páginas sobre onboarding", "abra a página X", "crie uma página" | Lista e lê páginas (o texto volta resumido) e **cria** uma página com título, texto inicial e página-mãe opcionais. A página nasce **interna**, sem link público, e você refina no editor | Criar segue o modo (veja abaixo) |
+| **Documentos** do CRM: contratos, orçamentos, termos | Lista e lê documentos e modelos, filtrando por empresa, pessoa, oportunidade ou lead, e **cria** um documento em **rascunho**. Nada é enviado: o envio é feito no app | Criar segue o modo. Só com o CRM habilitado |
+| **Modelo de WhatsApp** | Envia um **modelo aprovado pela Meta** numa conversa aberta, a forma de falar com o cliente fora da janela de 24 horas | Fala com o cliente de verdade: veja abaixo. Só com a Comunicação habilitada |
+
+- A Wiki precisa estar ligada em **Ajustes › Wiki**; páginas arquivadas e
+  bloqueios continuam valendo, e a IA só faz o que o seu papel permite.
+- O envio de modelo **recusa** conversa encerrada, conversa em que a resposta
+  automática da IA está ativa, contato que pediu descadastro (LGPD) e modelo não
+  aprovado. Se o modelo tem variáveis (`{{1}}`, `{{2}}`), a IA preenche cada uma
+  com o texto final e você vê tudo na prévia.
+- **Confirmação**: no **Build**, criar página, criar documento e enviar modelo
+  pedem **Confirmar** na prévia, como qualquer ação. No **Autopilot** rodam
+  sozinhos, mas voltam a pedir confirmação se um texto de terceiros (por
+  exemplo, a mensagem do cliente) tentou dar ordens à IA. No **Teste** são
+  apenas simulados.
+- **Ferramentas da Wiki sob demanda**: para a conversa ficar leve, as
+  ferramentas da Wiki só entram quando a sua mensagem fala de Wiki ou de
+  páginas, depois que já foram usadas, ou quando a própria IA as procura
+  (`steel_find_tools`, que você vê como *Procurando ferramentas*). Se ela disser
+  que não achou como consultar a Wiki, peça citando "Wiki".
 
 ## Autopilot
 

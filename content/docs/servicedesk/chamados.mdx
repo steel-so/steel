@@ -41,6 +41,71 @@ Use o botão de novo chamado (ou <Kbd>C</Kbd> <Kbd>T</Kbd>). O formulário tem:
 
 Clique em **Abrir chamado** ou use <Kbd>Ctrl</Kbd> <Kbd>Enter</Kbd>.
 
+## Abrir a partir de uma conversa ou do CRM
+
+Quem atende pelo WhatsApp ou vende pelo CRM não precisa copiar nada para abrir
+um chamado. O botão **Criar chamado** aparece em:
+
+- uma **conversa** da Comunicação (ícone de chamado no topo da conversa);
+- um **lead**, uma **pessoa** ou uma **oportunidade** do CRM (seção
+  **Chamados** do registro).
+
+Ele só aparece se o workspace tem o ServiceDesk ligado. Para usar, você precisa
+ser agente do ServiceDesk com permissão de criar chamados **e** poder ver o
+registro de origem (a conversa, no seu escopo de equipe, ou o lead, a pessoa ou
+a oportunidade no CRM). Quem só abre chamados pelo portal recebe a explicação de
+que a ação é para agentes.
+
+O diálogo já vem preenchido, e você só confere:
+
+- **Título**: na conversa, o nome do contato e um trecho da última mensagem de
+  texto dele (ou *Atendimento no WhatsApp: nome*); no CRM, *Chamado do lead…*,
+  *Chamado de…* ou *Chamado da oportunidade…* com o nome do registro. Edite à
+  vontade.
+- **Tipo**: Requisição de serviço (padrão), Incidente, Mudança ou Problema.
+- **Solicitante**: nome, telefone e e-mail da origem. Se existe um contato do
+  ServiceDesk com o mesmo telefone ou e-mail, ele é usado, junto com o cliente
+  dele; senão o diálogo avisa *Sem contato correspondente no ServiceDesk* e os
+  dados vão na descrição. Nenhum cadastro é criado por você.
+- **Observação** opcional e, na conversa, **Incluir as últimas mensagens na
+  descrição** (até 10, com data e hora).
+- **Ver a descrição que será gravada**: a prévia exata do texto do chamado.
+
+![Diálogo Criar chamado aberto a partir de uma conversa do WhatsApp, com título, tipo, solicitante e descrição preenchidos](/docs/servicedesk/sd-criar-chamado-conversa.webp)
+
+### Proteção contra duplicidade
+
+Se já existe um chamado **em aberto** para a mesma origem, o diálogo lista os
+existentes (código, título e fase) e só libera o botão depois que você marca
+**Criar outro chamado mesmo assim**. Chamados já encerrados não contam.
+
+### Os dois lados ficam ligados
+
+- No chamado, a origem aparece como vínculo: a conversa na aba **WhatsApp**, ou
+  o lead, a pessoa ou a oportunidade na **Rastreabilidade**.
+- Na origem, os chamados aparecem em uma faixa no topo da conversa e na seção
+  **Chamados** do lead, da pessoa e da oportunidade. Na pessoa, na oportunidade
+  e na empresa também entra uma atividade na linha do tempo.
+- O chamado nasce pelo fluxo normal: catálogo, SLA, roteamento, automações e o
+  [aviso de chamado criado](/docs/servicedesk/canais-e-automacoes#avisos-ao-solicitante-por-whatsapp)
+  funcionam como em qualquer outro.
+
+Na ficha da pessoa, a **Visão 360** lista os chamados do cliente (todos os do
+cadastro ligado), enquanto a seção **Chamados**, mais abaixo, mostra só os
+abertos a partir daquele registro e traz o botão **Criar chamado**.
+
+![Ficha de uma pessoa do CRM com a Visão 360 listando os chamados do cliente e, mais abaixo, a seção Chamados com o botão Criar chamado](/docs/servicedesk/sd-chamados-no-crm.webp)
+
+<Callout type='nota' title='Conversa da Comunicação ou do ServiceDesk'>
+  O Steel **não copia** a conversa nem abre outra: o chamado liga a conversa
+  como ela é. Numa conversa da **Comunicação**, a aba **WhatsApp** do chamado
+  lê e responde pelo mesmo número da Comunicação, e as próximas mensagens do
+  cliente continuam chegando na caixa da Comunicação, sem serem espelhadas no
+  histórico do chamado. Numa conversa de um número do **ServiceDesk**, tudo
+  segue como no chamado aberto pelo WhatsApp. O próprio diálogo mostra esse
+  aviso quando a conversa é da Comunicação.
+</Callout>
+
 ## A tela do chamado
 
 No topo ficam o título (editável), **Mudar fase**, **Seguir** e o menu **Mais
@@ -51,6 +116,21 @@ A lateral reúne os dados do chamado: prioridade, catálogo, cliente e CMDB,
 atendimento, solução, campos customizados, datas (abertura, primeira resposta,
 resolução, fechamento, reaberturas), trabalho, risco preditivo e o copiloto de
 IA.
+
+### Cliente no CRM
+
+Quando o cliente do chamado também existe no CRM, a lateral ganha o cartão
+**Cliente no CRM**: dono da conta, ARR, saúde do cliente, o contato, as
+oportunidades abertas (até três) e o atalho **Abrir no CRM**. Quando a saúde não
+está baixa, o cartão avisa *Atenção:* e a próxima ação sugerida. Assim quem
+atende sabe se o chamado é de uma conta-chave.
+
+O cartão some sozinho se o workspace não tem CRM, se você não tem acesso a ele
+ou se nenhum cadastro do CRM corresponde ao cliente. O casamento usa o
+[vínculo do cadastro único](/docs/servicedesk/catalogo-e-cadastros#cadastro-único-com-o-crm)
+e, sem vínculo, o CNPJ, o e-mail ou o telefone.
+
+![Cartão Cliente no CRM na lateral de um chamado, com dono da conta, ARR e contato](/docs/servicedesk/sd-chamado-cliente-crm.webp)
 
 ### Responsável
 

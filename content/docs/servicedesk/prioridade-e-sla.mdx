@@ -52,6 +52,25 @@ No chamado e nas listas, o SLA aparece como **No prazo**, **Em risco**,
 por padrão, quando 80% do prazo foi consumido (ajustável em Configurações ›
 Geral).
 
+### Tarefa de retenção no CRM
+
+Quando o chamado de um cliente **viola o SLA**, o Steel pode abrir uma tarefa
+para o **dono da conta** no CRM, para que alguém fale com o cliente antes que a
+insatisfação cresça. Fica **desligado por padrão**: um administrador liga em
+**CRM › Configurações › Retenção** (*Criar tarefa quando um chamado do cliente
+estourar o SLA*) e define o **Prazo da tarefa** em dias e, se quiser, **Abrir
+também uma oportunidade de retenção**.
+
+- A tarefa se chama *SLA violado: INC-000123 de Nome da empresa* e cita o que
+  estourou (primeira resposta, resolução ou as duas).
+- É **uma por chamado**, mesmo que o SLA volte a ser verificado.
+- O Steel acha a empresa do CRM pelo **CNPJ** do cliente do chamado e, sem CNPJ,
+  pelo **nome exato**. Se o chamado não tem cliente ou nenhuma empresa
+  combina, nada é criado.
+- A tarefa é do responsável pela conta da empresa no CRM; sem responsável, vai para um administrador.
+
+![Configurações de Retenção do CRM com as opções de tarefa por nota baixa, queda de saúde e SLA violado](/docs/servicedesk/sd-retencao-sla-violado.webp)
+
 ## Escalonamento
 
 ### Manual

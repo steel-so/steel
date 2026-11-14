@@ -433,6 +433,11 @@ por padrão), abre uma tarefa para o dono da conta da empresa do CRM que casa
 com o cliente do chamado (CNPJ; senão nome exato), uma por chamado. Detalhes e
 os outros gatilhos em [Saúde do cliente](../crm-saude.md#retenção-tarefa-automática-de-follow-up).
 
+> Observação (aba Rastreabilidade do chamado): `sd-ticket-events.ts` ainda mostra
+> `automation.skipped` como "automação aplicada", sem o motivo, e os eventos
+> `crm_lead.created` e `crm_task.created` aparecem com o texto cru.
+
+
 ## Painel IA vs. técnico (S9)
 
 Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e
@@ -1043,7 +1048,10 @@ serviço. Manual do usuário: `content/docs/servicedesk/incidente-maior.mdx`.
   fila `servicedesk-mail`. O worker reivindica a atualização (`notifiedAt`)
   antes de enviar: no máximo uma vez, sem reenvio em retry. E-mail pelo Resend e
   WhatsApp pela conexão do ServiceDesk (texto livre; fora da janela de 24 h a
-  Meta pode recusar e o envio conta como falha).
+  Meta pode recusar e o envio conta como falha). Antes de cada envio por
+  WhatsApp, `checkWhatsAppOptOut` (`whatsapp-opt-out.ts`): número descadastrado
+  (ou cuja leitura falhou) é pulado, sem contar como enviado nem como falha;
+  vale também para as manutenções (`sd-status-maintenance-notify.service.ts`).
 - **Página pública**: `/status-page/<slug>` e `/api/status-page/**`, sem sessão
   (`proxy.ts`); `status-page` é slug reservado de workspace. Inscrição só por
   e-mail, com confirmação em duas etapas; confirmar e cancelar são POST (o
