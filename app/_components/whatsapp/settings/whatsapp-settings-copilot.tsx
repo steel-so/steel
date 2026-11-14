@@ -26,7 +26,10 @@ export function WhatsappSettingsCopilot({
   if (!isAdmin || !settings.data) return null
 
   return (
-    <section className='space-y-3 rounded-lg border p-4'>
+    <section
+      className='space-y-3 rounded-lg border p-4'
+      data-tour='zap-ai-copilot'
+    >
       <h3 className='font-medium text-sm'>Copiloto do atendente</h3>
       <div className='flex items-start justify-between gap-3'>
         <div>

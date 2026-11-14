@@ -1047,14 +1047,17 @@ export function WhatsappSettingsBroadcasts({
     <div className='space-y-4'>
       <WhatsappSettingsMarketingLite workspaceId={workspaceId} />
       <div className='flex items-center justify-between'>
-        <div>
+        <div data-tour='zap-broadcasts-intro'>
           <h3 className='font-medium text-sm'>Listas de transmissão</h3>
           <p className='text-muted-foreground text-xs'>
             Envie a mesma mensagem para vários contatos, com espaçamento
             automático entre os envios
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div
+          className='flex items-center gap-2'
+          data-tour='zap-broadcasts-actions'
+        >
           {canManage ? (
             <>
               <ImportBroadcastDialog workspaceId={workspaceId} />
@@ -1064,7 +1067,10 @@ export function WhatsappSettingsBroadcasts({
         </div>
       </div>
 
-      <div className='max-h-[26rem] overflow-auto rounded-lg border border-border'>
+      <div
+        className='max-h-[26rem] overflow-auto rounded-lg border border-border'
+        data-tour='zap-broadcasts-table'
+      >
         <Table containerClassName='overflow-x-visible'>
           <TableHeader className='sticky top-0 z-10 bg-card/85 backdrop-blur-md'>
             <TableRow>

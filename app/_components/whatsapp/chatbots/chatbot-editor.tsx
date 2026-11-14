@@ -531,7 +531,11 @@ function EditorInner({
                 <DropdownMenuTrigger
                   nativeButton={true}
                   render={
-                    <Button variant='outline' size='sm'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      data-tour='zap-chatbot-add-block'
+                    >
                       <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
                       Adicionar bloco
                     </Button>
@@ -567,6 +571,7 @@ function EditorInner({
               <Button
                 variant='outline'
                 size='sm'
+                data-tour='zap-chatbot-trigger'
                 onClick={() => setSettingsOpen(true)}
               >
                 <SteelIcon icon={Settings02Icon} strokeWidth={2} />
@@ -587,6 +592,7 @@ function EditorInner({
                   variant='outline'
                   size='sm'
                   disabled={update.isPending}
+                  data-tour='zap-chatbot-test'
                   onClick={onTest}
                 >
                   <SteelIcon icon={TestTubeIcon} strokeWidth={2} />
@@ -596,6 +602,7 @@ function EditorInner({
                   variant='outline'
                   size='sm'
                   disabled={validate.isPending || update.isPending}
+                  data-tour='zap-chatbot-verify'
                   onClick={onVerify}
                 >
                   <SteelIcon icon={CheckmarkCircle02Icon} strokeWidth={2} />
@@ -627,6 +634,7 @@ function EditorInner({
                 <Button
                   size='sm'
                   disabled={publish.isPending}
+                  data-tour='zap-chatbot-publish'
                   onClick={onPublish}
                 >
                   <SteelIcon icon={Rocket01Icon} strokeWidth={2} />
@@ -637,7 +645,11 @@ function EditorInner({
           </div>
         </div>
 
-        <div ref={wrapper} className='relative min-h-0 flex-1'>
+        <div
+          ref={wrapper}
+          className='relative min-h-0 flex-1'
+          data-tour='zap-chatbot-canvas'
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}

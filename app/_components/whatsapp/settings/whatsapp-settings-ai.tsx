@@ -109,7 +109,10 @@ export function WhatsappSettingsAi({ workspaceId }: { workspaceId: string }) {
         </p>
       </div>
 
-      <div className='flex items-center justify-between rounded-md border p-3'>
+      <div
+        className='flex items-center justify-between rounded-md border p-3'
+        data-tour='zap-ai-active'
+      >
         <div>
           <p className='font-medium text-sm'>IA ativa</p>
           <p className='text-muted-foreground text-xs'>
@@ -156,7 +159,7 @@ export function WhatsappSettingsAi({ workspaceId }: { workspaceId: string }) {
         <Switch checked={readMedia} onCheckedChange={setReadMedia} />
       </div>
 
-      <div className='space-y-1.5'>
+      <div className='space-y-1.5' data-tour='zap-ai-prompt'>
         <Label htmlFor='systemPrompt'>Instruções da IA</Label>
         <Textarea
           id='systemPrompt'

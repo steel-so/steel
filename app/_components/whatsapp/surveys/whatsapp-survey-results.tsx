@@ -75,7 +75,10 @@ export function WhatsappSurveyResults({
 
   return (
     <div className='space-y-6 p-6'>
-      <div className='flex flex-wrap items-end gap-4'>
+      <div
+        className='flex flex-wrap items-end gap-4'
+        data-tour='zap-surveys-filters'
+      >
         <div className='space-y-1.5'>
           <Label>Pesquisa</Label>
           <Select

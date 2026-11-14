@@ -19,7 +19,7 @@ export function WhatsappSurveysTabs({
   const [tab, setTab] = useState<Tab>('results')
   return (
     <div>
-      <div className='px-6 pt-4'>
+      <div className='px-6 pt-4' data-tour='zap-surveys-tabs'>
         <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
           <TabsList aria-label='Seção das pesquisas'>
             <TabsTrigger value='results'>Resultados</TabsTrigger>
