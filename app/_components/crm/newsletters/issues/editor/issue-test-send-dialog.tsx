@@ -148,7 +148,12 @@ export function IssueTestSendButton() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button size='sm' variant='outline' onClick={() => setOpen(true)}>
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={() => setOpen(true)}
+        data-tour='newsletter-issue-test'
+      >
         <SteelIcon icon={MailSend01Icon} strokeWidth={2} />
         <span className='hidden sm:inline'>Testar</span>
       </Button>

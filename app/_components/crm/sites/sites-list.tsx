@@ -430,7 +430,7 @@ export function SitesList({
   return (
     <div className='mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 sm:px-6'>
       <div className='flex flex-wrap items-end justify-between gap-3'>
-        <div className='min-w-0'>
+        <div className='min-w-0' data-tour='sites-header'>
           <h1 className='font-semibold text-xl'>Sites</h1>
           <p className='text-muted-foreground text-sm'>
             Crie páginas e sites completos com editor visual, publique em um
@@ -438,7 +438,11 @@ export function SitesList({
           </p>
         </div>
         {canCreate ? (
-          <Button onClick={() => setCreating(true)} data-testid='new-site'>
+          <Button
+            onClick={() => setCreating(true)}
+            data-testid='new-site'
+            data-tour='sites-new'
+          >
             <SteelIcon icon={Add01Icon} data-icon='inline-start' />
             Novo site
           </Button>
@@ -496,6 +500,7 @@ export function SitesList({
       ) : (
         <ul
           aria-label='Sites'
+          data-tour='sites-grid'
           className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${VIZ_VARS}`}
         >
           {list.map((site) => (

@@ -183,7 +183,7 @@ export function CanvasTopBar({ title }: { title: ReactNode }) {
         {title}
       </div>
 
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-2' data-tour='canvas-toolbar'>
         {catalog.breakpoints.length > 1 && (
           <DeviceSwitcher
             value={breakpoint}

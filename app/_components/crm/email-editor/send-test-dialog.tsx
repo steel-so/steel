@@ -128,6 +128,7 @@ export function SendTestButton() {
         size='sm'
         onClick={() => setOpen(true)}
         data-testid='email-send-test-trigger'
+        data-tour='email-editor-send-test'
       >
         <SteelIcon icon={MailSend01Icon} strokeWidth={2} />
         Enviar teste

@@ -230,6 +230,7 @@ export function PreviewButton() {
         size='sm'
         onClick={() => setOpen(true)}
         data-testid='email-preview-trigger'
+        data-tour='email-editor-preview'
       >
         <SteelIcon icon={ViewIcon} strokeWidth={2} />
         Visualizar

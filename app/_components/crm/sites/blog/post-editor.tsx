@@ -373,7 +373,7 @@ export function PostEditor({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant='outline' size='sm'>
+              <Button variant='outline' size='sm' data-tour='site-blog-ai'>
                 <SteelIcon icon={AiMagicIcon} data-icon='inline-start' />
                 <span className='hidden sm:inline'>IA</span>
               </Button>
@@ -421,6 +421,7 @@ export function PostEditor({
           size='sm'
           disabled={saving}
           onClick={() => void save()}
+          data-tour='site-blog-save'
         >
           Salvar
         </Button>
@@ -428,7 +429,11 @@ export function PostEditor({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button size='sm' disabled={saving}>
+                <Button
+                  size='sm'
+                  disabled={saving}
+                  data-tour='site-blog-publish'
+                >
                   Publicado
                 </Button>
               }
@@ -447,7 +452,11 @@ export function PostEditor({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button size='sm' disabled={saving}>
+                <Button
+                  size='sm'
+                  disabled={saving}
+                  data-tour='site-blog-publish'
+                >
                   Publicar
                 </Button>
               }
@@ -495,6 +504,7 @@ export function PostEditor({
                 ) : null}
                 <Textarea
                   aria-label='Título do post'
+                  data-tour='site-blog-title'
                   value={draft.title}
                   maxLength={200}
                   rows={1}
@@ -536,6 +546,7 @@ export function PostEditor({
         </main>
         <aside
           aria-label='Ajustes do post'
+          data-tour='site-blog-settings'
           className='hidden w-80 shrink-0 overflow-y-auto border-l lg:block'
         >
           {settings}

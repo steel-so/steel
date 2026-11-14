@@ -333,6 +333,7 @@ export function CanvasInspector({
     <aside
       aria-label='Propriedades'
       data-testid='canvas-inspector'
+      data-tour='canvas-inspector'
       className={cn(
         'flex h-full w-72 shrink-0 flex-col border-l bg-background xl:w-80',
         compact && 'absolute inset-y-0 right-0 z-30 shadow-xl',

@@ -181,7 +181,10 @@ export function CampaignResults({
   const { email, whatsapp, conversions } = stats
   return (
     <div className='flex min-w-0 flex-col gap-4'>
-      <div className='grid grid-cols-2 gap-3 md:grid-cols-4'>
+      <div
+        className='grid grid-cols-2 gap-3 md:grid-cols-4'
+        data-tour='campaign-results'
+      >
         <Tile label='Contatos' value={String(stats.recipients)} />
         <Tile
           label='E-mails abertos'

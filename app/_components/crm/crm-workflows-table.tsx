@@ -152,7 +152,7 @@ function CreateCrmWorkflowDialog({
         }
       }}
     >
-      <Button size='sm' onClick={() => setOpen(true)}>
+      <Button size='sm' onClick={() => setOpen(true)} data-tour='workflows-new'>
         <SteelIcon icon={Add01Icon} strokeWidth={2} />
         Novo workflow
       </Button>

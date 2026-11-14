@@ -196,7 +196,11 @@ export function CrmCampaignWizard({
         </Button>
       </div>
 
-      <nav aria-label='Passos da campanha' className='flex flex-col gap-3'>
+      <nav
+        aria-label='Passos da campanha'
+        data-tour='campaign-steps'
+        className='flex flex-col gap-3'
+      >
         <div
           className='h-1.5 w-full overflow-hidden rounded-full bg-muted'
           role='progressbar'
@@ -310,6 +314,7 @@ export function CrmCampaignWizard({
             </Label>
             <Button
               onClick={handleLaunch}
+              data-tour='campaign-next'
               disabled={!canLaunch || launch.isPending}
             >
               <SteelIcon icon={SentIcon} />
@@ -317,7 +322,11 @@ export function CrmCampaignWizard({
             </Button>
           </div>
         ) : (
-          <Button onClick={() => goTo(step + 1)} disabled={update.isPending}>
+          <Button
+            onClick={() => goTo(step + 1)}
+            disabled={update.isPending}
+            data-tour='campaign-next'
+          >
             Continuar <SteelIcon icon={ArrowRight01Icon} />
           </Button>
         )}

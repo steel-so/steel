@@ -155,7 +155,7 @@ export function CrmNewslettersList({
   return (
     <div className='flex min-w-0 flex-col gap-4 p-4 sm:p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='min-w-0'>
+        <div className='min-w-0' data-tour='newsletters-header'>
           <h1 className='font-semibold text-lg'>Newsletters</h1>
           <p className='text-muted-foreground text-sm'>
             Publicações com assinantes próprios, enviadas do domínio da sua
@@ -163,7 +163,7 @@ export function CrmNewslettersList({
           </p>
           <NewsletterUsageSummary workspaceId={workspaceId} className='mt-1' />
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} data-tour='newsletters-new'>
           <SteelIcon icon={Add01Icon} /> Nova newsletter
         </Button>
       </div>
@@ -191,7 +191,10 @@ export function CrmNewslettersList({
           </Button>
         </div>
       ) : (
-        <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <div
+          className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'
+          data-tour='newsletters-grid'
+        >
           {list.map((newsletter) => (
             <NewsletterCard
               key={newsletter.id}

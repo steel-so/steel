@@ -86,7 +86,10 @@ export function CrmCadencesPanel({
   return (
     <div className='flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
-        <p className='max-w-2xl text-muted-foreground text-sm'>
+        <p
+          className='max-w-2xl text-muted-foreground text-sm'
+          data-tour='cadence-intro'
+        >
           Sequências de e-mail, WhatsApp e tarefas, lead a lead. Diferente das
           campanhas, que saem em massa, cada lead tem o seu próprio relógio e a
           cadência para sozinha quando ele responde.
@@ -96,6 +99,7 @@ export function CrmCadencesPanel({
             setEditing(null)
             setEditorOpen(true)
           }}
+          data-tour='cadence-new'
         >
           <SteelIcon icon={PlusSignIcon} />
           Nova cadência
@@ -120,7 +124,10 @@ export function CrmCadencesPanel({
           </p>
         </div>
       ) : (
-        <ul className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <ul
+          className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'
+          data-tour='cadence-list'
+        >
           {cadences.data?.map((cadence) => (
             <li
               key={cadence.id}

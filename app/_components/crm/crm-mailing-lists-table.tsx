@@ -95,7 +95,11 @@ export function CrmMailingListsTable({
         refetch={refetch}
         disableInlineCreate
         headerAction={
-          <Button size='sm' onClick={() => setViewing('new')}>
+          <Button
+            size='sm'
+            onClick={() => setViewing('new')}
+            data-tour='mailing-lists-new'
+          >
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Nova lista
           </Button>

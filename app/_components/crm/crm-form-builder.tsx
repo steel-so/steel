@@ -613,6 +613,7 @@ function CrmFormBuilderInner({
           onChange={(e) => setName(e.target.value)}
           placeholder='Formulário sem título'
           aria-label='Nome do formulário'
+          data-tour='form-builder-name'
           className='min-w-0 flex-1 bg-transparent font-semibold text-sm outline-none placeholder:text-muted-foreground/60'
         />
         {online ? (
@@ -633,6 +634,7 @@ function CrmFormBuilderInner({
           size='sm'
           onClick={() => setStatsOpen(true)}
           aria-label='Ver respostas'
+          data-tour='form-builder-responses'
         >
           <SteelIcon icon={Analytics01Icon} strokeWidth={2} />
           Respostas
@@ -669,7 +671,13 @@ function CrmFormBuilderInner({
           onRetry={onSave}
           className='hidden sm:flex'
         />
-        <Button size='sm' onClick={onSave} disabled={saving} data-shortcut-save>
+        <Button
+          size='sm'
+          onClick={onSave}
+          disabled={saving}
+          data-shortcut-save
+          data-tour='form-builder-save'
+        >
           Salvar agora
         </Button>
       </header>
@@ -699,7 +707,10 @@ function CrmFormBuilderInner({
                 />
               </div>
 
-              <div className='flex flex-col gap-1.5'>
+              <div
+                className='flex flex-col gap-1.5'
+                data-tour='form-builder-action'
+              >
                 <Label>O que acontece quando alguém responde</Label>
                 <Select
                   value={action}
@@ -763,7 +774,10 @@ function CrmFormBuilderInner({
               </div>
             </section>
 
-            <section className='flex flex-col gap-3 rounded-lg border p-4'>
+            <section
+              className='flex flex-col gap-3 rounded-lg border p-4'
+              data-tour='form-builder-publish'
+            >
               <div className='flex items-center justify-between gap-3'>
                 <div>
                   <p className='font-medium text-sm'>Publicar formulário</p>
@@ -856,7 +870,10 @@ function CrmFormBuilderInner({
               ))}
             </section>
 
-            <section className='flex flex-col gap-3'>
+            <section
+              className='flex flex-col gap-3'
+              data-tour='form-builder-fields'
+            >
               <div className='flex items-center justify-between'>
                 <h2 className='font-medium text-sm'>Campos</h2>
                 <Button variant='outline' size='sm' onClick={addField}>
@@ -897,7 +914,10 @@ function CrmFormBuilderInner({
           </div>
         </div>
 
-        <div className='min-h-0 min-w-0 flex-1 overflow-y-auto bg-muted/30'>
+        <div
+          className='min-h-0 min-w-0 flex-1 overflow-y-auto bg-muted/30'
+          data-tour='form-builder-preview'
+        >
           <div className='mx-auto max-w-xl p-6'>
             <div className='mb-3 flex items-center justify-between gap-2'>
               <p className='text-muted-foreground text-xs uppercase tracking-wide'>

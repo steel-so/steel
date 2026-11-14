@@ -676,7 +676,7 @@ function WorkflowEditorInner({
         onAddNode={onAddNode}
         triggerConfigured={Boolean(definition.trigger.data)}
       />
-      <div className='relative min-h-0 flex-1'>
+      <div className='relative min-h-0 flex-1' data-tour='workflow-canvas'>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -781,11 +781,18 @@ export function WorkflowTopBar({
           variant='ghost'
           onClick={onShowRuns}
           aria-label='Ver execuções'
+          data-tour='workflow-runs'
         >
           <SteelIcon icon={CallReceivedIcon} strokeWidth={2} />
           <span className='hidden lg:inline'>Ver execuções</span>
         </Button>
-        <Button size='sm' variant='ghost' onClick={onTest} aria-label='Testar'>
+        <Button
+          size='sm'
+          variant='ghost'
+          onClick={onTest}
+          aria-label='Testar'
+          data-tour='workflow-test'
+        >
           <SteelIcon icon={PlayIcon} strokeWidth={2} />
           <span className='hidden lg:inline'>Testar</span>
         </Button>
@@ -801,7 +808,12 @@ export function WorkflowTopBar({
           confirmLabel='Descartar alterações'
           onConfirm={onDiscard}
         />
-        <Button size='sm' onClick={onActivate} aria-label='Ativar'>
+        <Button
+          size='sm'
+          onClick={onActivate}
+          aria-label='Ativar'
+          data-tour='workflow-activate'
+        >
           <SteelIcon icon={CheckmarkCircle02Icon} strokeWidth={2} />
           <span className='hidden lg:inline'>Ativar</span>
         </Button>
@@ -841,7 +853,12 @@ function AddMenu({
       <DropdownMenuTrigger
         nativeButton={true}
         render={
-          <Button size='sm' variant='outline' aria-label='Adicionar etapa'>
+          <Button
+            size='sm'
+            variant='outline'
+            aria-label='Adicionar etapa'
+            data-tour='workflow-add'
+          >
             <SteelIcon icon={Add01Icon} strokeWidth={2} />
             <span className='hidden lg:inline'>Adicionar etapa</span>
           </Button>
