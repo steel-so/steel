@@ -75,6 +75,23 @@ fora do ar), a janela mostra o motivo e o botão **Tentar de novo**:
   tokens antes de insistir.
 </Callout>
 
+### Receber mensagens: configurar o webhook na Z-API
+
+Para as mensagens chegarem ao Steel, a Z-API precisa saber para onde enviá-las.
+Logo depois de criar a conexão a janela **Configurar na Z-API** abre sozinha;
+depois, use o botão **Configurar na Z-API** no cartão da conexão (só dono e
+administradores o veem).
+
+1. Clique em **Copiar** para guardar o endereço.
+2. No painel da Z-API, abra a instância e vá em **Webhooks e notificações**.
+3. Cole o endereço em **Ao receber**, **Ao enviar** e **Status da mensagem** e
+   salve.
+
+<Callout type='nota'>
+  O endereço contém uma chave secreta da conexão. Não o compartilhe fora da
+  equipe.
+</Callout>
+
 ## Situação e testes
 
 O cartão de cada conexão mostra a situação e, quando há, o último erro:

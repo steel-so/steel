@@ -20,6 +20,9 @@ export interface WhatsAppConnectionDTO {
   createdById: string
   createdAt: string
   updatedAt: string
+  // Z-API only, and only for workspace admins: the full webhook URL (with the
+  // secret) to paste into the Z-API panel.
+  webhookUrl?: string
 }
 
 // Only returned once, right after creation, so the admin can configure the

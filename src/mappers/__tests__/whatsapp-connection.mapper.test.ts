@@ -47,3 +47,21 @@ describe('toWhatsAppConnectionCreatedDTO()', () => {
     expect(dto.webhookSecret).toBe('reveal-me-once')
   })
 })
+
+describe('webhookUrl', () => {
+  it('should only be included for Z-API when a base URL is given', () => {
+    const zapi = createFakeWhatsAppConnection({
+      provider: 'ZAPI',
+      webhookSecret: 's3 cret',
+    })
+    const meta = createFakeWhatsAppConnection({ provider: 'META' })
+
+    expect(toWhatsAppConnectionDTO(zapi).webhookUrl).toBeUndefined()
+    expect(toWhatsAppConnectionDTO(meta, 'https://x.io').webhookUrl).toBe(
+      undefined,
+    )
+    expect(toWhatsAppConnectionDTO(zapi, 'https://x.io/').webhookUrl).toBe(
+      'https://x.io/api/whatsapp/webhook/zapi?secret=s3%20cret',
+    )
+  })
+})
