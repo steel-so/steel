@@ -74,6 +74,23 @@ O runner self-hosted está offline.
 - Banco fora → suba o `steel-db` ([reiniciar](./restart-service.md)) e re-run.
 - Erro da migration em si → **precisa do engenheiro de produto**. O deploy
   não aconteceu, então a produção segue estável na versão anterior.
+- **Como conferir o que o deploy aplicou.** No servidor:
+  ```bash
+  docker exec -it steel-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+    "SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations
+     ORDER BY started_at DESC LIMIT 10;"'
+  ```
+  A última linha deve ser a migration mais recente do repositório
+  (`ls prisma/migrations | tail`), com `finished_at` preenchido e
+  `rolled_back_at` vazio. `finished_at` nulo é migration que parou no meio:
+  não rode nada à mão, acione o engenheiro.
+- **Migrations da onda ux (13/11/2026)** são aditivas (colunas anuláveis,
+  tabelas novas, valores novos de enum): `zap_block_contacts`,
+  `detractor_crm_retention`, `sd_requester_whatsapp_templates`, `zap_chat_ux`,
+  `ux_followups`, `cadastro_unico` e `ticket_from_conversation`. Duas rodam
+  `UPDATE` de preenchimento (`cadastro_unico`, que liga clientes e contatos ao
+  CRM, e `zap_chat_ux`, que preenche `whatsapp_conversations.last_inbound_at`);
+  em bases grandes demoram alguns segundos e não precisam de intervenção.
 
 ### Falhou em "Build & Deploy"
 
@@ -103,6 +120,12 @@ Sintoma: CD verde, mas o [health check](./health-check.md) falha ou
    ```
    Atenção: se o deploy ruim aplicou uma migration que a versão anterior não
    suporta, voltar a imagem pode não bastar — acione o engenheiro.
+   Para as migrations da onda ux isso quase sempre basta: são aditivas e a
+   versão anterior ignora colunas e tabelas novas. A exceção são os valores novos
+   de enum (`NotificationKind.WHATSAPP_AI_UNAVAILABLE`, `CrmRetentionSource`
+   `SLA_BREACH`): se já existir linha com esse valor, a versão anterior pode falhar
+   ao ler a lista de notificações. Nesse caso, acione o engenheiro em vez de
+   apagar linhas.
 3. Em paralelo, **reverta o commit** em `main` ([passo 2](#2-ci-vermelho-por-código))
    para que o próximo deploy não reinstale a versão quebrada.
 4. Confirme com o [health check](./health-check.md) e registre o incidente.

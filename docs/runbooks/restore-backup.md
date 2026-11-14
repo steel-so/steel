@@ -98,6 +98,16 @@ operador com acesso ao banco:
    ```bash
    pnpm prisma:deploy
    ```
+   Backup de **antes** de 13/11/2026 não tem as tabelas e colunas da onda
+   ux (`whatsapp_contact_blocks`, `crm_retention_settings`,
+   `crm_retention_actions`, os vínculos `crm_company_id` / `crm_person_id` /
+   `crm_*_id` em `sd_customers`, `sd_contacts`, `whatsapp_contacts` e
+   `sd_tickets`, `sd_settings.requester_whatsapp_templates` e outras): este
+   passo as cria, e a migração `cadastro_unico` **refaz o preenchimento
+   automático dos vínculos** sobre os dados restaurados (só o que é
+   inequívoco). Confira que a saída lista as migrations aplicadas e termina
+   sem erro antes de subir o app; migration pendente derruba rotas que usam a
+   coluna nova.
 6. **Suba app e worker:** `cd /var/www/steel && docker compose up -d`
 7. **Confirme** com o [health check](./health-check.md) e avise os usuários
    sobre a janela de dados perdida (entre o backup e o incidente).

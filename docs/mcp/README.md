@@ -149,6 +149,21 @@ clientes externos:
   `sd_request_approval`, `sd_move_ticket_phase` (o solicitante é avisado da
   fase e, ao resolver, recebe a solução) e `sd_cancel_ticket`.
 
+- `onDemand?: boolean` — só para ferramenta de plataforma (`module: null`):
+  fora da seleção do **assistente** (`selectSteelAiTools`, `selection.ts`)
+  em toda rodada. Entra quando a mensagem casa com as palavras da ferramenta,
+  quando foi usada há pouco (fixada) ou quando `steel_find_tools` a acha. Hoje:
+  `wiki_pages_list`, `wiki_page_get` e `wiki_page_create`. **No MCP não muda
+  nada**: a lista do `discovery.ts` trata toda ferramenta de plataforma como
+  as demais (ver abaixo).
+
+Ferramentas da onda "ux" (13/11/2026): Wiki (`wiki_pages_list`,
+`wiki_page_get`, `wiki_page_create`), Documentos do CRM (`documents_list`,
+`document_get`, `document_create`, só rascunho) e `zap_template_send`
+(`customerFacing`, sempre com confirmação humana; recusa conversa fechada,
+sob resposta da IA, contato descadastrado e modelo não aprovado). Nenhuma
+ferramenta de exclusão foi adicionada.
+
 Critério de `destructiveHint`: verdadeiro quando apaga, sobrescreve texto ou
 campo (o valor anterior se perde) ou faz algo sem volta (`DELETE`, cancelar
 chamado, fechar lead como ganho); falso para o que só acrescenta (criar,

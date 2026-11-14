@@ -49,6 +49,10 @@ Migração `nov_t1_nps_survey` (blocos `// nov: t1-nps-whatsapp` no schema):
   idempotente por `survey-detractor:<id>`, auditado (`satisfaction_survey` /
   `alert`). Nunca derruba a resposta. A pesquisa avulsa não tem regra e usa os
   padrões. O link leva à conversa; para chamado/e-mail, à lista de envios.
+  Antes do aviso, o mesmo trecho dispara a **tarefa de retenção** do CRM para o
+  responsável da conta (`CrmRetentionService.onSurveyDetractor`, interruptor
+  `onDetractor` em CRM > Ajustes > Retenção, independente de `alertDetractors`):
+  ver [Saúde do cliente](../crm-saude.md#retenção-tarefa-automática-de-follow-up).
 - **Envio avulso na interface**: `SendSurveyDialog`
   (`app/_components/whatsapp/surveys/send-survey-dialog.tsx`) no cabeçalho da
   conversa (contato do WhatsApp) e no menu ⋯ do chamado (e-mail do contato ou do

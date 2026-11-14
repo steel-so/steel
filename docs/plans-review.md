@@ -1,6 +1,7 @@
 # Limites dos planos — estado e decisões
 
-> Atualizado em 28/10/2026 (limite mensal da newsletter, ADR 0054) e em
+> Atualizado em 13/11/2026 (teto de gasto por número e cota da IA no
+> WhatsApp, abaixo), em 28/10/2026 (limite mensal da newsletter, ADR 0054) e em
 > 22/10/2026 com as decisões do dono do produto. Os valores
 > abaixo são os que estão em `src/config/plans.ts`.
 
@@ -85,6 +86,22 @@ e `monthlyMessageLimit`; vazio = ilimitado, o padrão):
   mês para cada limite e patamar.
 - Se a consulta ao banco falhar, o envio é liberado (não para o atendimento);
   envios simultâneos bem no limite podem ultrapassá-lo em poucas unidades.
+
+### Teto de gasto por número e cota da IA (também fora do plano)
+
+- **Teto de gasto mensal por número** (ADR 0064, `whatsapp_spend_caps`): ao
+  atingir o teto, o envio **pago** daquele número é bloqueado; o gasto é o real
+  lido da Meta. Configuração, avisos e fila em
+  [limite de gasto por número](./whatsapp/limite-de-gasto-por-numero.md).
+- **Cota mensal de IA do workspace** (ADR 0019): quando acaba, ou quando o
+  provedor de IA está fora do ar ou sem chave, a resposta automática do WhatsApp
+  não insiste. A conversa sai da IA (`aiActive` desligado, `aiHandoff` ligado) e
+  fica com um atendente (sem atendente, entra na fila) com uma nota na linha do tempo (motivo
+  `ai_quota_exceeded`, `ai_provider_unavailable` ou `ai_prepare_failed`, evento
+  `AI_UNAVAILABLE`). Os OWNER/ADMIN recebem no inbox o aviso
+  `WHATSAPP_AI_UNAVAILABLE` ("A IA do WhatsApp parou de responder"), no máximo
+  um por motivo por dia, com o link para `settings/whatsapp`
+  (`src/services/whatsapp-ai-reply.service.ts`, migração `ux_followups`).
 
 ## Servidor MCP (todos os planos)
 

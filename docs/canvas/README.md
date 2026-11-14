@@ -122,8 +122,10 @@ Decisões do shell:
   testado no iframe (`elementFromPoint`) ou na árvore de Camadas, e o
   `canDrop` do motor decide. Borda de um container (até 12 px) significa
   "antes/depois dele"; dentro, a posição entre os filhos.
-- **Abaixo de 1024 px** o editor mostra "Use uma tela maior para editar": a
-  barra lateral, o canvas e o inspetor não cabem lado a lado em tablet em pé.
+- **Abaixo de 1024 px** (`use-compact-layout.ts`) a barra lateral e o
+  inspetor viram gavetas sobre o canvas, que ocupa a tela (antes o editor só
+  mostrava "Use uma tela maior para editar"). O aviso continua só abaixo de
+  768 px (`md:hidden` no `canvas-editor.tsx`), onde nem a gaveta cabe.
 - O playground abre fora de produção; em produção só com `CANVAS_LAB=true`.
 - `store` (opcional): o chamador cria o store com `createCanvasStore` quando
   o contexto de render do catálogo precisa ler o documento vivo (e-mail).
@@ -143,7 +145,80 @@ Decisões do shell:
 Atalhos: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, Ctrl+C / Ctrl+X / Ctrl+V,
 Ctrl+D, Delete/Backspace, ↑/↓ irmão anterior/próximo, Alt+↑/↓ move o
 elemento, ← pai, → primeiro filho, Esc sobe para o pai, Enter edita o texto,
-Ctrl+S salva, Ctrl+= / Ctrl+- / Ctrl+0 zoom.
+Ctrl+S salva, Ctrl+= / Ctrl+- / Ctrl+0 zoom. As dicas da barra superior
+saem do registro de atalhos (escopo `editor.canvas`, ver
+[atalhos](../shortcuts.md#escopo-editorcanvas-editores-visuais)).
+
+### Onda ux3 (13/11/2026): editores mais manuais
+
+Vale para os três editores do Canvas (Sites, e-mail e Documentos); o formulário
+e a landing page do CRM têm editores próprios e ganharam o equivalente (último
+tópico).
+
+- **Redimensionar com alças** (`frame/resize-handles.tsx`, geometria pura em
+  `lib/resize.ts`, gravação em `lib/resize-write.ts`). O catálogo declara o que
+  é redimensionável em `resizable` (`widthPath`, `heightPath`, `aspect`,
+  limites). No fluxo só as bordas direita e inferior e o canto puxam; um filho em
+  posição livre (`freeLayout`) ganha as oito alças e se move ao puxar a
+  esquerda ou o topo. **Shift** mantém a proporção; **Alt** desliga o ímã
+  das guias de alinhamento. Elemento que só tem largura (imagem) mantém a
+  proporção sozinho.
+- **Setas e seleção.** Em elemento livre, as setas movem 1 px (Shift: 10 px);
+  com Alt+↑/↓ o elemento troca de lugar na ordem; `Ctrl+A` seleciona os
+  irmãos. O controle de imagem (`dimensionsPath`) grava a largura e a altura
+  naturais do arquivo assim que ele carrega, para a página reservar o espaço e
+  o layout não pular.
+- **Biblioteca de mídia única** (`app/_components/media/`). Cada construtor
+  mantém o próprio bucket e o expõe pelo contrato `MediaProvider`
+  (`list`, `upload`, `remove?`, `update?`); o seletor "Escolher da biblioteca",
+  a área de soltar e a aba Mídia são os mesmos em Sites, e-mail, newsletter e
+  Documentos. Arquivo: imagem de até 5 MB (`image-file.ts`, uma validação só).
+  **Soltar ou colar** uma imagem sobre o canvas troca a imagem do bloco sob o
+  ponteiro (mantendo texto alternativo, tamanho e link) ou cria um bloco de
+  imagem ao lado da seleção (`lib/use-canvas-image-input.ts`). Para o e-mail há
+  `GET .../crm/email-builder/images` (listagem); Documentos ganhou a aba Mídia e
+  a rota de listagem da biblioteca.
+- **Texto alternativo obrigatório.** O controle de imagem pede o alt, a menos
+  que a imagem seja marcada **decorativa** (`decorative`); falta de alt aparece
+  também no checklist de publicação.
+- **Checklist de publicação genérico** (`src/lib/canvas/checklist.ts`,
+  `checklist/publish-checklist.tsx`). Cada catálogo fornece um `PublishChecker`
+  puro `(doc) => PublishCheckItem[]` e a interface é a mesma: **erro bloqueia**
+  a publicação, **aviso** só recomenda; clicar no item seleciona o nó (e a
+  página, nos sites). Sites (`canvas-site/checklist.ts`), todos avisos:
+  `IMAGE_ALT_MISSING`, `BUTTON_NO_LINK` (botão sem link nem ação),
+  `LINK_EMPTY`, `FORM_NO_DESTINATION` (formulário sem formulário do CRM
+  escolhido: aviso, e não bloqueio, porque os sites nascidos de modelo
+  trazem um formulário ainda sem destino) e o título de SEO da página. Documentos
+  (`canvas-document/checklist.ts`): avisos `IMAGE_ALT_MISSING`, `LINK_EMPTY`,
+  `HEADING_EMPTY`, `TEXT_EMPTY`, `VIDEO_URL_EMPTY` e erros `PRICING_EMPTY`
+  (tabela de preços sem itens) e `FIELD_LABEL_EMPTY` (campo de formulário sem
+  título). Aparece no diálogo de publicar do site e no de enviar do documento.
+- **Casca do editor** (`save-status.tsx`, `preview/`, `lib/draft-recovery.ts`,
+  `empty-hint.tsx`):
+  - `SaveStatus` ("Salvando…", "Salvo", "Não foi possível salvar" com
+    "Tentar de novo", "Alterações não salvas", "Sincronizando…") é o mesmo
+    indicador de todos os construtores, inclusive o formulário do CRM.
+  - `DeviceSwitcher` (Computador 100%, Tablet 768 px, Celular 375 px) e
+    `ThemeSwitcher` (claro/escuro) estão na barra do editor e nas prévias do
+    site, do e-mail e do documento. A prévia escura é real (`color-scheme`,
+    `data-theme="dark"` e a classe `dark` no documento do iframe; nada é
+    invertido); só a simulação dos clientes de e-mail que forçam o escuro
+    (Gmail, Outlook) usa filtro de inversão (`data-canvas-dark`).
+  - **Recuperação de rascunho**: enquanto o salvamento falha, uma cópia do
+    documento fica no `localStorage` (`steel:canvas-draft:<endereço>`); o
+    primeiro salvamento que dá certo a apaga, e na próxima abertura o editor
+    oferece "Recuperar" ou "Descartar". Armazenamento bloqueado ou cheio é
+    ignorado em silêncio.
+  - **Orientação**: página vazia mostra "Comece adicionando um bloco"; na
+    primeira vez que o editor abre com conteúdo, uma dica dispensável explica
+    clicar, arrastar e os atalhos (`steel:canvas-hint-seen`).
+- **Formulário e landing page do CRM** (editores próprios, fora do Canvas):
+  o construtor de formulários ganhou salvamento automático, desfazer e refazer
+  (`src/hooks/use-editor-history.ts`: até 100 passos; digitação no mesmo campo
+  em até 0,8 s vira um passo só), reordenar por arraste, duplicar e prévia por
+  dispositivo; o de landing pages ganhou desfazer, duplicar seção, inserir entre
+  duas seções e texto alternativo nas imagens.
 
 ## Catálogo de e-mail (`src/lib/canvas-email/`)
 
