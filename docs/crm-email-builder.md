@@ -95,7 +95,7 @@ Inc). Nenhum template da comunidade (marcas de terceiros) foi copiado.
 | `POST` | `/api/workspaces/{id}/crm/email-templates/{templateId}/test-send` | "Enviar teste" para o e-mail de quem pede |
 | `GET`/`PUT` | `/api/workspaces/{id}/crm/email-brand` | marca do workspace |
 | `POST` | `/api/workspaces/{id}/crm/email-builder/images` | upload de imagem (corpo binário) |
-| `GET` | `/api/workspaces/{id}/crm/email-builder/links` | landing pages e formulários publicados (atalhos do seletor de link) |
+| `GET` | `/api/workspaces/{id}/crm/email-builder/links` | formulários publicados (atalhos do seletor de link) |
 
 ### Para a fatia de campanhas
 

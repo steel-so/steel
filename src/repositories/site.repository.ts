@@ -416,7 +416,9 @@ export const SiteRepository = {
       })
       return ok(site?.slug ?? null)
     } catch (error) {
-      return err(dbError('Failed to resolve legacy landing page address', error))
+      return err(
+        dbError('Failed to resolve legacy landing page address', error),
+      )
     }
   },
 }

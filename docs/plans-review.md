@@ -66,7 +66,7 @@ Outros valores relacionados, fora do catálogo:
 | Preço BUSINESS | R$ 80,06/assento/mês · R$ 836,81/assento/ano | idem |
 | Trial | BUSINESS por 14 dias; banner a partir de 5 dias do fim; reversão de hora em hora | `src/config/trial.ts`, fila `trial-lifecycle` |
 | Assentos na compra | 1 a 10.000 | `src/schemas/subscription.schema.ts` |
-| Upload de mídia (genérico / vídeo de landing page) | 5 MB / 25 MB | `src/services/media/_media.ts`, `media/crm-landing-page-media.service.ts` — iguais para todos os planos |
+| Upload de mídia (imagens) | 5 MB | `src/services/media/_media.ts` — igual para todos os planos |
 
 ## Limites mensais da Comunicação (por workspace, fora do plano)
 

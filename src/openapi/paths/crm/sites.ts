@@ -27,12 +27,7 @@ import {
   SiteSummaryDTOSchema,
   SiteVersionDTOSchema,
 } from '../../schemas/crm/sites'
-import {
-  CRM_ERRORS,
-  CRM_PRIVILEGED_ERRORS,
-  crmAccess,
-  describe,
-} from './shared'
+import { CRM_ERRORS, crmAccess, describe } from './shared'
 
 /** CRM · Sites — `sites/**`, plus the public view beacon `/sites/{siteSlug}/views`. */
 

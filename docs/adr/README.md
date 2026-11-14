@@ -85,3 +85,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0065 | [Campanha do CRM com link opcional e conteúdo primeiro](./0065-campanha-do-crm-com-link-opcional.md) | Aceita | 2026-11-13 |
 | 0066 | [Cadastro único: vínculo opcional entre CRM, ServiceDesk e WhatsApp](./0066-cadastro-unico-entre-crm-servicedesk-e-whatsapp.md) | Aceita | 2026-11-13 |
 | 0067 | [Uma branch de junção e um PR único para as fatias em paralelo](./0067-branch-unica-de-juncao-para-fatias-em-paralelo.md) | Aceita | 2026-11-13 |
+| 0068 | [Remover o editor antigo de landing pages e apagar as não migradas](./0068-remove-legacy-landing-pages.md) | Aceita | 2026-11-14 |

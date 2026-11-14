@@ -259,7 +259,9 @@ describe('SiteRepository', () => {
   it('resolves the legacy landing page address of a live site', async () => {
     const { workspace, user } = await setup()
     expect(
-      expectOk(await SiteRepository.findPublishedSlugByLandingShareToken('tok')),
+      expectOk(
+        await SiteRepository.findPublishedSlugByLandingShareToken('tok'),
+      ),
     ).toBeNull()
 
     const draft = await seedSite(workspace.id, user.id, {

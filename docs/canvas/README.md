@@ -190,8 +190,7 @@ saem do registro de atalhos (escopo `editor.canvas`, ver
 ### Onda ux3 (13/11/2026): editores mais manuais
 
 Vale para os três editores do Canvas (Sites, e-mail e Documentos); o formulário
-e a landing page do CRM têm editores próprios e ganharam o equivalente (último
-tópico).
+do CRM tem editor próprio e ganhou o equivalente (último tópico).
 
 - **Redimensionar com alças** (`frame/resize-handles.tsx`, geometria pura em
   `lib/resize.ts`, gravação em `lib/resize-write.ts`). O catálogo declara o que
@@ -251,12 +250,11 @@ tópico).
   - **Orientação**: página vazia mostra "Comece adicionando um bloco"; na
     primeira vez que o editor abre com conteúdo, uma dica dispensável explica
     clicar, arrastar e os atalhos (`steel:canvas-hint-seen`).
-- **Formulário e landing page do CRM** (editores próprios, fora do Canvas):
+- **Formulário do CRM** (editor próprio, fora do Canvas):
   o construtor de formulários ganhou salvamento automático, desfazer e refazer
   (`src/hooks/use-editor-history.ts`: até 100 passos; digitação no mesmo campo
   em até 0,8 s vira um passo só), reordenar por arraste, duplicar e prévia por
-  dispositivo; o de landing pages ganhou desfazer, duplicar seção, inserir entre
-  duas seções e texto alternativo nas imagens.
+  dispositivo.
 
 ## Catálogo de e-mail (`src/lib/canvas-email/`)
 
@@ -633,7 +631,7 @@ Decisão em [ADR 0027](../adr/0027-canvas-real-time-co-editing.md).
 
 **Princípio: a IA escreve, o catálogo monta.** O modelo nunca cria nós. A estrutura vem das seções prontas do catálogo (`SECTION_BUILDERS`, `ELEMENT_SECTION_BUILDERS`) e de algumas seções próprias do gerador (`src/lib/site-ai/sections.ts`: abertura de página, chamada para ação, contato com o formulário do CRM, produtos e depoimentos reais, contagem regressiva, cabeçalho e rodapé). O modelo só preenche **slots** (`src/lib/site-ai/slots.ts`): cada texto da árvore (título, parágrafo, botão, item de lista, pergunta, aba, plano, texto alternativo, ícone) vira um campo com id curto (`t1`…), papel, limite de caracteres e o texto de exemplo. Valor que não cabe no schema da prop é descartado e o campo fica com o texto do modelo de seção.
 
-- **Dados reais não passam pela IA**: nós com nome de camada `Logo`, `Produto`, `Descrição do produto`, `Preço`, `Depoimento`, `Autor do depoimento` e `Direitos` ficam fora dos slots (nem a geração nem "Reescrever textos" mexem). Produtos vêm do CRM (`crm_products`, ativos), depoimentos das seções `TESTIMONIAL` das landing pages; sem esses dados, as seções `products`/`testimonials` não entram no plano. O prompt proíbe inventar números, preços, clientes e contatos ("Sob consulta" onde faltar preço).
+- **Dados reais não passam pela IA**: nós com nome de camada `Logo`, `Produto`, `Descrição do produto`, `Preço`, `Depoimento`, `Autor do depoimento` e `Direitos` ficam fora dos slots (nem a geração nem "Reescrever textos" mexem). Produtos vêm do CRM (`crm_products`, ativos), depoimentos (hoje sem fonte: as landing pages antigas, de onde vinham, foram removidas — ADR 0068); sem esses dados, as seções `products`/`testimonials` não entram no plano. O prompt proíbe inventar números, preços, clientes e contatos ("Sob consulta" onde faltar preço).
 - **Plano** (`plan.ts`): a primeira chamada escolhe estilo (kit), paleta, fontes, texto do botão e as seções de cada página; `normalizePlan` só aceita o que o briefing permite e completa com padrões (Início abre com `hero`, páginas internas com `intro`, um único formulário — na página Contato ou no fim do Início, no máximo 7 seções). A cor da marca do briefing sempre vence a do modelo; cor clara ganha texto escuro no botão.
 - **Respostas** (`run.ts`): saída JSON estrita (structured outputs), lida com reparo (cercas, texto em volta, vírgula sobrando), conferida por Zod e por validação de domínio (todos os campos devolvidos). Se falhar, os problemas voltam ao modelo como nova mensagem — até 3 chamadas. Cada chamada lança o consumo na hora.
 - **Validação**: links para âncoras que não existem viram link para a página Contato (ou para o Início); cada seção é validada sozinha por `validateSiteDocument` e a que falhar é descartada (com aviso), depois a página inteira. Nada é gravado antes de todas as páginas ficarem prontas; site, páginas (com SEO) e globais entram numa transação (`SiteRepository.createWithPages`).

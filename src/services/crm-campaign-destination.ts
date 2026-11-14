@@ -22,11 +22,7 @@ import type { CrmCampaignDestinationDTO } from '@/types/crm-campaign'
 
 export type CampaignDestinationFields = Pick<
   CrmCampaign,
-  | 'workspaceId'
-  | 'destinationType'
-  | 'formId'
-  | 'siteId'
-  | 'sitePageId'
+  'workspaceId' | 'destinationType' | 'formId' | 'siteId' | 'sitePageId'
 >
 
 export interface ResolvedCampaignDestination {

@@ -41,13 +41,10 @@ const campaignShape = {
     description: 'Valor de `utm_campaign`.',
   }),
   status,
-  destinationType: z
-    .enum(['FORM', 'SITE_PAGE'])
-    .nullable()
-    .meta({
-      description:
-        'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); FORM = formulário do CRM (`formId`).',
-    }),
+  destinationType: z.enum(['FORM', 'SITE_PAGE']).nullable().meta({
+    description:
+      'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); FORM = formulário do CRM (`formId`).',
+  }),
   formId: z.string().nullable(),
   siteId: z.string().nullable(),
   sitePageId: z.string().nullable(),

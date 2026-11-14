@@ -47,11 +47,7 @@ const SITES: SiteSummaryDTO[] = [
 
 const BASE = `/api/workspaces/${WS}/crm/sites`
 
-function setup({
-  sites = SITES,
-}: {
-  sites?: SiteSummaryDTO[]
-} = {}) {
+function setup({ sites = SITES }: { sites?: SiteSummaryDTO[] } = {}) {
   const spy = mockFetch([
     {
       match: `${BASE}/analytics?days=14`,

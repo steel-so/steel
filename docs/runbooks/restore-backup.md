@@ -190,13 +190,13 @@ O backup de workspace tem duas partes, ambas cifradas com `CONNECTION_SECRETS`:
 | Entra no backup | Como é achado |
 | --------------- | ------------- |
 | mídias do WhatsApp (`whatsapp-media`), documentos de conhecimento da IA (`whatsapp-ai-knowledge`), capas de projeto (`projects-covers`), posts agendados (`crm-scheduled-posts`, `crm-social-publish-tmp`) | prefixo `<workspaceId>/` — completo |
-| imagens/vídeos de landing page e imagens de proposta **enviadas a partir de 19/09/2026** | prefixo `<workspaceId>/` — completo |
+| imagens/vídeos do antigo editor de landing pages (bucket mantido para os sites migrados) e imagens de proposta **enviadas a partir de 19/09/2026** | prefixo `<workspaceId>/` — completo |
 | anexos do assistente de IA do CRM (`crm-ai-attachments`) | pela tabela `crm_ai_attachments` — completo |
-| imagens/vídeos de landing page e imagens de proposta **antigas** (chave na raiz do bucket) | **best-effort:** pela URL citada no conteúdo das seções de landing page, de proposta e de modelo de proposta |
+| imagens de proposta **antigas** (chave na raiz do bucket) | **best-effort:** pela URL citada no conteúdo das seções de proposta e de modelo de proposta |
 
 **Fica de fora:** avatar e capa de usuário (`avatars`, `user-covers` — são
 do usuário, não do workspace), imagens do changelog (globais), exportações
-LGPD e os próprios backups. Mídia **antiga** de landing page/proposta que
+LGPD e os próprios backups. Mídia **antiga** de proposta que
 nenhuma seção cita mais (seção apagada, proposta excluída) não tem como ser
 atribuída a um workspace e não entra; a referência que aponta para um
 arquivo que já não existe é só contada (`missingLegacyKeys` no log
@@ -267,7 +267,7 @@ Um workspace restaurado a partir do backup tirado durante a exclusão volta
    - Rodando fora do container, lembre do `MINIO_ENDPOINT` da
      [preparação](#preparação-uma-vez-por-restore).
 4. Confira no app com um usuário do workspace (abra uma conversa com mídia,
-   uma landing page com imagem).
+   um site com imagem).
 
 Para recuperar um workspace a partir de um backup FULL (não há WORKSPACE),
 restaure o FULL num banco descartável (`--target`) e copie os registros

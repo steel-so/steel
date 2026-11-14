@@ -38,7 +38,7 @@ container; nomes/e-mails/slugs longos truncam com o valor completo no
   workspace/módulo) responde `WORKSPACE_SUSPENDED` (403) para membros de um
   workspace que não está `ACTIVE`; não-membros continuam recebendo
   `FORBIDDEN`, sem saber que o workspace existe. Rotas públicas (formulários,
-  propostas, landing pages, webhooks) também fecham: o módulo é considerado
+  propostas, webhooks) também fecham: o módulo é considerado
   desligado (`WorkspaceModuleAccessRepository.isEnabled`).
 - **UI:** o layout `[workspace-slug]` troca o app por uma tela de bloqueio
   (`WorkspaceBlockedScreen`), com atalhos para os outros workspaces do
@@ -73,7 +73,7 @@ editáveis à parte** — o limite vem do plano (`limitOf(plan, 'seats')`).
 4. Apaga as linhas (uma transação; oportunidades primeiro, o resto por
    cascata) e depois os **arquivos no MinIO** (`src/lib/storage/workspace-files.ts`:
    buckets com prefixo `<workspaceId>/` — inclusive as mídias de landing
-   page/proposta enviadas a partir de 19/09/2026 — + anexos da IA do CRM).
+   page (editor removido, ADR 0068)/proposta enviadas a partir de 19/09/2026 — + anexos da IA do CRM).
 5. Registra `workspace.deleted` em `admin_audit_logs` (sem FK: sobrevive ao
    workspace) e no Axiom.
 
@@ -106,7 +106,7 @@ aparece no detalhe do workspace e em `/admin/backups`.
   usa o override do painel.
 - **Arquivos entram no backup** do workspace (a partir de 19/09/2026): o
   backup tirado no passo 2 leva as mídias e anexos, e restaurá-lo traz de
-  volta linhas **e** arquivos. Mídias **antigas** de landing page/proposta
+  volta linhas **e** arquivos. Mídias **antigas** de proposta
   (gravadas na raiz do bucket, sem o workspace na chave) entram no backup
   quando alguma seção as cita, mas **não são apagadas** na exclusão (a
   varredura depende das linhas, que já foram removidas) — ficam órfãs.
@@ -154,7 +154,7 @@ Os **arquivos** do workspace vêm de `collectWorkspaceFileRefs`
 (`src/lib/storage/workspace-files.ts`): os buckets prefixados por
 `<workspaceId>/` (lista `WORKSPACE_BUCKETS` — bucket novo com dado de
 workspace entra ali, com a flag `public`), os anexos da IA pela linha e,
-best-effort, as mídias antigas de landing page/proposta citadas no conteúdo.
+best-effort, as mídias antigas de proposta citadas no conteúdo.
 A cópia/restauração em si está em `src/lib/queue/workspace-file-archive.ts`
 (um objeto por vez, cada um cifrado; manifesto com SHA-256). O que entra,
 o que fica de fora e a limitação das mídias antigas estão no

@@ -31,11 +31,7 @@ import type {
 import { CreateCallout, CreateLinkButton } from './campaign-create-callout'
 import type { CampaignDraft, DraftChange } from './campaign-draft'
 import { CampaignSiteThumbnail } from './campaign-site-thumbnail'
-import {
-  AdvancedOptions,
-  CopyLinkRow,
-  campaignLinks,
-} from './campaign-steps'
+import { AdvancedOptions, CopyLinkRow, campaignLinks } from './campaign-steps'
 
 type Tab = 'sites' | 'forms'
 type StatusFilter = 'all' | 'published' | 'draft'

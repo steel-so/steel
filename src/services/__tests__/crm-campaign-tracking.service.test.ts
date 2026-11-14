@@ -591,9 +591,7 @@ describe('matchesDestination() / convertsRecipient()', () => {
     expect(
       matchesDestination(onSite, { kind: 'FORM_SUBMISSION', formId: 'f1' }),
     ).toBe(false)
-    expect(
-      matchesDestination(onSite, { kind: 'LANDING_VIEW' }),
-    ).toBe(false)
+    expect(matchesDestination(onSite, { kind: 'LANDING_VIEW' })).toBe(false)
   })
 
   it('should convert on forms and the chosen site page, never on legacy landing views', () => {

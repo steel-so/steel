@@ -5,8 +5,7 @@
 
 > A exclusão é **definitiva**. O único caminho de volta é restaurar o backup
 > que o próprio processo gera — ele inclui as linhas **e** os arquivos do
-> MinIO (mídias do WhatsApp, anexos, capas, imagens de landing
-> page/proposta; veja o que fica de fora em
+> MinIO (mídias do WhatsApp, anexos, capas, imagens de site/proposta; veja o que fica de fora em
 > [restaurar um backup](./restore-backup.md#restore-de-um-workspace)). Se o
 > cliente só está inadimplente, **suspenda** em vez de excluir.
 
@@ -91,7 +90,7 @@ docker run --rm --network steel_default --entrypoint sh pgsty/mc -c \
      mc rm --recursive --force "s/$b/<workspaceId>/"; done'
 ```
 
-Imagens/vídeos de landing page e proposta enviados **antes de 19/09/2026**
+Imagens de proposta enviadas **antes de 19/09/2026**
 ficam na raiz desses buckets, sem o workspace na chave, e não são apagados
 pela exclusão (ficam órfãos).
 

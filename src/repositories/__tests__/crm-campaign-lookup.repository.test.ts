@@ -118,9 +118,9 @@ describe('CrmCampaignLookupRepository', () => {
       await R.destinationTokens(ws, { formIds: [s.form.id] }),
     )
     expect(tokens.get(s.form.id)).toBe(s.form.publicToken)
-    expect(
-      expectOk(await R.destinationTokens(ws, { formIds: [] })).size,
-    ).toBe(0)
+    expect(expectOk(await R.destinationTokens(ws, { formIds: [] })).size).toBe(
+      0,
+    )
 
     const options = expectOk(await R.listOptions(ws))
     expect(options.forms.map((f) => f.id)).toEqual([s.form.id])

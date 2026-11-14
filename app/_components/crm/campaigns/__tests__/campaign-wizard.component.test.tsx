@@ -129,9 +129,7 @@ describe('CrmCampaignWizard', () => {
       }),
     )
     // The link is the last choice: next comes the review.
-    await waitFor(() =>
-      expect(screen.getByText('Envio de teste')).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByText('Envio de teste')).toBeTruthy())
   })
 
   it('should warn about an unpublished destination', async () => {

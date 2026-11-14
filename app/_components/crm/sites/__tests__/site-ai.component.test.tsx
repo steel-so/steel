@@ -292,7 +292,7 @@ describe('toGenerateInput', () => {
       pages: [],
       style: 'b2b',
       productIds: [],
-        createContactForm: true,
+      createContactForm: true,
       eventDate: '2026-12-01',
       extra: '',
     })

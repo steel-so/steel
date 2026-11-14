@@ -363,7 +363,9 @@ describe('CrmCampaignService.get() and issues', () => {
     }
     expect(
       expectOk(
-        await computeCampaignIssues(plain({ ...wa, whatsappText: 'Oi {nome}' })),
+        await computeCampaignIssues(
+          plain({ ...wa, whatsappText: 'Oi {nome}' }),
+        ),
       ),
     ).toEqual([])
   })
