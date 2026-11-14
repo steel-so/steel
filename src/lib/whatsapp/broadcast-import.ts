@@ -125,6 +125,8 @@ export const BROADCAST_IMPORT_TIME_ZONE = 'America/Sao_Paulo'
 
 const BR_DATE_PATTERN =
   /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::\d{2})?)?$/
+const ISO_WALL_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::\d{2})?)?$/
 
 /** Offset (ms) of `timeZone` from UTC at the given instant. */
 function zoneOffsetMs(instant: Date, timeZone: string): number {
@@ -162,15 +164,20 @@ export function parseReferenceDate(
 ): Date | null {
   const text = raw.trim()
   const br = BR_DATE_PATTERN.exec(text)
-  if (!br) {
+  // ISO without an offset (`2026-11-21`, `2026-11-21T10:00`) is a wall time
+  // too, in the same zone as the Brazilian format, not UTC.
+  const isoWall = br ? null : ISO_WALL_PATTERN.exec(text)
+  if (!br && !isoWall) {
     const iso = new Date(text)
     return Number.isNaN(iso.getTime()) ? null : iso
   }
-  const day = Number(br[1])
-  const month = Number(br[2])
-  const year = Number(br[3])
-  const hour = br[4] === undefined ? 0 : Number(br[4])
-  const minute = br[5] === undefined ? 0 : Number(br[5])
+  const day = br ? Number(br[1]) : Number(isoWall?.[3])
+  const month = br ? Number(br[2]) : Number(isoWall?.[2])
+  const year = br ? Number(br[3]) : Number(isoWall?.[1])
+  const hourText = br ? br[4] : isoWall?.[4]
+  const minuteText = br ? br[5] : isoWall?.[5]
+  const hour = hourText === undefined ? 0 : Number(hourText)
+  const minute = minuteText === undefined ? 0 : Number(minuteText)
   const wall = new Date(Date.UTC(year, month - 1, day, hour, minute))
   // Rejects overflow such as 31/02 or 25:00 that Date.UTC would roll over.
   if (

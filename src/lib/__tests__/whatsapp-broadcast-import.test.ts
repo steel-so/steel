@@ -159,6 +159,19 @@ describe('parseReferenceDate()', () => {
     ).toBe('2026-12-15T04:00:00.000Z')
   })
 
+  it('reads an ISO date without an offset as wall time in the zone, not UTC', () => {
+    expect(parseReferenceDate('2026-11-21T10:00')?.toISOString()).toBe(
+      '2026-11-21T13:00:00.000Z',
+    )
+    expect(parseReferenceDate('2026-11-21 10:00:30')?.toISOString()).toBe(
+      '2026-11-21T13:00:00.000Z',
+    )
+    expect(
+      parseReferenceDate('2026-11-21', 'America/Manaus')?.toISOString(),
+    ).toBe('2026-11-21T04:00:00.000Z')
+    expect(parseReferenceDate('2026-02-31T10:00')).toBeNull()
+  })
+
   it('keeps accepting ISO 8601', () => {
     expect(parseReferenceDate('2026-08-15T09:00:00.000Z')?.toISOString()).toBe(
       '2026-08-15T09:00:00.000Z',
