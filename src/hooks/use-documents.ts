@@ -18,6 +18,7 @@ import type {
   DocumentListItemDTO,
   DocumentRecipientDTO,
   DocumentResponseDTO,
+  DocumentSendResultDTO,
   DocumentVersionDTO,
 } from '@/types/document'
 import { ApiError, apiFetch, apiFetchJson, apiSend } from './_fetch'
@@ -168,7 +169,7 @@ export function documentsApi(workspaceId: string) {
         'Não foi possível duplicar o documento',
       ),
     send: (documentId: string, body: SendDocumentBody) =>
-      apiFetchJson<DocumentDTO>(
+      apiFetchJson<DocumentSendResultDTO>(
         `${one(documentId)}/send`,
         'POST',
         body,

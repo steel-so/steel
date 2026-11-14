@@ -39,7 +39,12 @@ import {
 import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import { SendDocumentSchema } from '@/src/schemas/document.schema'
 import type { CrmPersonDTO } from '@/types/crm-person'
-import type { DocumentDTO, DocumentRecipientDTO } from '@/types/document'
+import type {
+  DocumentDeliveryDTO,
+  DocumentDTO,
+  DocumentRecipientDTO,
+  DocumentSendResultDTO,
+} from '@/types/document'
 import { CopyLinkButton } from './copy-link-button'
 import {
   fromDateInputValue,
@@ -257,7 +262,13 @@ function RecipientEditor({
   )
 }
 
-function SentLinks({ document }: { document: DocumentDTO }) {
+function SentLinks({
+  document,
+  deliveries = [],
+}: {
+  document: DocumentDTO
+  deliveries?: DocumentDeliveryDTO[]
+}) {
   return (
     <div className='grid gap-3'>
       <div className='grid gap-1.5 rounded-lg border bg-muted/30 p-3'>
@@ -274,27 +285,39 @@ function SentLinks({ document }: { document: DocumentDTO }) {
       </div>
       {document.recipients.length > 0 ? (
         <ul aria-label='Links pessoais' className='grid gap-2'>
-          {document.recipients.map((recipient) => (
-            <li
-              key={recipient.id}
-              className='flex min-w-0 items-center gap-2 rounded-lg border p-2.5'
-            >
-              <span className='min-w-0 flex-1'>
-                <span className='block truncate font-medium text-sm'>
-                  {recipient.name}
+          {document.recipients.map((recipient) => {
+            // Why the document went as a link when e-mail/WhatsApp was asked
+            // (e.g. the contact opted out of WhatsApp messages).
+            const note = deliveries.find(
+              (delivery) => delivery.recipientId === recipient.id,
+            )?.message
+            return (
+              <li
+                key={recipient.id}
+                className='flex min-w-0 items-center gap-2 rounded-lg border p-2.5'
+              >
+                <span className='min-w-0 flex-1'>
+                  <span className='block truncate font-medium text-sm'>
+                    {recipient.name}
+                  </span>
+                  <span className='block truncate text-muted-foreground text-xs'>
+                    {RECIPIENT_ROLE_LABELS[recipient.role]} ·{' '}
+                    {RECIPIENT_CHANNEL_LABELS[recipient.channel]}
+                  </span>
+                  {note ? (
+                    <span className='mt-0.5 block text-foreground text-xs'>
+                      {note}
+                    </span>
+                  ) : null}
                 </span>
-                <span className='block truncate text-muted-foreground text-xs'>
-                  {RECIPIENT_ROLE_LABELS[recipient.role]} ·{' '}
-                  {RECIPIENT_CHANNEL_LABELS[recipient.channel]}
-                </span>
-              </span>
-              <CopyLinkButton
-                url={recipient.url}
-                label={`Copiar link de ${recipient.name}`}
-                iconOnly
-              />
-            </li>
-          ))}
+                <CopyLinkButton
+                  url={recipient.url}
+                  label={`Copiar link de ${recipient.name}`}
+                  iconOnly
+                />
+              </li>
+            )
+          })}
         </ul>
       ) : null}
     </div>
@@ -335,7 +358,7 @@ export function SendDocumentDialog({
   const [rows, setRows] = useState<RecipientRow[]>([])
   const [message, setMessage] = useState('')
   const [validUntil, setValidUntil] = useState('')
-  const [sent, setSent] = useState<DocumentDTO | null>(null)
+  const [sent, setSent] = useState<DocumentSendResultDTO | null>(null)
   const update = Boolean(document.currentVersion)
   const blocked = checks.some((item) => item.level === 'error')
 
@@ -441,7 +464,7 @@ export function SendDocumentDialog({
 
         {sent ? (
           <div className='min-h-0 overflow-y-auto'>
-            <SentLinks document={sent} />
+            <SentLinks document={sent} deliveries={sent.deliveries} />
           </div>
         ) : (
           <form
