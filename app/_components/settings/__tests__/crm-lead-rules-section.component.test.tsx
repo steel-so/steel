@@ -363,6 +363,13 @@ describe('<CrmLeadRulesSection />', () => {
 
     const ownerTrigger = dialogTriggers()[2]
     await pick(ownerTrigger, 'Ana Vendas')
+    // The owner is not enough: the rule also needs the value to compare.
+    expect(create.disabled).toBe(true)
+    expect(create.title).toBe('Informe o valor que será comparado.')
+    fireEvent.change(
+      dialog.querySelector('input[data-slot=input]') as HTMLInputElement,
+      { target: { value: 'Indicação' } },
+    )
     await waitFor(() => expect(create.disabled).toBe(false))
     fireEvent.click(create)
 
@@ -404,7 +411,19 @@ describe('<CrmLeadRulesSection />', () => {
       }),
     )
     const dialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Criar regra' }))
+    const createButton = within(dialog).getByRole('button', {
+      name: 'Criar regra',
+    }) as HTMLButtonElement
+    // Without the value to compare the button explains what is missing.
+    expect(createButton.disabled).toBe(true)
+    fireEvent.change(
+      dialog.querySelector(
+        'input[data-slot=input]:not([type=number])',
+      ) as HTMLInputElement,
+      { target: { value: 'Indicação' } },
+    )
+    await waitFor(() => expect(createButton.disabled).toBe(false))
+    fireEvent.click(createButton)
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('points: Valor inválido'),

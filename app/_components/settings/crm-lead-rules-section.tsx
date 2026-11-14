@@ -213,6 +213,8 @@ function NewScoringRuleDialog({
   const [includeWelcome, setIncludeWelcome] = useState(true)
   const [saving, setSaving] = useState(false)
   const eventRule = isEventField(field)
+  const needsValue =
+    !eventRule && operator !== 'is_empty' && operator !== 'is_not_empty'
 
   async function handleCreate() {
     setSaving(true)
@@ -253,7 +255,13 @@ function NewScoringRuleDialog({
             <FieldLabel>Campo</FieldLabel>
             <Select value={field} onValueChange={(v) => setField(v ?? field)}>
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string | null) =>
+                    FIELD_LABEL[value ?? ''] ??
+                    EVENT_FIELD_LABEL[value ?? ''] ??
+                    ''
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -289,7 +297,9 @@ function NewScoringRuleDialog({
               onValueChange={(v) => setOperator(v ?? operator)}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string | null) => OPERATOR_LABEL[value ?? ''] ?? ''}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -321,7 +331,15 @@ function NewScoringRuleDialog({
         </FieldGroup>
         <div className='mt-4 flex justify-end gap-2'>
           <DialogClose render={<Button variant='ghost'>Cancelar</Button>} />
-          <Button onClick={handleCreate} disabled={saving}>
+          <Button
+            onClick={handleCreate}
+            disabled={saving || (needsValue && !value.trim())}
+            title={
+              needsValue && !value.trim()
+                ? 'Informe o valor que será comparado.'
+                : undefined
+            }
+          >
             {saving ? 'Criando...' : 'Criar regra'}
           </Button>
         </div>
@@ -343,6 +361,7 @@ function NewRoutingRuleDialog({
   const [value, setValue] = useState('')
   const [ownerId, setOwnerId] = useState('')
   const [saving, setSaving] = useState(false)
+  const needsValue = operator !== 'is_empty' && operator !== 'is_not_empty'
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const users = lookups.options.users ?? []
 
@@ -382,7 +401,13 @@ function NewRoutingRuleDialog({
             <FieldLabel>Campo</FieldLabel>
             <Select value={field} onValueChange={(v) => setField(v ?? field)}>
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string | null) =>
+                    FIELD_LABEL[value ?? ''] ??
+                    EVENT_FIELD_LABEL[value ?? ''] ??
+                    ''
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -402,7 +427,9 @@ function NewRoutingRuleDialog({
               onValueChange={(v) => setOperator(v ?? operator)}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>
+                  {(value: string | null) => OPERATOR_LABEL[value ?? ''] ?? ''}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -443,11 +470,13 @@ function NewRoutingRuleDialog({
           <DialogClose render={<Button variant='ghost'>Cancelar</Button>} />
           <Button
             onClick={handleCreate}
-            disabled={saving || !ownerId}
+            disabled={saving || !ownerId || (needsValue && !value.trim())}
             title={
-              ownerId
-                ? undefined
-                : 'Escolha quem vai atender os leads desta regra.'
+              !ownerId
+                ? 'Escolha quem vai atender os leads desta regra.'
+                : needsValue && !value.trim()
+                  ? 'Informe o valor que será comparado.'
+                  : undefined
             }
           >
             {saving ? 'Criando...' : 'Criar regra'}
