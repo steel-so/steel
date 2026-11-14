@@ -55,6 +55,25 @@ O render público e o de impressão põem atributos no elemento mais externo:
 | `data-doc-track="link"` / `"video"` / `"attachment"` | Links, vídeos e anexos |
 | `data-doc-end` | Marcador do fim do documento |
 
+## Editor: mídia e checklist de envio
+
+- Aba **Mídia** (`app/_components/documents/editor/document-media-tab.tsx`,
+  `extraTabs` do editor): `MediaLibrary` sobre o `mediaProvider` dos
+  documentos (busca, envio, soltar, excluir com confirmação) mais o texto
+  alternativo da imagem selecionada (`ImageAltField`: alt ou
+  `decorative`). O bloco `image` usa o controle `kind: 'image'` (enviar,
+  "Escolher da biblioteca", endereço, alt) em vez do campo de URL.
+- Soltar ou colar uma imagem no canvas coloca a imagem (`placeImageUrl`).
+- Redimensionar: imagem e divisor (largura em %) e espaço (altura em px)
+  declaram `resizable` no catálogo; ver `docs/canvas/README.md`.
+- O diálogo "Enviar" mostra `documentChecklist`
+  (`src/lib/canvas-document/checklist.ts`): **erros** (`PRICING_EMPTY`,
+  `FIELD_LABEL_EMPTY`) desativam "Enviar"; **avisos** (`IMAGE_ALT_MISSING`,
+  `LINK_EMPTY`, `HEADING_EMPTY`, `TEXT_EMPTY`, `VIDEO_URL_EMPTY`) só
+  recomendam.
+- O salvamento é o `PUT .../documents/<id>/content`; se falhar, o editor
+  guarda um rascunho local e o oferece na reabertura.
+
 ## Ciclo de vida
 
 ```

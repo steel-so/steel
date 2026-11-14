@@ -90,14 +90,13 @@ entre escopos.
   navegador e o editor toma a tecla de propósito. A flag existe só para isto e
   isenta a combinação da checagem de teclas reservadas
   (`conflicts.ts`); não use para mascarar um conflito de verdade.
-- Também tratados em `use-shortcuts.ts`, **sem entrada no registro** (não
-  aparecem no cheat sheet): `Ctrl+A` seleciona todos os irmãos do elemento
-  (ou o primeiro nível da página, sem seleção) e, num elemento em posição
-  livre, as setas sem modificador movem **1 px** (`Shift`: 10 px) em vez de
-  trocar a seleção.
-- O `Ctrl+A` e o passo de 1/10 px nas setas ainda não têm id próprio; se forem
-  para o cheat sheet, acrescente `canvas.select-all` e `canvas.nudge` em
-  `registry.ts`.
+- `Ctrl+A` (`canvas.select-all`, com `overridesBrowser`) seleciona todos os
+  irmãos do elemento (ou o primeiro nível da página, sem seleção) e, num
+  elemento em posição livre, as setas sem modificador (`canvas.nudge`) movem
+  **1 px** e com `Shift` (`canvas.nudge-big`) **10 px**, em vez de trocar a
+  seleção. Os três estão no registro e aparecem no cheat sheet.
+- No redimensionamento, `Shift` mantém a proporção e `Alt` desliga o
+  alinhamento (modificadores do arrasto, fora do registro).
 
 Fora do escopo desta entrega (backlog P3 e remapeamento por usuário): veja a
 proposta da fatia `keyboard-shortcuts`.

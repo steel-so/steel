@@ -1,80 +1,85 @@
 ---
 title: Formulários e landing pages
-description: Formulários públicos que criam leads, pessoas ou empresas, as regras para publicá-los e as landing pages, que agora ficam em Sites.
+description: Formulários públicos que criam leads, pessoas ou empresas, com salvamento automático, desfazer, reordenação e prévia; e onde ficam as landing pages.
 section: crm
 order: 7
 ---
 
 ## Formulários
 
-Em **Formulários**, clique em **Novo formulário** e monte:
+Em **Formulários**, clique em **Novo formulário**: o formulário nasce na hora,
+chamado **Novo formulário** e sem campos, e abre no editor. À esquerda ficam as configurações e
+os campos; à direita, a **pré-visualização** ao vivo, com o botão para
+alternar entre **Computador**, **Tablet** e **Celular**.
 
-- **Fases**: o formulário pode ter várias etapas.
-- **Campos**: texto, texto longo, número, data, seleção e caixa de seleção. Cada
-  campo pode ser obrigatório e ser ligado a um dado do CRM (nome, e-mail,
-  telefone, cargo, cidade, CNPJ, domínio, funcionários, LinkedIn, empresa,
-  origem).
-- **Mensagem de sucesso**: o que aparece depois do envio.
-- **O que acontece quando alguém responde**: criar um **lead** (entra no funil de
-  vendas), uma **pessoa** ou uma **empresa** (o Steel cria ou atualiza o cadastro,
-  sem entrar no funil). A explicação da opção escolhida aparece embaixo do
-  seletor.
+![Editor de formulários com as configurações à esquerda, a lista de campos com a alça de arrastar e a pré-visualização à direita](/docs/construtores/formularios-reordenar-campos.webp)
 
-### Editor
+- **Descrição** e **Mensagem de sucesso**: o texto abaixo do título e o que
+  aparece depois do envio.
+- **O que acontece quando alguém responde**: criar um **lead**, uma **pessoa**
+  ou uma **empresa**. Cada opção explica o efeito logo abaixo.
+- **Inscrever na newsletter**: acrescenta ao formulário uma caixa opcional de
+  autorização; só quem marcar e informar o e-mail entra na newsletter.
+- **Fases**: sem fases (ou com apenas uma), o formulário é uma página única;
+  com duas ou mais, vira um passo a passo.
+- **Campos**: texto, e-mail, telefone, número, texto longo, data, seleção e
+  caixa de seleção. Cada campo pode ser obrigatório e ser ligado a um dado do
+  CRM (nome, e-mail, telefone, cargo, cidade, CNPJ, domínio, funcionários,
+  LinkedIn, empresa, origem).
 
-- **Salvamento automático**: cerca de 1,5 segundo depois da última alteração. O
-  indicador no topo mostra **Salvando…**, **Salvo**, **Alterações não salvas** ou
-  **Não foi possível salvar** (depois de um erro, o salvamento automático não insiste: ele
-  volta a tentar quando você edita de novo ou clica em **Salvar**). **Salvar** força o salvamento na hora.
-- **Desfazer** e **Refazer** (<Kbd>Ctrl</Kbd> <Kbd>Z</Kbd> e <Kbd>Ctrl</Kbd>
-  <Kbd>Shift</Kbd> <Kbd>Z</Kbd>).
-- Cada campo tem uma alça para **arrastar** e mudar a ordem, **Duplicar campo** e
-  remover. Remover o campo pede confirmação; as respostas já recebidas continuam
-  guardadas.
-- Os botões **Computador** e **Celular** mostram a prévia do formulário em cada
-  largura.
-- Se houver alterações não salvas, **Voltar** pergunta **Sair sem salvar?**; fechar
-  a aba também avisa.
+### Montar com conforto
 
-### Regras para publicar
+- **Reordenar**: arraste um campo pela alça à esquerda do nome e solte
+  onde quiser.
+- **Duplicar** e **remover** um campo: os botões à direita do nome. Remover
+  pede confirmação.
+- **Desfazer** e **Refazer** no alto da tela (<Kbd>Ctrl</Kbd> <Kbd>Z</Kbd> e
+  <Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>) desfazem e refazem as
+  mudanças feitas no formulário.
+- **Salvamento automático**: cerca de 1,5 segundo depois da última mudança o
+  formulário é salvo, e o indicador ao lado de **Salvar agora** mostra
+  **Salvando…**, **Salvo** ou o erro, com **Tentar de novo**. **Salvar
+  agora** salva na hora.
+- **Sair com mudanças não salvas**: o botão de voltar pergunta **Sair sem
+  salvar?** antes de descartar, e fechar a aba também avisa.
 
-Ligue o interruptor **Publicar formulário** e use **Copiar URL**: o endereço
-público é `/f/<código>`. O Steel só deixa publicar um formulário que consiga receber
-contatos, e diz o que falta embaixo do botão:
+### Publicar
 
-1. Pelo menos **um campo** ("Adicione pelo menos um campo antes de publicar").
-2. Um campo de **e-mail** ou de **telefone**, ou um campo ligado a esses dados do
-   CRM ("sem ele, você não consegue falar com quem respondeu").
+Ligue **Publicar formulário** e use **Copiar URL**: o endereço público é
+`/f/<código>`. Em **Ver respostas** ficam as submissões.
 
-Desligar o interruptor tira o endereço do ar; em **Ver respostas** ficam as submissões, que
-continuam guardadas.
+O Steel só deixa publicar um formulário que serve para alguma coisa. Enquanto
+a regra não é atendida, o motivo aparece em laranja abaixo do interruptor:
 
-## Landing pages e Sites
+![Bloco Publicar formulário com o interruptor desligado e o aviso "Adicione um campo de e-mail ou de telefone"](/docs/construtores/formularios-regra-de-publicacao.webp)
 
-As landing pages agora ficam em **Marketing › Sites**: o menu **Páginas** foi
-substituído e o endereço antigo de landing pages leva direto para a lista de
-Sites. Quem já tinha landing pages vê o aviso **Landing pages agora são Sites**
-com o botão para trazê-las; cada uma vira um site com uma página, publicado em
-`/s/<código>`.
+- **Adicione pelo menos um campo** antes de publicar;
+- **Adicione um campo de e-mail ou de telefone**: sem ele você não consegue
+  falar com quem respondeu. Vale um campo do tipo e-mail ou telefone, ou
+  qualquer campo ligado a **e-mail** ou **telefone** do CRM.
 
-Um site nasce de um modelo, é editado no editor visual e publicado em
-**Publicar**. Antes de publicar, a janela mostra o que muda no site no ar e a
-lista **Antes de publicar**, com os avisos do editor:
+## Landing pages
 
-- imagem sem texto alternativo;
-- botão sem link ("ao clicar, nada acontece") e link sem endereço;
-- **formulário sem destino**: escolha um formulário do CRM para receber as
-  respostas (os sites criados de modelo já trazem um formulário sem destino);
-- página sem título para os buscadores.
+As landing pages agora são **[Sites](/docs/crm/sites)**. O menu **Páginas** do
+CRM foi substituído por **Sites**, e cada landing page antiga virou um site
+de uma página (o aviso **Landing pages agora são Sites**, na lista de sites,
+traz as que ainda estiverem no editor antigo). Os links `/l/<código>` já
+divulgados continuam abrindo.
 
-São **avisos**: eles não impedem a publicação, mas é por eles que você descobre
-que a página não vai captar contatos. Para a página receber leads, aponte o
-formulário do site para um formulário publicado de **Formulários** (o que cria o
-lead, a pessoa ou a empresa conforme a ação escolhida acima).
+Para criar e publicar uma página nova, use **CRM › Sites › Novo site**. O
+editor, a biblioteca de imagens, o texto alternativo das imagens e a lista de
+avisos antes de publicar estão no guia
+[Editor visual: arrastar, redimensionar e publicar](/docs/crm/editor-visual).
+Para a página receber contatos, ligue o bloco de formulário do site a um
+formulário desta tela.
 
-## IA nos textos
+## Botão de IA nos textos
 
-Nos estúdios de redes sociais, os campos de texto (legenda, mensagem, título e
-descrição) têm um botão de IA que abre um mini chat sobre aquele texto: peça
-"deixe mais curto", "mais persuasivo" ou descreva o que quer. O chat usa a IA do
-workspace e consome a cota mensal de IA.
+Ao passar o mouse ou clicar numa caixa de texto, surge no canto superior direito
+um botão de IA. Ele abre um mini chat sobre aquele texto: peça "deixe mais
+curto", "mais persuasivo" ou descreva o que quer, e clique em **Aplicar no
+campo** na sugestão. O mesmo botão aparece nos campos de texto das propostas e modelos de proposta
+e nos estúdios de redes sociais (legenda, mensagem, título e descrição). O chat
+usa a IA do workspace e consome a cota mensal de IA.
+
+Imagens enviadas (JPEG, PNG ou WebP) aceitam até 5 MB.

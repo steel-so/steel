@@ -1,0 +1,256 @@
+---
+title: 'Editor visual: arrastar, redimensionar e publicar'
+description: Como usar o editor de arrastar e soltar dos Sites, dos e-mails e dos Documentos — redimensionar, imagens e biblioteca, atalhos, prévias, checklist e recuperação de rascunho.
+section: crm
+order: 7
+---
+
+Os **Sites**, os **templates de e-mail** (editor novo) e os **Documentos**
+usam o mesmo editor de tela cheia, o Steel Canvas. Por isso ele se comporta
+igual nos três: o que você aprende aqui vale para todos. Os blocos
+disponíveis mudam de um para o outro (um site tem carrossel e abas; um
+documento tem aceite e tabela de preços; um e-mail tem cupom e produto).
+
+![Editor de sites com a paleta de blocos à esquerda, a página no centro, o painel de propriedades à direita e a dica "Clique em um elemento para editar, arraste para mover"](/docs/construtores/editor-dica-de-primeiro-uso.webp)
+
+## A tela
+
+- **Barra de cima**: voltar, nome, desfazer e refazer, zoom, o botão de
+  alternador de tamanho de tela (computador e celular; os Sites também têm
+  tablet), o indicador de salvamento e as ações do tipo de conteúdo (**Publicar** no site,
+  **Enviar** no documento, **Checklist** e **Enviar teste** no e-mail).
+  Passe o mouse num botão para ver o atalho, como em *Desfazer (Ctrl+Z)*.
+- **Esquerda**: **Adicionar** (os blocos, com busca), **Camadas** (a árvore
+  do conteúdo, onde você renomeia, oculta, trava e arrasta), **Mídia** e as
+  abas próprias de cada editor.
+- **Centro**: o conteúdo como ele fica. Clique para selecionar, arraste para
+  mover, dê dois cliques num texto para escrever ali mesmo.
+- **Direita**: sem nada selecionado, as configurações do documento; com um
+  elemento selecionado, as propriedades dele, em **Conteúdo**, **Estilo** e
+  **Avançado**.
+
+Para adicionar um bloco, arraste da paleta até a linha que aparece no
+conteúdo, ou use o teclado: vá até o bloco e pressione <Kbd>Enter</Kbd>.
+Num conteúdo vazio, o editor mostra **Comece adicionando um bloco**. Na
+primeira vez, uma dica no pé da tela explica como editar e mover; clique em
+**Entendi** e ela não volta nesse navegador.
+
+## Mudar o tamanho
+
+Selecione uma **imagem**, um **divisor**, um **espaço** (ou, no e-mail, uma
+**coluna**): aparecem alças na borda da seleção. Arraste uma alça e o
+tamanho muda na hora; uma etiqueta escura mostra a medida em pixels (por
+exemplo, *960 × 414*) enquanto você arrasta.
+
+![Imagem de um site sendo redimensionada pela alça do canto, com a etiqueta 960 × 414 abaixo da seleção](/docs/construtores/redimensionar-arrastando.webp)
+
+- **No fluxo normal** (o padrão: os blocos ficam um abaixo do outro), só
+  há alças na borda direita, na de baixo e no canto inferior direito, e só
+  nas medidas que o elemento tem (um espaço só muda de altura, uma imagem ou
+  divisor muda de largura). Em elementos posicionados livremente dentro de um
+  container, aparecem as oito alças (quatro cantos e quatro lados), e puxar
+  a esquerda ou o topo também move o elemento.
+- Segure <Kbd>Shift</Kbd> para **manter a proporção**.
+- Segure <Kbd>Alt</Kbd> para **desligar o alinhamento** automático. Sem ele,
+  o tamanho "gruda" em larguras redondas (inteiro, ¾, ⅔, ½, ⅓, ¼ do espaço
+  disponível) e em linhas guias que aparecem enquanto você arrasta.
+- O arrasto inteiro conta como **um único passo** de desfazer: um
+  <Kbd>Ctrl</Kbd> <Kbd>Z</Kbd> volta ao tamanho de antes.
+- Imagens e divisores guardam a largura em **%** do espaço disponível, então
+  continuam proporcionais no celular. Os valores exatos ficam em **Estilo ›
+  Tamanho**, caso prefira digitar.
+
+Em elementos posicionados livremente, as **setas do teclado** movem 1 px por
+toque, e <Kbd>Shift</Kbd> com seta move 10 px. <Kbd>Ctrl</Kbd> <Kbd>A</Kbd>
+seleciona todos os elementos do mesmo nível do selecionado (ou os do topo da
+página, se nada estiver selecionado), útil para mover, duplicar ou excluir
+vários de uma vez.
+
+Nos Sites, ao escolher uma imagem o editor guarda também o tamanho original
+do arquivo, para a página não "pular" enquanto a imagem carrega.
+
+## Imagens
+
+Há quatro caminhos para colocar uma imagem num bloco:
+
+1. **Arrastar um arquivo** do computador para cima do conteúdo. Sobre uma
+   imagem, ele a substitui (mantendo texto alternativo e tamanho); em
+   qualquer outro lugar, cria um bloco de imagem ao lado da seleção. Enquanto
+   você arrasta, aparece **Solte a imagem para usar aqui**.
+2. **Colar** (<Kbd>Ctrl</Kbd> <Kbd>V</Kbd>) uma imagem copiada, com o mesmo
+   efeito.
+3. **Enviar imagem** ou **Trocar imagem**, no painel da direita.
+4. **Escolher da biblioteca**, também no painel da direita.
+
+São aceitos **JPEG, PNG e WebP de até 5 MB**. Um arquivo recusado explica o
+motivo (tipo ou tamanho).
+
+### Biblioteca de imagens
+
+A biblioteca é do workspace: as imagens enviadas por qualquer pessoa ficam
+disponíveis para todos os editores.
+
+![Janela Biblioteca de imagens com busca, o botão Enviar imagens e a grade de imagens do workspace](/docs/construtores/biblioteca-de-imagens.webp)
+
+- **Escolher da biblioteca** abre a janela. Digite em **Buscar imagem** para
+  filtrar, clique numa imagem para usá-la ou **Enviar imagens** (ou solte
+  arquivos ali) para acrescentar novas.
+- Para **excluir** uma imagem, use o botão de lixeira dela (quem só pode
+  ver o conteúdo não o tem). O Steel pergunta antes: páginas, e-mails e documentos que ainda
+  usam a imagem passam a mostrá-la quebrada, e não há como desfazer.
+- Nos Sites, a aba **Mídia** da barra lateral mostra a mesma biblioteca e
+  permite arrastar a imagem direto para a página.
+
+![Aba Mídia do editor de sites com o botão Enviar imagens e a imagem do workspace](/docs/construtores/sites-aba-midia.webp)
+
+- Nos **Documentos**, a aba **Mídia** traz a busca, o envio e, no alto, o
+  **Texto alternativo** da imagem selecionada. Clicar numa imagem da
+  biblioteca coloca-a no bloco selecionado (ou cria um bloco novo).
+
+![Aba Mídia do editor de documentos com a imagem selecionada, o campo Texto alternativo, a opção Imagem decorativa e a busca de imagens](/docs/construtores/documentos-aba-midia.webp)
+
+### Texto alternativo e imagem decorativa
+
+Toda imagem precisa descrever o que mostra, para quem usa leitor de tela e
+para os buscadores. No painel da imagem, preencha **Texto alternativo**.
+Se a imagem é só enfeite, ligue **Imagem decorativa (só enfeite)**: o campo
+de texto fica desativado e a imagem é ignorada pelos leitores de tela.
+
+Uma imagem sem uma coisa nem outra fica com o aviso *Descreva a imagem ou
+marque como decorativa* e entra na lista de pendências antes de publicar.
+
+![Painel da imagem com o campo Texto alternativo vazio e o aviso "Descreva a imagem ou marque como decorativa"](/docs/construtores/imagem-sem-texto-alternativo.webp)
+
+## Antes de publicar ou enviar
+
+O Steel confere o conteúdo antes de colocá-lo no ar ou enviá-lo. Cada
+pendência diz onde está e se **impede** a ação (erro) ou apenas é
+**recomendada** (aviso). Avisos nunca bloqueiam: dá para publicar mesmo
+assim.
+
+### Sites
+
+Ao clicar em **Publicar**, a janela mostra as páginas que entram no ar, o
+que mudou desde a última publicação e a lista **Antes de publicar**, com
+avisos como:
+
+- imagem sem texto alternativo;
+- botão sem link (ao clicar, nada acontece) e link sem endereço;
+- **formulário sem destino**: falta escolher um formulário do CRM para
+  receber as respostas;
+- página sem título para os buscadores (título de SEO).
+
+![Janela Publicar com as páginas que entram no ar e três avisos: página sem título para os buscadores, imagem sem texto alternativo e formulário sem destino](/docs/construtores/sites-avisos-ao-publicar.webp)
+
+Todos são avisos. O formulário sem destino, em especial, **não impede** a
+publicação: os modelos de site já trazem um formulário ainda sem destino, e
+você pode publicar e ligá-lo depois. Mas sem destino as respostas não chegam
+ao CRM, então vale resolver antes.
+
+### Documentos
+
+Em **Enviar**, a janela mostra **Antes de enviar**. Aqui há dois níveis:
+
+- **Impedem o envio** (o botão **Enviar** fica desativado): campo de
+  formulário sem título e tabela de preços vazia.
+- **Recomendado corrigir**: imagem sem texto alternativo, botão sem link,
+  título, texto ou vídeo vazios.
+
+![Janela Enviar documento com o erro "Campo do formulário sem título" marcado como Impede o envio e o aviso Botão sem link](/docs/construtores/documentos-erro-ao-enviar.webp)
+
+### E-mails
+
+O botão **Checklist** do editor de e-mail lista o que revisar: assunto,
+texto de pré-visualização, tamanho (o Gmail corta mensagens acima de 102
+KB), imagens sem texto alternativo, links e variáveis desconhecidas ou mal
+escritas. Erros impedem o **Enviar teste** e o envio; avisos são
+recomendações.
+
+## Prévia
+
+- **Tamanho de tela**: computador e celular (375 px) nos três editores, e
+  tablet (768 px) também nos Sites. A prévia dos Sites fica em **Visualizar
+  o rascunho**, uma página à parte com o seletor de páginas; a dos
+  Documentos, em **Pré-visualizar**; a do e-mail, em **Visualizar**.
+- **Modo escuro**: o botão da lua mostra o conteúdo no modo escuro. No
+  e-mail, simula os apps que forçam o escuro (Gmail, Outlook) e mostra como
+  o e-mail fica. Nos sites e documentos, ele ativa o modo escuro do
+  navegador; o conteúdo só muda se o tema tiver cores para o escuro.
+
+![Prévia de e-mail no modo escuro, com fundo preto e o texto claro](/docs/construtores/email-previa-modo-escuro.webp)
+
+![Prévia de um site no tamanho de celular, com o menu recolhido e as seções empilhadas](/docs/construtores/sites-previa-celular.webp)
+
+## Salvamento e recuperação de rascunho
+
+O editor salva sozinho. O indicador ao lado das ações mostra **Salvando…**,
+**Salvo** ou **Alterações não salvas**. <Kbd>Ctrl</Kbd> <Kbd>S</Kbd> salva
+na hora.
+
+Se o salvamento falhar (conexão instável, por exemplo), o indicador mostra
+**Não foi possível salvar** com o link **Tentar de novo**, e o Steel guarda
+uma cópia do seu trabalho **neste navegador**.
+
+![Barra de cima do editor de documentos com o aviso "Não foi possível salvar" e o link Tentar de novo](/docs/construtores/documentos-erro-ao-salvar.webp)
+
+Na próxima vez que você abrir o mesmo conteúdo, aparece o aviso *Encontramos
+alterações de (data e hora) que não chegaram a ser salvas. Deseja
+recuperá-las?*, com **Recuperar** e **Descartar**. A cópia some assim que um
+salvamento dá certo.
+
+![Aviso no alto do editor oferecendo recuperar as alterações não salvas, com os botões Recuperar e Descartar](/docs/construtores/documentos-recuperar-rascunho.webp)
+
+<Callout type='nota'>
+  A cópia local existe só no navegador e no computador em que você estava.
+  Se trocar de aparelho antes de recuperar, ela não aparece.
+</Callout>
+
+## Atalhos do editor
+
+Os atalhos do editor ficam na lista de atalhos (<Kbd>?</Kbd> ou
+<Kbd>Ctrl</Kbd> <Kbd>/</Kbd>, aba **Todos**; busque por "elemento"). No Mac,
+troque <Kbd>Ctrl</Kbd> por <Kbd>⌘</Kbd>.
+
+![Lista de atalhos do teclado filtrada por "elemento", mostrando copiar, recortar, duplicar, excluir e navegar entre elementos](/docs/construtores/atalhos-do-editor.webp)
+
+| Atalho | Ação |
+| --- | --- |
+| <Kbd>Ctrl</Kbd> <Kbd>S</Kbd> | Salvar agora |
+| <Kbd>Ctrl</Kbd> <Kbd>Z</Kbd> / <Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd> | Desfazer / refazer (<Kbd>Ctrl</Kbd> <Kbd>Y</Kbd> também refaz) |
+| <Kbd>Ctrl</Kbd> <Kbd>C</Kbd>, <Kbd>X</Kbd>, <Kbd>V</Kbd> | Copiar, recortar e colar o elemento (ou colar uma imagem) |
+| <Kbd>Ctrl</Kbd> <Kbd>D</Kbd> | Duplicar o elemento |
+| <Kbd>Delete</Kbd> ou <Kbd>Backspace</Kbd> | Excluir o elemento |
+| <Kbd>Ctrl</Kbd> <Kbd>A</Kbd> | Selecionar todos os elementos do mesmo nível |
+| <Kbd>↑</Kbd> / <Kbd>↓</Kbd> | Selecionar o elemento anterior ou seguinte |
+| <Kbd>←</Kbd> / <Kbd>→</Kbd> | Selecionar o elemento que contém este / o primeiro elemento dentro dele |
+| <Kbd>Esc</Kbd> | Selecionar o elemento que contém este |
+| <Kbd>Alt</Kbd> <Kbd>↑</Kbd> / <Kbd>Alt</Kbd> <Kbd>↓</Kbd> | Mover o elemento para cima ou para baixo |
+| <Kbd>Enter</Kbd> | Editar o texto do elemento selecionado |
+| <Kbd>Ctrl</Kbd> <Kbd>+</Kbd> / <Kbd>Ctrl</Kbd> <Kbd>-</Kbd> / <Kbd>Ctrl</Kbd> <Kbd>0</Kbd> | Aumentar o zoom, diminuir o zoom, ajustar à tela |
+| Setas, com o elemento posicionado livremente selecionado | Mover 1 px (com <Kbd>Shift</Kbd>, 10 px) |
+
+Como em todo o Steel, as teclas simples não disparam enquanto você digita
+num campo.
+
+## Telas menores
+
+O editor funciona a partir de **768 px** de largura, então cabe num tablet.
+Abaixo de 1024 px, a barra lateral e o painel de propriedades se recolhem: o
+painel da direita abre sozinho quando você seleciona um elemento, e o botão
+redondo **Propriedades** (no canto de baixo) o abre quando nada está
+selecionado.
+
+![Editor de e-mail numa tela de 768 px, com a barra lateral compacta e o botão de propriedades no canto](/docs/construtores/editor-tablet-768.webp)
+
+Em telas mais estreitas que 768 px (um celular, por exemplo), o editor não
+abre e mostra **Use uma tela maior para editar**. Os documentos e sites
+publicados continuam funcionando em qualquer tela; só a edição pede mais
+espaço.
+
+![Tela "Use uma tela maior para editar" explicando que o editor precisa de pelo menos 768 px de largura](/docs/construtores/editor-tela-pequena.webp)
+
+<Callout type='info'>
+  Por enquanto, em 768 px a barra de cima do editor de e-mail não cabe inteira
+  e o botão **Enviar teste** fica parcialmente cortado. Amplie um pouco a
+  janela ou use o zoom do navegador.
+</Callout>
