@@ -488,7 +488,10 @@ export function CampaignWhatsAppPanel({
   const link = sampleLink || `${options.baseUrl}/…`
 
   return (
-    <section className='flex flex-col gap-4 rounded-xl border p-4'>
+    <section
+      className='flex flex-col gap-4 rounded-xl border p-4'
+      data-tour='campaign-whatsapp'
+    >
       <Label className='flex items-center justify-between gap-4 font-normal'>
         <span className='flex min-w-0 items-start gap-2'>
           <SteelIcon icon={WhatsappIcon} size={18} className='mt-0.5' />

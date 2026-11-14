@@ -332,6 +332,7 @@ export function IssueSendButton() {
           <Button
             size='sm'
             disabled
+            data-tour='newsletter-issue-send'
             className='pointer-events-none'
             title={SENDER_BLOCKED_HINT}
           >
@@ -348,7 +349,12 @@ export function IssueSendButton() {
 
   return (
     <>
-      <Button size='sm' onClick={() => setOpen(true)} data-testid='issue-send'>
+      <Button
+        size='sm'
+        onClick={() => setOpen(true)}
+        data-testid='issue-send'
+        data-tour='newsletter-issue-send'
+      >
         <SteelIcon icon={MailSend01Icon} strokeWidth={2} />
         {label}
       </Button>

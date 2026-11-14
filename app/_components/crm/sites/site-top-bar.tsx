@@ -83,6 +83,7 @@ function TargetSwitcher() {
         size='sm'
         aria-label='Página em edição'
         data-testid='site-target-switcher'
+        data-tour='site-editor-pages'
         className='h-8 w-44 min-w-0 shrink text-xs xl:w-56'
       >
         <SelectValue>
@@ -140,6 +141,7 @@ export function SiteEditorTitle() {
         type='button'
         onClick={() => setSettingsOpen(true)}
         title='Configurações do site'
+        data-tour='site-editor-settings'
         className='group flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 font-medium text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
       >
         <span className='max-w-40 truncate xl:max-w-64'>{site.name}</span>
@@ -240,6 +242,7 @@ export function SiteEditorActions() {
         className='ml-1'
         onClick={() => setPublishOpen(true)}
         data-testid='site-publish'
+        data-tour='site-editor-publish'
       >
         <SteelIcon icon={Rocket01Icon} data-icon='inline-start' />
         Publicar

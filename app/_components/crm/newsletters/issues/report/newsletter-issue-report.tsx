@@ -96,6 +96,7 @@ export function IssueFunnel({ stats }: { stats: CrmNewsletterIssueStatsDTO }) {
   return (
     <section
       aria-label='Funil da edição'
+      data-tour='newsletter-report-funnel'
       className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'
     >
       <h2 className='font-medium text-sm'>Funil</h2>
@@ -151,6 +152,7 @@ export function IssueLinksTable({
   return (
     <section
       aria-label='Cliques por link'
+      data-tour='newsletter-report-links'
       className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'
     >
       <h2 className='font-medium text-sm'>Cliques por link</h2>
@@ -228,6 +230,7 @@ function RecipientsSection({
   return (
     <section
       aria-label='Destinatários'
+      data-tour='newsletter-report-recipients'
       className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'
     >
       <div className='flex flex-wrap items-center justify-between gap-2'>

@@ -219,6 +219,7 @@ export function EmailStarterGallery({
           <div
             role='tablist'
             aria-label='Categorias'
+            data-tour='email-templates-categories'
             className='flex flex-wrap gap-1'
           >
             {categories.map((item) => (
@@ -241,7 +242,10 @@ export function EmailStarterGallery({
           </div>
         </div>
 
-        <ul className='grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+        <ul
+          className='grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+          data-tour='email-templates-starters'
+        >
           {category === ALL ? (
             <li className='min-w-0'>
               <button
@@ -251,6 +255,7 @@ export function EmailStarterGallery({
                 }
                 aria-label='Começar com um e-mail em branco'
                 data-testid='starter-blank'
+                data-tour='email-templates-blank'
                 className='group flex w-full flex-col overflow-hidden rounded-xl border border-dashed bg-card text-left transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
               >
                 <div className='flex w-full items-center border-b border-dashed px-3 py-2'>

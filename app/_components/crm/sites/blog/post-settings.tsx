@@ -242,6 +242,7 @@ export function PostSettings({
           <Input
             id={`${id}-date`}
             type='datetime-local'
+            data-tour='site-blog-date'
             value={localDate}
             onChange={(event) =>
               onChange({
@@ -311,7 +312,7 @@ export function PostSettings({
             Sem capa. Ela também vira a imagem do post nas redes sociais.
           </p>
         )}
-        <div className='flex flex-wrap gap-2'>
+        <div className='flex flex-wrap gap-2' data-tour='site-blog-cover'>
           <MediaPickButton
             workspaceId={workspaceId}
             label={draft.coverImageUrl ? 'Trocar capa' : 'Escolher capa'}
@@ -515,6 +516,7 @@ export function PostSettings({
         >
           <Input
             id={`${id}-seo-title`}
+            data-tour='site-blog-seo'
             maxLength={120}
             value={seo.title ?? ''}
             onChange={(event) =>

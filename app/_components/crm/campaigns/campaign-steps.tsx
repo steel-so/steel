@@ -205,7 +205,7 @@ export function ContentStep({
               onChange={(e) => onChange({ emailSubject: e.target.value })}
             />
           </div>
-          <div className='flex flex-col gap-2'>
+          <div className='flex flex-col gap-2' data-tour='campaign-template'>
             <span className='font-medium text-sm'>Visual do e-mail</span>
             <EmailTemplatePicker
               workspaceId={workspaceId}

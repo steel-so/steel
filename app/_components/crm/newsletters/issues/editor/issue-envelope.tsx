@@ -90,6 +90,7 @@ export function IssueEnvelope() {
       </Link>
       <input
         aria-label='Assunto da edição'
+        data-tour='newsletter-issue-subject'
         value={subject}
         maxLength={ISSUE_SUBJECT_MAX}
         placeholder='Assunto da edição'

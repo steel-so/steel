@@ -45,7 +45,7 @@ export default async function CrmMailingListsPage({
           </HeaderBreadcrumbCrumb>
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1'>
+      <div className='min-h-0 flex-1' data-tour='mailing-lists-table'>
         <CrmMailingListsTable
           workspaceId={membership.value.workspaceId}
           slug={slug}

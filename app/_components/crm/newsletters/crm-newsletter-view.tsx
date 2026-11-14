@@ -97,7 +97,10 @@ export function CrmNewsletterView({
             </p>
           </div>
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
+        <div
+          className='flex flex-wrap items-center gap-2'
+          data-tour='newsletter-sender'
+        >
           {data.status === 'ARCHIVED' ? (
             <Badge variant='outline'>Arquivada</Badge>
           ) : null}
@@ -113,7 +116,7 @@ export function CrmNewsletterView({
       </div>
 
       <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList>
+        <TabsList data-tour='newsletter-tabs'>
           <TabsTrigger value='edicoes'>Edições</TabsTrigger>
           <TabsTrigger value='assinantes'>
             Assinantes
@@ -121,7 +124,9 @@ export function CrmNewsletterView({
               {data.counts.active.toLocaleString('pt-BR')}
             </span>
           </TabsTrigger>
-          <TabsTrigger value='boas-vindas'>Boas-vindas</TabsTrigger>
+          <TabsTrigger value='boas-vindas' data-tour='newsletter-welcome-tab'>
+            Boas-vindas
+          </TabsTrigger>
           <TabsTrigger value='configuracoes'>Configurações</TabsTrigger>
           <TabsTrigger value='resumo'>Resumo</TabsTrigger>
         </TabsList>

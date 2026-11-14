@@ -178,6 +178,7 @@ export function ChecklistButton() {
             size='sm'
             aria-label={`Checklist: ${label}`}
             data-testid='email-checklist-trigger'
+            data-tour='email-editor-checklist'
           />
         }
       >

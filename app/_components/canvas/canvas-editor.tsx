@@ -197,7 +197,11 @@ function EditorLayout({
         )}
         <div className='relative flex min-h-0 flex-1'>
           <CanvasSidebar compact={compact} />
-          <main aria-label='Canvas' className='relative min-w-0 flex-1'>
+          <main
+            aria-label='Canvas'
+            data-tour='canvas-stage'
+            className='relative min-w-0 flex-1'
+          >
             <CanvasStage />
             {imageInput.over && (
               <div

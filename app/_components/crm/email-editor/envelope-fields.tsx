@@ -77,6 +77,7 @@ export function EnvelopeFields() {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           data-testid='envelope-trigger'
+          data-tour='email-editor-subject'
           aria-label={`Assunto e pré-visualização: ${subject || 'sem assunto'}`}
           className='flex h-8 min-w-0 max-w-72 items-center gap-1.5 rounded-md border border-input bg-background px-2 text-left text-xs shadow-xs outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 dark:bg-input/30'
         >
