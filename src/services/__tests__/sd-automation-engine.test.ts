@@ -738,12 +738,7 @@ describe('cross-engine actions', () => {
         connectionId: 'c1',
         phone: '5511912345678',
         templateId: 'tpl1',
-        variables: [
-          'INC-000012',
-          'Sem acesso',
-          'Rita',
-          current.phase.name,
-        ],
+        variables: ['INC-000012', 'Sem acesso', 'Rita', current.phase.name],
         text: 'Chamado INC-000012: Sem acesso',
       })
       expect(skipped()).toHaveLength(0)
@@ -794,9 +789,7 @@ describe('cross-engine actions', () => {
       expect(expectOk(await run()).rules[0].failed).toEqual([
         'send_whatsapp_template:DATABASE_ERROR',
       ])
-      crossEngine.sendWhatsApp.mockResolvedValueOnce(
-        err(validationError('x')),
-      )
+      crossEngine.sendWhatsApp.mockResolvedValueOnce(err(validationError('x')))
       expect(expectOk(await run()).rules[0].failed).toEqual([
         'send_whatsapp_template:VALIDATION_ERROR',
       ])

@@ -35,7 +35,9 @@ const brl = new Intl.NumberFormat('pt-BR', {
 
 /** 403/404 here mean "not for you" (module off, no permission): stay quiet. */
 function isNotForViewer(error: unknown): boolean {
-  return error instanceof ApiError && (error.status === 403 || error.status === 404)
+  return (
+    error instanceof ApiError && (error.status === 403 || error.status === 404)
+  )
 }
 
 function Summary({ data }: { data: Customer360DTO }) {
@@ -65,7 +67,9 @@ function Summary({ data }: { data: Customer360DTO }) {
         {person && person.phones.length > 0 ? (
           <>
             <dt className='text-muted-foreground'>Telefone</dt>
-            <dd>{person.phones.map((phone) => toDisplayPhone(phone)).join(', ')}</dd>
+            <dd>
+              {person.phones.map((phone) => toDisplayPhone(phone)).join(', ')}
+            </dd>
           </>
         ) : null}
       </dl>
@@ -111,7 +115,10 @@ export function Customer360Panel({
   if (query.isError) {
     if (isNotForViewer(query.error)) return null
     return (
-      <section aria-label='Visão 360' className='flex flex-col items-start gap-2'>
+      <section
+        aria-label='Visão 360'
+        className='flex flex-col items-start gap-2'
+      >
         <p className='text-destructive text-sm'>
           {query.error instanceof Error
             ? query.error.message
@@ -188,7 +195,11 @@ export function Customer360Panel({
                 : undefined
             }
           >
-            <ConversationRows slug={slug} items={data.conversations} now={now} />
+            <ConversationRows
+              slug={slug}
+              items={data.conversations}
+              now={now}
+            />
           </Customer360Block>
           {data.calls.length > 0 ? (
             <Customer360Block title='Ligações' count={data.calls.length}>

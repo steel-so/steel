@@ -322,7 +322,11 @@ export function ZapContextPanel({
               href={`/${slug}/servicedesk/requests`}
               className='mt-1 inline-flex items-center gap-1 text-primary text-xs hover:underline'
             >
-              <SteelIcon icon={Ticket01Icon} strokeWidth={2} className='size-3' />
+              <SteelIcon
+                icon={Ticket01Icon}
+                strokeWidth={2}
+                className='size-3'
+              />
               Ir para os chamados
             </Link>
           </Customer360Block>
@@ -332,13 +336,13 @@ export function ZapContextPanel({
   }
 
   return (
-    <div
+    <section
       className='flex flex-col gap-3 p-4'
       data-testid='zap-context-panel'
       aria-label='Contexto do cliente'
     >
       <h3 className='font-semibold text-sm'>Contexto do cliente</h3>
       {body}
-    </div>
+    </section>
   )
 }

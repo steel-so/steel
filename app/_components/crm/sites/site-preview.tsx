@@ -259,7 +259,7 @@ export function SitePreview({
   const { site, pages, globals } = useCrmSite(workspaceId, siteId)
   const [pageId, setPageId] = useState<string | null>(initialPageId ?? null)
   const [device, setDevice] = useState<PreviewDevice>('base')
-  const [theme, setTheme] = useState<PreviewTheme>('light')
+  const [previewTheme, setPreviewTheme] = useState<PreviewTheme>('light')
 
   const home =
     pages.data?.find((page) => page.id === site.data?.homePageId) ??
@@ -399,8 +399,8 @@ export function SitePreview({
           className='hidden md:flex'
         />
         <ThemeSwitcher
-          value={theme}
-          onChange={setTheme}
+          value={previewTheme}
+          onChange={setPreviewTheme}
           lightLabel='Ver com navegador claro'
           darkLabel='Ver com navegador escuro'
           className='hidden md:flex'
@@ -437,7 +437,7 @@ export function SitePreview({
             links={links}
             currentPageId={currentId}
             width={width}
-            theme={theme}
+            theme={previewTheme}
             onNavigate={setPageId}
             cms={cms}
             newsletters={newsletters}

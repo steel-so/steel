@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react'
+import type { MediaProvider } from '@/app/_components/media/media-types'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import type { CanvasStore } from '@/src/lib/canvas/store'
-import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
+import type {
+  CanvasDocument,
+  CanvasFragment,
+  CanvasProps,
+} from '@/src/lib/canvas/types'
 import type { CanvasColorToken } from '@/src/lib/canvas/values'
-import type { MediaProvider } from '@/app/_components/media/media-types'
-import type { CanvasProps } from '@/src/lib/canvas/types'
 import type { CanvasCollaboration } from './collab/collab-context'
 
 /** A tab in the left sidebar. The shell always provides "Adicionar"

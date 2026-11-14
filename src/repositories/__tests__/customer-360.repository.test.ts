@@ -194,9 +194,7 @@ describe('resolveIdentity', () => {
     vi.spyOn(prisma.crmPerson, 'findFirst').mockRejectedValueOnce(
       new Error('boom'),
     )
-    const error = expectErr(
-      await Repo.resolveIdentity('w', { personId: 'p' }),
-    )
+    const error = expectErr(await Repo.resolveIdentity('w', { personId: 'p' }))
     expect(error.code).toBe('DATABASE_ERROR')
   })
 })
@@ -457,11 +455,9 @@ describe('sections', () => {
     const c = await doc({ opportunityId: deal.id })
     await doc({ companyId: company.id, isTemplate: true })
     const rows = expectOk(
-      await Repo.listDocuments(
-        workspace.id,
-        { person, company } as never,
-        [deal.id],
-      ),
+      await Repo.listDocuments(workspace.id, { person, company } as never, [
+        deal.id,
+      ]),
     )
     expect(rows.map((row) => row.id).sort()).toEqual([a.id, b.id, c.id].sort())
     expect(
@@ -502,7 +498,11 @@ describe('sections', () => {
     expectErr(await Repo.listLeads('w', { phones: [], emails: ['a@b.c'] }))
     vi.spyOn(prisma.sdTicket, 'findMany').mockRejectedValueOnce(new Error('x'))
     expectErr(
-      await Repo.listTickets('w', { sdCustomerIds: ['a'], sdContactIds: [] }, null),
+      await Repo.listTickets(
+        'w',
+        { sdCustomerIds: ['a'], sdContactIds: [] },
+        null,
+      ),
     )
     vi.spyOn(prisma.whatsAppConversation, 'findMany').mockRejectedValueOnce(
       new Error('x'),

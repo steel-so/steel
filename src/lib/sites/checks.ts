@@ -18,7 +18,11 @@ export function siteSnapshotChecks(snapshot: SiteSnapshot): PublishCheckItem[] {
   }
   for (const global of snapshot.globals) {
     for (const item of siteChecklist(global.document)) {
-      items.push({ ...item, documentId: global.id, documentName: globalName(global) })
+      items.push({
+        ...item,
+        documentId: global.id,
+        documentName: globalName(global),
+      })
     }
   }
   return items

@@ -26,7 +26,10 @@ export const Customer360QuerySchema = z
           value.ticketId ||
           value.conversationId,
       ),
-    { message: 'Informe a pessoa, a empresa, o telefone, o chamado ou a conversa' },
+    {
+      message:
+        'Informe a pessoa, a empresa, o telefone, o chamado ou a conversa',
+    },
   )
 
 export type Customer360Query = z.infer<typeof Customer360QuerySchema>
@@ -40,8 +43,14 @@ export const OpenCustomerWhatsappSchema = z
     /** Which phone of the record; defaults to the first usable one. */
     phone: z.string().min(1).max(40).optional(),
   })
-  .refine((value) => Boolean(value.personId || value.companyId || value.opportunityId), {
-    message: 'Informe a pessoa, a empresa ou a oportunidade',
-  })
+  .refine(
+    (value) =>
+      Boolean(value.personId || value.companyId || value.opportunityId),
+    {
+      message: 'Informe a pessoa, a empresa ou a oportunidade',
+    },
+  )
 
-export type OpenCustomerWhatsappInput = z.infer<typeof OpenCustomerWhatsappSchema>
+export type OpenCustomerWhatsappInput = z.infer<
+  typeof OpenCustomerWhatsappSchema
+>

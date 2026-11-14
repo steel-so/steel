@@ -191,7 +191,11 @@ describe('SdTicketSourceService.preview', () => {
     sourceRepo.listBySource.mockResolvedValue(
       ok([
         linkedRow(),
-        linkedRow({ id: 'tk0', number: 41, phase: { name: 'Fechado', category: 'CLOSED' } }),
+        linkedRow({
+          id: 'tk0',
+          number: 41,
+          phase: { name: 'Fechado', category: 'CLOSED' },
+        }),
       ]),
     )
     const result = expectOk(
@@ -498,7 +502,10 @@ describe('SdTicketSourceService.create', () => {
 })
 
 describe('SdTicketSourceService.create from CRM records', () => {
-  const dto = (source: 'lead' | 'person' | 'opportunity', sourceId: string) => ({
+  const dto = (
+    source: 'lead' | 'person' | 'opportunity',
+    sourceId: string,
+  ) => ({
     source,
     sourceId,
     type: 'INCIDENT' as const,
@@ -601,7 +608,9 @@ describe('SdTicketSourceService.create from CRM records', () => {
       } as never),
     )
     personRepo.findById.mockResolvedValue(
-      ok(createFakeCrmPerson({ id: 'p1', name: 'Bia', phones: ['11977776666'] })),
+      ok(
+        createFakeCrmPerson({ id: 'p1', name: 'Bia', phones: ['11977776666'] }),
+      ),
     )
     sourceRepo.findCrmCompany.mockResolvedValue(
       ok({ id: 'co1', name: 'Acme SA', cnpj: null }),
@@ -628,7 +637,12 @@ describe('SdTicketSourceService.create from CRM records', () => {
 
   it('opens from an opportunity without contact or company', async () => {
     oppRepo.findById.mockResolvedValue(
-      ok({ id: 'o1', name: 'Plano', companyId: null, pointOfContactId: null } as never),
+      ok({
+        id: 'o1',
+        name: 'Plano',
+        companyId: null,
+        pointOfContactId: null,
+      } as never),
     )
     expectOk(
       await SdTicketSourceService.create('u1', 'ws1', dto('opportunity', 'o1')),
@@ -681,7 +695,12 @@ describe('SdTicketSourceService.create from CRM records', () => {
       'DATABASE_ERROR',
     )
     oppRepo.findById.mockResolvedValue(
-      ok({ id: 'o1', name: 'x', companyId: 'co1', pointOfContactId: null } as never),
+      ok({
+        id: 'o1',
+        name: 'x',
+        companyId: 'co1',
+        pointOfContactId: null,
+      } as never),
     )
     expectErr(
       await SdTicketSourceService.create('u1', 'ws1', dto('opportunity', 'o1')),

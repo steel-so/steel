@@ -16,7 +16,10 @@ vi.mock('@/lib/notify', () => ({
 }))
 
 import { CreateTicketFromSourceButton } from '../create-ticket-from-source-button'
-import { SdConversationTicketsBar, SdLinkedTicketsSection } from '../sd-linked-tickets'
+import {
+  SdConversationTicketsBar,
+  SdLinkedTicketsSection,
+} from '../sd-linked-tickets'
 
 const WS = 'ws-1'
 const BASE = `/api/workspaces/${WS}/servicedesk/tickets`
@@ -89,16 +92,18 @@ describe('<CreateTicketFromSourceButton />', () => {
       />,
     )
 
-    await user.click(await screen.findByRole('button', { name: /criar chamado/i }))
+    await user.click(
+      await screen.findByRole('button', { name: /criar chamado/i }),
+    )
     const title = await screen.findByLabelText(/título/i)
     expect((title as HTMLInputElement).value).toBe(prefill.title)
 
     const dialog = screen.getByRole('dialog')
-    await user.click(within(dialog).getByRole('button', { name: 'Criar chamado' }))
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Criar chamado' }),
+    )
     await waitFor(() => {
-      expect(
-        spy.mock.calls.some((c) => c[1]?.method === 'POST'),
-      ).toBe(true)
+      expect(spy.mock.calls.some((c) => c[1]?.method === 'POST')).toBe(true)
     })
     expect(fetchBody(spy, '/from-source')).toMatchObject({
       source: 'conversation',
@@ -126,18 +131,16 @@ describe('<CreateTicketFromSourceButton />', () => {
         sourceId='conv1'
       />,
     )
-    await user.click(await screen.findByRole('button', { name: /criar chamado/i }))
+    await user.click(
+      await screen.findByRole('button', { name: /criar chamado/i }),
+    )
 
-    expect(
-      await screen.findByText(/já existe chamado em aberto/i),
-    ).toBeTruthy()
+    expect(await screen.findByText(/já existe chamado em aberto/i)).toBeTruthy()
     const submit = within(screen.getByRole('dialog')).getByRole('button', {
       name: 'Criar chamado',
     })
     expect((submit as HTMLButtonElement).disabled).toBe(true)
-    expect(
-      screen.getByText(/confirme que quer criar outro/i),
-    ).toBeTruthy()
+    expect(screen.getByText(/confirme que quer criar outro/i)).toBeTruthy()
   })
 })
 

@@ -8,11 +8,7 @@ export const GET = apiV1Route({
   access: 'read',
   module: 'SERVICE_DESK',
   handler: ({ session, params }) =>
-    SdContactService.get(
-      session.userId,
-      session.workspaceId,
-      params.contactId,
-    ),
+    SdContactService.get(session.userId, session.workspaceId, params.contactId),
 })
 
 export const PATCH = apiV1Route({

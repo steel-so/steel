@@ -664,10 +664,10 @@ function OpenTicketForm({
   return (
     <>
       <p className='rounded-lg bg-muted p-3 text-muted-foreground text-xs'>
-        Abre um chamado no ServiceDesk e liga esta conversa a ele. Se a
-        conversa já tem um chamado aberto, ele é reaproveitado. Precisa do
-        módulo ServiceDesk habilitado. Se falhar, o fluxo segue pela saída “Se
-        der erro”.
+        Abre um chamado no ServiceDesk e liga esta conversa a ele. Se a conversa
+        já tem um chamado aberto, ele é reaproveitado. Precisa do módulo
+        ServiceDesk habilitado. Se falhar, o fluxo segue pela saída “Se der
+        erro”.
       </p>
       <Field label='Tipo do chamado'>
         <SimpleSelect

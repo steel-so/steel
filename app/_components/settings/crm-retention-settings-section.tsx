@@ -129,7 +129,9 @@ export function CrmRetentionSettingsSection({
                 <Switch
                   id='crm-retention-sla'
                   checked={onSlaBreach}
-                  onCheckedChange={(checked) => setOnSlaBreach(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setOnSlaBreach(checked === true)
+                  }
                   disabled={!isPrivileged}
                 />
                 <FieldLabel htmlFor='crm-retention-sla'>

@@ -58,9 +58,9 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
-import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { saveCrmForm, useCrmForm } from '@/src/hooks/use-crm-form'
 import { useCrmNewsletters } from '@/src/hooks/use-crm-newsletters'
+import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import {
   ACTION_TARGETS,
   FORM_ACTIONS,
@@ -262,11 +262,7 @@ export function CrmFormBuilder({
     )
   }
   return (
-    <CrmFormBuilderInner
-      workspaceId={workspaceId}
-      slug={slug}
-      initial={form}
-    />
+    <CrmFormBuilderInner workspaceId={workspaceId} slug={slug} initial={form} />
   )
 }
 

@@ -1,10 +1,10 @@
 'use client'
 
+import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import {
   ImageAltField,
   ImagePicker,
 } from '@/app/_components/canvas/inspector/controls/media'
-import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import type { CustomControlProps } from '@/src/lib/canvas/registry'
 
 /**

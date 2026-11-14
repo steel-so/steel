@@ -1,7 +1,4 @@
-import {
-  decodePageCursor,
-  pageResultToV1,
-} from '@/src/lib/api/v1-pagination'
+import { decodePageCursor, pageResultToV1 } from '@/src/lib/api/v1-pagination'
 import { apiV1Route } from '@/src/lib/api/v1-route'
 import { ok } from '@/src/lib/result'
 import { ListV1CrmDocumentsSchema } from '@/src/schemas/api-v1.schema'

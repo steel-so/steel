@@ -32,11 +32,11 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
-import { CrmLandingPageMetrics } from '@/app/_components/crm/crm-landing-page-metrics'
 import { SaveStatus } from '@/app/_components/canvas/save-status'
+import { CrmLandingPageMetrics } from '@/app/_components/crm/crm-landing-page-metrics'
 import { LandingImageAlt } from '@/app/_components/crm/landing-page/image-alt'
-import { withText } from '@/app/_components/crm/landing-page/sections/overrides'
 import { sectionAnchors } from '@/app/_components/crm/landing-page/section-anchors'
+import { withText } from '@/app/_components/crm/landing-page/sections/overrides'
 import {
   getSectionDefinition,
   SECTION_REGISTRY,
@@ -72,8 +72,8 @@ import {
   useSetCrmLandingPagePublished,
   useUpdateCrmLandingPage,
 } from '@/src/hooks/use-crm-landing-page'
-import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
+import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { getLandingPageTemplate } from '@/src/lib/landing-page-templates'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type {
@@ -687,9 +687,7 @@ function SortableSection({
       <GhostAiSection value={definition.label}>
         <LandingImageAlt
           texts={section.content.texts}
-          onEdit={(key, alt) =>
-            onChange(withText(section.content, key, alt))
-          }
+          onEdit={(key, alt) => onChange(withText(section.content, key, alt))}
         >
           <Component
             content={section.content}

@@ -1,4 +1,10 @@
-import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { SaveStatus } from '../save-status'

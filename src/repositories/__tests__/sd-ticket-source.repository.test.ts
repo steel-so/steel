@@ -96,7 +96,11 @@ describe('SdTicketSourceRepository.findConversation', () => {
 describe('SdTicketSourceRepository.listRecentMessages', () => {
   it('returns the last messages oldest first, skipping deleted and cleared ones', async () => {
     const { workspace, conversation } = await setup()
-    const add = (text: string, minutes: number, deletedAt: Date | null = null) =>
+    const add = (
+      text: string,
+      minutes: number,
+      deletedAt: Date | null = null,
+    ) =>
       prisma.whatsAppMessage.create({
         data: {
           workspaceId: workspace.id,
@@ -259,12 +263,20 @@ describe('SdTicketSourceRepository links', () => {
     const stranger = await seedWorkspace()
     expect(
       expectOk(
-        await SdTicketSourceRepository.listBySource(stranger.id, 'lead', lead.id),
+        await SdTicketSourceRepository.listBySource(
+          stranger.id,
+          'lead',
+          lead.id,
+        ),
       ),
     ).toEqual([])
     expect(
       expectOk(
-        await SdTicketSourceRepository.listBySource(workspace.id, 'lead', lead.id),
+        await SdTicketSourceRepository.listBySource(
+          workspace.id,
+          'lead',
+          lead.id,
+        ),
       ).map((r) => r.id),
     ).toEqual([live.id])
   })
@@ -274,7 +286,10 @@ describe('SdTicketSourceRepository links', () => {
     const ticket = await seedSdTicket(workspace.id, phase.id)
     expect(
       expectOk(
-        await SdTicketSourceRepository.findLinkedTicket(workspace.id, ticket.id),
+        await SdTicketSourceRepository.findLinkedTicket(
+          workspace.id,
+          ticket.id,
+        ),
       )?.number,
     ).toBe(ticket.number)
     const stranger = await seedWorkspace()

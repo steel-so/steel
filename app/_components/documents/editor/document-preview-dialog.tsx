@@ -120,7 +120,7 @@ export function DocumentPreviewDialog({
   title: string
 }) {
   const [device, setDevice] = useState<PreviewDevice>('base')
-  const [theme, setTheme] = useState<PreviewTheme>('light')
+  const [previewTheme, setPreviewTheme] = useState<PreviewTheme>('light')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='flex h-[92dvh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl'>
@@ -136,16 +136,16 @@ export function DocumentPreviewDialog({
             onChange={setDevice}
             devices={DEVICES}
           />
-          <ThemeSwitcher value={theme} onChange={setTheme} />
+          <ThemeSwitcher value={previewTheme} onChange={setPreviewTheme} />
         </div>
         <div className='min-h-0 flex-1 overflow-y-auto bg-muted/40'>
           <div
             data-testid='document-preview'
-            data-theme={theme === 'dark' ? 'dark' : undefined}
-            style={{ colorScheme: theme }}
+            data-theme={previewTheme === 'dark' ? 'dark' : undefined}
+            style={{ colorScheme: previewTheme }}
             className={cn(
               'mx-auto min-h-full bg-background text-foreground',
-              theme === 'dark' && 'dark',
+              previewTheme === 'dark' && 'dark',
               device === 'mobile' ? 'max-w-[390px] border-x' : 'w-full',
             )}
           >

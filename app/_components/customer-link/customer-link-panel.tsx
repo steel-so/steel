@@ -43,7 +43,8 @@ export function CustomerLinkPanel({
   const apply = (targetId: string | null, done: string) =>
     change.mutate(targetId, {
       onSuccess: () => notify.success(done),
-      onError: (error) => notify.error(error, 'Não foi possível salvar o vínculo'),
+      onError: (error) =>
+        notify.error(error, 'Não foi possível salvar o vínculo'),
     })
 
   return (

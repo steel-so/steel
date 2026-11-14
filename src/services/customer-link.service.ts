@@ -79,7 +79,9 @@ export const CustomerLinkService = {
    * must have authorized the actor already. Use {@link resolveForActor} from
    * a route.
    */
-  async resolve(args: ResolveCustomerArgs): Promise<Result<ResolvedCustomerDTO>> {
+  async resolve(
+    args: ResolveCustomerArgs,
+  ): Promise<Result<ResolvedCustomerDTO>> {
     return resolveWithScope(args, FULL_SCOPE)
   },
 
@@ -114,7 +116,10 @@ export const CustomerLinkService = {
     if (!access.ok) return access
 
     if (kind === 'sd-customer') {
-      const source = await CustomerLinkRepository.findSdCustomer(workspaceId, id)
+      const source = await CustomerLinkRepository.findSdCustomer(
+        workspaceId,
+        id,
+      )
       if (!source.ok) return source
       if (!source.value) return err(sourceNotFound())
       const linked = source.value.crmCompanyId
@@ -190,7 +195,8 @@ export const CustomerLinkService = {
         email,
       )
       if (!byEmail.ok) return byEmail
-      for (const p of byEmail.value) suggestions.set(p.id, suggestionOf(p, 'Mesmo e-mail'))
+      for (const p of byEmail.value)
+        suggestions.set(p.id, suggestionOf(p, 'Mesmo e-mail'))
     }
     const byPhone = await CustomerLinkRepository.listPeopleByPhoneKeys(
       workspaceId,
@@ -238,7 +244,10 @@ export const CustomerLinkService = {
   },
 }
 
-function suggestionOf(p: LinkPersonRow, reason: string): CustomerLinkSuggestionDTO {
+function suggestionOf(
+  p: LinkPersonRow,
+  reason: string,
+): CustomerLinkSuggestionDTO {
   return {
     id: p.id,
     name: p.name,
@@ -260,10 +269,15 @@ async function authorize(
   })
   if (!crm.ok) return crm
   if (kind === 'whatsapp-contact') {
-    const zap = await assertModuleMember(actorId, workspaceId, 'COMMUNICATION', {
-      resource: 'contacts',
-      action,
-    })
+    const zap = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      {
+        resource: 'contacts',
+        action,
+      },
+    )
     return zap.ok ? ok(true) : zap
   }
   const sd = await SdAccess.requireAgent(actorId, workspaceId, {

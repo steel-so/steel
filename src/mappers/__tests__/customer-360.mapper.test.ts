@@ -171,7 +171,11 @@ describe('customer 360 mapper', () => {
       csatScore: 4,
     })
     expect(
-      toCustomer360TicketDTO({ ...row, resolvedAt: at, resolutionBreached: true }),
+      toCustomer360TicketDTO({
+        ...row,
+        resolvedAt: at,
+        resolutionBreached: true,
+      }),
     ).toMatchObject({ open: false, slaBreached: true })
   })
 
@@ -192,7 +196,8 @@ describe('customer 360 mapper', () => {
       lastMessageAt: iso,
     })
     expect(
-      toCustomer360ConversationDTO({ ...row, lastMessageAt: null }).lastMessageAt,
+      toCustomer360ConversationDTO({ ...row, lastMessageAt: null })
+        .lastMessageAt,
     ).toBeNull()
   })
 
@@ -228,7 +233,8 @@ describe('customer 360 mapper', () => {
       updatedAt: at,
     }
     expect(toCustomer360DocumentDTO(row).totalValue).toBe(10.5)
-    expect(toCustomer360DocumentDTO({ ...row, totalValue: null }).totalValue)
-      .toBeNull()
+    expect(
+      toCustomer360DocumentDTO({ ...row, totalValue: null }).totalValue,
+    ).toBeNull()
   })
 })

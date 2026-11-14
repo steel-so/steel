@@ -72,8 +72,8 @@ export function CanvasHint() {
         className='size-4 shrink-0 text-muted-foreground'
       />
       <span className='text-muted-foreground'>
-        Clique em um elemento para editar, arraste para mover. As alterações
-        são salvas sozinhas.
+        Clique em um elemento para editar, arraste para mover. As alterações são
+        salvas sozinhas.
       </span>
       <button
         type='button'

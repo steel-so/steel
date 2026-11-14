@@ -1028,9 +1028,7 @@ describe('runStep()', () => {
       prepare({
         flow: bridgeFlow('create-lead', { ...leadData, name: '{{x}}' }),
       })
-      crossEngine.createLead.mockResolvedValue(
-        err(databaseError('falhou')),
-      )
+      crossEngine.createLead.mockResolvedValue(err(databaseError('falhou')))
       expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
       expect(crossEngine.createLead).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'Ana' }),

@@ -11,16 +11,16 @@ import type { Rect } from '../lib/drop-target'
 import { writeField } from '../lib/fields'
 import { elementOf } from '../lib/frame-handle'
 import {
+  handlesFor,
+  type ResizeHandle,
+  type ResizeLimits,
+  resizeBox,
+} from '../lib/resize'
+import {
   freeContext,
   isResponsivePath,
   writeFreePosition,
 } from '../lib/resize-write'
-import {
-  type ResizeHandle,
-  type ResizeLimits,
-  handlesFor,
-  resizeBox,
-} from '../lib/resize'
 import { snapLines } from '../lib/snap'
 import { boxIn } from './free-drag'
 
@@ -86,9 +86,7 @@ function limitsFor(
       ? toPx(resizable.max.width ?? 10000)
       : start.width,
     minHeight: resizable.heightPath ? (resizable.min.height ?? 4) : 1,
-    maxHeight: resizable.heightPath
-      ? (resizable.max.height ?? 10000)
-      : 100000,
+    maxHeight: resizable.heightPath ? (resizable.max.height ?? 10000) : 100000,
   }
 }
 
@@ -204,7 +202,9 @@ export function ResizeHandles({
       const parentWidth = parent.clientWidth
       let lines: { x: number[]; y: number[] }
       if (free) {
-        const siblings = (getNode(store.getState().doc, free.parentId)?.children ?? [])
+        const siblings = (
+          getNode(store.getState().doc, free.parentId)?.children ?? []
+        )
           .filter((child) => child !== id)
           .map((child) => elementOf(frame, child))
           .filter((sibling): sibling is HTMLElement => sibling !== null)
@@ -246,8 +246,7 @@ export function ResizeHandles({
     // Width-only elements (images) keep their ratio: the height follows.
     const followsWidth = !!resizable.widthPath && !resizable.heightPath
     const aspect =
-      resizable.aspect ??
-      (followsWidth || event.shiftKey ? drag.ratio : null)
+      resizable.aspect ?? (followsWidth || event.shiftKey ? drag.ratio : null)
     const result = resizeBox({
       handle: drag.handle,
       start: drag.box,

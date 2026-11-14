@@ -21,10 +21,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const limit = await consume(apiLimiter, `user:${auth.value.user.id}`)
   if (!limit.ok) return handleError(limit.error)
 
-  const [{ id }, json] = await Promise.all([
-    ctx.params,
-    readJsonBody(request),
-  ])
+  const [{ id }, json] = await Promise.all([ctx.params, readJsonBody(request)])
   if (!json.ok) return handleError(json.error)
   const parsed = OpenCustomerWhatsappSchema.safeParse(json.value)
   if (!parsed.success) {

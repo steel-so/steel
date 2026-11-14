@@ -63,7 +63,9 @@ describe('DeviceSwitcher and ThemeSwitcher', () => {
     const mobile = screen.getByRole('button', { name: 'Celular' })
     expect(mobile.getAttribute('title')).toBe('Celular · 375 px')
     expect(
-      screen.getByRole('button', { name: 'Computador' }).getAttribute('aria-pressed'),
+      screen
+        .getByRole('button', { name: 'Computador' })
+        .getAttribute('aria-pressed'),
     ).toBe('true')
     fireEvent.click(mobile)
     expect(onChange).toHaveBeenCalledWith('mobile')
@@ -71,14 +73,20 @@ describe('DeviceSwitcher and ThemeSwitcher', () => {
 
   it('only lists the devices it is given', () => {
     render(
-      <DeviceSwitcher value='base' onChange={vi.fn()} devices={['base', 'mobile']} />,
+      <DeviceSwitcher
+        value='base'
+        onChange={vi.fn()}
+        devices={['base', 'mobile']}
+      />,
     )
     expect(screen.queryByRole('button', { name: 'Tablet' })).toBeNull()
   })
 
   it('toggles the theme with explicit labels', () => {
     const onChange = vi.fn()
-    const { rerender } = render(<ThemeSwitcher value='light' onChange={onChange} />)
+    const { rerender } = render(
+      <ThemeSwitcher value='light' onChange={onChange} />,
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Ver no modo escuro' }))
     expect(onChange).toHaveBeenCalledWith('dark')
     rerender(<ThemeSwitcher value='dark' onChange={onChange} />)
@@ -104,7 +112,9 @@ describe('applyFrameTheme', () => {
     applyFrameTheme(document, 'dark', { simulate: true })
     expect(document.documentElement.hasAttribute('data-canvas-dark')).toBe(true)
     applyFrameTheme(document, 'light', { simulate: true })
-    expect(document.documentElement.hasAttribute('data-canvas-dark')).toBe(false)
+    expect(document.documentElement.hasAttribute('data-canvas-dark')).toBe(
+      false,
+    )
   })
 })
 

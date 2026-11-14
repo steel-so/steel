@@ -79,11 +79,7 @@ export function TicketCrmCardBody({
         </div>
       ) : null}
       <Link
-        href={
-          company
-            ? `/${slug}/crm/companies`
-            : `/${slug}/crm/people`
-        }
+        href={company ? `/${slug}/crm/companies` : `/${slug}/crm/people`}
         className='text-primary text-xs hover:underline'
       >
         Abrir no CRM

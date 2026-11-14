@@ -51,11 +51,7 @@ export function CustomerContactButtons({
         title={blocked ?? 'Abrir a conversa no WhatsApp'}
         onClick={() => contact.whatsapp(target)}
       >
-        <SteelIcon
-          icon={WhatsappIcon}
-          strokeWidth={2}
-          className='size-3.5'
-        />
+        <SteelIcon icon={WhatsappIcon} strokeWidth={2} className='size-3.5' />
         WhatsApp
       </Button>
       <Button

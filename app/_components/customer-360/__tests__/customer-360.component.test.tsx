@@ -167,7 +167,9 @@ describe('Customer360Panel', () => {
     expect(
       screen
         .getAllByRole('link')
-        .some((a) => a.getAttribute('href') === `/${SLUG}/servicedesk/tickets/42`),
+        .some(
+          (a) => a.getAttribute('href') === `/${SLUG}/servicedesk/tickets/42`,
+        ),
     ).toBe(true)
   })
 
@@ -204,13 +206,19 @@ describe('Customer360Panel', () => {
 
   it('offers a retry on a server failure', async () => {
     mockFetch([
-      { match: `${API}/customer-360?`, status: 500, error: 'Falha no servidor' },
+      {
+        match: `${API}/customer-360?`,
+        status: 500,
+        error: 'Falha no servidor',
+      },
     ])
     renderWithQuery(
       <Customer360Panel workspaceId={WS} slug={SLUG} personId='p1' />,
     )
     expect(await screen.findByText('Falha no servidor')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Tentar novamente' }),
+    ).toBeTruthy()
   })
 })
 
@@ -301,7 +309,9 @@ describe('ZapContextPanel', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /Criar oportunidade/ }),
     )
-    const submit = screen.getByRole('button', { name: 'Criar' }) as HTMLButtonElement
+    const submit = screen.getByRole('button', {
+      name: 'Criar',
+    }) as HTMLButtonElement
     expect(submit.disabled).toBe(true)
     fireEvent.change(screen.getByLabelText('Nome da oportunidade'), {
       target: { value: 'Upgrade de plano' },
@@ -411,7 +421,9 @@ describe('CustomerContactButtons', () => {
       />,
     )
     fireEvent.click(await screen.findByRole('button', { name: 'WhatsApp' }))
-    await waitFor(() => expect(push).toHaveBeenCalledWith(`/${SLUG}/zap?conversa=cv7`))
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/${SLUG}/zap?conversa=cv7`),
+    )
     expect(fetchBody(spy, `${API}/customer-360/whatsapp`)).toEqual({
       opportunityId: 'o1',
     })

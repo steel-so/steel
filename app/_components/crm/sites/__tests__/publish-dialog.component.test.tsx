@@ -123,7 +123,9 @@ describe('<PublishDialog />', () => {
     renderInEditor(<PublishDialog open onOpenChange={() => {}} />)
     const dialog = await screen.findByTestId('publish-dialog')
     await within(dialog).findByText('Imagem sem texto alternativo')
-    expect(within(dialog).getByText('Os avisos não impedem a publicação.')).toBeTruthy()
+    expect(
+      within(dialog).getByText('Os avisos não impedem a publicação.'),
+    ).toBeTruthy()
     expect(
       (within(dialog).getByTestId('publish-confirm') as HTMLButtonElement)
         .disabled,

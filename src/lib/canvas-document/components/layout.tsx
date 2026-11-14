@@ -487,7 +487,11 @@ export function layoutDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     propsSchema: documentSpacerSchema,
     defaultProps: () => ({ height: 32 }),
     accepts: false,
-    resizable: { heightPath: 'height', min: { height: 0 }, max: { height: 400 } },
+    resizable: {
+      heightPath: 'height',
+      min: { height: 0 },
+      max: { height: 400 },
+    },
     inspector: [
       section('spacer', 'Espaço', [
         {

@@ -485,7 +485,9 @@ export const Customer360Repository = {
     workspaceId: string,
     identity: Pick<Customer360Identity, 'phones'>,
   ) {
-    const waIds = uniq(identity.phones.flatMap((phone) => waIdCandidates(phone)))
+    const waIds = uniq(
+      identity.phones.flatMap((phone) => waIdCandidates(phone)),
+    )
     try {
       const rows = await prisma.whatsAppConversation.findMany({
         where: {

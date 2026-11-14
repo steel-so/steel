@@ -1118,9 +1118,8 @@ function ActionParams({
               ...action,
               params: {
                 ...next,
-                variables: next.variables.filter(
-                  (v): v is SdWhatsappVariable =>
-                    (SD_WHATSAPP_VARIABLES as readonly string[]).includes(v),
+                variables: next.variables.filter((v): v is SdWhatsappVariable =>
+                  (SD_WHATSAPP_VARIABLES as readonly string[]).includes(v),
                 ),
               },
             })

@@ -1,6 +1,10 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import type {
+  MediaItem,
+  MediaProvider,
+} from '@/app/_components/media/media-types'
 import type { CreateSiteFromTemplateDTO } from '@/src/schemas/site-studio.schema'
 import type { CrmFormDTO } from '@/types/crm-form'
 import type {
@@ -11,10 +15,6 @@ import type {
   SiteVersionDTO,
 } from '@/types/site'
 import type { SiteChangesDTO, SiteMediaItemDTO } from '@/types/site-studio'
-import type {
-  MediaItem,
-  MediaProvider,
-} from '@/app/_components/media/media-types'
 import { ApiError, apiFetch, apiFetchJson, apiSend } from './_fetch'
 import { sitesApi } from './use-sites'
 

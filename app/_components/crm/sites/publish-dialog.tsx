@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
-import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import {
   crmSitesKeys,
   type SitePublishProblem,
@@ -32,6 +31,7 @@ import {
   siteExperimentKeys,
   useSiteExperimentImpact,
 } from '@/src/hooks/use-site-experiments'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { SiteChangeItem, SiteChangesDTO } from '@/types/site-studio'
 import { ExperimentPublishNotice } from './experiments/publish-notice'
 import { useSiteEditor } from './site-editor-context'

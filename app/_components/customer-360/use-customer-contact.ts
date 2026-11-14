@@ -77,15 +77,15 @@ export function useCustomerContact(workspaceId: string, slug: string) {
     try {
       const opened = await open.mutateAsync(target)
       if (webPhone.enabled) {
-        await webPhone.dial(
-          toStoredPhone(opened.phone) ?? opened.phone,
-          null,
-          { conversationId: opened.conversationId },
-        )
+        await webPhone.dial(toStoredPhone(opened.phone) ?? opened.phone, null, {
+          conversationId: opened.conversationId,
+        })
         return
       }
       const placed = await startCall.mutateAsync(opened.conversationId)
-      notify.success(`Atenda o ramal ${placed.extension} para falar com o contato.`)
+      notify.success(
+        `Atenda o ramal ${placed.extension} para falar com o contato.`,
+      )
     } catch (error) {
       fail(error, 'Não foi possível iniciar a ligação.')
     }

@@ -45,7 +45,10 @@ export const crmCustomerLinkRoutes: RouteConfig[] = [
     ),
     query: CustomerLinkStateQuerySchema,
     responses: {
-      200: { description: 'Vínculo atual e sugestões.', schema: CustomerLinkStateDTO },
+      200: {
+        description: 'Vínculo atual e sugestões.',
+        schema: CustomerLinkStateDTO,
+      },
     },
     errors: [...CRM_ERRORS, SOURCE_NOT_FOUND],
   },

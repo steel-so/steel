@@ -53,7 +53,8 @@ export function useCustomer360(
         'Não foi possível carregar a visão 360 do cliente',
       )
     },
-    enabled: Boolean(workspaceId) && hasAnchor(anchor) && options.enabled !== false,
+    enabled:
+      Boolean(workspaceId) && hasAnchor(anchor) && options.enabled !== false,
     staleTime: 30_000,
     // 403/404 mean "not for you" (module off, no permission): do not retry.
     retry: false,
@@ -90,7 +91,9 @@ const crm = (workspaceId: string, path: string) =>
 export function useCustomer360Actions(workspaceId: string) {
   const queryClient = useQueryClient()
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: customer360Keys.all(workspaceId) })
+    queryClient.invalidateQueries({
+      queryKey: customer360Keys.all(workspaceId),
+    })
 
   const createLead = useMutation({
     mutationFn: (input: { name: string; phone: string }) =>

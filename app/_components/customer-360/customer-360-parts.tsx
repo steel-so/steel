@@ -108,7 +108,11 @@ export function Customer360Block({
           </span>
         ) : null}
       </h4>
-      {empty ? <p className='text-muted-foreground text-xs'>{empty}</p> : children}
+      {empty ? (
+        <p className='text-muted-foreground text-xs'>{empty}</p>
+      ) : (
+        children
+      )}
     </section>
   )
 }
@@ -224,7 +228,9 @@ export function TicketRows({
               .join(' · ')}
             aside={
               ticket.slaBreached ? (
-                <span className='font-medium text-destructive'>SLA estourado</span>
+                <span className='font-medium text-destructive'>
+                  SLA estourado
+                </span>
               ) : ticket.open && ticket.resolutionDueAt ? (
                 <span className='text-muted-foreground'>
                   prazo {formatDocumentDate(ticket.resolutionDueAt)}
@@ -328,7 +334,11 @@ export function DocumentRows({
             meta={`${kindLabel(doc.kind as DocumentKindDTO)} · ${statusLabel(
               doc.status as DocumentStatusDTO,
             )}`}
-            aside={doc.totalValue !== null ? formatDocumentMoney(doc.totalValue) : null}
+            aside={
+              doc.totalValue !== null
+                ? formatDocumentMoney(doc.totalValue)
+                : null
+            }
           />
         </li>
       ))}

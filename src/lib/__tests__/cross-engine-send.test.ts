@@ -88,9 +88,10 @@ describe('decideCrossEngineSend', () => {
   })
 
   it('skips when the template is not approved and the window is closed', () => {
-    expect(
-      decideCrossEngineSend(input({ templateApproved: false })),
-    ).toEqual({ action: 'skip', reason: 'template_unavailable' })
+    expect(decideCrossEngineSend(input({ templateApproved: false }))).toEqual({
+      action: 'skip',
+      reason: 'template_unavailable',
+    })
   })
 
   it('skips on Meta when nothing was configured', () => {

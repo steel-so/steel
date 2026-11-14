@@ -25,8 +25,8 @@ vi.mock('../steel-agent-dispatcher', () => ({
 }))
 vi.mock('../crm-retention.service', () => ({
   CrmRetentionService: { onSlaBreach: vi.fn() },
-  runRetentionSafely: vi.fn(async (_label: string, run: () => Promise<unknown>) =>
-    run(),
+  runRetentionSafely: vi.fn(
+    async (_label: string, run: () => Promise<unknown>) => run(),
   ),
 }))
 vi.mock('../sd-ticket-escalator', () => ({ runSdEscalationRule: vi.fn() }))

@@ -563,7 +563,9 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
                   {pad(row).map((cell, index) => (
                     <td
                       key={index}
-                      data-label={header ? plainLabel(header[index]) : undefined}
+                      data-label={
+                        header ? plainLabel(header[index]) : undefined
+                      }
                     >
                       {renderVars(cell, ctx)}
                     </td>

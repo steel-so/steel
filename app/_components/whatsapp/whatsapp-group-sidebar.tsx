@@ -218,15 +218,15 @@ export function WhatsappGroupSidebar({
           <p className='font-medium'>Nenhum grupo ainda</p>
           {hasZapi || !connections.isSuccess ? (
             <p className='text-muted-foreground text-xs'>
-              Os grupos dos números conectados pela Z-API aparecem aqui. Crie
-              um grupo novo no botão + acima.
+              Os grupos dos números conectados pela Z-API aparecem aqui. Crie um
+              grupo novo no botão + acima.
             </p>
           ) : (
             <>
               <p className='text-muted-foreground text-xs'>
                 Grupos só funcionam com um número conectado pela Z-API (a API
-                oficial da Meta não tem grupos). Conecte um número da Z-API
-                para usar grupos.
+                oficial da Meta não tem grupos). Conecte um número da Z-API para
+                usar grupos.
               </p>
               {slug ? (
                 <Button

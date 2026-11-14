@@ -17,7 +17,7 @@ export function useCompactLayout(): boolean {
   return useSyncExternalStore(
     subscribe,
     () =>
-      typeof window !== 'undefined' && !!window.matchMedia
+      typeof window !== 'undefined' && window.matchMedia
         ? window.matchMedia(QUERY).matches
         : false,
     () => false,

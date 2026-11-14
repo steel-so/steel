@@ -7,6 +7,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import type * as React from 'react'
 import { useEffect, useState } from 'react'
+import { CrossEngineSendFields } from '@/app/_components/whatsapp/cross-engine-send-fields'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
@@ -14,7 +15,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SheetClose } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
-import { CrossEngineSendFields } from '@/app/_components/whatsapp/cross-engine-send-fields'
 import {
   CRM_WORKFLOW_DELAY_UNITS,
   CRM_WORKFLOW_ENTITIES,
@@ -334,7 +334,7 @@ function NodeForm({
           }
         />
       </Field>
-      {renderBody(data, onChange)}
+      {renderBody(data, onChange, workspaceId)}
     </div>
   )
 }
@@ -342,6 +342,7 @@ function NodeForm({
 function renderBody(
   data: CrmWorkflowNodeData,
   onChange: (next: CrmWorkflowNodeData) => void,
+  workspaceId?: string,
 ) {
   switch (data.type) {
     case 'create-record':

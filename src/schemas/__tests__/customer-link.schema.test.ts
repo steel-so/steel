@@ -17,8 +17,11 @@ describe('customer link schemas', () => {
 
   it('requires kind, id and targetId to link', () => {
     expect(
-      LinkCustomerSchema.safeParse({ kind: 'sd-contact', id: 'a', targetId: 'b' })
-        .success,
+      LinkCustomerSchema.safeParse({
+        kind: 'sd-contact',
+        id: 'a',
+        targetId: 'b',
+      }).success,
     ).toBe(true)
     expect(
       LinkCustomerSchema.safeParse({ kind: 'sd-contact', id: 'a' }).success,

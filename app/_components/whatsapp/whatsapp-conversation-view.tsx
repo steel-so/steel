@@ -1080,8 +1080,8 @@ export function WhatsappConversationView({
           className='border-b bg-muted px-4 py-2 text-destructive text-sm'
         >
           Conexão do WhatsApp não encontrada: o número desta conversa foi
-          removido ou você não tem acesso a ele, então o envio de mensagens
-          está indisponível.
+          removido ou você não tem acesso a ele, então o envio de mensagens está
+          indisponível.
           {slug ? (
             <>
               {' '}

@@ -20,9 +20,11 @@ const iso = () => z.iso.datetime()
 const Customer360DTO = dto(
   'Customer360',
   z.object({
-    match: z.enum(['person', 'company', 'phone', 'email', 'cnpj', 'name', 'none']).meta({
-      description: 'Como o cliente foi encontrado.',
-    }),
+    match: z
+      .enum(['person', 'company', 'phone', 'email', 'cnpj', 'name', 'none'])
+      .meta({
+        description: 'Como o cliente foi encontrado.',
+      }),
     available: z.object({
       crm: z.boolean(),
       servicedesk: z.boolean(),

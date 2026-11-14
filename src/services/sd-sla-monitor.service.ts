@@ -15,7 +15,10 @@ import {
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { SdTicketEscalationRepository } from '@/src/repositories/sd-ticket-escalation.repository'
 import { SdConditionsSchema } from '@/src/schemas/sd-rule.schema'
-import { CrmRetentionService, runRetentionSafely } from './crm-retention.service'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from './crm-retention.service'
 import { runSdAutomations } from './sd-automation-engine'
 import { notifySdEvent } from './sd-notification.service'
 import {

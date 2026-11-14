@@ -386,9 +386,7 @@ describe('CrossEngineActions.createLead', () => {
   }
 
   beforeEach(() => {
-    intake.mockResolvedValue(
-      ok({ lead: { id: 'l1' } as never, created: true }),
-    )
+    intake.mockResolvedValue(ok({ lead: { id: 'l1' } as never, created: true }))
   })
 
   it('creates the lead through the CRM intake as a system actor', async () => {

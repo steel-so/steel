@@ -326,7 +326,11 @@ describe('getState()', () => {
     repo.findSdCustomer.mockResolvedValue(ok(null))
     repo.findSdContact.mockResolvedValue(ok(null))
     repo.findWhatsAppContact.mockResolvedValue(ok(null))
-    for (const kind of ['sd-customer', 'sd-contact', 'whatsapp-contact'] as const) {
+    for (const kind of [
+      'sd-customer',
+      'sd-contact',
+      'whatsapp-contact',
+    ] as const) {
       expectErr(
         await Service.getState('u', 'w', kind, 'x'),
         'CUSTOMER_LINK_SOURCE_NOT_FOUND',
@@ -351,7 +355,9 @@ describe('getState()', () => {
     const boom = err(databaseError('x'))
     repo.findSdCustomer.mockResolvedValueOnce(boom)
     expectErr(await Service.getState('u', 'w', 'sd-customer', 'c'))
-    repo.findSdCustomer.mockResolvedValue(ok({ ...customer, crmCompanyId: 'co1' }))
+    repo.findSdCustomer.mockResolvedValue(
+      ok({ ...customer, crmCompanyId: 'co1' }),
+    )
     repo.findCompany.mockResolvedValueOnce(boom)
     expectErr(await Service.getState('u', 'w', 'sd-customer', 'c'))
     repo.findCompany.mockResolvedValue(ok(company))

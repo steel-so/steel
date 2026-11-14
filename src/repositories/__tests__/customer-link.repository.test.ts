@@ -8,9 +8,9 @@ import { seedWorkspace } from '@/src/__tests__/factories/workspace.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { prisma } from '@/src/lib/prisma'
 import {
-  CustomerLinkRepository as Repo,
   digitsOnly,
   phoneKeys,
+  CustomerLinkRepository as Repo,
 } from '../customer-link.repository'
 
 async function base() {
@@ -25,9 +25,9 @@ describe('helpers', () => {
   })
 
   it('builds unique phone keys and drops invalid phones', () => {
-    expect(phoneKeys(['+55 (11) 98888-7777', '11 98888-7777', null, '123'])).toEqual(
-      ['1188887777'],
-    )
+    expect(
+      phoneKeys(['+55 (11) 98888-7777', '11 98888-7777', null, '123']),
+    ).toEqual(['1188887777'])
   })
 })
 
@@ -41,7 +41,9 @@ describe('CustomerLinkRepository', () => {
     })
     const person = await seedCrmPerson(ws, user, { name: 'Ana' })
 
-    expect(expectOk(await Repo.findCompany(ws, company.id))?.id).toBe(company.id)
+    expect(expectOk(await Repo.findCompany(ws, company.id))?.id).toBe(
+      company.id,
+    )
     expect(expectOk(await Repo.findCompany(other.id, company.id))).toBeNull()
     expect(expectOk(await Repo.findPerson(ws, person.id))?.name).toBe('Ana')
     expect(
@@ -78,7 +80,9 @@ describe('CustomerLinkRepository', () => {
     })
 
     expect(
-      expectOk(await Repo.listPeopleByEmail(ws, 'ana@acme.com')).map((p) => p.id),
+      expectOk(await Repo.listPeopleByEmail(ws, 'ana@acme.com')).map(
+        (p) => p.id,
+      ),
     ).toEqual([person.id])
     expect(
       expectOk(await Repo.listPeopleByPhoneKeys(ws, ['1188887777'])).map(
@@ -113,9 +117,9 @@ describe('CustomerLinkRepository', () => {
     expect(rows.map((r) => r.id).sort()).toEqual(
       [linked.id, byDoc.id, byName.id].sort(),
     )
-    expect(expectOk(await Repo.findSdCustomer(ws, linked.id))?.crmCompanyId).toBe(
-      company.id,
-    )
+    expect(
+      expectOk(await Repo.findSdCustomer(ws, linked.id))?.crmCompanyId,
+    ).toBe(company.id)
   })
 
   it('lists contacts linked or matching by e-mail / phone, skipping linked ones', async () => {
@@ -173,7 +177,9 @@ describe('CustomerLinkRepository', () => {
     )
     expect(rows.map((r) => r.id).sort()).toEqual([byId.id, linked.id].sort())
     expect(
-      expectOk(await Repo.listWhatsAppContacts(ws, { personId: null, phones: [] })),
+      expectOk(
+        await Repo.listWhatsAppContacts(ws, { personId: null, phones: [] }),
+      ),
     ).toEqual([])
     expect(expectOk(await Repo.findWhatsAppContact(ws, byId.id))?.waId).toBe(
       '5511988887777',

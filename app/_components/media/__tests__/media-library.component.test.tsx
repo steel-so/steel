@@ -80,9 +80,7 @@ describe('imageFileProblem', () => {
   })
 
   it('honors a narrower accept list and ignores the image/* wildcard', () => {
-    expect(
-      imageFileProblem(file('image/jpeg'), ['image/png']),
-    ).not.toBeNull()
+    expect(imageFileProblem(file('image/jpeg'), ['image/png'])).not.toBeNull()
     expect(imageFileProblem(file('image/webp'), ['image/*'])).toBeNull()
   })
 })
@@ -98,7 +96,9 @@ describe('drag data helpers', () => {
 
   it('lists the files of a drop', () => {
     const file = new File(['x'], 'a.png')
-    expect(filesOf({ files: [file] } as unknown as DataTransfer)).toEqual([file])
+    expect(filesOf({ files: [file] } as unknown as DataTransfer)).toEqual([
+      file,
+    ])
     expect(filesOf(null)).toEqual([])
   })
 })

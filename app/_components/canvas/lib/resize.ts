@@ -35,7 +35,9 @@ export function handlesFor({
   free: boolean
 }): ResizeHandle[] {
   if (width && height) {
-    return free ? ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] : ['e', 's', 'se']
+    return free
+      ? ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']
+      : ['e', 's', 'se']
   }
   if (width) return free ? ['e', 'w'] : ['e', 'se']
   if (height) return free ? ['n', 's'] : ['s']
@@ -164,7 +166,9 @@ export function resizeBox({
 
   width = Math.round(width)
   height = Math.round(height)
-  const x = west ? Math.round(start.x + start.width - width) : Math.round(start.x)
+  const x = west
+    ? Math.round(start.x + start.width - width)
+    : Math.round(start.x)
   const y = north
     ? Math.round(start.y + start.height - height)
     : Math.round(start.y)

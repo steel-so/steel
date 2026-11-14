@@ -32,9 +32,15 @@ function doc(
   }
 }
 
-const site = (...children: Array<Omit<Parameters<typeof doc>[1][number], 'id'>>) =>
+const site = (
+  ...children: Array<Omit<Parameters<typeof doc>[1][number], 'id'>>
+) =>
   doc('site', [
-    { id: 'root', type: 'site.page', children: children.map((_, i) => `n${i}`) },
+    {
+      id: 'root',
+      type: 'site.page',
+      children: children.map((_, i) => `n${i}`),
+    },
     ...children.map((child, i) => ({ ...child, id: `n${i}` })),
   ])
 
@@ -158,7 +164,10 @@ describe('siteChecklist', () => {
         },
         {
           type: 'site.button',
-          props: { link: { type: 'url', value: '' }, interaction: { action: 'none' } },
+          props: {
+            link: { type: 'url', value: '' },
+            interaction: { action: 'none' },
+          },
         },
       ),
     )
@@ -183,7 +192,11 @@ describe('siteChecklist', () => {
           props: { link: { type: 'page', value: 'p1' } },
         },
         { type: 'site.heading', props: {} },
-        { type: 'site.text', meta: { hidden: true }, props: { link: { value: '' } } },
+        {
+          type: 'site.text',
+          meta: { hidden: true },
+          props: { link: { value: '' } },
+        },
       ),
     )
     expect(items.map((item) => [item.code, item.level])).toEqual([
@@ -202,7 +215,9 @@ describe('siteChecklist', () => {
         documentName: 'Sobre',
       }),
     ])
-    expect(sitePageChecks({ id: 'p', title: 'Sobre', seo: { title: ' ' } })).toHaveLength(1)
+    expect(
+      sitePageChecks({ id: 'p', title: 'Sobre', seo: { title: ' ' } }),
+    ).toHaveLength(1)
     expect(sitePageChecks({ id: 'p', title: 'Sobre' })).toHaveLength(1)
     expect(
       sitePageChecks({ id: 'p', title: 'Sobre', seo: { title: 'Sobre nós' } }),
@@ -224,7 +239,9 @@ describe('siteSnapshotChecks', () => {
       ],
     } as unknown as SiteSnapshot
     const items = siteSnapshotChecks(snapshot)
-    expect(items.map((item) => [item.code, item.documentId, item.documentName])).toEqual([
+    expect(
+      items.map((item) => [item.code, item.documentId, item.documentName]),
+    ).toEqual([
       ['FORM_NO_DESTINATION', 'p1', 'Início'],
       ['PAGE_SEO_TITLE_MISSING', 'p2', 'Sobre'],
       ['FORM_NO_DESTINATION', 'g1', 'Rodapé'],
@@ -234,7 +251,9 @@ describe('siteSnapshotChecks', () => {
 })
 
 describe('documentChecklist', () => {
-  const content = (...children: Array<{ type: string; props?: Record<string, unknown> }>) =>
+  const content = (
+    ...children: Array<{ type: string; props?: Record<string, unknown> }>
+  ) =>
     doc('document', [
       { id: 'root', type: 'document', children: ['s'] },
       { id: 's', type: 'section', children: children.map((_, i) => `n${i}`) },
@@ -249,7 +268,13 @@ describe('documentChecklist', () => {
           { type: 'text', props: { html: '<p>Olá</p>' } },
           { type: 'image', props: { src: 'https://a/b.png', alt: 'Logo' } },
           { type: 'image', props: {} },
-          { type: 'button', props: { label: 'Ver', link: { type: 'url', value: 'https://a.b' } } },
+          {
+            type: 'button',
+            props: {
+              label: 'Ver',
+              link: { type: 'url', value: 'https://a.b' },
+            },
+          },
           { type: 'video', props: { url: 'https://youtu.be/x' } },
           { type: 'pricing-table', props: { items: [{ id: 'i' }] } },
           { type: 'field-text', props: { label: 'Nome' } },
@@ -264,10 +289,18 @@ describe('documentChecklist', () => {
         { type: 'image', props: { src: 'https://a/b.png', alt: '' } },
         {
           type: 'gallery',
-          props: { images: [{ src: 'https://a/1.png' }, { src: 'https://a/2.png', alt: '' }] },
+          props: {
+            images: [
+              { src: 'https://a/1.png' },
+              { src: 'https://a/2.png', alt: '' },
+            ],
+          },
         },
         { type: 'gallery', props: { images: [{ src: 'https://a/1.png' }] } },
-        { type: 'logos', props: { items: [{ src: 'https://a/1.png', alt: 'ok' }] } },
+        {
+          type: 'logos',
+          props: { items: [{ src: 'https://a/1.png', alt: 'ok' }] },
+        },
         { type: 'gallery', props: {} },
         { type: 'button', props: { label: 'Ver' } },
         { type: 'heading', props: { text: ' ' } },

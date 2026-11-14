@@ -11,8 +11,8 @@ import {
   useRef,
   useState,
 } from 'react'
-import { usePublishChecks } from '@/app/_components/canvas/checklist/use-publish-checks'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
+import { usePublishChecks } from '@/app/_components/canvas/checklist/use-publish-checks'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import type { CanvasImageBlock } from '@/app/_components/canvas/types'
 import { DocumentExportButton } from '@/app/_components/documents/export/document-export-button'
@@ -42,9 +42,9 @@ import {
   type UpdateDocumentBody,
   useDocument,
 } from '@/src/hooks/use-documents'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import { type CanvasStore, createCanvasStore } from '@/src/lib/canvas/store'
-import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import {
   createDocumentCatalog,
@@ -70,11 +70,11 @@ import {
   DocumentEditorProvider,
   useDocumentEditor,
 } from './document-editor-context'
+import { documentMediaTab } from './document-media-tab'
 import {
   DocumentPreviewDialog,
   SAMPLE_VARIABLES,
 } from './document-preview-dialog'
-import { documentMediaTab } from './document-media-tab'
 import { DocumentSettingsPanel } from './document-settings-panel'
 import { EDITOR_FONTS } from './editor-theme'
 

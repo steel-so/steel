@@ -44,11 +44,11 @@ import { assertModuleEnabled, assertModuleMember } from '@/src/services/authz'
 import { ensureLeadContact } from '@/src/services/crm-lead-contact-sync'
 import { pickLeadConnection } from '@/src/services/crm-lead-whatsapp.service'
 import { SdAccess } from '@/src/services/sd-access'
+import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import {
   loadVisibleConversation,
   resolveConversationScope,
 } from '@/src/services/whatsapp-conversation-scope.service'
-import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import { Customer360Service } from '../customer-360.service'
 
 const repo = vi.mocked(Customer360Repository)
@@ -520,17 +520,20 @@ describe('Customer360Service.openWhatsapp', () => {
   it.each([
     [{ opportunityId: 'o1' }, 'opportunities', 'crm_opportunity', 'o1'],
     [{ companyId: 'c1' }, 'companies', 'crm_company', 'c1'],
-  ] as const)('checks %j with the right permission', async (input, resource, entity, id) => {
-    ready()
-    expectOk(await Customer360Service.openWhatsapp(ACTOR, WS, input))
-    expect(member).toHaveBeenCalledWith(ACTOR, WS, 'CRM', {
-      resource,
-      action: 'VIEW',
-    })
-    expect(auditMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ entity, targetId: id }),
-    )
-  })
+  ] as const)(
+    'checks %j with the right permission',
+    async (input, resource, entity, id) => {
+      ready()
+      expectOk(await Customer360Service.openWhatsapp(ACTOR, WS, input))
+      expect(member).toHaveBeenCalledWith(ACTOR, WS, 'CRM', {
+        resource,
+        action: 'VIEW',
+      })
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({ entity, targetId: id }),
+      )
+    },
+  )
 
   it('opens the chosen phone', async () => {
     ready()
@@ -607,11 +610,15 @@ describe('Customer360Service.openWhatsapp', () => {
   it.each([
     ['member', () => member.mockResolvedValue(err(forbidden()))],
     ['module', () => enabled.mockResolvedValue(err(moduleDisabled()))],
-    ['phones', () => repo.phoneTargets.mockResolvedValue(err(databaseError('x')))],
+    [
+      'phones',
+      () => repo.phoneTargets.mockResolvedValue(err(databaseError('x'))),
+    ],
     ['contact', () => ensure.mockResolvedValue(err(databaseError('x')))],
     [
       'connections',
-      () => connections.listByWorkspace.mockResolvedValue(err(databaseError('x'))),
+      () =>
+        connections.listByWorkspace.mockResolvedValue(err(databaseError('x'))),
     ],
     ['start', () => start.mockResolvedValue(err(databaseError('x')))],
   ] as const)('propagates a %s failure', async (_name, fail) => {

@@ -52,7 +52,10 @@ import type { CanvasDocument, CanvasFragment } from '@/src/lib/canvas/types'
 import type { CanvasImage } from '@/src/lib/canvas/values'
 import { canvasDocumentName } from '@/src/lib/canvas-collab/names'
 import { createSiteCatalog, siteCatalog } from '@/src/lib/canvas-site/catalog'
-import { SITE_TYPES, SITE_VIEWPORT_WIDTHS } from '@/src/lib/canvas-site/constants'
+import {
+  SITE_TYPES,
+  SITE_VIEWPORT_WIDTHS,
+} from '@/src/lib/canvas-site/constants'
 import type { SiteLiveForm } from '@/src/lib/canvas-site/context'
 import { compileSiteCss } from '@/src/lib/canvas-site/css'
 import { SITE_PRESETS } from '@/src/lib/canvas-site/presets'

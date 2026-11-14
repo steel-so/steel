@@ -42,11 +42,11 @@ import {
 import { ensureLeadContact } from './crm-lead-contact-sync'
 import { pickLeadConnection } from './crm-lead-whatsapp.service'
 import { SdAccess } from './sd-access'
+import { WhatsAppConversationService } from './whatsapp-conversation.service'
 import {
   loadVisibleConversation,
   resolveConversationScope,
 } from './whatsapp-conversation-scope.service'
-import { WhatsAppConversationService } from './whatsapp-conversation.service'
 
 /**
  * "Visão 360" of a customer: everything the workspace knows about a person or

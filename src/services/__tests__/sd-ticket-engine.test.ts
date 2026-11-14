@@ -355,9 +355,7 @@ describe('create', () => {
   })
 
   it('sends the "chamado criado" acknowledgement only when a team member opens it', async () => {
-    expectOk(
-      await SdTicketEngine.create('ws1', baseInput(), system, config()),
-    )
+    expectOk(await SdTicketEngine.create('ws1', baseInput(), system, config()))
     expect(notifyMock.mock.calls.map((call) => call[0].event)).not.toContain(
       'ticket.created',
     )

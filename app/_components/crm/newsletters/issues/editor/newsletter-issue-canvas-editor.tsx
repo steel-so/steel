@@ -379,8 +379,8 @@ export function NewsletterIssueCanvasEditor({
           onSave={onSave}
           darkPreview
           onUploadImage={onUploadImage}
-        mediaProvider={mediaProvider}
-        imageBlock={EMAIL_IMAGE_BLOCK}
+          mediaProvider={mediaProvider}
+          imageBlock={EMAIL_IMAGE_BLOCK}
           colorTokens={colorTokens}
           fonts={EMAIL_TYPOGRAPHY_FONTS}
         />

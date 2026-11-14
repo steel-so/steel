@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  MediaItem,
+  MediaProvider,
+} from '@/app/_components/media/media-types'
+import type {
   CrmEmailBrandInput,
   EmailBuilderContact,
   EmailBuilderDocument,
@@ -13,10 +17,6 @@ import type {
   CrmEmailTemplateDTO,
   CrmEmailTestSendDTO,
 } from '@/types/crm-email-marketing'
-import type {
-  MediaItem,
-  MediaProvider,
-} from '@/app/_components/media/media-types'
 import { apiFetch } from './_fetch'
 
 const json = (method: string, body: unknown): RequestInit => ({

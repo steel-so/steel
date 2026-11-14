@@ -22,13 +22,13 @@ vi.mock('@/src/repositories/whatsapp-button-action.repository')
 vi.mock('@/src/repositories/whatsapp-flow.repository')
 
 import { MembershipRepository } from '@/src/repositories/membership.repository'
-import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { WhatsAppButtonActionRepository } from '@/src/repositories/whatsapp-button-action.repository'
 import { WhatsAppChatbotRepository } from '@/src/repositories/whatsapp-chatbot.repository'
 import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
 import { WhatsAppChatbotSessionRepository } from '@/src/repositories/whatsapp-chatbot-session.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppFlowRepository } from '@/src/repositories/whatsapp-flow.repository'
+import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import {
   WHATSAPP_CHATBOT_MAX_PER_WORKSPACE,
   WhatsAppChatbotService,

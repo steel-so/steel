@@ -1670,7 +1670,10 @@ export const ERROR_CODES = {
   },
 
   // ServiceDesk — ticket opened from a conversation / CRM record
-  SD_TICKET_SOURCE_NOT_FOUND: { code: 'SD_TICKET_SOURCE_NOT_FOUND', status: 404 },
+  SD_TICKET_SOURCE_NOT_FOUND: {
+    code: 'SD_TICKET_SOURCE_NOT_FOUND',
+    status: 404,
+  },
   // The source already has an open ticket; the caller must confirm.
   SD_TICKET_SOURCE_HAS_OPEN_TICKET: {
     code: 'SD_TICKET_SOURCE_HAS_OPEN_TICKET',

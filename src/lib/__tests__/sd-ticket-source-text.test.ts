@@ -108,7 +108,9 @@ describe('description', () => {
     const html = buildSourceDescriptionHtml(input)
     expect(html).toContain('<p>Cliente urgente</p><p>Ligar antes</p>')
     expect(html).toContain('Conversa do WhatsApp — Ana &lt;script&gt;')
-    expect(html).toContain('<li><strong>Telefone:</strong> +55 11 98888-7777</li>')
+    expect(html).toContain(
+      '<li><strong>Telefone:</strong> +55 11 98888-7777</li>',
+    )
     expect(html).toContain('<blockquote>')
     expect(html).toContain('13/11/2026 14:05')
     expect(html).toContain('Oi &amp; tchau')

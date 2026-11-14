@@ -176,14 +176,18 @@ function SelectionBox({ id, primary }: { id: CanvasNodeId; primary: boolean }) {
           scale={scale}
         />
       )}
-      {primary && !isRoot && !locked && !editingText && definition?.resizable && (
-        <ResizeHandles
-          id={id}
-          resizable={definition.resizable}
-          rect={rect}
-          scale={scale}
-        />
-      )}
+      {primary &&
+        !isRoot &&
+        !locked &&
+        !editingText &&
+        definition?.resizable && (
+          <ResizeHandles
+            id={id}
+            resizable={definition.resizable}
+            rect={rect}
+            scale={scale}
+          />
+        )}
       {primary && !isRoot && !editingText && (
         <div
           className={cn(

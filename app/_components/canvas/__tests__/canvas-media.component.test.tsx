@@ -125,9 +125,9 @@ describe('canvas media', () => {
     fireEvent.change(screen.getByLabelText('Buscar imagem'), {
       target: { value: 'logo' },
     })
-    expect(screen.queryByRole('button', { name: 'Usar imagem praia.png' })).toBe(
-      null,
-    )
+    expect(
+      screen.queryByRole('button', { name: 'Usar imagem praia.png' }),
+    ).toBe(null)
     expect(
       screen.getByRole('button', { name: 'Usar imagem logo.webp' }),
     ).toBeTruthy()
@@ -170,7 +170,9 @@ describe('canvas media', () => {
       within(panel()).getByText('Descreva a imagem ou marque como decorativa.'),
     ).toBeTruthy()
     fireEvent.click(
-      within(panel()).getByRole('switch', { name: 'Imagem: imagem decorativa' }),
+      within(panel()).getByRole('switch', {
+        name: 'Imagem: imagem decorativa',
+      }),
     )
     expect(image().decorative).toBe(true)
     expect(image().alt).toBe('')
@@ -180,7 +182,9 @@ describe('canvas media', () => {
       ),
     ).toBeNull()
     fireEvent.click(
-      within(panel()).getByRole('switch', { name: 'Imagem: imagem decorativa' }),
+      within(panel()).getByRole('switch', {
+        name: 'Imagem: imagem decorativa',
+      }),
     )
     fireEvent.change(
       within(panel()).getByLabelText('Imagem: texto alternativo'),
@@ -198,9 +202,7 @@ describe('canvas media', () => {
       new File(['x'], 'colada.png', { type: 'image/png' }),
     ])
     expect(event.defaultPrevented).toBe(true)
-    await waitFor(() =>
-      expect(image().src).toBe('https://cdn.test/colada.png'),
-    )
+    await waitFor(() => expect(image().src).toBe('https://cdn.test/colada.png'))
   })
 
   it('ignores a paste without images', () => {
