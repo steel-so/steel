@@ -225,13 +225,6 @@ function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
             </Button>
           </DialogFooter>
         </form>
-        {canLinkCrm ? (
-          <CustomerLinkPanel
-            workspaceId={workspaceId}
-            kind='whatsapp-contact'
-            id={contact.id}
-          />
-        ) : null}
       </DialogContent>
     </Dialog>
   )
@@ -310,6 +303,13 @@ function EditContactDialog({
             </Button>
           </DialogFooter>
         </form>
+        {canLinkCrm ? (
+          <CustomerLinkPanel
+            workspaceId={workspaceId}
+            kind='whatsapp-contact'
+            id={contact.id}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
