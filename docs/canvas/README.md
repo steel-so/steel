@@ -27,6 +27,44 @@ Decisão de arquitetura: [ADR 0026](../adr/0026-steel-canvas-shared-drag-and-dro
   responsivos mostram em qual breakpoint há sobrescrita.
 - **Atalhos**: Ctrl+Z / Ctrl+Shift+Z, Ctrl+C / Ctrl+V, Ctrl+D (duplicar),
   Delete, setas para mudar a seleção, Esc sobe para o pai, Ctrl+S salva.
+  Registrados em `src/lib/shortcuts/registry.ts`, escopo `editor.canvas`
+  (só documentação; ver `docs/shortcuts.md`).
+- **Casca compartilhada** (`app/_components/canvas/`): `SaveStatus`
+  (`save-status.tsx`: Salvando…, Salvo, Alterações não salvas, erro com
+  "Tentar de novo"), `DeviceSwitcher`/`ThemeSwitcher` (`preview/`; o escuro é
+  real: `color-scheme` + `data-theme="dark"` + classe `dark` no documento do
+  iframe, e no e-mail é uma simulação com o filtro `data-canvas-dark`),
+  recuperação de rascunho (`lib/draft-recovery.ts` + `draft-banner.tsx`: cópia
+  local em `localStorage` (`steel:canvas-draft:<caminho>`) só enquanto o
+  salvamento falha; "Recuperar"/"Descartar" na próxima abertura; com coedição
+  ativa o salvamento passa por `collab.flush()` e não pelo `onSave` HTTP) e a
+  dica de primeiro uso (`empty-hint.tsx`, chave `steel:canvas-hint-seen`).
+- **Redimensionar** (`frame/resize-handles.tsx`, `lib/resize.ts`,
+  `lib/resize-write.ts`): o catálogo declara
+  `resizable: { widthPath?, heightPath?, widthUnit?, widthFormat?, min, max }`
+  (imagem, divisor e espaço nos três catálogos e a coluna do e-mail). No
+  fluxo só há as alças `e`, `s` e `se`; filhos de posição livre
+  (`freeLayout`) ganham as oito, e puxar `w`/`n` também grava `x`/`y`. Shift
+  mantém a proporção, Alt desliga o ímã (`lib/snap.ts`, que no fluxo também
+  prende a largura em 1, 3/4, 2/3, 1/2, 1/3 e 1/4 do pai). Um arrasto é um
+  único passo de histórico. Setas movem 1 px (Shift, 10 px) os filhos de
+  posição livre e Ctrl+A seleciona os irmãos do selecionado
+  (`use-shortcuts.ts`).
+- **Imagens** (`app/_components/media/`, `lib/use-canvas-image-input.ts`):
+  `MediaProvider { list, upload, remove, update }` por editor (buckets
+  mantidos), `MediaLibrary`/`MediaLibraryPicker` ("Escolher da biblioteca"),
+  `useFileDropTarget` e `imageFileProblem` (JPEG/PNG/WebP, 5 MB, um só lugar
+  para escolher, soltar e colar). Soltar ou colar sobre uma imagem a
+  substitui (`placeImageUrl`); fora, cria o bloco (`catalog.imageBlock`).
+  Texto alternativo obrigatório ou `decorative` (`ImageAltField`); no Sites o
+  controle grava também `dimensions` (tamanho do arquivo) quando a imagem
+  carrega.
+- **Checklist de publicação** (`src/lib/canvas/checklist.ts`,
+  `app/_components/canvas/checklist/`): cada catálogo entrega um
+  `PublishChecker = (doc) => PublishCheckItem[]` (`error` bloqueia, `warning`
+  só recomenda). Sites: `siteChecklist`/`sitePageChecks` (só avisos, inclusive
+  `FORM_NO_DESTINATION`); Documentos: `documentChecklist` (erros:
+  `PRICING_EMPTY` e `FIELD_LABEL_EMPTY`); e-mail: `canvas-email/checklist.ts`.
 
 ## Fases
 
@@ -122,8 +160,10 @@ Decisões do shell:
   testado no iframe (`elementFromPoint`) ou na árvore de Camadas, e o
   `canDrop` do motor decide. Borda de um container (até 12 px) significa
   "antes/depois dele"; dentro, a posição entre os filhos.
-- **Abaixo de 1024 px** o editor mostra "Use uma tela maior para editar": a
-  barra lateral, o canvas e o inspetor não cabem lado a lado em tablet em pé.
+- **Largura**: a partir de 768 px o editor abre; abaixo de 1024 px
+  (`useCompactLayout`) a barra lateral fica compacta e o inspetor vira uma
+  gaveta (abre ao selecionar e pelo botão "Propriedades"). Abaixo de 768 px
+  mostra "Use uma tela maior para editar".
 - O playground abre fora de produção; em produção só com `CANVAS_LAB=true`.
 - `store` (opcional): o chamador cria o store com `createCanvasStore` quando
   o contexto de render do catálogo precisa ler o documento vivo (e-mail).

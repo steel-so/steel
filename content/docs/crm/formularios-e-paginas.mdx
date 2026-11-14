@@ -1,39 +1,79 @@
 ---
 title: Formulários e landing pages
-description: Formulários públicos que criam leads, pessoas ou empresas, e landing pages a partir de modelos, com métricas de acesso.
+description: Formulários públicos que criam leads, pessoas ou empresas, com salvamento automático, desfazer, reordenação e prévia; e onde ficam as landing pages.
 section: crm
 order: 7
 ---
 
 ## Formulários
 
-Em **Formulários**, clique em **Novo formulário** e monte:
+Em **Formulários**, clique em **Novo formulário**: o formulário nasce na hora,
+chamado **Novo formulário** e sem campos, e abre no editor. À esquerda ficam as configurações e
+os campos; à direita, a **pré-visualização** ao vivo, com o botão para
+alternar entre **Computador**, **Tablet** e **Celular**.
 
-- **Fases**: o formulário pode ter várias etapas.
-- **Campos**: texto, texto longo, número, data, seleção e caixa de seleção. Cada
-  campo pode ser obrigatório e ser ligado a um dado do CRM (nome, e-mail,
-  telefone, cargo, cidade, CNPJ, domínio, funcionários, LinkedIn, empresa,
-  origem).
-- **Mensagem de sucesso**: o que aparece depois do envio.
-- **Ação no envio**: criar um **lead**, uma **pessoa** ou uma **empresa**.
+![Editor de formulários com as configurações à esquerda, a lista de campos com a alça de arrastar e a pré-visualização à direita](/docs/construtores/formularios-reordenar-campos.webp)
 
-Depois, **Publicar formulário** e **Copiar URL**: o endereço público é
+- **Descrição** e **Mensagem de sucesso**: o texto abaixo do título e o que
+  aparece depois do envio.
+- **O que acontece quando alguém responde**: criar um **lead**, uma **pessoa**
+  ou uma **empresa**. Cada opção explica o efeito logo abaixo.
+- **Inscrever na newsletter**: acrescenta ao formulário uma caixa opcional de
+  autorização; só quem marcar e informar o e-mail entra na newsletter.
+- **Fases**: sem fases (ou com apenas uma), o formulário é uma página única;
+  com duas ou mais, vira um passo a passo.
+- **Campos**: texto, e-mail, telefone, número, texto longo, data, seleção e
+  caixa de seleção. Cada campo pode ser obrigatório e ser ligado a um dado do
+  CRM (nome, e-mail, telefone, cargo, cidade, CNPJ, domínio, funcionários,
+  LinkedIn, empresa, origem).
+
+### Montar com conforto
+
+- **Reordenar**: arraste um campo pela alça à esquerda do nome e solte
+  onde quiser.
+- **Duplicar** e **remover** um campo: os botões à direita do nome. Remover
+  pede confirmação.
+- **Desfazer** e **Refazer** no alto da tela (<Kbd>Ctrl</Kbd> <Kbd>Z</Kbd> e
+  <Kbd>Ctrl</Kbd> <Kbd>Shift</Kbd> <Kbd>Z</Kbd>) desfazem e refazem as
+  mudanças feitas no formulário.
+- **Salvamento automático**: cerca de 1,5 segundo depois da última mudança o
+  formulário é salvo, e o indicador ao lado de **Salvar agora** mostra
+  **Salvando…**, **Salvo** ou o erro, com **Tentar de novo**. **Salvar
+  agora** salva na hora.
+- **Sair com mudanças não salvas**: o botão de voltar pergunta **Sair sem
+  salvar?** antes de descartar, e fechar a aba também avisa.
+
+### Publicar
+
+Ligue **Publicar formulário** e use **Copiar URL**: o endereço público é
 `/f/<código>`. Em **Ver respostas** ficam as submissões.
+
+O Steel só deixa publicar um formulário que serve para alguma coisa. Enquanto
+a regra não é atendida, o motivo aparece em laranja abaixo do interruptor:
+
+![Bloco Publicar formulário com o interruptor desligado e o aviso "Adicione um campo de e-mail ou de telefone"](/docs/construtores/formularios-regra-de-publicacao.webp)
+
+- **Adicione pelo menos um campo** antes de publicar;
+- **Adicione um campo de e-mail ou de telefone**: sem ele você não consegue
+  falar com quem respondeu. Vale um campo do tipo e-mail ou telefone, ou
+  qualquer campo ligado a **e-mail** ou **telefone** do CRM.
 
 ## Landing pages
 
-Em **Páginas**, clique em **Nova página** e escolha um modelo: agência, B2B,
-consultoria, coworking, e-commerce, vagas, aplicativo, produto, assinatura SaaS
-ou aplicação web.
+As landing pages agora são **[Sites](/docs/crm/sites)**. O menu **Páginas** do
+CRM foi substituído por **Sites**, e cada landing page antiga virou um site
+de uma página (o aviso **Landing pages agora são Sites**, na lista de sites,
+traz as que ainda estiverem no editor antigo). Os links `/l/<código>` já
+divulgados continuam abrindo.
 
-No editor, adicione, reordene e remova seções, e então **Publicar página**. A
-página fica online em `/l/<código>` e pode ser tirada do ar a qualquer momento.
-As **Métricas de acesso** mostram as visitas.
+Para criar e publicar uma página nova, use **CRM › Sites › Novo site**. O
+editor, a biblioteca de imagens, o texto alternativo das imagens e a lista de
+avisos antes de publicar estão no guia
+[Editor visual: arrastar, redimensionar e publicar](/docs/crm/editor-visual).
+Para a página receber contatos, ligue o bloco de formulário do site a um
+formulário desta tela.
 
-Todo texto e todo link da página é editável direto no editor: clique no texto
-para reescrever, e passe o mouse sobre um botão ou link para trocar o destino —
-pode ser um endereço externo ou uma seção da própria página (Serviços, Preços,
-Rodapé…), que aparecem como atalhos no campo de link.
+## Botão de IA nos textos
 
 Ao passar o mouse ou clicar numa caixa de texto, surge no canto superior direito
 um botão de IA. Ele abre um mini chat sobre aquele texto: peça "deixe mais
@@ -42,5 +82,4 @@ campo** na sugestão. O mesmo botão aparece nos campos de texto das propostas e
 e nos estúdios de redes sociais (legenda, mensagem, título e descrição). O chat
 usa a IA do workspace e consome a cota mensal de IA.
 
-Imagens enviadas para páginas e formulários aceitam até 5 MB; vídeos de landing
-page, até 25 MB.
+Imagens enviadas (JPEG, PNG ou WebP) aceitam até 5 MB.

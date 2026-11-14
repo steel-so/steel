@@ -54,6 +54,17 @@ de tooltip/menu e na paleta `Ctrl+K` sai do mesmo lugar.
    item de menu, `<ShortcutHint id='…' />` no tooltip.
 5. Atalhos que um componente trata sozinho (editor, composer) entram no
    escopo `editor`: aparecem no cheat sheet e nunca são despachados.
+   Os editores visuais (Steel Canvas: Sites, e-mail e Documentos) usam o
+   escopo `editor.canvas` (`canvas.save`, `canvas.undo`, `canvas.redo`,
+   `canvas.copy/cut/paste/duplicate/delete`, `canvas.select-*`, `canvas.move`,
+   `canvas.edit-text` e `canvas.zoom-*`). Também são só documentação: quem
+   trata as teclas é `app/_components/canvas/use-shortcuts.ts`
+   (`handleEditorKey`), que escuta a janela e o iframe do canvas. As dicas da
+   barra de cima (`Desfazer (Ctrl+Z)`, `Ajustar à tela`) saem do registro por
+   `app/_components/canvas/lib/shortcut-hint.ts`. Ficam fora do registro:
+   `Ctrl+A` (selecionar o mesmo nível), as setas que movem 1 px (10 px com
+   Shift) um elemento de posição livre e os modificadores do redimensionamento
+   (`Shift` mantém a proporção, `Alt` desliga o alinhamento).
 
 Fora do escopo desta entrega (backlog P3 e remapeamento por usuário): veja a
 proposta da fatia `keyboard-shortcuts`.
