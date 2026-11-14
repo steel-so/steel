@@ -230,7 +230,11 @@ export function NewsletterIssuesTab({
             Cada edição é numerada quando o envio começa.
           </p>
         </div>
-        <Button onClick={() => setCreating({})} data-testid='new-issue'>
+        <Button
+          onClick={() => setCreating({})}
+          data-testid='new-issue'
+          data-tour='newsletter-new-issue'
+        >
           <SteelIcon icon={Add01Icon} strokeWidth={2} />
           Nova edição
         </Button>

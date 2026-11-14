@@ -169,7 +169,10 @@ function SummaryCards({ workspaceId }: { workspaceId: string }) {
     { label: 'Alertas abertos', value: data?.openAlerts },
   ]
   return (
-    <div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6'>
+    <div
+      data-tour='sd-inventory-summary'
+      className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6'
+    >
       {items.map((item) => (
         <div
           key={item.label}
@@ -772,7 +775,7 @@ export function SdInventoryView({
     <div className='flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4'>
       <SummaryCards workspaceId={workspaceId} />
       <Tabs defaultValue='devices' className='min-h-0 flex-1 gap-3'>
-        <TabsList>
+        <TabsList data-tour='sd-inventory-tabs'>
           <TabsTrigger value='devices'>Equipamentos</TabsTrigger>
           <TabsTrigger value='alerts'>Alertas</TabsTrigger>
           <TabsTrigger value='software'>Software</TabsTrigger>

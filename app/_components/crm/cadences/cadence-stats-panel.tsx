@@ -100,7 +100,10 @@ function StatsBody({
         </Badge>
       </div>
 
-      <dl className='grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3 xl:grid-cols-6'>
+      <dl
+        className='grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3 xl:grid-cols-6'
+        data-tour='cadence-stats-tiles'
+      >
         <Tile label='Inscritos' value={enrolled} />
         <Tile label='Em andamento' value={stats?.active ?? 0} />
         <Tile label='Pausados' value={stats?.paused ?? 0} />
@@ -123,7 +126,7 @@ function StatsBody({
         />
       </dl>
 
-      <section className='flex flex-col gap-2'>
+      <section className='flex flex-col gap-2' data-tour='cadence-stats-funnel'>
         <h3 className='font-medium text-sm'>Funil por passo</h3>
         <p className='text-muted-foreground text-xs'>
           &ldquo;Chegaram&rdquo; conta quem já passou pelo passo; as barras são
@@ -229,7 +232,10 @@ function StatsBody({
         ) : null}
       </section>
 
-      <section className='flex flex-col gap-2'>
+      <section
+        className='flex flex-col gap-2'
+        data-tour='cadence-stats-enrollments'
+      >
         <h3 className='font-medium text-sm'>Inscritos</h3>
         <CadenceEnrollmentsList
           workspaceId={workspaceId}

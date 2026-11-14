@@ -397,7 +397,12 @@ export function IssueAiButton() {
         <DropdownMenuTrigger
           nativeButton={true}
           render={
-            <Button size='sm' variant='outline' aria-label='IA'>
+            <Button
+              size='sm'
+              variant='outline'
+              aria-label='IA'
+              data-tour='newsletter-issue-ai'
+            >
               <SteelIcon icon={AiMagicIcon} strokeWidth={2} />
               <span className='hidden sm:inline'>IA</span>
               <SteelIcon icon={ArrowDown01Icon} className='size-3.5' />

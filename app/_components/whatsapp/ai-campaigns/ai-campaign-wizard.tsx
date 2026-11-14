@@ -418,7 +418,10 @@ export function WhatsappAiCampaignWizard({
   return (
     <div className='space-y-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex items-center gap-2'>
+        <div
+          className='flex items-center gap-2'
+          data-tour='zap-ai-campaign-header'
+        >
           <Button
             variant='ghost'
             size='icon-sm'
@@ -433,7 +436,10 @@ export function WhatsappAiCampaignWizard({
         </div>
       </div>
 
-      <ol className='grid gap-2 sm:grid-cols-5'>
+      <ol
+        className='grid gap-2 sm:grid-cols-5'
+        data-tour='zap-ai-campaign-steps'
+      >
         {STEPS.map((item, position) => {
           const done = stepDone(data, item.key)
           const active = item.key === step
@@ -474,7 +480,10 @@ export function WhatsappAiCampaignWizard({
         })}
       </ol>
 
-      <section className='rounded-lg border border-border bg-card p-5'>
+      <section
+        className='rounded-lg border border-border bg-card p-5'
+        data-tour='zap-ai-campaign-panel'
+      >
         {step === 'basics' ? (
           <StepBasics workspaceId={workspaceId} campaign={data} onDone={next} />
         ) : step === 'contacts' ? (

@@ -72,7 +72,7 @@ export function WhatsappSettingsTemplates({
   return (
     <div className='space-y-4'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div>
+        <div data-tour='zap-templates-intro'>
           <h3 className='font-medium text-sm'>Templates da Meta</h3>
           <p className='text-muted-foreground text-xs'>
             Modelos de mensagem aprovados pela Meta, usados para falar com
@@ -80,7 +80,10 @@ export function WhatsappSettingsTemplates({
             sua conta.
           </p>
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
+        <div
+          className='flex flex-wrap items-center gap-2'
+          data-tour='zap-templates-actions'
+        >
           <Select
             value={selectedConnectionId ?? null}
             onValueChange={(value) =>
@@ -139,7 +142,10 @@ export function WhatsappSettingsTemplates({
         </p>
       ) : null}
 
-      <div className='max-h-[26rem] overflow-auto rounded-lg border border-border'>
+      <div
+        className='max-h-[26rem] overflow-auto rounded-lg border border-border'
+        data-tour='zap-templates-table'
+      >
         <Table containerClassName='overflow-x-visible'>
           <TableHeader className='sticky top-0 z-10 bg-card/85 backdrop-blur-md'>
             <TableRow>

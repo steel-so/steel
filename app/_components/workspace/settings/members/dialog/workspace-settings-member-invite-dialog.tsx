@@ -60,7 +60,7 @@ export function WorkspaceSettingsMemberInviteDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         disabled={disabled}
-        render={<Button size='sm' className='h-8' />}
+        render={<Button size='sm' className='h-8' data-tour='members-invite' />}
       >
         Adicionar membro
       </DialogTrigger>

@@ -47,6 +47,7 @@ import {
 } from '@/src/schemas/sticky-note.schema'
 import { CreateSubscriptionSchema } from '@/src/schemas/subscription.schema'
 import { TalkToSalesSchema } from '@/src/schemas/talk-to-sales.schema'
+import { MarkTourSeenSchema } from '@/src/schemas/tour-progress.schema'
 import {
   confirmTotpSchema,
   disableTotpSchema,
@@ -93,6 +94,7 @@ import {
   StickyNoteDTO,
   SubscriptionDTO,
   TotpStatusDTO,
+  TourProgressDTO,
   UserDTO,
   UserPreferenceDTO,
   WorkspaceAiGuardrailsDTO,
@@ -398,6 +400,30 @@ const user: RouteConfig[] = [
         description: 'Preferências atualizadas.',
         schema: UserPreferenceDTO,
       },
+    },
+  },
+  {
+    method: 'get',
+    path: '/users/me/tours',
+    tags: ['Usuário'],
+    summary: 'Tours guiados já vistos',
+    description:
+      'Tours guiados que o usuário da sessão já concluiu ou pulou. Um tour reabre sozinho só quando a versão publicada na tela é maior que a registrada aqui.',
+    rateLimit: false,
+    responses: {
+      200: { description: 'Tours vistos.', schema: z.array(TourProgressDTO) },
+    },
+  },
+  {
+    method: 'put',
+    path: '/users/me/tours',
+    tags: ['Usuário'],
+    summary: 'Marcar tour guiado como visto',
+    description:
+      'Registra que o usuário concluiu (`COMPLETED`) ou pulou (`SKIPPED`) um tour. Há um registro por usuário e tour: marcar de novo substitui o anterior. `key` precisa ser um tour existente.',
+    body: MarkTourSeenSchema,
+    responses: {
+      200: { description: 'Registro salvo.', schema: TourProgressDTO },
     },
   },
   {
@@ -1530,12 +1556,9 @@ const billing: RouteConfig[] = [
             .string()
             .optional()
             .meta({ description: 'ID da cobrança (`billId`), quando plano.' }),
-          subscription: z
-            .object({ id: z.string() })
-            .optional()
-            .meta({
-              description: 'Formato v2: `data.subscription.id` (`billId`).',
-            }),
+          subscription: z.object({ id: z.string() }).optional().meta({
+            description: 'Formato v2: `data.subscription.id` (`billId`).',
+          }),
           checkout: z.object({ id: z.string() }).optional(),
         }),
       }),

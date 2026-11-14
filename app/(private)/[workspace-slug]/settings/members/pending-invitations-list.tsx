@@ -86,7 +86,7 @@ export function PendingInvitationsList({
   if (open.length === 0) return null
 
   return (
-    <div className='space-y-2'>
+    <div className='space-y-2' data-tour='members-pending'>
       <div className='flex items-center gap-2'>
         <Muted className='text-base text-primary'>Convites pendentes</Muted>
         <Badge variant='secondary'>{open.length}</Badge>

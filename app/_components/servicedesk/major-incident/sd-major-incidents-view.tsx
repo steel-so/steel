@@ -72,14 +72,14 @@ export function SdMajorIncidentsView({
   return (
     <div className='mx-auto flex w-full max-w-4xl flex-col gap-4 p-4 sm:p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex flex-col'>
+        <div data-tour='sd-major-title' className='flex flex-col'>
           <h1 className='font-semibold text-lg'>Incidentes maiores</h1>
           <p className='text-muted-foreground text-sm'>
             Para declarar um, abra o chamado do incidente e use a aba "Incidente
             maior".
           </p>
         </div>
-        <div className='flex items-center gap-2'>
+        <div data-tour='sd-major-actions' className='flex items-center gap-2'>
           <SimpleSelect
             value={filter}
             onChange={(value) => value && setFilter(value)}
@@ -107,7 +107,7 @@ export function SdMajorIncidentsView({
             : 'Nenhum incidente maior encontrado.'}
         </EmptyState>
       ) : (
-        <ul className='flex flex-col gap-3'>
+        <ul data-tour='sd-major-list' className='flex flex-col gap-3'>
           {items.map((incident) => (
             <IncidentRow key={incident.id} slug={slug} incident={incident} />
           ))}

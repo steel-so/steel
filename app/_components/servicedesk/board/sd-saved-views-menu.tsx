@@ -235,7 +235,12 @@ export function SdSavedViewsMenu({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
-            <Button variant='outline' size='sm' aria-label='Visões salvas'>
+            <Button
+              variant='outline'
+              size='sm'
+              aria-label='Visões salvas'
+              data-tour='sd-board-views'
+            >
               <SteelIcon icon={Bookmark01Icon} strokeWidth={2} />
               <span className='max-w-36 truncate'>
                 {current ? current.name : 'Visões'}

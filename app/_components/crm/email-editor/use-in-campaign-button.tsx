@@ -39,6 +39,7 @@ export function UseInCampaignButton() {
       onClick={useInCampaign}
       disabled={pending}
       data-testid='use-in-campaign'
+      data-tour='email-editor-use-in-campaign'
     >
       <SteelIcon icon={MegaphoneIcon} strokeWidth={2} />
       {pending ? 'Salvando…' : 'Usar na campanha'}

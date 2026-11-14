@@ -38,7 +38,10 @@ export function SalesTvTemplateButton({
   }
 
   return (
-    <div className='flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-center'>
+    <div
+      data-tour='crm-dashboard-tv-template'
+      className='flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-center'
+    >
       <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
         <SteelIcon icon={Tv01Icon} strokeWidth={2} className='size-5' />
       </div>

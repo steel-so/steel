@@ -524,7 +524,7 @@ export function WhatsappConversationSidebar({
         </div>
       ) : null}
       <div className='flex items-center gap-2 p-3'>
-        <div className='relative flex-1'>
+        <div className='relative flex-1' data-tour='zap-conversations-search'>
           <SteelIcon
             icon={Search01Icon}
             size={16}
@@ -545,6 +545,7 @@ export function WhatsappConversationSidebar({
           setTab(value as 'active' | 'closed' | 'archived')
         }
         className='px-3'
+        data-tour='zap-conversations-tabs'
       >
         <TabsList className='w-full'>
           <TabsTrigger value='active' className='flex-1'>
@@ -558,7 +559,7 @@ export function WhatsappConversationSidebar({
           </TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className='px-3 pt-2 pb-1'>
+      <div className='px-3 pt-2 pb-1' data-tour='zap-conversations-filters'>
         <InboxFilterSelect
           workspaceId={workspaceId}
           value={inboxFilter}
@@ -570,7 +571,10 @@ export function WhatsappConversationSidebar({
           onChange={setSlaFilter}
         />
       </div>
-      <div className='flex-1 overflow-y-auto'>
+      <div
+        className='flex-1 overflow-y-auto'
+        data-tour='zap-conversations-list'
+      >
         {conversations.isError ? (
           <div className='space-y-2 px-3 py-6 text-center text-sm'>
             <p className='text-destructive'>

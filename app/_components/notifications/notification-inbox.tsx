@@ -458,7 +458,7 @@ export function NotificationInbox({
             switchView('notifications')
           }}
         >
-          <TabsList aria-label='Pastas'>
+          <TabsList aria-label='Pastas' data-tour='inbox-folders'>
             {FOLDERS.map((item) => (
               <TabsTrigger key={item.value} value={item.value}>
                 {item.label}
@@ -555,6 +555,7 @@ export function NotificationInbox({
                 size='icon-sm'
                 variant='ghost'
                 aria-label='Mais ações da caixa de entrada'
+                data-tour='inbox-more'
               >
                 <SteelIcon
                   icon={MoreHorizontalIcon}
@@ -627,6 +628,7 @@ export function NotificationInbox({
       <div
         role='toolbar'
         aria-label='Filtros rápidos'
+        data-tour='inbox-quick-filters'
         className='flex items-center gap-2 overflow-x-auto border-b px-4 py-2'
       >
         <Button
@@ -635,6 +637,7 @@ export function NotificationInbox({
           aria-pressed={view === 'ai'}
           onClick={() => switchView(view === 'ai' ? 'notifications' : 'ai')}
           className='shrink-0'
+          data-tour='inbox-ai-pending'
         >
           <SteelIcon icon={AiMagicIcon} size={14} strokeWidth={2} />
           Pendências da IA
@@ -795,6 +798,7 @@ export function NotificationInbox({
       ) : (
         <div className='grid min-h-0 flex-1 lg:grid-cols-[minmax(20rem,26rem)_1fr]'>
           <div
+            data-tour='inbox-list'
             className={cn(
               'min-h-0 overflow-y-auto lg:border-r',
               // Coluna única no celular: com uma notificação aberta, a lista

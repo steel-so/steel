@@ -228,6 +228,7 @@ export function SteelAgentEditor({
           </div>
           <Textarea
             id='agent-instructions'
+            data-tour='agent-instructions'
             value={form.instructions}
             rows={8}
             maxLength={20_000}
@@ -257,7 +258,11 @@ export function SteelAgentEditor({
               next && set('triggerType', next as SteelAgentTriggerTypeDTO)
             }
           >
-            <SelectTrigger aria-label='Gatilho' className='w-full sm:w-64'>
+            <SelectTrigger
+              aria-label='Gatilho'
+              className='w-full sm:w-64'
+              data-tour='agent-trigger'
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -430,6 +435,7 @@ export function SteelAgentEditor({
         <Field orientation='horizontal'>
           <Switch
             id='agent-enabled'
+            data-tour='agent-enabled'
             checked={form.enabled}
             disabled={disabled}
             onCheckedChange={(next) => set('enabled', next)}
@@ -440,7 +446,7 @@ export function SteelAgentEditor({
         </Field>
       </FieldGroup>
 
-      <section className='space-y-2'>
+      <section className='space-y-2' data-tour='agent-tools'>
         <div>
           <h3 className='font-semibold text-sm'>Ferramentas permitidas</h3>
           <p className='text-muted-foreground text-sm'>
@@ -659,7 +665,7 @@ export function SteelAgentEditor({
 
       {canManage ? (
         <div className='flex justify-end gap-2'>
-          <Button type='submit' disabled={saving}>
+          <Button type='submit' disabled={saving} data-tour='agent-save'>
             {saving ? 'Salvando…' : agent ? 'Salvar' : 'Criar agente'}
           </Button>
         </div>

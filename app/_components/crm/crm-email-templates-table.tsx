@@ -109,13 +109,14 @@ export function CrmEmailTemplatesTable({
         <Button
           size='sm'
           nativeButton={false}
+          data-tour='email-templates-new'
           render={<Link href={`/${slug}/crm/email-templates/new`} />}
         >
           <SteelIcon icon={MailAdd01Icon} strokeWidth={2} />
           Novo template
         </Button>
       </div>
-      <div className='min-h-0 flex-1'>
+      <div className='min-h-0 flex-1' data-tour='email-templates-table'>
         <DataTable
           columns={columns}
           data={rows}

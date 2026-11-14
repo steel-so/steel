@@ -165,6 +165,7 @@ export function SteelAiComposer({
     <form
       ref={containerRef}
       style={style}
+      data-tour='ai-composer'
       className={cn('w-full', className)}
       onSubmit={(event) => {
         event.preventDefault()
@@ -292,6 +293,7 @@ export function SteelAiComposer({
                       variant='ghost'
                       size='icon-sm'
                       aria-label='Anexar arquivos ou fotos'
+                      data-tour='ai-attach'
                       className='shrink-0 rounded-full text-muted-foreground'
                       disabled={disabled || busy}
                       onClick={() => fileRef.current?.click()}

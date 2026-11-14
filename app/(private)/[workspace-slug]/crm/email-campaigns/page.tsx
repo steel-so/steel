@@ -45,7 +45,7 @@ export default async function CrmEmailCampaignsPage({
           </HeaderBreadcrumbCrumb>
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1'>
+      <div className='min-h-0 flex-1' data-tour='email-campaigns-table'>
         <CrmEmailCampaignsTable
           workspaceId={membership.value.workspaceId}
           slug={slug}

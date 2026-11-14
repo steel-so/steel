@@ -296,7 +296,7 @@ export function WhatsappAiCampaignsPage({
   return (
     <div className='space-y-4'>
       <div className='flex items-center justify-between gap-3'>
-        <div>
+        <div data-tour='zap-ai-campaigns-intro'>
           <h3 className='font-medium text-sm'>Campanhas de IA</h3>
           <p className='text-muted-foreground text-xs'>
             A IA envia um template a um grupo de contatos, conversa com quem
@@ -304,7 +304,11 @@ export function WhatsappAiCampaignsPage({
           </p>
         </div>
         {canCreate ? (
-          <Button size='sm' onClick={() => setCreateOpen(true)}>
+          <Button
+            size='sm'
+            data-tour='zap-ai-campaigns-new'
+            onClick={() => setCreateOpen(true)}
+          >
             <SteelIcon icon={PlusSignIcon} size={14} />
             Nova campanha
           </Button>
@@ -315,6 +319,7 @@ export function WhatsappAiCampaignsPage({
         <fieldset
           className='flex flex-wrap gap-1.5'
           aria-label='Filtrar por situação'
+          data-tour='zap-ai-campaigns-filters'
         >
           {FILTERS.map((option) => (
             <Button
@@ -337,7 +342,10 @@ export function WhatsappAiCampaignsPage({
         />
       </div>
 
-      <div className='overflow-auto rounded-lg border border-border'>
+      <div
+        className='overflow-auto rounded-lg border border-border'
+        data-tour='zap-ai-campaigns-table'
+      >
         <Table containerClassName='overflow-x-visible'>
           <TableHeader className='sticky top-0 z-10 bg-card/85 backdrop-blur-md'>
             <TableRow>

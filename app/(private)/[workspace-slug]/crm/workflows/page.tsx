@@ -45,7 +45,7 @@ export default async function CrmWorkflowsPage({
           </HeaderBreadcrumbCrumb>
         </HeaderBreadcrumbList>
       </HeaderInternalNavigation>
-      <div className='min-h-0 flex-1 p-6'>
+      <div className='min-h-0 flex-1 p-6' data-tour='workflows-table'>
         <CrmWorkflowsTable
           workspaceId={membership.value.workspaceId}
           slug={slug}

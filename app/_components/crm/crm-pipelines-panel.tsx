@@ -58,7 +58,7 @@ export function CrmPipelinesPanel({ workspaceId }: { workspaceId: string }) {
             <CreateCrmPipelineDialog workspaceId={workspaceId} />
           ) : null}
         </div>
-        <div className='flex flex-col gap-1'>
+        <div data-tour='pipelines-list' className='flex flex-col gap-1'>
           {!isLoading && pipelines?.length === 0 && (
             <p className='text-sm text-muted-foreground'>
               Nenhum funil cadastrado
@@ -150,7 +150,7 @@ function CreateCrmPipelineDialog({ workspaceId }: { workspaceId: string }) {
     >
       <DialogTrigger
         render={
-          <Button variant='default' size='xs'>
+          <Button variant='default' size='xs' data-tour='pipelines-new'>
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Novo funil
           </Button>
@@ -236,7 +236,11 @@ function CrmPipelineStagesList({
   return (
     <div className='flex flex-col gap-3'>
       {canCreate ? (
-        <form onSubmit={handleCreateStage} className='flex gap-2'>
+        <form
+          onSubmit={handleCreateStage}
+          data-tour='pipelines-stage-new'
+          className='flex gap-2'
+        >
           <Input
             placeholder='Nova etapa'
             value={stageName}
@@ -252,7 +256,7 @@ function CrmPipelineStagesList({
           </Button>
         </form>
       ) : null}
-      <div className='flex flex-col gap-1'>
+      <div data-tour='pipelines-stages' className='flex flex-col gap-1'>
         {!isLoading && stages?.length === 0 && (
           <p className='text-sm text-muted-foreground'>
             Nenhuma etapa cadastrada

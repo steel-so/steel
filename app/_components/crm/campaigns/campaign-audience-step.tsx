@@ -123,7 +123,10 @@ export function CampaignAudienceStep({
   }
 
   return (
-    <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]'>
+    <div
+      className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]'
+      data-tour='campaign-audience'
+    >
       <div className='flex min-w-0 flex-col gap-6'>
         <fieldset className='flex flex-col gap-3'>
           <legend className='mb-2 font-medium text-sm'>Listas de e-mail</legend>
@@ -208,8 +211,8 @@ export function CampaignAudienceStep({
             </SelectContent>
           </Select>
           <p className='text-muted-foreground text-xs'>
-            Por que você pode falar com estas pessoas. Vale para todos os
-            canais da campanha e fica registrada com quem confirmou e quando.
+            Por que você pode falar com estas pessoas. Vale para todos os canais
+            da campanha e fica registrada com quem confirmou e quando.
           </p>
         </div>
       </div>

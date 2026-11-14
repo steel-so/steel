@@ -40,7 +40,7 @@ export function WhatsappSettingsAiKnowledge({
   }
 
   return (
-    <div className='max-w-lg space-y-4'>
+    <div className='max-w-lg space-y-4' data-tour='zap-ai-knowledge'>
       <div>
         <h3 className='font-medium text-sm'>Base de conhecimento</h3>
         <p className='text-muted-foreground text-xs'>

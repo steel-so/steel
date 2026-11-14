@@ -31,6 +31,7 @@ export function SdKbSearchBox({
 
   return (
     <div
+      data-tour='sd-kb-search'
       className={cn(
         'flex h-11 items-center gap-2 rounded-xl border bg-background px-3 shadow-xs focus-within:ring-2 focus-within:ring-ring/40',
         className,

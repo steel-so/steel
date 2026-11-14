@@ -258,6 +258,7 @@ function ScreensTab({
           type='button'
           variant='outline'
           disabled={definition.screens.length >= FLOW_LIMITS.screens}
+          data-tour='zap-flow-add-screen'
           onClick={() => onChange(addScreen(definition))}
         >
           <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
@@ -647,6 +648,7 @@ function FlowEditorBody({
                 variant='outline'
                 size='sm'
                 disabled={!dirty || busy}
+                data-tour='zap-flow-save'
                 onClick={() => save()}
               >
                 <SteelIcon icon={FloppyDiskIcon} strokeWidth={2} />
@@ -656,11 +658,17 @@ function FlowEditorBody({
                 variant='outline'
                 size='sm'
                 disabled={busy}
+                data-tour='zap-flow-send-draft'
                 onClick={() => send(false)}
               >
                 Enviar rascunho à Meta
               </Button>
-              <Button size='sm' disabled={busy} onClick={() => send(true)}>
+              <Button
+                size='sm'
+                disabled={busy}
+                data-tour='zap-flow-publish'
+                onClick={() => send(true)}
+              >
                 <SteelIcon icon={Rocket01Icon} strokeWidth={2} />
                 Publicar
               </Button>
@@ -708,7 +716,7 @@ function FlowEditorBody({
       ) : null}
 
       <div className='min-h-0 flex-1 overflow-y-auto p-4'>
-        <Tabs defaultValue='screens'>
+        <Tabs defaultValue='screens' data-tour='zap-flow-tabs'>
           <TabsList>
             <TabsTrigger value='screens'>Telas</TabsTrigger>
             <TabsTrigger value='send'>Envio e CRM</TabsTrigger>

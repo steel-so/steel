@@ -133,14 +133,14 @@ export function CrmCampaignsList({
   return (
     <div className='flex min-w-0 flex-col gap-4 p-4 sm:p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='min-w-0'>
+        <div className='min-w-0' data-tour='campaigns-header'>
           <h1 className='font-semibold text-lg'>Campanhas</h1>
           <p className='text-muted-foreground text-sm'>
             Leve contatos do e-mail (e do WhatsApp) até uma landing page ou
             formulário e acompanhe as conversões.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => setOpen(true)} data-tour='campaigns-new'>
           <SteelIcon icon={Add01Icon} /> Nova campanha
         </Button>
       </div>
@@ -164,7 +164,10 @@ export function CrmCampaignsList({
           </Button>
         </div>
       ) : (
-        <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <div
+          className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'
+          data-tour='campaigns-grid'
+        >
           {list.map((campaign) => (
             <CampaignCard key={campaign.id} campaign={campaign} slug={slug} />
           ))}

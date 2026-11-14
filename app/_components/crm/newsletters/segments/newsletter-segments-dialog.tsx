@@ -250,6 +250,7 @@ export function NewsletterSegmentsButton({
         variant='outline'
         onClick={() => setOpen(true)}
         data-testid='newsletter-segments'
+        data-tour='newsletter-segments'
       >
         <SteelIcon icon={FilterIcon} strokeWidth={2} />
         Segmentos

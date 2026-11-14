@@ -46,7 +46,11 @@ export function SdKbCuration({
   if (!data) return null
 
   return (
-    <section className='space-y-4' aria-label='Curadoria da base'>
+    <section
+      className='space-y-4'
+      aria-label='Curadoria da base'
+      data-tour='sd-kb-curation'
+    >
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <h2 className='font-medium text-sm'>Curadoria (KCS)</h2>
         <p className='text-muted-foreground text-xs'>

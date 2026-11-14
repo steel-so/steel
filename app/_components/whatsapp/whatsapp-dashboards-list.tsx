@@ -83,7 +83,7 @@ export function WhatsappDashboardsList({
   return (
     <div className='space-y-4 p-6'>
       <div className='flex items-center justify-between'>
-        <div>
+        <div data-tour='zap-dashboards-intro'>
           <h3 className='font-medium text-sm'>Painéis</h3>
           <p className='text-muted-foreground text-xs'>
             Dashboards customizados sobre conversas, sentimento e transmissões
@@ -93,7 +93,7 @@ export function WhatsappDashboardsList({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger
             render={
-              <Button size='sm'>
+              <Button size='sm' data-tour='zap-dashboards-new'>
                 <SteelIcon icon={Add01Icon} strokeWidth={2} />
                 Novo painel
               </Button>
@@ -123,7 +123,10 @@ export function WhatsappDashboardsList({
         </Dialog>
       </div>
 
-      <div className='divide-y rounded-md border'>
+      <div
+        className='divide-y rounded-md border'
+        data-tour='zap-dashboards-list'
+      >
         {items.map((dashboard) => (
           <div
             key={dashboard.id}

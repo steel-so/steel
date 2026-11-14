@@ -173,7 +173,11 @@ export function CrmEmailCampaignsTable({
         refetch={refetch}
         disableInlineCreate
         headerAction={
-          <Button size='sm' onClick={() => setViewing('new')}>
+          <Button
+            size='sm'
+            onClick={() => setViewing('new')}
+            data-tour='email-campaigns-new'
+          >
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Nova campanha
           </Button>

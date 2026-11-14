@@ -25,6 +25,7 @@ export function SdKbCreateButton({
   return (
     <Button
       size='sm'
+      data-tour='sd-kb-new'
       className={className}
       disabled={create.isPending}
       onClick={() =>

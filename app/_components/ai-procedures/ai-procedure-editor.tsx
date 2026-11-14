@@ -142,6 +142,7 @@ export function AiProcedureEditor({
           <FieldLabel htmlFor='procedure-when'>Quando usar</FieldLabel>
           <Textarea
             id='procedure-when'
+            data-tour='procedure-when'
             rows={2}
             maxLength={500}
             required
@@ -169,7 +170,7 @@ export function AiProcedureEditor({
         </Field>
       </FieldGroup>
 
-      <section className='space-y-3'>
+      <section className='space-y-3' data-tour='procedure-steps'>
         <div>
           <h2 className='font-medium text-sm'>Passos</h2>
           <p className='text-muted-foreground text-sm'>
@@ -200,6 +201,7 @@ export function AiProcedureEditor({
         <Button
           type='button'
           variant='outline'
+          data-tour='procedure-add-step'
           disabled={disabled || form.steps.length >= 30}
           onClick={() =>
             set('steps', [
@@ -220,6 +222,7 @@ export function AiProcedureEditor({
           </FieldLabel>
           <Input
             id='procedure-attempts'
+            data-tour='procedure-attempts'
             type='number'
             min={1}
             max={5}
@@ -238,6 +241,7 @@ export function AiProcedureEditor({
           </FieldLabel>
           <Textarea
             id='procedure-handoff'
+            data-tour='procedure-handoff'
             rows={2}
             maxLength={1000}
             value={form.handoffMessage ?? ''}

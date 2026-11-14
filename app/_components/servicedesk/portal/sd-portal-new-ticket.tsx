@@ -313,7 +313,10 @@ export function SdPortalNewTicket({
           void submit()
         }}
       >
-        <fieldset className='flex flex-col gap-2'>
+        <fieldset
+          data-tour='sd-portal-new-type'
+          className='flex flex-col gap-2'
+        >
           <legend className='mb-2 font-medium text-sm'>
             Do que você precisa?
           </legend>
@@ -370,6 +373,7 @@ export function SdPortalNewTicket({
         >
           <Input
             id='sd-portal-title'
+            data-tour='sd-portal-new-title'
             autoFocus
             maxLength={200}
             value={title}
@@ -508,7 +512,12 @@ export function SdPortalNewTicket({
           >
             Cancelar
           </Link>
-          <Button type='submit' size='lg' disabled={busy || !cfg}>
+          <Button
+            type='submit'
+            size='lg'
+            data-tour='sd-portal-new-submit'
+            disabled={busy || !cfg}
+          >
             <SteelIcon icon={SentIcon} strokeWidth={2} />
             {busy ? 'Enviando…' : 'Enviar chamado'}
           </Button>

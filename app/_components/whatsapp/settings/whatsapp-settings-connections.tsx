@@ -540,14 +540,17 @@ export function WhatsappSettingsConnections({
   return (
     <div className='space-y-4'>
       <div className='flex items-center justify-between'>
-        <div>
+        <div data-tour='zap-connections-intro'>
           <h3 className='font-medium text-sm'>Conexões</h3>
           <p className='text-muted-foreground text-xs'>
             Números conectados pela API oficial da Meta ou pela Z-API
           </p>
         </div>
         {canManage ? (
-          <div className='flex items-start gap-2'>
+          <div
+            className='flex items-start gap-2'
+            data-tour='zap-connections-actions'
+          >
             <MetaSignupButton workspaceId={workspaceId} />
             <CreateConnectionDialog workspaceId={workspaceId} />
           </div>
@@ -558,7 +561,10 @@ export function WhatsappSettingsConnections({
         )}
       </div>
 
-      <div className='grid gap-3 md:grid-cols-2'>
+      <div
+        className='grid gap-3 md:grid-cols-2'
+        data-tour='zap-connections-list'
+      >
         {(connections.data ?? []).map((connection) => (
           <Card key={connection.id}>
             <CardHeader>

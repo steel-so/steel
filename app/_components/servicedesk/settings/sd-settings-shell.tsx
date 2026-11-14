@@ -36,7 +36,7 @@ export function SdSettingsShell({ workspaceId }: { workspaceId: string }) {
     <SdSettingsProvider value={{ workspaceId, canEdit, config: config.data }}>
       <div className='min-h-0 w-full flex-1 overflow-y-auto'>
         <div className='w-full space-y-6 p-6'>
-          <div>
+          <div data-tour='sd-settings-section'>
             <H3>{active.label}</H3>
             <Muted>{active.description}</Muted>
           </div>

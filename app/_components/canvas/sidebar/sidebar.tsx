@@ -68,6 +68,7 @@ export function CanvasSidebar({ compact = false }: { compact?: boolean }) {
   return (
     <aside
       aria-label='Barra lateral do editor'
+      data-tour='canvas-sidebar'
       className='flex h-full min-h-0 shrink-0 border-r bg-background'
     >
       <div
