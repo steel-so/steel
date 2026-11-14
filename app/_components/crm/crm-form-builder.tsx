@@ -717,7 +717,11 @@ function CrmFormBuilderInner({
                   onValueChange={(v) => onChangeAction(v as CrmFormActionDTO)}
                 >
                   <SelectTrigger className='w-full'>
-                    <SelectValue />
+                    <SelectValue>
+                      {(value: string | null) =>
+                        ACTION_LABELS[value as CrmFormActionDTO] ?? ''
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {FORM_ACTIONS.map((a) => (
@@ -1057,7 +1061,11 @@ function FieldEditor({
             onValueChange={(v) => onChange({ type: v as CrmFormFieldTypeDTO })}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>
+                {(value: string | null) =>
+                  TYPE_LABELS[value as CrmFormFieldTypeDTO] ?? ''
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {FORM_FIELD_TYPES.map((t) => (
@@ -1083,7 +1091,11 @@ function FieldEditor({
             }}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>
+                {(value: string | null) =>
+                  mappingOptions.find((o) => o.value === value)?.label ?? ''
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {mappingOptions.map((o) => (
@@ -1106,7 +1118,11 @@ function FieldEditor({
             }}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>
+                {(value: string | null) =>
+                  phases.find((phase) => phase.id === value)?.title ?? ''
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {phases.map((phase) => (
