@@ -13,7 +13,7 @@ import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
   title: 'Sites | CRM | Steel',
-  description: 'Sites e landing pages do CRM',
+  description: 'Sites do CRM',
 }
 
 export default async function CrmSitesPage({

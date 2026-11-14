@@ -214,8 +214,8 @@ export const SitePublicService = {
     return ok(index)
   },
 
-  /** Where `/l/<shareToken>` goes once its landing page became a published
-   * site; `null` keeps the legacy landing page render. */
+  /** Where the legacy `/l/<shareToken>` address goes once its landing page
+   * became a published site; `null` when no live site carries the token. */
   async landingRedirect(shareToken: string): Promise<Result<string | null>> {
     const slug =
       await SiteRepository.findPublishedSlugByLandingShareToken(shareToken)

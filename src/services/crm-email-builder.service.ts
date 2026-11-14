@@ -562,7 +562,7 @@ export const CrmEmailBuilderService = {
     return ok({ to: actor.value.email })
   },
 
-  /** Published landing pages and forms for the link picker. */
+  /** Published forms for the link picker. */
   async linkTargets(
     actorId: string,
     workspaceId: string,

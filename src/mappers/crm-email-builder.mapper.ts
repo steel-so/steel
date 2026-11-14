@@ -22,18 +22,13 @@ export function toCrmEmailBrandDTO(
   }
 }
 
-/** Public URLs of the link picker quick picks (`/l/<token>`, `/f/<token>`). */
+/** Public URLs of the link picker quick picks (`/f/<token>`). */
 export function toCrmEmailLinkTargetsDTO(
   targets: EmailLinkTargets,
   baseUrl: string,
 ): CrmEmailLinkTargetsDTO {
   const base = baseUrl.replace(/\/$/, '')
   return {
-    landingPages: targets.landingPages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      url: `${base}/l/${page.shareToken}`,
-    })),
     forms: targets.forms.map((form) => ({
       id: form.id,
       name: form.name,

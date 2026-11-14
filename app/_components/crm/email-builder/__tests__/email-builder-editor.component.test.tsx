@@ -101,9 +101,6 @@ function setup() {
     {
       match: '/crm/email-builder/links',
       data: {
-        landingPages: [
-          { id: 'l1', title: 'Black Friday', url: 'https://x.test/l/tok' },
-        ],
         forms: [],
       },
     },

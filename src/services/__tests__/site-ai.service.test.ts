@@ -237,16 +237,6 @@ beforeEach(() => {
       },
     ]),
   )
-  data.listTestimonialContents.mockResolvedValue(
-    ok([
-      {
-        quote: 'O melhor pão da cidade',
-        authorName: 'Ana',
-        authorRole: 'Cliente',
-      },
-      { quote: '' },
-    ]),
-  )
   forms.getById.mockResolvedValue(
     ok(
       createFakeCrmFormDTO({
@@ -339,7 +329,6 @@ describe('SiteAiService.context', () => {
         price: expect.stringContaining('18,00'),
       },
     ])
-    expect(context.testimonials).toBe(1)
     expect(context.forms).toEqual([
       expect.objectContaining({ id: 'f1', name: 'Contato' }),
     ])
@@ -413,10 +402,6 @@ describe('SiteAiService.context', () => {
           err(databaseError()),
         ),
       () => data.listProducts.mockResolvedValueOnce(err(databaseError())),
-      () =>
-        data.listTestimonialContents.mockResolvedValueOnce(
-          err(databaseError()),
-        ),
       () => ai.resolveModel.mockResolvedValueOnce(err(databaseError())),
       () => usageRepo.sumSince.mockResolvedValueOnce(err(databaseError())),
     ]
@@ -629,7 +614,7 @@ describe('SiteAiService.generateSite', () => {
         await SiteAiService.generateSite(
           ACTOR,
           WS,
-          brief({ pages: ['faq'], productIds: [], useTestimonials: false }),
+          brief({ pages: ['faq'], productIds: [] }),
         ),
       ),
     )
@@ -639,7 +624,6 @@ describe('SiteAiService.generateSite', () => {
     expect(done.warnings[0]).toContain('não sugeriu um tema')
     expect(done.warnings.some((w) => w.includes('texto do modelo'))).toBe(true)
     expect(created().pages[0].seo).toEqual({})
-    expect(data.listTestimonialContents).not.toHaveBeenCalled()
   })
 
   it('keeps a page with sample copy when the answer never parses', async () => {
@@ -812,8 +796,6 @@ describe('SiteAiService.generateSite', () => {
     expectErr(await SiteAiService.generateSite(ACTOR, WS, brief()), 'FORBIDDEN')
 
     data.listProducts.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await SiteAiService.generateSite(ACTOR, WS, brief()))
-    data.listTestimonialContents.mockResolvedValueOnce(err(databaseError()))
     expectErr(await SiteAiService.generateSite(ACTOR, WS, brief()))
 
     sites.isSlugTaken.mockResolvedValueOnce(err(databaseError()))

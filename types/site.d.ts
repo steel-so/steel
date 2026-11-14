@@ -18,8 +18,6 @@ export interface SiteDTO {
   publishedAt: string | null
   /** Public address (subdomain when `SITES_ROOT_DOMAIN` is set). */
   url: string
-  /** Landing page this site was migrated from, if any. */
-  sourceLandingPageId: string | null
   createdById: string
   updatedById: string | null
   createdAt: string
@@ -76,12 +74,4 @@ export interface SiteVersionDTO {
   /** This is the version live on the public address. */
   isLive: boolean
   createdAt: string
-}
-
-export interface SiteLandingMigrationDTO {
-  landingPageId: string
-  siteId: string
-  slug: string
-  status: 'created' | 'skipped'
-  published: boolean
 }

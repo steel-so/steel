@@ -57,7 +57,7 @@ export const CONVERSION_KIND_LABEL: Record<
   CrmCampaignConversionKindDTO,
   string
 > = {
-  LANDING_VIEW: 'visita na landing page',
+  LANDING_VIEW: 'visita na landing page antiga',
   FORM_SUBMISSION: 'formulário do CRM',
   SITE_VIEW: 'visita no site',
   SITE_FORM_SUBMISSION: 'formulário no site',
@@ -69,7 +69,6 @@ export const DESTINATION_TYPE_LABEL: Record<
 > = {
   SITE_PAGE: 'Página do site',
   FORM: 'Formulário do CRM',
-  LANDING_PAGE: 'Landing page antiga',
 }
 
 export const VARIABLE_SOURCE_LABEL: Record<

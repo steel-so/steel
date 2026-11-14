@@ -52,8 +52,6 @@ export interface SiteAiContextDTO {
     website: string
   }
   products: SiteAiProductDTO[]
-  /** Testimonials found in the workspace's landing pages. */
-  testimonials: number
   /** Published CRM forms (the contact section's form). */
   forms: SiteAiFormDTO[]
   /** The actor may create CRM forms ("Criar formulário de contato"). */

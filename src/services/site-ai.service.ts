@@ -88,7 +88,6 @@ import {
   toSiteAiFormData,
   toSiteAiFormDTO,
   toSiteAiProductDTOs,
-  toSiteAiTestimonial,
 } from '@/src/mappers/site-ai.mapper'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.repository'
@@ -336,30 +335,17 @@ interface GenerationData {
   form: SiteAiFormData | null
 }
 
-async function loadTestimonials(
-  workspaceId: string,
-): Promise<Result<SiteAiTestimonialData[]>> {
-  const rows = await SiteAiRepository.listTestimonialContents(workspaceId)
-  if (!rows.ok) return rows
-  return ok(
-    rows.value
-      .map(toSiteAiTestimonial)
-      .filter((item): item is SiteAiTestimonialData => item !== null),
-  )
-}
-
 /** Brief data from the workspace, checked before the stream starts. */
 async function loadGenerationData(
   actorId: string,
   workspaceId: string,
   dto: GenerateSiteDTO,
 ): Promise<Result<GenerationData>> {
-  const [products, testimonials] = await Promise.all([
-    SiteAiRepository.listProducts(workspaceId, dto.productIds),
-    dto.useTestimonials ? loadTestimonials(workspaceId) : ok([]),
-  ])
+  const products = await SiteAiRepository.listProducts(
+    workspaceId,
+    dto.productIds,
+  )
   if (!products.ok) return products
-  if (!testimonials.ok) return testimonials
 
   let form: SiteAiFormData | null = null
   if (dto.contactFormId) {
@@ -382,7 +368,7 @@ async function loadGenerationData(
     products: toSiteAiProductDTOs(products.value).map(
       ({ name, description, price }) => ({ name, description, price }),
     ),
-    testimonials: testimonials.value,
+    testimonials: [],
     form,
   })
 }
@@ -839,22 +825,19 @@ export const SiteAiService = {
     const membership = await assertSitesPermission(actorId, workspaceId, 'VIEW')
     if (!membership.ok) return membership
 
-    const [brand, identity, products, testimonials, forms, formCreate] =
-      await Promise.all([
-        CrmEmailBuilderRepository.findBrand(workspaceId),
-        CrmEmailBuilderRepository.findWorkspaceIdentity(workspaceId),
-        SiteAiRepository.listProducts(workspaceId),
-        loadTestimonials(workspaceId),
-        CrmFormService.list(actorId, workspaceId),
-        assertModuleMember(actorId, workspaceId, 'CRM', {
-          resource: 'forms',
-          action: 'CREATE',
-        }),
-      ])
+    const [brand, identity, products, forms, formCreate] = await Promise.all([
+      CrmEmailBuilderRepository.findBrand(workspaceId),
+      CrmEmailBuilderRepository.findWorkspaceIdentity(workspaceId),
+      SiteAiRepository.listProducts(workspaceId),
+      CrmFormService.list(actorId, workspaceId),
+      assertModuleMember(actorId, workspaceId, 'CRM', {
+        resource: 'forms',
+        action: 'CREATE',
+      }),
+    ])
     if (!brand.ok) return brand
     if (!identity.ok) return identity
     if (!products.ok) return products
-    if (!testimonials.ok) return testimonials
 
     const [feature, resolved, usage, margin] = await Promise.all([
       assertFeature(workspaceId, 'crm.aiAssistant'),
@@ -884,7 +867,6 @@ export const SiteAiService = {
         website: saved?.website ?? '',
       },
       products: toSiteAiProductDTOs(products.value),
-      testimonials: testimonials.value.length,
       forms: forms.ok
         ? forms.value
             .filter((form) => form.status === 'PUBLISHED')

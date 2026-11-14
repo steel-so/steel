@@ -154,11 +154,11 @@ export const TAG_GROUPS = [
       {
         name: 'CRM · Campanhas',
         description:
-          'Campanhas multicanal: destino (landing page ou formulário) com links rastreados, e-mail, WhatsApp opcional, público e resultados.',
+          'Campanhas multicanal: destino (formulário ou página de site) com links rastreados, e-mail, WhatsApp opcional, público e resultados.',
       },
       {
-        name: 'CRM · Formulários e landing pages',
-        description: 'Formulários e landing pages (gestão interna).',
+        name: 'CRM · Formulários',
+        description: 'Formulários (gestão interna).',
       },
       {
         name: 'CRM · Workflows',
@@ -185,7 +185,7 @@ export const TAG_GROUPS = [
       {
         name: 'CRM · Sites',
         description:
-          'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração e migração das landing pages.',
+          'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração.',
       },
       {
         name: 'CRM · Newsletters',
@@ -487,11 +487,6 @@ export const TAG_GROUPS = [
         name: 'CRM público · Propostas',
         description:
           'Proposta compartilhada com o cliente: leitura, registro de visualização e aceite (o `shareToken` é o acesso).',
-      },
-      {
-        name: 'CRM público · Landing pages',
-        description:
-          'Landing pages publicadas e registro de visualizações (o `shareToken` é o acesso).',
       },
       {
         name: 'CRM público · Integrações',

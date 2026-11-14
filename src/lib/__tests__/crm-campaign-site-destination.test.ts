@@ -57,7 +57,7 @@ describe('findPublishedSitePage()', () => {
 })
 
 describe('campaignDestinationUrl()', () => {
-  it('uses the site page URL as is and tokens for forms/landing pages', () => {
+  it('uses the site page URL as is and tokens for forms', () => {
     expect(
       campaignDestinationUrl('https://app.test', {
         type: 'SITE_PAGE',

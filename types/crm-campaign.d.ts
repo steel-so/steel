@@ -7,9 +7,10 @@ export type CrmCampaignStatusDTO =
   | 'CANCELED'
   | 'FAILED'
 
-export type CrmCampaignDestinationTypeDTO = 'LANDING_PAGE' | 'FORM' | 'SITE_PAGE'
+export type CrmCampaignDestinationTypeDTO = 'FORM' | 'SITE_PAGE'
 
 export type CrmCampaignConversionKindDTO =
+  /** Legacy: views of the removed landing page editor (old rows only). */
   | 'LANDING_VIEW'
   | 'FORM_SUBMISSION'
   | 'SITE_VIEW'
@@ -77,7 +78,7 @@ export interface CrmCampaignLinksDTO {
 /** What the campaign links to, as shown in summaries. */
 export interface CrmCampaignDestinationDTO {
   type: CrmCampaignDestinationTypeDTO
-  /** Site, form or landing page name. */
+  /** Site or form name. */
   name: string
   /** Site page title (SITE_PAGE). */
   pageTitle: string | null
@@ -99,7 +100,6 @@ export interface CrmCampaignDTO {
   slug: string
   status: CrmCampaignStatusDTO
   destinationType: CrmCampaignDestinationTypeDTO | null
-  landingPageId: string | null
   formId: string | null
   siteId: string | null
   sitePageId: string | null
@@ -206,7 +206,6 @@ export interface CrmCampaignStatsDTO {
       siteView: number
       siteForm: number
       crmForm: number
-      landingView: number
     }
   }
   convertedContacts: CrmCampaignConvertedContactDTO[]
@@ -353,14 +352,6 @@ export interface CrmCampaignFormEmbedDTO {
 export interface CrmCampaignOptionsDTO {
   baseUrl: string
   sites: CrmCampaignSiteOptionDTO[]
-  /** Legacy landing pages not migrated to Sites yet (the chosen one is
-   * always listed). */
-  landingPages: {
-    id: string
-    title: string
-    published: boolean
-    shareToken: string
-  }[]
   forms: {
     id: string
     name: string

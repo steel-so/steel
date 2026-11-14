@@ -10,11 +10,7 @@ export const CRM_CAMPAIGN_LEGAL_BASES = [
 
 export const CrmCampaignLegalBasisEnum = z.enum(CRM_CAMPAIGN_LEGAL_BASES)
 
-export const CrmCampaignDestinationTypeEnum = z.enum([
-  'LANDING_PAGE',
-  'FORM',
-  'SITE_PAGE',
-])
+export const CrmCampaignDestinationTypeEnum = z.enum(['FORM', 'SITE_PAGE'])
 
 export const CrmCampaignChannelEnum = z.enum(['EMAIL', 'WHATSAPP'])
 
@@ -84,7 +80,6 @@ export const UpdateCrmCampaignSchema = z
       .max(60)
       .regex(/^[a-z0-9_-]+$/i, 'Use letras, números, "-" ou "_"'),
     destinationType: CrmCampaignDestinationTypeEnum.nullable(),
-    landingPageId: nullableId,
     formId: nullableId,
     siteId: nullableId,
     sitePageId: nullableId,
@@ -169,7 +164,7 @@ export type ListCrmCampaignRecipientsQuery = z.infer<
 >
 
 /**
- * Campaign parameters a public landing page / form forwards with the visit
+ * Campaign parameters a public site page / form forwards with the visit
  * or the submission (read from its own URL).
  */
 export const CrmCampaignRefSchema = z.object({

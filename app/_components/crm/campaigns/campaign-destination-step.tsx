@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  BrowserIcon,
   FormIcon,
   LinkSquare02Icon,
   RefreshIcon,
@@ -38,7 +37,7 @@ import {
   campaignLinks,
 } from './campaign-steps'
 
-type Tab = 'sites' | 'forms' | 'legacy'
+type Tab = 'sites' | 'forms'
 type StatusFilter = 'all' | 'published' | 'draft'
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -69,7 +68,6 @@ function keepStatus(filter: StatusFilter, published: boolean) {
 
 function tabOf(draft: CampaignDraft): Tab {
   if (draft.destinationType === 'FORM') return 'forms'
-  if (draft.destinationType === 'LANDING_PAGE') return 'legacy'
   return 'sites'
 }
 
@@ -78,7 +76,6 @@ function pick(
   patch: Pick<CampaignDraft, 'destinationType'> & Partial<CampaignDraft>,
 ): Partial<CampaignDraft> {
   return {
-    landingPageId: null,
     formId: null,
     siteId: null,
     sitePageId: null,
@@ -343,85 +340,8 @@ function FormsTab({
   )
 }
 
-function LegacyTab({
-  draft,
-  onChange,
-  options,
-  workspaceSlug,
-  query,
-}: {
-  draft: CampaignDraft
-  onChange: DraftChange
-  options: CrmCampaignOptionsDTO
-  workspaceSlug: string
-  query: string
-}) {
-  const pages = options.landingPages.filter((page) =>
-    matches(query, page.title),
-  )
-  return (
-    <div className='flex flex-col gap-3'>
-      <p className='rounded-xl border bg-muted/30 p-3 text-sm'>
-        Estas landing pages ainda não foram migradas para <strong>Sites</strong>
-        . Migre para editar no novo construtor e medir a campanha nas métricas
-        do site.{' '}
-        <Link
-          href={`/${workspaceSlug}/crm/sites`}
-          className='font-medium underline-offset-4 hover:underline'
-        >
-          Migrar para Sites
-        </Link>
-      </p>
-      {pages.length === 0 ? (
-        <Empty>Nenhuma landing page antiga encontrada.</Empty>
-      ) : (
-        <ul className='flex flex-col gap-2'>
-          {pages.map((page) => {
-            const selected =
-              draft.destinationType === 'LANDING_PAGE' &&
-              draft.landingPageId === page.id
-            return (
-              <li key={page.id}>
-                <button
-                  type='button'
-                  aria-pressed={selected}
-                  onClick={() =>
-                    onChange(
-                      pick({
-                        destinationType: 'LANDING_PAGE',
-                        landingPageId: page.id,
-                      }),
-                    )
-                  }
-                  className={cn(
-                    'flex w-full min-w-0 items-center gap-3 rounded-xl border p-3 text-left hover:bg-muted/40',
-                    selected && 'border-primary ring-1 ring-primary',
-                  )}
-                >
-                  <SteelIcon
-                    icon={BrowserIcon}
-                    size={18}
-                    className='shrink-0 text-muted-foreground'
-                  />
-                  <span className='min-w-0 flex-1 truncate text-sm'>
-                    {page.title}
-                  </span>
-                  <Badge variant='secondary'>Landing page antiga</Badge>
-                  {page.published ? null : (
-                    <Badge variant='outline'>Rascunho</Badge>
-                  )}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-/** The chosen destination: site page (with its thumbnail), form or legacy
- * landing page, with its public address. */
+/** The chosen destination: site page (with its thumbnail) or form, with its
+ * public address. */
 export function DestinationPreview({
   draft,
   onChange,
@@ -510,26 +430,6 @@ export function DestinationPreview({
     )
   }
 
-  if (draft.destinationType === 'LANDING_PAGE') {
-    const page = options.landingPages.find(
-      (item) => item.id === draft.landingPageId,
-    )
-    return (
-      <div className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'>
-        <span className='flex flex-wrap items-center gap-2 font-medium text-sm'>
-          {page?.title ?? campaign.destination?.name ?? 'Landing page'}
-          <Badge variant='secondary'>Landing page antiga</Badge>
-        </span>
-        <p className='text-muted-foreground text-xs'>
-          Migre a página para Sites para medir a campanha nas métricas do site.
-        </p>
-        {campaign.links.destination ? (
-          <OpenLink url={campaign.links.destination} />
-        ) : null}
-      </div>
-    )
-  }
-
   return <Empty>Escolha para onde o link da campanha leva.</Empty>
 }
 
@@ -549,7 +449,7 @@ function OpenLink({ url }: { url: string }) {
 
 /**
  * Step 1 — "Destino": a page of a published site, a CRM form (with the site
- * pages it is embedded in) or a legacy landing page not migrated yet.
+ * pages it is embedded in).
  * Search, status filter and a preview of the choice.
  */
 export function DestinationStep({
@@ -573,8 +473,6 @@ export function DestinationStep({
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<StatusFilter>('all')
   const links = campaignLinks(draft, campaign.slug, options)
-  const showLegacy =
-    options.landingPages.length > 0 || draft.destinationType === 'LANDING_PAGE'
 
   const tabs: { value: Tab; label: string; icon: typeof FormIcon }[] = [
     {
@@ -587,15 +485,6 @@ export function DestinationStep({
       label: `Formulários (${options.forms.length})`,
       icon: FormIcon,
     },
-    ...(showLegacy
-      ? [
-          {
-            value: 'legacy' as const,
-            label: `Landing pages antigas (${options.landingPages.length})`,
-            icon: BrowserIcon,
-          },
-        ]
-      : []),
   ]
 
   return (
@@ -618,7 +507,6 @@ export function DestinationStep({
             onClick={() =>
               onChange({
                 destinationType: null,
-                landingPageId: null,
                 formId: null,
                 siteId: null,
                 sitePageId: null,
@@ -669,27 +557,25 @@ export function DestinationStep({
               className='pl-8'
             />
           </div>
-          {tab !== 'legacy' ? (
-            <Select
-              items={STATUS_FILTERS}
-              value={filter}
-              onValueChange={(value) => setFilter(value as StatusFilter)}
+          <Select
+            items={STATUS_FILTERS}
+            value={filter}
+            onValueChange={(value) => setFilter(value as StatusFilter)}
+          >
+            <SelectTrigger
+              aria-label='Filtrar por situação'
+              className='w-full sm:w-40'
             >
-              <SelectTrigger
-                aria-label='Filtrar por situação'
-                className='w-full sm:w-40'
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTERS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTERS.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             type='button'
             variant='ghost'
@@ -724,7 +610,7 @@ export function DestinationStep({
               query={query}
               filter={filter}
             />
-          ) : tab === 'forms' ? (
+          ) : (
             <FormsTab
               draft={draft}
               onChange={onChange}
@@ -732,14 +618,6 @@ export function DestinationStep({
               workspaceSlug={workspaceSlug}
               query={query}
               filter={filter}
-            />
-          ) : (
-            <LegacyTab
-              draft={draft}
-              onChange={onChange}
-              options={options}
-              workspaceSlug={workspaceSlug}
-              query={query}
             />
           )}
         </div>

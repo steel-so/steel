@@ -14,8 +14,8 @@ import {
 type Params = { params: Promise<{ id: string }> }
 
 /**
- * One turn of the per-field AI chat of the CRM text fields (landing pages,
- * documents, social posts).
+ * One turn of the per-field AI chat of the CRM text fields (documents,
+ * social posts).
  */
 export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()

@@ -13,8 +13,8 @@ export const CAMPAIGN_LINK_MERGE_TAG = '{{campaign_link}}'
 export const CAMPAIGN_FIRST_NAME_MERGE_TAG = '{{primeiro_nome}}'
 
 export interface CampaignDestinationRef {
-  type: 'LANDING_PAGE' | 'FORM'
-  /** Landing page share token or form public token. */
+  type: 'FORM'
+  /** Form public token. */
   token: string
 }
 
@@ -29,8 +29,7 @@ export function buildDestinationUrl(
   destination: CampaignDestinationRef,
 ): string {
   const base = baseUrl.replace(/\/$/, '')
-  const prefix = destination.type === 'LANDING_PAGE' ? 'l' : 'f'
-  return `${base}/${prefix}/${destination.token}`
+  return `${base}/f/${destination.token}`
 }
 
 /** Public URL of any campaign destination. */

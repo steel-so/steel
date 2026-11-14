@@ -91,11 +91,11 @@ describe('UpdateCrmCampaignSchema', () => {
 
   it('should allow clearing nullable fields', () => {
     const result = UpdateCrmCampaignSchema.parse({
-      landingPageId: null,
+      formId: null,
       whatsappVariables: null,
       scheduledAt: null,
     })
-    expect(result.landingPageId).toBeNull()
+    expect(result.formId).toBeNull()
   })
 
   it('should reject an invalid sender and utm medium', () => {

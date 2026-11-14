@@ -41,7 +41,7 @@ const RESOURCE_LABEL: Record<string, string> = {
   notes: 'Notas',
   documents: 'Documentos',
   forms: 'Formulários',
-  'landing-pages': 'Landing pages',
+  'landing-pages': 'Sites',
   email: 'E-mail',
   dashboards: 'Painéis',
   workflows: 'Workflows',

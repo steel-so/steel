@@ -127,8 +127,6 @@ export const GenerateSiteSchema = z
     logoUrl: logoUrl.optional(),
     /** CRM products shown on the site (real names and prices). */
     productIds: z.array(id).max(SITE_AI_MAX_PRODUCTS).default([]),
-    /** Use the testimonials of the workspace's landing pages. */
-    useTestimonials: z.boolean().default(true),
     /** Published CRM form for the contact section; absent = none. */
     contactFormId: id.optional(),
     /** Create (and publish) a "Contato pelo site" form instead. */

@@ -119,7 +119,7 @@ export async function snapshotDraft(site: Site): Promise<Result<SiteSnapshot>> {
   )
 }
 
-/** Publishes a snapshot (shared with the landing page migration). */
+/** Publishes a snapshot (new version + live pointer). */
 export async function publishSnapshot(
   site: Site,
   snapshot: SiteSnapshot,

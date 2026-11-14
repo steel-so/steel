@@ -199,7 +199,7 @@ function authorize(
 /**
  * Barra o acesso quando o módulo não está habilitado para a workspace. Não
  * exige sessão — é usado também pelas rotas públicas (formulários, propostas,
- * landing pages, webhooks) depois de resolverem a workspace pelo token.
+ * webhooks) depois de resolverem a workspace pelo token.
  */
 export async function assertModuleEnabled(
   workspaceId: string,

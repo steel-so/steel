@@ -53,8 +53,6 @@ export const WORKSPACE_CHILD_MODELS: Record<string, (ws: string) => Where> = {
   crmWorkflowRun: (ws) => ({ workflow: { workspaceId: ws } }),
   crmWorkflowRunStep: (ws) => ({ run: { workflow: { workspaceId: ws } } }),
   documentSectionStat: (ws) => ({ document: { workspaceId: ws } }),
-  crmLandingPageSection: (ws) => ({ landingPage: { workspaceId: ws } }),
-  crmLandingPageView: (ws) => ({ landingPage: { workspaceId: ws } }),
   crmSocialConnectionMetricSnapshot: (ws) => ({
     connection: { workspaceId: ws },
   }),

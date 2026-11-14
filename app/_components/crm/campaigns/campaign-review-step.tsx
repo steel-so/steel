@@ -50,12 +50,8 @@ export function destinationLabel(
     const site = options.sites.find((item) => item.id === draft.siteId)
     const page = site?.pages.find((item) => item.id === draft.sitePageId)
     name = site ? `${site.name}${page ? ` › ${page.title}` : ''}` : undefined
-  } else if (draft.destinationType === 'FORM') {
-    name = options.forms.find((item) => item.id === draft.formId)?.name
   } else {
-    name = options.landingPages.find(
-      (item) => item.id === draft.landingPageId,
-    )?.title
+    name = options.forms.find((item) => item.id === draft.formId)?.name
   }
   name ??= campaign.destination
     ? `${campaign.destination.name}${

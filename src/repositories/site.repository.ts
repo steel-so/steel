@@ -1,7 +1,5 @@
 import type {
   CrmForm,
-  CrmLandingPage,
-  CrmLandingPageSection,
   Prisma,
   Site,
   SiteGlobalKind,
@@ -41,10 +39,6 @@ export interface SiteDraftGlobalInput {
   kind: SiteGlobalKind
   name: string
   document: Prisma.InputJsonValue
-}
-
-export type LandingPageForMigration = CrmLandingPage & {
-  sections: CrmLandingPageSection[]
 }
 
 export function isUniqueViolation(error: unknown): boolean {
@@ -116,19 +110,6 @@ export const SiteRepository = {
     }
   },
 
-  async findBySourceLandingPageId(
-    landingPageId: string,
-  ): Promise<Result<Site | null>> {
-    try {
-      const site = await prisma.site.findFirst({
-        where: { sourceLandingPageId: landingPageId },
-      })
-      return ok(site)
-    } catch (error) {
-      return err(dbError('Failed to find site by landing page', error))
-    }
-  },
-
   /** Creates the site with its first (home) page and optional globals. */
   async createWithPages(data: {
     site: {
@@ -138,7 +119,6 @@ export const SiteRepository = {
       slug: string
       theme: Prisma.InputJsonValue
       settings: Prisma.InputJsonValue
-      sourceLandingPageId?: string
     }
     pages: SiteDraftPageInput[]
     globals: SiteDraftGlobalInput[]
@@ -398,23 +378,6 @@ export const SiteRepository = {
     }
   },
 
-  /** Token and name of workspace forms by id (landing page migration). */
-  async findFormsByIds(
-    workspaceId: string,
-    ids: string[],
-  ): Promise<Result<Array<Pick<CrmForm, 'id' | 'name' | 'publicToken'>>>> {
-    if (ids.length === 0) return ok([])
-    try {
-      const forms = await prisma.crmForm.findMany({
-        where: { id: { in: ids }, workspaceId, deletedAt: null },
-        select: { id: true, name: true, publicToken: true },
-      })
-      return ok(forms)
-    } catch (error) {
-      return err(dbError('Failed to load forms by id', error))
-    }
-  },
-
   async recordView(data: {
     siteId: string
     pageId: string | null
@@ -437,20 +400,15 @@ export const SiteRepository = {
     }
   },
 
-  /** Slug of the published site migrated from the landing page behind
+  /** Slug of the published site that replaced the legacy landing page behind
    * `shareToken`, if any (`/l/<token>` redirects there). */
   async findPublishedSlugByLandingShareToken(
     shareToken: string,
   ): Promise<Result<string | null>> {
     try {
-      const landing = await prisma.crmLandingPage.findFirst({
-        where: { shareToken, deletedAt: null },
-        select: { id: true },
-      })
-      if (!landing) return ok(null)
       const site = await prisma.site.findFirst({
         where: {
-          sourceLandingPageId: landing.id,
+          legacyLandingShareToken: shareToken,
           status: 'PUBLISHED',
           deletedAt: null,
         },
@@ -458,23 +416,7 @@ export const SiteRepository = {
       })
       return ok(site?.slug ?? null)
     } catch (error) {
-      return err(dbError('Failed to resolve migrated landing page', error))
-    }
-  },
-
-  /** Landing pages (with sections) still to be looked at by the migration. */
-  async listLandingPagesForMigration(
-    workspaceId?: string,
-  ): Promise<Result<LandingPageForMigration[]>> {
-    try {
-      const pages = await prisma.crmLandingPage.findMany({
-        where: { deletedAt: null, ...(workspaceId ? { workspaceId } : {}) },
-        include: { sections: { orderBy: { order: 'asc' } } },
-        orderBy: { createdAt: 'asc' },
-      })
-      return ok(pages)
-    } catch (error) {
-      return err(dbError('Failed to list landing pages to migrate', error))
+      return err(dbError('Failed to resolve legacy landing page address', error))
     }
   },
 }

@@ -48,7 +48,7 @@ export function linkField(path = 'link', label = 'Link'): InspectorField {
       kind: 'link',
       targets: EMAIL_LINK_TARGETS,
       // In a campaign each recipient gets the tracked link to the
-      // destination (site page, form or landing page).
+      // destination (site page or form).
       quickValues: [{ label: 'Link da campanha', value: CAMPAIGN_LINK }],
     },
     help: 'Use {{campaign_link}} para o link rastreado da campanha.',

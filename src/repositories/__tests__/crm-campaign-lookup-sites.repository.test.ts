@@ -12,24 +12,14 @@ import { prisma } from '@/src/lib/prisma'
 import { CrmCampaignLookupRepository as R } from '../crm-campaign-lookup.repository'
 
 /** Workspace with a published site (2 pages), a draft site, a deleted
- * site, a landing page migrated into the published one, a v2 and a legacy
+ * site, a v2 and a legacy
  * e-mail template and a quick reply. */
 async function seed() {
   const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
   const ws = workspace.id
-  const landing = await prisma.crmLandingPage.create({
-    data: {
-      workspaceId: ws,
-      createdById: user.id,
-      title: 'Antiga',
-      templateKey: 'consultation',
-      shareToken: `lp-${ws}`,
-    },
-  })
   const live = await seedSite(ws, user.id, {
     name: 'Clínica',
     status: 'PUBLISHED',
-    sourceLandingPageId: landing.id,
   })
   const home = await seedSitePage(live.id, {
     title: 'Início',
@@ -73,7 +63,7 @@ async function seed() {
   const reply = await prisma.whatsAppQuickReply.create({
     data: { workspaceId: ws, shortcut: 'promo', title: 'Promo', body: 'Oi' },
   })
-  return { ws, user, live, home, draft, gone, canvas, legacy, reply, landing }
+  return { ws, user, live, home, draft, gone, canvas, legacy, reply }
 }
 
 describe('CrmCampaignLookupRepository — sites and content', () => {
@@ -132,15 +122,12 @@ describe('CrmCampaignLookupRepository — sites and content', () => {
     ).toBeNull()
   })
 
-  it('should list sites, migrated landing pages, editor versions and quick replies', async () => {
+  it('should list sites, editor versions and quick replies', async () => {
     const s = await seed()
     const options = expectOk(await R.listOptions(s.ws))
     expect(options.sites.map((site) => site.id).sort()).toEqual(
       [s.live.id, s.draft.id].sort(),
     )
-    expect(options.landingPages).toEqual([
-      expect.objectContaining({ id: s.landing.id, migratedSiteId: s.live.id }),
-    ])
     const editors = Object.fromEntries(
       options.emailTemplates.map((t) => [t.id, [t.kind, t.canvas]]),
     )

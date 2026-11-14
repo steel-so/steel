@@ -45,7 +45,7 @@ export const WorkspaceModuleAccessRepository = {
         select: { enabled: true, workspace: { select: { status: true } } },
       })
       // Workspace suspenso/em exclusão: módulo fechado também para as rotas
-      // públicas (formulários, propostas, landing pages, webhooks).
+      // públicas (formulários, propostas, webhooks).
       return ok(
         (access?.enabled ?? false) && access?.workspace.status === 'ACTIVE',
       )

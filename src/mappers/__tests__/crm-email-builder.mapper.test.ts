@@ -96,19 +96,15 @@ describe('toCrmEmailBrandDTO()', () => {
 })
 
 describe('toCrmEmailLinkTargetsDTO()', () => {
-  it('should build the public URLs of landing pages and forms', () => {
+  it('should build the public URLs of forms', () => {
     expect(
       toCrmEmailLinkTargetsDTO(
         {
-          landingPages: [{ id: 'l1', title: 'Promo', shareToken: 'tok' }],
           forms: [{ id: 'f1', name: 'Contato', publicToken: 'ft' }],
         },
         'https://steel.app/',
       ),
     ).toEqual({
-      landingPages: [
-        { id: 'l1', title: 'Promo', url: 'https://steel.app/l/tok' },
-      ],
       forms: [{ id: 'f1', name: 'Contato', url: 'https://steel.app/f/ft' }],
     })
   })

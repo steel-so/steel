@@ -3,19 +3,14 @@ import z from 'zod'
 /**
  * Mini chat de IA de um campo de texto do CRM: o usuário conversa sobre o
  * texto daquela caixa e a IA devolve uma resposta curta e, quando cabe, uma
- * sugestão pronta para aplicar no campo. Serve o construtor de landing
- * pages, os documentos (propostas e modelos) e os estúdios de redes
+ * sugestão pronta para aplicar no campo. Serve os documentos (propostas e modelos) e os estúdios de redes
  * sociais — `surface` decide a permissão exigida e o tom do redator. Sem
  * estado no servidor: o histórico curto vem do cliente a cada rodada.
  */
 
 export const CRM_TEXT_AI_MAX_TURNS = 12
 
-export const CrmTextAiSurfaceEnum = z.enum([
-  'LANDING_PAGE',
-  'DOCUMENT',
-  'SOCIAL',
-])
+export const CrmTextAiSurfaceEnum = z.enum(['DOCUMENT', 'SOCIAL'])
 export type CrmTextAiSurface = z.infer<typeof CrmTextAiSurfaceEnum>
 
 const TurnSchema = z.object({

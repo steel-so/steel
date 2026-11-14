@@ -16,7 +16,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   SiteSnapshot,
   useNearViewport,
@@ -48,7 +48,6 @@ import {
   crmSitesApi,
   crmSitesKeys,
   useCrmSites,
-  useLegacyLandingPageCount,
 } from '@/src/hooks/use-crm-sites'
 import { useSitesAnalyticsSummary } from '@/src/hooks/use-site-platform'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
@@ -60,9 +59,6 @@ import { SiteSparkline } from './metrics/site-sparkline'
 import { NewSiteDialog } from './new-site-dialog'
 import { toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
-
-const MIGRATED_KEY = (workspaceId: string) =>
-  `steel.sites.landing-migrated.${workspaceId}`
 
 /** Home page (with header/footer) of a site, drawn small. Loads only once
  * the card nears the viewport; shares the editor's query cache. */
@@ -297,84 +293,6 @@ function SiteCard({
   )
 }
 
-function MigrationBanner({ workspaceId }: { workspaceId: string }) {
-  const count = useLegacyLandingPageCount(workspaceId)
-  const queryClient = useQueryClient()
-  const [hidden, setHidden] = useState(true)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    try {
-      setHidden(window.localStorage.getItem(MIGRATED_KEY(workspaceId)) === '1')
-    } catch {
-      setHidden(false)
-    }
-  }, [workspaceId])
-
-  if (hidden || !count.data) return null
-
-  const done = () => {
-    try {
-      window.localStorage.setItem(MIGRATED_KEY(workspaceId), '1')
-    } catch {
-      // Storage blocked: the banner just shows again next time.
-    }
-    setHidden(true)
-  }
-
-  async function migrate() {
-    setBusy(true)
-    try {
-      const report = await crmSitesApi(workspaceId).migrateLandingPages()
-      await queryClient.invalidateQueries({
-        queryKey: crmSitesKeys.list(workspaceId),
-      })
-      if (report.failed > 0) {
-        notify.warning(
-          `${report.created} landing pages viraram sites; ${report.failed} não puderam ser convertidas.`,
-        )
-      } else {
-        notify.success(
-          report.created > 0
-            ? `${report.created} landing pages agora são sites.`
-            : 'Suas landing pages já estavam em Sites.',
-        )
-        done()
-      }
-    } catch (error) {
-      notify.error(error, 'Não foi possível trazer as landing pages')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div
-      role='status'
-      className='flex flex-col gap-3 rounded-xl border bg-muted/40 p-4 sm:flex-row sm:items-center'
-    >
-      <div className='min-w-0 flex-1'>
-        <p className='font-medium text-sm'>Landing pages agora são Sites</p>
-        <p className='text-muted-foreground text-xs'>
-          {count.data === 1
-            ? 'Você tem 1 landing page do editor antigo.'
-            : `Você tem ${count.data} landing pages do editor antigo.`}{' '}
-          Traga-as para cá para editar no novo editor; os links antigos
-          continuam funcionando.
-        </p>
-      </div>
-      <div className='flex shrink-0 gap-2'>
-        <Button size='sm' variant='ghost' onClick={done}>
-          Agora não
-        </Button>
-        <Button size='sm' onClick={() => void migrate()} disabled={busy}>
-          {busy ? 'Trazendo…' : 'Trazer para Sites'}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 /**
  * CRM › Sites: the workspace's sites as cards (live thumbnail, status,
  * address, last edit) with the "Novo site" gallery, duplicate and delete.
@@ -449,7 +367,6 @@ export function SitesList({
         ) : null}
       </div>
 
-      <MigrationBanner workspaceId={workspaceId} />
 
       {sites.isLoading ? (
         <ul

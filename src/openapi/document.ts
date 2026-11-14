@@ -79,7 +79,7 @@ const INFO_DESCRIPTION = `API do **Steel**, a plataforma multi-tenant da Stratus
 
 - **Sessão (cookie)** — quase todas as rotas usam o cookie \`better-auth.session_token\` (\`__Secure-better-auth.session_token\` em HTTPS), emitido pelo login em \`/auth/sign-in/email\`. Rotas sem sessão retornam \`401 UNAUTHORIZED\` (para \`/api/*\` o proxy responde 401 antes mesmo da rota).
 - **Chave de API de integração** — a entrada de leads (\`POST /crm/integrations/leads\`) usa \`Authorization: Bearer crm_live_...\`, gerada no menu lateral do CRM, em **Chaves de API**.
-- **Tokens no path** — formulários, propostas, landing pages, workflows por webhook e descadastro são públicos: o token opaco no path é o acesso.
+- **Tokens no path** — formulários, propostas, workflows por webhook e descadastro são públicos: o token opaco no path é o acesso.
 - **Webhooks** — AbacatePay (\`x-webhook-secret\`), Meta (\`X-Hub-Signature-256\`) e Z-API (\`?secret=\`).
 
 ## Envelope de resposta

@@ -85,7 +85,7 @@ export const crmCampaignRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Opções do assistente',
     description: describe(
-      'Landing pages, formulários, visuais de e-mail, listas e — se a Comunicação estiver ativa — as conexões de WhatsApp conectadas com os templates aprovados.',
+      'Sites, formulários, visuais de e-mail, listas e — se a Comunicação estiver ativa — as conexões de WhatsApp conectadas com os templates aprovados.',
       crmAccess('email', 'VIEW'),
     ),
     responses: {

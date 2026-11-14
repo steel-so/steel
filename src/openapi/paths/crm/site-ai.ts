@@ -58,7 +58,7 @@ export const crmSiteAiRoutes: RouteConfig[] = [
     tags: TAG,
     summary: 'Contexto do gerador de sites com IA',
     description: describe(
-      'Pré-preenche o formulário "Gerar com IA": nome, logo e cor da marca do e-mail, produtos ativos do CRM, formulários publicados e quantos depoimentos as landing pages têm. Traz também a cota mensal de IA e o custo estimado de cada ação com o modelo do workspace.',
+      'Pré-preenche o formulário "Gerar com IA": nome, logo e cor da marca do e-mail, produtos ativos do CRM, formulários publicados e quantos depoimentos há para reaproveitar. Traz também a cota mensal de IA e o custo estimado de cada ação com o modelo do workspace.',
       crmAccess('landing-pages', 'VIEW'),
     ),
     responses: {

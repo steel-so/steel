@@ -21,7 +21,6 @@ function fields(
   return {
     workspaceId: 'ws1',
     destinationType: 'SITE_PAGE',
-    landingPageId: null,
     formId: null,
     siteId: 'site1',
     sitePageId: 'home',
@@ -101,7 +100,7 @@ describe('resolveCampaignDestination()', () => {
     ).toBeNull()
   })
 
-  it('should resolve forms and landing pages with their public URL', async () => {
+  it('should resolve forms with their public URL', async () => {
     lookup.findForm.mockResolvedValueOnce(
       ok({ id: 'f1', token: 'ftok', published: false, name: 'Inscrição' }),
     )
@@ -121,27 +120,15 @@ describe('resolveCampaignDestination()', () => {
       },
       issue: 'Publique o destino antes de enviar a campanha',
     })
-
-    lookup.findLandingPage.mockResolvedValueOnce(
-      ok({ id: 'l1', token: 'ltok', published: true }),
-    )
-    const landing = expectOk(
-      await resolveCampaignDestination(
-        fields({ destinationType: 'LANDING_PAGE', landingPageId: 'l1' }),
-      ),
-    )
-    expect(landing?.summary).toMatchObject({ type: 'LANDING_PAGE', name: '' })
-    expect(landing?.summary.url).toMatch(/\/l\/ltok$/)
-    expect(landing?.issue).toBeNull()
   })
 
   it('should propagate lookup failures', async () => {
     lookup.findSite.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(await resolveCampaignDestination(fields()), 'DATABASE_ERROR')
-    lookup.findLandingPage.mockResolvedValueOnce(err(databaseError('x')))
+    lookup.findForm.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(
       await resolveCampaignDestination(
-        fields({ destinationType: 'LANDING_PAGE', landingPageId: 'l1' }),
+        fields({ destinationType: 'FORM', formId: 'f1' }),
       ),
       'DATABASE_ERROR',
     )

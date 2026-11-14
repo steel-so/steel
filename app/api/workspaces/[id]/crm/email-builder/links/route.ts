@@ -7,7 +7,7 @@ import { handleError, successResponse } from '@/utils/http-response'
 
 type Params = { params: Promise<{ id: string }> }
 
-/** Published landing pages and forms offered by the link picker. */
+/** Published forms offered by the link picker. */
 export const GET = withAxiom(async (_request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()
   if (!auth.ok) return handleError(auth.error)

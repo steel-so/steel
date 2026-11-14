@@ -6,7 +6,6 @@ export type CampaignDraft = Pick<
   | 'name'
   | 'utmMedium'
   | 'destinationType'
-  | 'landingPageId'
   | 'formId'
   | 'siteId'
   | 'sitePageId'
@@ -38,7 +37,6 @@ export function draftFromCampaign(c: CrmCampaignDetailDTO): CampaignDraft {
     name: c.name,
     utmMedium: c.utmMedium,
     destinationType: c.destinationType,
-    landingPageId: c.landingPageId,
     formId: c.formId,
     siteId: c.siteId,
     sitePageId: c.sitePageId,

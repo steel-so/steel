@@ -131,7 +131,7 @@ export function useCrmEmailLinkTargets(workspaceId: string) {
       apiFetch<CrmEmailLinkTargetsDTO>(
         `/api/workspaces/${workspaceId}/crm/email-builder/links`,
         undefined,
-        'Erro ao carregar landing pages e formulários',
+        'Erro ao carregar formulários',
       ),
     staleTime: 60 * 1000,
   })

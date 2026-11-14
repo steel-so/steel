@@ -26,7 +26,6 @@ export type EmailProductRow = {
 }
 
 export type EmailLinkTargets = {
-  landingPages: { id: string; title: string; shareToken: string }[]
   forms: { id: string; name: string; publicToken: string }[]
 }
 
@@ -137,19 +136,12 @@ export const CrmEmailBuilderRepository = {
         status: 'PUBLISHED',
         deletedAt: null,
       } as const
-      const [landingPages, forms] = await Promise.all([
-        prisma.crmLandingPage.findMany({
-          where,
-          select: { id: true, title: true, shareToken: true },
-          orderBy: { title: 'asc' },
-        }),
-        prisma.crmForm.findMany({
-          where,
-          select: { id: true, name: true, publicToken: true },
-          orderBy: { name: 'asc' },
-        }),
-      ])
-      return ok({ landingPages, forms })
+      const forms = await prisma.crmForm.findMany({
+        where,
+        select: { id: true, name: true, publicToken: true },
+        orderBy: { name: 'asc' },
+      })
+      return ok({ forms })
     } catch (error) {
       return err(dbError('Failed to list e-mail link targets', error))
     }

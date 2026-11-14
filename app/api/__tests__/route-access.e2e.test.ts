@@ -51,7 +51,6 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/crm/integrations': 'integration key',
   '/api/crm/apollo/webhook': 'webhook secret',
   '/api/crm/workflows': 'workflow trigger token',
-  '/api/crm/landing-pages': 'public landing page',
   '/api/social/blob': 'signed blob token',
   '/api/crm/unsubscribe': 'HMAC unsubscribe token',
   '/api/crm/campaigns/c': 'signed click token',

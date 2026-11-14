@@ -57,9 +57,6 @@ export const SiteDTOSchema = dto(
       description: 'Endereço público do site.',
       example: 'https://clinica-sao-lucas.sites.steel.app',
     }),
-    sourceLandingPageId: z.string().nullable().meta({
-      description: 'Landing page de origem, quando o site veio da migração.',
-    }),
     createdById: z.string(),
     updatedById: z.string().nullable(),
     createdAt: dateTime(),
@@ -148,24 +145,6 @@ export const SitePublishResultDTO = dto(
 export const SiteSlugAvailabilityDTO = dto(
   'SiteSlugAvailability',
   z.object({ slug: z.string(), available: z.boolean() }),
-)
-
-const MigrationItem = z.object({
-  landingPageId: z.string(),
-  siteId: z.string(),
-  slug: z.string(),
-  status: z.enum(['created', 'skipped']),
-  published: z.boolean(),
-})
-
-export const SiteLandingMigrationReportDTO = dto(
-  'SiteLandingMigrationReport',
-  z.object({
-    created: z.number().int(),
-    skipped: z.number().int(),
-    failed: z.number().int(),
-    items: z.array(MigrationItem),
-  }),
 )
 
 /** Newsletter picker of the `site.newsletter-*` elements (ADR 0054). */

@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 /**
  * Drop-in `Input`/`Textarea` with the per-field AI chat: under a
  * `GhostAiProvider` they get the same top-right AI button as the
- * landing-page builder. Work controlled or uncontrolled — a suggestion is
+ * other CRM text fields. Work controlled or uncontrolled — a suggestion is
  * written through the native value setter plus an `input` event, so React's
  * `onChange` fires exactly as if the user had typed it.
  */

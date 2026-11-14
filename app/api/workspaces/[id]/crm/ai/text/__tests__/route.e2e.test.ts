@@ -8,7 +8,7 @@ import {
 import { BASE_URL } from '@/src/__tests__/setup.e2e'
 
 const body = {
-  surface: 'LANDING_PAGE',
+  surface: 'DOCUMENT',
   text: 'Internet rápida',
   messages: [{ role: 'user', content: 'Deixe mais curto' }],
   field: { label: 'Título principal' },

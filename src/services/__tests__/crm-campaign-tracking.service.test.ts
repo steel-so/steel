@@ -60,9 +60,6 @@ beforeEach(() => {
   lookup.findForm.mockResolvedValue(
     ok({ id: 'f1', token: 'ftok', published: true }),
   )
-  lookup.findLandingPage.mockResolvedValue(
-    ok({ id: 'l1', token: 'ltok', published: true }),
-  )
   conversions.record.mockResolvedValue(ok({ id: 'cv1' } as never))
 })
 
@@ -109,18 +106,12 @@ describe('resolveClick()', () => {
     )
   })
 
-  it('should mark WhatsApp clicks and reach landing pages', async () => {
-    withRecipient(
-      campaign({
-        destinationType: 'LANDING_PAGE',
-        formId: null,
-        landingPageId: 'l1',
-      }),
-    )
+  it('should mark WhatsApp clicks and reach the form', async () => {
+    withRecipient()
     const url = expectOk(
       await T.resolveClick(createCampaignLinkToken('r1', 'WHATSAPP'), NOW),
     )
-    expect(url).toContain('/l/ltok?utm_source=whatsapp')
+    expect(url).toContain('/f/ftok?utm_source=whatsapp')
     expect(recipients.markFirst).toHaveBeenCalledWith(
       { id: 'r1' },
       'whatsappClickedAt',
@@ -222,32 +213,6 @@ describe('attribute()', () => {
     )
   })
 
-  it('should count landing visits for landing destinations', async () => {
-    campaigns.findBySlug.mockResolvedValue(
-      ok(
-        campaign({
-          destinationType: 'LANDING_PAGE',
-          formId: null,
-          landingPageId: 'l1',
-        }),
-      ),
-    )
-    expect(
-      expectOk(
-        await T.attribute(
-          {
-            workspaceId: 'ws1',
-            kind: 'LANDING_VIEW',
-            sourceRef: 'view1',
-            landingPageId: 'l1',
-            ref: { utmCampaign: 'bf', utmSource: 'email' },
-          },
-          NOW,
-        ),
-      ),
-    ).toBe(true)
-  })
-
   it('should ignore other destinations, workspaces and duplicates', async () => {
     campaigns.findBySlug.mockResolvedValue(ok(campaign()))
     expect(
@@ -264,7 +229,6 @@ describe('attribute()', () => {
           {
             ...base,
             kind: 'LANDING_VIEW',
-            landingPageId: 'l1',
             ref: { utmCampaign: 'bf' },
           },
           NOW,
@@ -297,28 +261,6 @@ describe('attribute()', () => {
       ),
     ).toBe(false)
     expect(recipients.markFirst).not.toHaveBeenCalled()
-
-    // Landing view of a form campaign: recorded, but no conversion stamp.
-    withRecipient(
-      campaign({ destinationType: 'LANDING_PAGE', landingPageId: 'l1' }),
-    )
-    expectOk(
-      await T.attribute(
-        {
-          workspaceId: 'ws1',
-          kind: 'LANDING_VIEW',
-          sourceRef: 'v',
-          landingPageId: 'l1',
-          ref: { ref: createCampaignLinkToken('r1', 'EMAIL') },
-        },
-        NOW,
-      ),
-    )
-    expect(recipients.markFirst).toHaveBeenCalledWith(
-      { id: 'r1' },
-      'convertedAt',
-      NOW,
-    )
   })
 
   it('should propagate failures', async () => {
@@ -610,13 +552,11 @@ describe('site destinations', () => {
 describe('matchesDestination() / convertsRecipient()', () => {
   const form = {
     destinationType: 'FORM' as const,
-    landingPageId: null,
     formId: 'f1',
     siteId: null,
   }
   const onSite = {
     destinationType: 'SITE_PAGE' as const,
-    landingPageId: null,
     formId: null,
     siteId: 's1',
   }
@@ -652,17 +592,11 @@ describe('matchesDestination() / convertsRecipient()', () => {
       matchesDestination(onSite, { kind: 'FORM_SUBMISSION', formId: 'f1' }),
     ).toBe(false)
     expect(
-      matchesDestination(onSite, { kind: 'LANDING_VIEW', landingPageId: 'l1' }),
+      matchesDestination(onSite, { kind: 'LANDING_VIEW' }),
     ).toBe(false)
   })
 
-  it('should convert on forms, landing views and the chosen site page', () => {
-    expect(
-      convertsRecipient(
-        { destinationType: 'LANDING_PAGE', sitePageId: null },
-        { kind: 'LANDING_VIEW' },
-      ),
-    ).toBe(true)
+  it('should convert on forms and the chosen site page, never on legacy landing views', () => {
     expect(
       convertsRecipient(
         { destinationType: 'FORM', sitePageId: null },

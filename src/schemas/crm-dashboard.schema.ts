@@ -87,7 +87,6 @@ export const VIEW_SOURCES = [
   'tasks',
   'notes',
   'forms',
-  'landing-pages',
   'whatsapp-conversations',
   'whatsapp-broadcasts',
   // ServiceDesk — linhas achatadas servidas por

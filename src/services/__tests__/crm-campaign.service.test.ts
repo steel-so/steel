@@ -157,9 +157,6 @@ beforeEach(() => {
   lookup.findForm.mockResolvedValue(
     ok({ id: 'f1', token: 'ftok', published: true }),
   )
-  lookup.findLandingPage.mockResolvedValue(
-    ok({ id: 'l1', token: 'ltok', published: true }),
-  )
   lookup.findEmailTemplate.mockResolvedValue(ok({ id: 't1', subject: 'Tpl' }))
   lookup.findEmailTemplateContent.mockResolvedValue(
     ok({
@@ -290,24 +287,11 @@ describe('CrmCampaignService.list()', () => {
     campaigns.listByWorkspace.mockResolvedValue(
       ok([
         readyCampaign(),
-        readyCampaign({
-          id: 'c2',
-          destinationType: 'LANDING_PAGE',
-          formId: null,
-          landingPageId: 'l1',
-        }),
         readyCampaign({ id: 'c3', destinationType: null, formId: null }),
       ]),
     )
     campaigns.funnel.mockResolvedValue(ok(new Map([['c1', funnel()]])))
-    lookup.destinationTokens.mockResolvedValue(
-      ok(
-        new Map([
-          ['f1', 'ftok'],
-          ['l1', 'ltok'],
-        ]),
-      ),
-    )
+    lookup.destinationTokens.mockResolvedValue(ok(new Map([['f1', 'ftok']])))
 
     const list = expectOk(await CrmCampaignService.list(ACTOR, WS))
     expect(list[0].kpis).toMatchObject({
@@ -316,15 +300,13 @@ describe('CrmCampaignService.list()', () => {
       conversions: 1,
     })
     expect(list[0].links.email).toContain('/f/ftok?utm_source=email')
-    expect(list[1].links.whatsapp).toContain('/l/ltok?utm_source=whatsapp')
-    expect(list[2].links).toEqual({
+    expect(list[1].links).toEqual({
       destination: null,
       email: null,
       whatsapp: null,
     })
-    expect(list[2].kpis.recipients).toBe(0)
+    expect(list[1].kpis.recipients).toBe(0)
     expect(lookup.destinationTokens).toHaveBeenCalledWith(WS, {
-      landingPageIds: ['l1'],
       formIds: ['f1'],
     })
   })
@@ -474,14 +456,6 @@ describe('CrmCampaignService.get() and issues', () => {
       'Escolha o formulário de destino',
       'O visual escolhido não existe mais',
     ])
-
-    lookup.findLandingPage.mockResolvedValueOnce(ok(null))
-    const noLanding = expectOk(
-      await computeCampaignIssues(
-        readyCampaign({ destinationType: 'LANDING_PAGE', landingPageId: 'l1' }),
-      ),
-    )
-    expect(noLanding[0].message).toBe('Escolha a landing page de destino')
 
     const noId = expectOk(
       await computeCampaignIssues(readyCampaign({ formId: null })),
@@ -699,8 +673,8 @@ describe('CrmCampaignService.update()', () => {
   it('should save a draft and clear the other destination', async () => {
     expectOk(
       await CrmCampaignService.update(ACTOR, WS, 'c1', {
-        destinationType: 'LANDING_PAGE',
-        landingPageId: 'l1',
+        destinationType: 'FORM',
+        formId: 'f1',
         whatsappVariables: null,
         audience: { mailingListIds: ['ml1'], allPeople: false, leadStages: [] },
       }),
@@ -708,8 +682,8 @@ describe('CrmCampaignService.update()', () => {
     expect(campaigns.update).toHaveBeenCalledWith(
       'c1',
       expect.objectContaining({
-        formId: null,
-        landingPageId: 'l1',
+        siteId: null,
+        sitePageId: null,
         whatsappVariables: null,
         audience: { mailingListIds: ['ml1'], allPeople: false, leadStages: [] },
         updatedById: ACTOR,
@@ -723,13 +697,13 @@ describe('CrmCampaignService.update()', () => {
     })
     expect(campaigns.update).toHaveBeenLastCalledWith(
       'c1',
-      expect.objectContaining({ landingPageId: null }),
+      expect.objectContaining({ siteId: null, sitePageId: null }),
     )
 
     await CrmCampaignService.update(ACTOR, WS, 'c1', { destinationType: null })
     expect(campaigns.update).toHaveBeenLastCalledWith(
       'c1',
-      expect.objectContaining({ landingPageId: null, formId: null }),
+      expect.objectContaining({ formId: null, siteId: null }),
     )
   })
 
@@ -771,11 +745,6 @@ describe('CrmCampaignService.update()', () => {
   })
 
   it.each([
-    [
-      'landingPageId',
-      () => lookup.findLandingPage,
-      'Landing page não encontrada',
-    ],
     ['formId', () => lookup.findForm, 'Formulário não encontrado'],
     [
       'emailTemplateId',
@@ -888,22 +857,6 @@ describe('CrmCampaignService.remove()', () => {
 
 describe('CrmCampaignService.options()', () => {
   const options = {
-    landingPages: [
-      {
-        id: 'l1',
-        title: 'LP',
-        status: 'PUBLISHED',
-        shareToken: 'lt',
-        migratedSiteId: null,
-      },
-      {
-        id: 'l2',
-        title: 'Migrada',
-        status: 'PUBLISHED',
-        shareToken: 'lt2',
-        migratedSiteId: 'site1',
-      },
-    ],
     forms: [
       { id: 'f1', name: 'Form', status: 'DRAFT', publicToken: 'ft' },
       {
@@ -1009,7 +962,6 @@ describe('CrmCampaignService.options()', () => {
   it('should list pickers and the WhatsApp connections', async () => {
     lookup.listOptions.mockResolvedValue(ok(options))
     const result = expectOk(await CrmCampaignService.options(ACTOR, WS))
-    expect(result.landingPages[0].published).toBe(true)
     expect(result.forms[0].published).toBe(false)
     expect(result.whatsapp.available).toBe(true)
     expect(result.whatsapp.connections[0].templates[0].fields).toEqual({
@@ -1021,7 +973,7 @@ describe('CrmCampaignService.options()', () => {
     expect(result.whatsapp.connections[1].templates).toEqual([])
   })
 
-  it('should list sites, form embeds, unmigrated landing pages and editors', async () => {
+  it('should list sites, form embeds and editors', async () => {
     lookup.listOptions.mockResolvedValue(ok(options))
     const result = expectOk(await CrmCampaignService.options(ACTOR, WS))
 
@@ -1049,7 +1001,6 @@ describe('CrmCampaignService.options()', () => {
     ])
     expect(result.forms[0].embeds).toEqual([])
 
-    expect(result.landingPages.map((page) => page.id)).toEqual(['l1'])
     expect(result.emailTemplates.map((t) => t.editor)).toEqual([
       'v2',
       'v1',
@@ -1706,7 +1657,7 @@ describe('CrmCampaignService.stats() and listRecipients()', () => {
       visits: 1,
       submissions: 3,
       byChannel: { email: 2, whatsapp: 1, unknown: 1 },
-      byDestination: { siteView: 0, siteForm: 0, crmForm: 3, landingView: 1 },
+      byDestination: { siteView: 0, siteForm: 0, crmForm: 3 },
     })
     expect(stats.convertedContacts[0]).toMatchObject({
       name: 'Ana',
@@ -1781,7 +1732,7 @@ describe('CrmCampaignService — site page destinations', () => {
     expect(lookup.findSite).toHaveBeenCalledWith(WS, 'site1')
   })
 
-  it('should summarize landing pages and forms too', async () => {
+  it('should summarize forms too', async () => {
     lookup.findForm.mockResolvedValue(
       ok({ id: 'f1', token: 'ftok', published: true, name: 'Inscrição' }),
     )
@@ -1877,7 +1828,6 @@ describe('CrmCampaignService — site page destinations', () => {
           siteId: 'site1',
           sitePageId: 'home',
           formId: null,
-          landingPageId: null,
         }),
       )
 

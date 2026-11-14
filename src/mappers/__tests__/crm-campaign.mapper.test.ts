@@ -37,14 +37,14 @@ describe('crm-campaign mapper', () => {
   })
 
   it('should build channel links only with a destination token', () => {
-    const campaign = createFakeCrmCampaign({ destinationType: 'LANDING_PAGE' })
+    const campaign = createFakeCrmCampaign({ destinationType: 'FORM' })
     expect(toCrmCampaignLinks(campaign, 'https://a.test', null)).toEqual({
       destination: null,
       email: null,
       whatsapp: null,
     })
     const links = toCrmCampaignLinks(campaign, 'https://a.test', 'tok')
-    expect(links.destination).toBe('https://a.test/l/tok')
+    expect(links.destination).toBe('https://a.test/f/tok')
     expect(links.email).toContain('utm_source=email')
     expect(links.whatsapp).toContain('utm_campaign=black-friday')
   })

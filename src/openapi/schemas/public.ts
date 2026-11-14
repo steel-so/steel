@@ -5,10 +5,6 @@ import {
   FORM_ACTIONS,
 } from '@/src/schemas/crm-form.schema'
 import {
-  CrmLandingPageSectionContentSchema,
-  CrmLandingPageSectionTypeEnum,
-} from '@/src/schemas/crm-landing-page-section.schema'
-import {
   CrmProposalSectionContentSchema,
   CrmProposalSectionTypeEnum,
   CrmProposalStatusEnum,
@@ -100,25 +96,6 @@ export const CrmProposalPublicDTO = dto(
     .meta({
       description: 'Proposta como o cliente a vê pelo link compartilhado.',
     }),
-)
-
-export const CrmLandingPagePublicDTO = dto(
-  'CrmLandingPagePublic',
-  z.object({
-    title: z.string(),
-    templateKey: z
-      .string()
-      .meta({ description: 'Template visual (catálogo fixo).' }),
-    sections: z.array(
-      z.object({
-        id: z.string(),
-        type: CrmLandingPageSectionTypeEnum,
-        order: z.number().int(),
-        enabled: z.boolean(),
-        content: CrmLandingPageSectionContentSchema,
-      }),
-    ),
-  }),
 )
 
 export const CrmLeadDTO = dto(

@@ -7,16 +7,6 @@ import { CrmCampaignLookupRepository as R } from '../crm-campaign-lookup.reposit
 
 async function seed() {
   const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
-  const page = await prisma.crmLandingPage.create({
-    data: {
-      workspaceId: workspace.id,
-      createdById: user.id,
-      title: 'LP',
-      templateKey: 'consultation',
-      shareToken: `lp-${workspace.id}`,
-      status: 'PUBLISHED',
-    },
-  })
   const form = await prisma.crmForm.create({
     data: {
       workspaceId: workspace.id,
@@ -82,7 +72,6 @@ async function seed() {
   })
   return {
     workspace,
-    page,
     form,
     template,
     list,
@@ -96,12 +85,6 @@ describe('CrmCampaignLookupRepository', () => {
   it('should find destinations, templates and connections in scope', async () => {
     const s = await seed()
     const ws = s.workspace.id
-    expect(expectOk(await R.findLandingPage(ws, s.page.id))).toEqual({
-      id: s.page.id,
-      token: s.page.shareToken,
-      published: true,
-      name: 'LP',
-    })
     expect(expectOk(await R.findForm(ws, s.form.id))).toEqual({
       id: s.form.id,
       token: s.form.publicToken,
@@ -122,7 +105,6 @@ describe('CrmCampaignLookupRepository', () => {
     ).toBe('promo')
 
     const other = await seedWorkspace()
-    expect(expectOk(await R.findLandingPage(other.id, s.page.id))).toBeNull()
     expect(expectOk(await R.findForm(other.id, s.form.id))).toBeNull()
     expect(
       expectOk(await R.findEmailTemplate(other.id, s.template.id)),
@@ -133,21 +115,14 @@ describe('CrmCampaignLookupRepository', () => {
     const s = await seed()
     const ws = s.workspace.id
     const tokens = expectOk(
-      await R.destinationTokens(ws, {
-        landingPageIds: [s.page.id],
-        formIds: [s.form.id],
-      }),
+      await R.destinationTokens(ws, { formIds: [s.form.id] }),
     )
-    expect(tokens.get(s.page.id)).toBe(s.page.shareToken)
     expect(tokens.get(s.form.id)).toBe(s.form.publicToken)
     expect(
-      expectOk(
-        await R.destinationTokens(ws, { landingPageIds: [], formIds: [] }),
-      ).size,
+      expectOk(await R.destinationTokens(ws, { formIds: [] })).size,
     ).toBe(0)
 
     const options = expectOk(await R.listOptions(ws))
-    expect(options.landingPages.map((p) => p.id)).toEqual([s.page.id])
     expect(options.forms.map((f) => f.id)).toEqual([s.form.id])
     expect(options.emailTemplates.map((t) => t.id)).toEqual([s.template.id])
     expect(options.mailingLists).toEqual([{ id: s.list.id, name: 'Lista' }])
@@ -173,9 +148,6 @@ describe('CrmCampaignLookupRepository', () => {
   it('should map database failures to DATABASE_ERROR', async () => {
     const boom = () => Promise.reject(new Error('x'))
     const spies = [
-      vi
-        .spyOn(prisma.crmLandingPage, 'findFirst')
-        .mockImplementation(boom as never),
       vi.spyOn(prisma.crmForm, 'findFirst').mockImplementation(boom as never),
       vi
         .spyOn(prisma.crmEmailTemplate, 'findFirst')
@@ -186,20 +158,17 @@ describe('CrmCampaignLookupRepository', () => {
       vi
         .spyOn(prisma.whatsAppTemplate, 'findFirst')
         .mockImplementation(boom as never),
-      vi
-        .spyOn(prisma.crmLandingPage, 'findMany')
-        .mockImplementation(boom as never),
+      vi.spyOn(prisma.crmForm, 'findMany').mockImplementation(boom as never),
       vi
         .spyOn(prisma.crmMailingList, 'count')
         .mockImplementation(boom as never),
     ]
     const results = await Promise.all([
-      R.findLandingPage('w', 'x'),
       R.findForm('w', 'x'),
       R.findEmailTemplate('w', 'x'),
       R.findConnection('w', 'x'),
       R.findWhatsAppTemplate('w', 'c', 'x'),
-      R.destinationTokens('w', { landingPageIds: ['x'], formIds: [] }),
+      R.destinationTokens('w', { formIds: ['x'] }),
       R.listOptions('w'),
       R.mailingListsExist('w', ['x']),
     ])

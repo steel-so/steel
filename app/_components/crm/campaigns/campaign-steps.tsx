@@ -39,13 +39,9 @@ export function destinationUrlOf(
   const token =
     draft.destinationType === 'FORM'
       ? options.forms.find((f) => f.id === draft.formId)?.publicToken
-      : options.landingPages.find((p) => p.id === draft.landingPageId)
-          ?.shareToken
-  if (!draft.destinationType || !token) return null
-  return buildDestinationUrl(options.baseUrl, {
-    type: draft.destinationType,
-    token,
-  })
+      : undefined
+  if (!token) return null
+  return buildDestinationUrl(options.baseUrl, { type: 'FORM', token })
 }
 
 /** Public links per channel, computed from the draft (no save needed). */

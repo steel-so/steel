@@ -11,14 +11,14 @@ export interface MediaItem {
   alt?: string
   size?: number
   uploadedAt?: string | null
-  /** Only some items can be deleted (e.g. images of the old landing pages
-   * are read-only). Defaults to `true` when the provider has `remove`. */
+  /** Only some items can be deleted (e.g. images of the removed landing page
+   * editor are read-only). Defaults to `true` when the provider has `remove`. */
   removable?: boolean
 }
 
 /**
  * How a library talks to its bucket. Each builder keeps its own bucket
- * (sites, e-mail/documents, landing pages) and exposes it through this one
+ * (sites, e-mail/documents) and exposes it through this one
  * contract, so the picker, the drop zone and the Media tab are shared.
  * Methods throw on failure: the UI shows the server's message.
  */

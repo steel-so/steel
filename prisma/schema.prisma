@@ -154,8 +154,6 @@ model User {
   crmWorkflowsCreated                CrmWorkflow[]                 @relation("CrmWorkflowCreatedBy")
   crmWorkflowsUpdated                CrmWorkflow[]                 @relation("CrmWorkflowUpdatedBy")
   crmWorkflowRunsStarted             CrmWorkflowRun[]              @relation("CrmWorkflowRunStartedBy")
-  crmLandingPagesCreated             CrmLandingPage[]              @relation("CrmLandingPageCreatedBy")
-  crmLandingPagesUpdated             CrmLandingPage[]              @relation("CrmLandingPageUpdatedBy")
   crmSocialConnectionsCreated        CrmSocialConnection[]         @relation("CrmSocialConnectionCreatedBy")
   crmSocialConnectionsUpdated        CrmSocialConnection[]         @relation("CrmSocialConnectionUpdatedBy")
   crmHookVaultItemsCreated           CrmHookVaultItem[]            @relation("CrmHookVaultItemCreatedBy")
@@ -582,7 +580,6 @@ model Workspace {
   crmEmailOptOuts           CrmEmailOptOut[]
   crmEmailBrand             CrmEmailBrand?
   crmWorkflows              CrmWorkflow[]
-  crmLandingPages           CrmLandingPage[]
   crmSocialConnections      CrmSocialConnection[]
   crmScheduledPosts         CrmScheduledPost[]
   crmEmailAccounts          CrmEmailAccount[]
@@ -4202,97 +4199,6 @@ model CrmWorkflowRunStep {
   @@map("crm_workflow_run_steps")
 }
 
-enum CrmLandingPageStatus {
-  DRAFT
-  PUBLISHED
-}
-
-enum CrmLandingPageSectionType {
-  HEADER
-  HERO
-  SERVICES
-  FACTS
-  ABOUT
-  TESTIMONIAL
-  FEATURES
-  WORKS
-  FOOTER
-  PRICING
-  FAQ
-  STEPS
-  NEWSLETTER
-  LOGOS
-  PRODUCTS
-}
-
-model CrmLandingPage {
-  id          String               @id @default(cuid())
-  title       String
-  templateKey String               @map("template_key")
-  status      CrmLandingPageStatus @default(DRAFT)
-  shareToken  String               @unique @map("share_token")
-  publishedAt DateTime?            @map("published_at")
-  workspaceId String               @map("workspace_id")
-  createdById String               @map("created_by_id")
-  updatedById String?              @map("updated_by_id")
-  position    Int                  @default(0)
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
-  deletedAt   DateTime?            @map("deleted_at")
-
-  workspace Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdBy User                    @relation("CrmLandingPageCreatedBy", fields: [createdById], references: [id])
-  updatedBy User?                   @relation("CrmLandingPageUpdatedBy", fields: [updatedById], references: [id])
-  views     CrmLandingPageView[]
-  sections  CrmLandingPageSection[]
-
-  @@index([workspaceId])
-  @@index([status])
-  @@index([deletedAt])
-  @@index([workspaceId, position])
-  @@map("crm_landing_pages")
-}
-
-/// Uma seção da página, escolhida e ordenada pelo usuário a partir do
-/// vocabulário fixo de tipos. Sem unique em (landingPageId, type): o mesmo
-/// tipo pode se repetir (o kit de referência tem templates com 2 blocos de
-/// Testimonial). `content` segue um shape estruturado por `type`
-/// (discriminated union no Zod), nunca HTML livre.
-model CrmLandingPageSection {
-  id            String                    @id @default(cuid())
-  landingPageId String                    @map("landing_page_id")
-  type          CrmLandingPageSectionType
-  order         Int                       @default(0)
-  enabled       Boolean                   @default(true)
-  content       Json
-  createdAt     DateTime                  @default(now()) @map("created_at")
-  updatedAt     DateTime                  @updatedAt @map("updated_at")
-
-  landingPage CrmLandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
-
-  @@index([landingPageId])
-  @@map("crm_landing_page_sections")
-}
-
-/// Beacon de visualização anônima de uma landing page pública (LGPD: IP com hash).
-model CrmLandingPageView {
-  id            String   @id @default(cuid())
-  landingPageId String   @map("landing_page_id")
-  viewId        String   @map("view_id")
-  ipHash        String   @map("ip_hash")
-  durationMs    Int      @default(0) @map("duration_ms")
-  ctaClicks     Int      @default(0) @map("cta_clicks")
-  referrer      String?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  landingPage CrmLandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
-
-  @@unique([landingPageId, viewId])
-  @@index([landingPageId])
-  @@map("crm_landing_page_views")
-}
-
 enum CrmSocialPlatform {
   FACEBOOK
   INSTAGRAM
@@ -4715,7 +4621,7 @@ model CrmCalendarEvent {
 }
 
 // ─── CRM multichannel campaigns (e-mail + optional WhatsApp) ─────────────
-// One campaign = destination (landing page or form) + e-mail content +
+// One campaign = destination (form or site page) + e-mail content +
 // audience, with WhatsApp as an optional add-on. See ADR 0025.
 
 enum CrmCampaignRunStatus {
@@ -4729,7 +4635,6 @@ enum CrmCampaignRunStatus {
 }
 
 enum CrmCampaignDestinationType {
-  LANDING_PAGE
   FORM
   /// A page of a published site (Sites builder).
   SITE_PAGE
@@ -4759,6 +4664,7 @@ enum CrmCampaignChannel {
 }
 
 enum CrmCampaignConversionKind {
+  /// Legacy: page view of the removed landing page builder (old rows only).
   LANDING_VIEW
   FORM_SUBMISSION
   /// Page view of a published site.
@@ -4775,7 +4681,6 @@ model CrmCampaign {
   slug                 String
   status               CrmCampaignRunStatus        @default(DRAFT)
   destinationType      CrmCampaignDestinationType? @map("destination_type")
-  landingPageId        String?                     @map("landing_page_id")
   formId               String?                     @map("form_id")
   /// Site + page of a SITE_PAGE destination.
   siteId               String?                     @map("site_id")
@@ -8897,8 +8802,9 @@ model Site {
   homePageId          String?    @map("home_page_id")
   publishedVersionId  String?    @unique @map("published_version_id")
   publishedAt         DateTime?  @map("published_at")
-  /// Landing page this site was migrated from (idempotent migration).
-  sourceLandingPageId String?    @unique @map("source_landing_page_id")
+  /// Share token of the legacy landing page this site replaced: keeps the
+  /// old public `/l/<token>` address redirecting to the site.
+  legacyLandingShareToken String? @unique @map("legacy_landing_share_token")
   createdById         String     @map("created_by_id")
   updatedById         String?    @map("updated_by_id")
   createdAt           DateTime   @default(now()) @map("created_at")

@@ -38,7 +38,7 @@ export function toCrmCampaignAudienceDTO(raw: unknown): CrmCampaignAudienceDTO {
 
 /**
  * Public links of the destination, with the UTM parameters per channel.
- * `destination` is the landing page/form token, or the resolved URL of a
+ * `destination` is the form token, or the resolved URL of a
  * site page (`{ url }`).
  */
 export function toCrmCampaignLinks(
@@ -55,7 +55,7 @@ export function toCrmCampaignLinks(
   const destinationUrl = campaignDestinationUrl(
     baseUrl,
     typeof destination === 'string'
-      ? { type: type as 'LANDING_PAGE' | 'FORM', token: destination }
+      ? { type: 'FORM', token: destination }
       : { type: 'SITE_PAGE', url: destination.url },
   )
   const params = { medium: campaign.utmMedium, campaign: campaign.slug }
@@ -81,7 +81,6 @@ export function toCrmCampaignDTO(
     slug: campaign.slug,
     status: campaign.status,
     destinationType: campaign.destinationType,
-    landingPageId: campaign.landingPageId,
     formId: campaign.formId,
     siteId: campaign.siteId,
     sitePageId: campaign.sitePageId,
@@ -173,6 +172,7 @@ export function toCrmCampaignStatsDTO(
     },
     conversions: {
       total: sum(() => true),
+      // `LANDING_VIEW` rows are the legacy landing page views (old data).
       visits: sum(
         (row) => row.kind === 'LANDING_VIEW' || row.kind === 'SITE_VIEW',
       ),
@@ -189,7 +189,6 @@ export function toCrmCampaignStatsDTO(
         siteView: sum((row) => row.kind === 'SITE_VIEW'),
         siteForm: sum((row) => row.kind === 'SITE_FORM_SUBMISSION'),
         crmForm: sum((row) => row.kind === 'FORM_SUBMISSION'),
-        landingView: sum((row) => row.kind === 'LANDING_VIEW'),
       },
     },
     convertedContacts: recent.map(toCrmCampaignConvertedContactDTO),

@@ -37,7 +37,6 @@ describe('GenerateSiteSchema', () => {
       pages: ['about', 'contact'],
       style: 'auto',
       productIds: [],
-      useTestimonials: true,
       createContactForm: false,
       extra: '',
     })

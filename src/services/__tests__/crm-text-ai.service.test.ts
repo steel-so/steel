@@ -39,7 +39,7 @@ const provider = { id: 'anthropic' as const, chat: vi.fn() }
 
 function dto(overrides: Partial<CrmTextAiAssistDTO> = {}): CrmTextAiAssistDTO {
   return CrmTextAiAssistSchema.parse({
-    surface: 'LANDING_PAGE',
+    surface: 'DOCUMENT',
     text: 'Internet rápida pra sua empresa',
     messages: [{ role: 'user', content: 'Deixe mais persuasivo' }],
     field: { label: 'Título principal', maxLength: 60 },
@@ -117,7 +117,6 @@ describe('buildTextAiSystem() per surface', () => {
 
 describe('CrmTextAiService.assist()', () => {
   it.each([
-    ['LANDING_PAGE', 'landing-pages', 'EDIT'],
     ['DOCUMENT', 'documents', 'EDIT'],
     ['SOCIAL', 'social', 'CREATE'],
   ] as const)(

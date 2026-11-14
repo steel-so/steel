@@ -122,7 +122,7 @@ function Tile({
 }
 
 /** Conversions split by where they happened: site page views, forms sent
- * on site pages, the CRM form page and legacy landing pages. */
+ * on site pages and the CRM form page. */
 export function ConversionsByDestination({
   conversions,
 }: {
@@ -133,12 +133,7 @@ export function ConversionsByDestination({
     { key: 'siteView', label: 'Visitas no site', value: split.siteView },
     { key: 'siteForm', label: 'Formulários no site', value: split.siteForm },
     { key: 'crmForm', label: 'Formulário do CRM', value: split.crmForm },
-    {
-      key: 'landingView',
-      label: 'Landing page antiga',
-      value: split.landingView,
-    },
-  ].filter((row) => row.value > 0 || row.key !== 'landingView')
+  ]
   const max = Math.max(1, ...rows.map((row) => row.value))
   return (
     <section

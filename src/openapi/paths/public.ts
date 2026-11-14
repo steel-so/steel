@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { SubmitCrmFormSchema } from '@/src/schemas/crm-form.schema'
 import { IngestCrmLeadSchema } from '@/src/schemas/crm-integration-key.schema'
-import { RecordCrmLandingPageViewSchema } from '@/src/schemas/crm-landing-page.schema'
 import {
   AcceptCrmProposalSchema,
   RecordCrmProposalViewSchema,
@@ -15,7 +14,6 @@ import {
 import {
   CrmFormPublicDTO,
   CrmFormSubmissionDTO,
-  CrmLandingPagePublicDTO,
   CrmLeadDTO,
   CrmProposalPublicDTO,
   CrmWorkflowRunDTO,
@@ -100,7 +98,7 @@ const routes: RouteConfig[] = [
     tags: ['CRM público · Modo TV'],
     summary: 'Dados de um widget da TV',
     description:
-      'Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários e landing pages, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados).',
+      'Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados).',
     params: { ...TV_TOKEN, widgetId: 'ID do widget.' },
     responses: {
       200: { description: 'Dados.', schema: CrmDashboardTvWidgetDataDTO },
@@ -330,60 +328,6 @@ const routes: RouteConfig[] = [
         code: 'CRM_PROPOSAL_SIGNATURE_REQUIRED',
         when: 'O workspace exige a assinatura digital (use `/sign`)',
       },
-      CRM_DISABLED,
-    ],
-  },
-
-  /* ----------------------------- landing pages ---------------------------- */
-  {
-    ...PUBLIC,
-    method: 'get',
-    path: '/crm/landing-pages/{shareToken}',
-    tags: ['CRM público · Landing pages'],
-    summary: 'Obter landing page publicada',
-    description:
-      'Seções da landing page para a página `/l/<shareToken>`. Só páginas `PUBLISHED`.',
-    params: {
-      shareToken: {
-        description: 'Token de compartilhamento da landing page.',
-        example: 'l_Zt4b8Rw1',
-      },
-    },
-    responses: {
-      200: { description: 'Landing page.', schema: CrmLandingPagePublicDTO },
-    },
-    errors: [
-      {
-        code: 'RESOURCE_NOT_FOUND',
-        message: 'CrmLandingPage not found',
-        when: 'Token inexistente ou página em rascunho',
-      },
-      CRM_DISABLED,
-    ],
-  },
-  {
-    ...PUBLIC,
-    method: 'post',
-    path: '/crm/landing-pages/{shareToken}/view',
-    tags: ['CRM público · Landing pages'],
-    summary: 'Registrar visualização da landing page',
-    description:
-      'Telemetria da visita (tempo e cliques em CTA). Repita com o mesmo `viewId` para atualizar a visita. O IP é gravado apenas como hash.',
-    params: { shareToken: 'Token de compartilhamento da landing page.' },
-    body: {
-      schema: RecordCrmLandingPageViewSchema,
-      example: {
-        viewId: '0b8e7d7a-1f4c-4d2e-8f0a-3c9b5e6a1d22',
-        durationMs: 18000,
-        ctaClicks: 1,
-        referrer: 'https://www.google.com/',
-      },
-    },
-    responses: {
-      200: { description: 'Visualização registrada.', schema: null },
-    },
-    errors: [
-      { code: 'RESOURCE_NOT_FOUND', message: 'CrmLandingPage not found' },
       CRM_DISABLED,
     ],
   },

@@ -18,7 +18,6 @@ export function createFakeCrmCampaign(
     slug: 'black-friday',
     status: 'DRAFT',
     destinationType: null,
-    landingPageId: null,
     formId: null,
     siteId: null,
     sitePageId: null,

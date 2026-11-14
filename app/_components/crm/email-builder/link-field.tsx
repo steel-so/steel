@@ -44,7 +44,7 @@ function PickItem({
 /**
  * Link of a button/image/product. The picker offers, in order: the
  * campaign link (`{{campaign_link}}`, resolved per campaign with UTMs),
- * the workspace's published landing pages and forms; any https/mailto/tel
+ * the workspace's published forms; any https/mailto/tel
  * address can also be typed.
  */
 export function LinkField({
@@ -104,24 +104,6 @@ export function LinkField({
                 onClick={() => pick(CAMPAIGN_LINK)}
               />
             </ul>
-            <p className='px-2 pt-2 pb-1 font-medium text-muted-foreground text-xs'>
-              Landing pages
-            </p>
-            <ul>
-              {targets?.landingPages.map((page) => (
-                <PickItem
-                  key={page.id}
-                  title={page.title}
-                  hint={page.url}
-                  onClick={() => pick(page.url)}
-                />
-              ))}
-            </ul>
-            {!isLoading && !targets?.landingPages.length ? (
-              <p className='px-2 pb-1 text-muted-foreground text-xs'>
-                Nenhuma landing page publicada
-              </p>
-            ) : null}
             <p className='px-2 pt-2 pb-1 font-medium text-muted-foreground text-xs'>
               Formulários
             </p>

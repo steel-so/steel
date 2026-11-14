@@ -393,7 +393,7 @@ describe('visual e-mail builder — brand and links', () => {
       user.cookie,
     )
     expect(res.status).toBe(200)
-    expect((await res.json()).data).toEqual({ landingPages: [], forms: [] })
+    expect((await res.json()).data).toEqual({ forms: [] })
   })
 
   it('rejects an unsupported image upload', async () => {

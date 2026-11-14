@@ -224,7 +224,7 @@ describe('CRM campaign → site page attribution', () => {
       visits: 1,
       submissions: 1,
       byChannel: { email: 2 },
-      byDestination: { siteView: 1, siteForm: 1, crmForm: 0, landingView: 0 },
+      byDestination: { siteView: 1, siteForm: 1, crmForm: 0 },
     })
     const clicked = await prisma.crmCampaignRecipient.findUniqueOrThrow({
       where: { id: recipient.id },

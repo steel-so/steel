@@ -16,10 +16,6 @@ import {
   listCrmEmailImages,
   persistCrmEmailImage,
 } from '../media/crm-email-media.service'
-import {
-  persistCrmLandingPageImage,
-  persistCrmLandingPageVideo,
-} from '../media/crm-landing-page-media.service'
 import { persistCrmProposalImage } from '../media/crm-proposal-media.service'
 
 const s3Put = vi.mocked(putObject)
@@ -43,12 +39,6 @@ function upload(contentType: string, byteSize = 1024) {
 }
 
 describe.each([
-  [
-    'persistCrmLandingPageImage',
-    persistCrmLandingPageImage,
-    'crm-landing-page-images',
-    'crm_landing_page_media.persist_failed',
-  ],
   [
     'persistCrmProposalImage',
     persistCrmProposalImage,
@@ -101,56 +91,6 @@ describe.each([
     expect(logger.error).toHaveBeenCalledWith(
       failureEvent,
       expect.objectContaining({ bucket, message: 'minio down' }),
-    )
-  })
-})
-
-describe('persistCrmLandingPageVideo()', () => {
-  it.each([
-    ['video/mp4', 'mp4'],
-    ['video/webm', 'webm'],
-  ])('should store a %s banner video', async (contentType, ext) => {
-    const { url } = expectOk(
-      await persistCrmLandingPageVideo(upload(contentType, 10 * MB)),
-    )
-
-    expect(url).toMatch(
-      new RegExp(`/crm-landing-page-videos/ws1/[\\w-]+\\.${ext}$`),
-    )
-    expect(s3Bucket).toHaveBeenCalledWith('crm-landing-page-videos')
-  })
-
-  it('should reject an unsupported video format', async () => {
-    const input = upload('video/quicktime')
-
-    const error = expectErr(
-      await persistCrmLandingPageVideo(input),
-      'VALIDATION_ERROR',
-    )
-
-    expect(error.message).toMatch(/MP4 ou WebM/)
-    expect(input.readBody).not.toHaveBeenCalled()
-  })
-
-  it('should reject a video above 25 MB', async () => {
-    const error = expectErr(
-      await persistCrmLandingPageVideo(upload('video/mp4', 25 * MB + 1)),
-      'VALIDATION_ERROR',
-    )
-
-    expect(error.message).toMatch(/25 MB/)
-  })
-
-  it('should log a non-Error storage failure', async () => {
-    s3Bucket.mockRejectedValue('bucket policy denied')
-
-    expectErr(
-      await persistCrmLandingPageVideo(upload('video/mp4')),
-      'STORAGE_ERROR',
-    )
-    expect(logger.error).toHaveBeenCalledWith(
-      'crm_landing_page_media.persist_video_failed',
-      expect.objectContaining({ message: 'bucket policy denied' }),
     )
   })
 })

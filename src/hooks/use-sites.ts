@@ -96,11 +96,6 @@ export function sitesApi(workspaceId: string) {
       ),
     removeGlobal: (siteId: string, globalId: string) =>
       apiSend(`${site(siteId)}/globals/${globalId}`, { method: 'DELETE' }),
-    migrateLandingPages: () =>
-      apiFetchJson<{ created: number; skipped: number; failed: number }>(
-        `${base}/migrate-landing-pages`,
-        'POST',
-      ),
   }
 }
 

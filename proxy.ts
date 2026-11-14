@@ -55,7 +55,7 @@ const PUBLIC_ROUTES = [
   // Old address of the API reference: redirects to /dev/api
   '/reference',
   '/api/whatsapp/webhook', '/api/boleto/webhook', '/api/pabx/calls/webhook', '/api/pabx/voice-agent', '/api/crm/proposals', '/api/crm/forms',
-  '/api/crm/integrations', '/api/crm/apollo/webhook', '/api/crm/workflows', '/api/crm/landing-pages',
+  '/api/crm/integrations', '/api/crm/apollo/webhook', '/api/crm/workflows',
   '/f', '/p', '/l', '/api/social/blob',
   // Deal room (nov: crm-deals C8): public page and API, the token is the access;
   // payment webhook of the proposal charges, authenticated by the PSP signature.

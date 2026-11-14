@@ -108,11 +108,11 @@ const canUploadSourcemaps = Boolean(
 
 const nextConfig: NextConfig = {
   ...posthogProxy,
-  // CRM landing pages moved into CRM › Sites (old builder links resolve in
-  // `crm/landing-pages/[id]/page.tsx`, which needs the database).
+  // The legacy landing page editor was removed (ADR 0068): its old CRM
+  // addresses land on CRM › Sites.
   redirects: async () => [
     {
-      source: '/:workspace/crm/landing-pages',
+      source: '/:workspace/crm/landing-pages/:path*',
       destination: '/:workspace/crm/sites',
       permanent: false,
     },

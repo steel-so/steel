@@ -15,8 +15,8 @@ import {
 import type { CrmCampaignDestinationDTO } from '@/types/crm-campaign'
 
 /**
- * Where a campaign link goes (ADR 0025): a legacy landing page, a CRM form
- * or — since Sites — a page of a published site. Shared by the wizard
+ * Where a campaign link goes (ADR 0025): a CRM form or a page of a published
+ * site. Shared by the wizard
  * (links, summary, launch issues) and the click redirect.
  */
 
@@ -24,14 +24,13 @@ export type CampaignDestinationFields = Pick<
   CrmCampaign,
   | 'workspaceId'
   | 'destinationType'
-  | 'landingPageId'
   | 'formId'
   | 'siteId'
   | 'sitePageId'
 >
 
 export interface ResolvedCampaignDestination {
-  /** Input of `toCrmCampaignLinks`: the landing/form token or the site
+  /** Input of `toCrmCampaignLinks`: the form token or the site
    * page URL; `null` when there is nothing a contact could open. */
   ref: string | { url: string } | null
   summary: CrmCampaignDestinationDTO
@@ -89,24 +88,22 @@ export async function resolveCampaignDestination(
     )
   }
 
-  const isForm = campaign.destinationType === 'FORM'
-  const id = isForm ? campaign.formId : campaign.landingPageId
-  if (!campaign.destinationType || !id) return ok(null)
-  const record = isForm
-    ? await CrmCampaignLookupRepository.findForm(workspaceId, id)
-    : await CrmCampaignLookupRepository.findLandingPage(workspaceId, id)
+  if (campaign.destinationType !== 'FORM' || !campaign.formId) return ok(null)
+  const record = await CrmCampaignLookupRepository.findForm(
+    workspaceId,
+    campaign.formId,
+  )
   if (!record.ok) return record
   if (!record.value) return ok(null)
 
-  const type = isForm ? 'FORM' : 'LANDING_PAGE'
   return ok({
     ref: record.value.token,
     summary: {
-      type,
+      type: 'FORM',
       name: record.value.name ?? '',
       pageTitle: null,
       url: campaignDestinationUrl(BETTER_AUTH_URL, {
-        type,
+        type: 'FORM',
         token: record.value.token,
       }),
       published: record.value.published,

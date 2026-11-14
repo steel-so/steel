@@ -67,7 +67,6 @@ function context(overrides: Partial<SiteAiContextDTO> = {}): SiteAiContextDTO {
       },
       { id: 'p2', name: 'Bolo de cenoura', description: '', price: 'R$ 45,00' },
     ],
-    testimonials: 2,
     forms: [{ id: 'f1', name: 'Contato do site', publicToken: 'tok1' }],
     canCreateForm: true,
     quota: { usedUsd: 1, quotaUsd: 50, remainingUsd: 49, exceeded: false },
@@ -160,7 +159,6 @@ describe('Gerar com IA', () => {
       primaryColor: '#AA3300',
       logoUrl: 'https://cdn.example.com/logo.png',
       productIds: ['p1'],
-      useTestimonials: true,
       contactFormId: 'f1',
     })
     fireEvent.click(screen.getByRole('button', { name: 'Abrir o editor' }))
@@ -279,7 +277,6 @@ describe('toGenerateInput', () => {
     primaryColor: 'zz',
     useLogo: false,
     productIds: [],
-    useTestimonials: false,
     form: 'new',
     eventDate: '2026-12-01',
     extra: '',
@@ -295,8 +292,7 @@ describe('toGenerateInput', () => {
       pages: [],
       style: 'b2b',
       productIds: [],
-      useTestimonials: false,
-      createContactForm: true,
+        createContactForm: true,
       eventDate: '2026-12-01',
       extra: '',
     })

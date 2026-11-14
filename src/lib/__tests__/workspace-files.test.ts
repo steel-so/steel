@@ -67,16 +67,12 @@ describe('isPublicBucket()', () => {
 
 function prismaStub(overrides: {
   attachments?: { storageKey: string }[]
-  pageSections?: { content: unknown }[]
   proposalSections?: { content: unknown }[]
   templateSections?: { defaultContent: unknown }[]
 }): PrismaClient {
   return {
     crmAiAttachment: {
       findMany: vi.fn().mockResolvedValue(overrides.attachments ?? []),
-    },
-    crmLandingPageSection: {
-      findMany: vi.fn().mockResolvedValue(overrides.pageSections ?? []),
     },
     crmProposalSection: {
       findMany: vi.fn().mockResolvedValue(overrides.proposalSections ?? []),
@@ -139,10 +135,10 @@ describe('collectWorkspaceFileRefs()', () => {
     ])
   })
 
-  it('finds legacy flat media referenced in landing page and proposal content', async () => {
+  it('finds legacy flat media referenced in proposal content', async () => {
     mocks.listObjects.mockImplementation(
       async (bucket: string, prefix: string) => {
-        if (bucket === 'crm-landing-page-images' && prefix === '') {
+        if (bucket === 'crm-proposal-images' && prefix === '') {
           return [
             { key: 'old-hero.png', size: 42 },
             { key: 'unreferenced.png', size: 99 },
@@ -154,10 +150,10 @@ describe('collectWorkspaceFileRefs()', () => {
 
     const result = await collectWorkspaceFileRefs(
       prismaStub({
-        pageSections: [
+        proposalSections: [
           {
             content: {
-              image: 'https://cdn.example/crm-landing-page-images/old-hero.png',
+              image: 'https://cdn.example/crm-proposal-images/old-hero.png',
             },
           },
         ],
@@ -167,17 +163,15 @@ describe('collectWorkspaceFileRefs()', () => {
 
     expect(result.files).toEqual([
       {
-        bucket: 'crm-landing-page-images',
+        bucket: 'crm-proposal-images',
         key: 'old-hero.png',
         sizeBytes: 42,
         legacy: true,
       },
     ])
-    expect(mocks.listObjects).toHaveBeenCalledWith(
-      'crm-landing-page-images',
-      '',
-      { delimiter: '/' },
-    )
+    expect(mocks.listObjects).toHaveBeenCalledWith('crm-proposal-images', '', {
+      delimiter: '/',
+    })
   })
 
   it('ignores already-prefixed URLs in the legacy scan (the prefix listing has them)', async () => {

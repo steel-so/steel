@@ -25,7 +25,6 @@ export const SiteAiContextDTOSchema = dto(
           price: z.string().meta({ example: 'R$ 18,00' }),
         }),
       ),
-      testimonials: z.number().int().meta({ example: 2 }),
       forms: z.array(
         z.object({ id: z.string(), name: z.string(), publicToken: z.string() }),
       ),
@@ -49,7 +48,7 @@ export const SiteAiContextDTOSchema = dto(
     })
     .meta({
       description:
-        'Dados que preenchem o formulário "Gerar com IA" (marca do e-mail, produtos do CRM, formulários publicados, depoimentos das landing pages), a cota mensal de IA e o custo estimado de cada ação com o modelo do workspace.',
+        'Dados que preenchem o formulário "Gerar com IA" (marca do e-mail, produtos do CRM, formulários publicados, depoimentos), a cota mensal de IA e o custo estimado de cada ação com o modelo do workspace.',
     }),
 )
 

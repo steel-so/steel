@@ -18,16 +18,11 @@ const ASSIST_MAX_TOKENS = 1500
 
 /** Who may ask the AI about a field: whoever may edit that surface. */
 const SURFACE_PERMISSION: Record<CrmTextAiSurface, PermissionRequirement> = {
-  LANDING_PAGE: { resource: 'landing-pages', action: 'EDIT' },
   DOCUMENT: { resource: 'documents', action: 'EDIT' },
   SOCIAL: { resource: 'social', action: 'CREATE' },
 }
 
 const SURFACE_ROLE: Record<CrmTextAiSurface, string[]> = {
-  LANDING_PAGE: [
-    'Você é um redator de landing pages que ajuda o usuário a ajustar o texto de UM campo da página.',
-    'Escreva copy de conversão: clara, específica e orientada ao benefício.',
-  ],
   DOCUMENT: [
     'Você é um redator de propostas comerciais B2B que ajuda o usuário a ajustar o texto de UM campo do documento.',
     'Tom profissional, claro e objetivo; nada de exageros de marketing. Não invente valores, prazos, cláusulas nem dados do cliente que não estejam no texto ou no pedido.',
@@ -84,7 +79,7 @@ function fitSuggestion(
 
 export const CrmTextAiService = {
   /**
-   * One turn of the per-field AI chat (landing pages, documents, social
+   * One turn of the per-field AI chat (documents, social
    * posts). Same gate as the other CRM AI features (plan feature
    * `crm.aiAssistant`), same model and monthly quota through
    * `AiUsageService` (ADR 0007). Stateless: the client sends the field text

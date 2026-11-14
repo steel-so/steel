@@ -327,7 +327,7 @@ describe('SitePublicService.recordView', () => {
 })
 
 describe('SitePublicService.landingRedirect', () => {
-  it('points migrated landing pages to their site', async () => {
+  it('points the legacy landing page address to its site', async () => {
     sites.findPublishedSlugByLandingShareToken.mockResolvedValueOnce(
       ok('clinica'),
     )

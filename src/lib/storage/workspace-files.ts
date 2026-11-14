@@ -22,14 +22,16 @@ export const WORKSPACE_BUCKETS: readonly WorkspaceBucket[] = [
     writtenBy: 'src/services/media/project-media.service.ts',
   },
   {
+    // Legado: o editor de landing pages foi removido (ADR 0068); as imagens
+    // continuam servindo os sites migrados.
     name: 'crm-landing-page-images',
     public: true,
-    writtenBy: 'src/services/media/crm-landing-page-media.service.ts',
+    writtenBy: 'src/services/site-media.service.ts',
   },
   {
     name: 'crm-landing-page-videos',
     public: true,
-    writtenBy: 'src/services/media/crm-landing-page-media.service.ts',
+    writtenBy: 'src/services/site-media.service.ts',
   },
   {
     name: 'crm-proposal-images',
@@ -125,14 +127,10 @@ export const CRM_AI_ATTACHMENT_BUCKET = 'crm-ai-attachments'
 /**
  * Buckets de mídia de CRM que, até 19/09/2026, gravavam na raiz
  * (`<uuid>.<ext>`, sem o workspace na chave). Para esses objetos legados o
- * único vínculo com o workspace é a URL guardada no conteúdo das landing
- * pages/propostas — daí o rastreio por referência.
+ * único vínculo com o workspace é a URL guardada no conteúdo das
+ * propostas — daí o rastreio por referência.
  */
-const LEGACY_FLAT_BUCKETS = [
-  'crm-landing-page-images',
-  'crm-landing-page-videos',
-  'crm-proposal-images',
-] as const
+const LEGACY_FLAT_BUCKETS = ['crm-proposal-images'] as const
 
 const PUBLIC_BY_BUCKET = new Map(
   [
@@ -155,7 +153,7 @@ export interface WorkspaceFilesPurgeResult {
  * precisam ser coletadas ANTES de apagar as linhas do banco (a chave não
  * carrega o workspace).
  *
- * Fica de fora: objetos legados de landing page/proposta gravados na raiz do
+ * Fica de fora: objetos legados de proposta gravados na raiz do
  * bucket (ver `LEGACY_FLAT_BUCKETS`) — eles não são apagados aqui porque uma
  * varredura por referência depende das linhas, que já foram removidas.
  */
@@ -216,17 +214,13 @@ function referencedKeys(json: string, bucket: string): Set<string> {
 
 /**
  * Conteúdo (JSON) do workspace onde uma URL de mídia pode aparecer: seções
- * de landing page, seções de proposta e de modelo de proposta.
+ * de proposta e de modelo de proposta.
  */
 async function legacyContentJson(
   client: PrismaClient,
   workspaceId: string,
 ): Promise<string> {
-  const [pageSections, proposalSections, templateSections] = await Promise.all([
-    client.crmLandingPageSection.findMany({
-      where: { landingPage: { workspaceId } },
-      select: { content: true },
-    }),
+  const [proposalSections, templateSections] = await Promise.all([
     client.crmProposalSection.findMany({
       where: { proposal: { workspaceId } },
       select: { content: true },
@@ -237,13 +231,13 @@ async function legacyContentJson(
     }),
   ])
 
-  return JSON.stringify([pageSections, proposalSections, templateSections])
+  return JSON.stringify([proposalSections, templateSections])
 }
 
 /**
  * Tudo o que o workspace tem no MinIO: os buckets prefixados (exaustivo, por
  * prefixo), os anexos do assistente de IA (pela linha) e — best-effort — as
- * mídias legadas de landing page/proposta citadas no conteúdo.
+ * mídias legadas de proposta citadas no conteúdo.
  *
  * A varredura legada é honestamente incompleta: um objeto antigo que ninguém
  * mais referencia (seção apagada, proposta excluída) não tem como ser

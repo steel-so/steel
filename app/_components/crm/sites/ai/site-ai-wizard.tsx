@@ -66,7 +66,6 @@ interface Brief {
   primaryColor: string
   useLogo: boolean
   productIds: string[]
-  useTestimonials: boolean
   form: string
   eventDate: string
   extra: string
@@ -97,7 +96,6 @@ function initialBrief(context: SiteAiContextDTO): Brief {
     productIds: context.products
       .slice(0, SITE_AI_MAX_PRODUCTS)
       .map((product) => product.id),
-    useTestimonials: context.testimonials > 0,
     form: initialForm(context),
     eventDate: '',
     extra: '',
@@ -124,7 +122,6 @@ export function toGenerateInput(
       ? { logoUrl: context.brand.logoUrl }
       : {}),
     productIds: brief.productIds,
-    useTestimonials: brief.useTestimonials,
     ...(brief.form === NEW_FORM
       ? { createContactForm: true }
       : brief.form === NO_FORM
@@ -512,16 +509,6 @@ function BriefForm({
             ))}
           </div>
         </fieldset>
-      ) : null}
-
-      {context.testimonials > 0 ? (
-        <Label className='gap-3 font-normal leading-normal'>
-          <Switch
-            checked={brief.useTestimonials}
-            onCheckedChange={(checked) => set('useTestimonials', checked)}
-          />
-          Usar os {context.testimonials} depoimentos das landing pages
-        </Label>
       ) : null}
 
       <div className='grid gap-1.5'>

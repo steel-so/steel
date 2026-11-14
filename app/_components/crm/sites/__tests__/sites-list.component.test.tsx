@@ -49,10 +49,8 @@ const BASE = `/api/workspaces/${WS}/crm/sites`
 
 function setup({
   sites = SITES,
-  landingPages = 0,
 }: {
   sites?: SiteSummaryDTO[]
-  landingPages?: number
 } = {}) {
   const spy = mockFetch([
     {
@@ -70,7 +68,6 @@ function setup({
       },
     },
     { match: new RegExp(`${BASE}$`), data: sites },
-    { match: /\/crm\/landing-pages$/, data: Array(landingPages).fill({}) },
     {
       match: /\/sites\/site_\d\/pages\/home$/,
       data: { ...PAGES[0], document: createSiteDocument('Bem-vindo') },
@@ -89,11 +86,6 @@ function setup({
       match: `${BASE}/site_1/duplicate`,
       status: 201,
       data: fakeSite({ id: 'site_8', name: 'Clínica São Lucas (cópia)' }),
-    },
-    {
-      method: 'POST',
-      match: `${BASE}/migrate-landing-pages`,
-      data: { created: 2, skipped: 0, failed: 0 },
     },
     {
       method: 'POST',
@@ -253,23 +245,6 @@ describe('<SitesList />', () => {
       ).toBe(true),
     )
     expect(notify.success).toHaveBeenCalledWith('“Campanha de verão” excluído.')
-  })
-
-  it('brings old landing pages over and hides the banner', async () => {
-    const spy = setup({ landingPages: 2 })
-    expect(
-      await screen.findByText('Landing pages agora são Sites'),
-    ).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Trazer para Sites' }))
-    await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith(
-        '2 landing pages agora são sites.',
-      ),
-    )
-    expect(
-      spy.mock.calls.some(([url]) => String(url).includes('migrate')),
-    ).toBe(true)
-    expect(screen.queryByText('Landing pages agora são Sites')).toBeNull()
   })
 
   it('shows the traffic of the last days with a link to the metrics', async () => {

@@ -19,7 +19,6 @@ import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   SiteDTOSchema,
   SiteGlobalDTOSchema,
-  SiteLandingMigrationReportDTO,
   SiteNewsletterOptionDTO,
   SitePageDTOSchema,
   SitePageSummaryDTOSchema,
@@ -138,24 +137,6 @@ export const crmSitesRoutes: RouteConfig[] = [
       200: { description: 'Disponibilidade.', schema: SiteSlugAvailabilityDTO },
     },
     errors: CRM_ERRORS,
-  },
-  {
-    method: 'post',
-    path: '/workspaces/{id}/crm/sites/migrate-landing-pages',
-    tags: TAG,
-    summary: 'Migrar landing pages para sites',
-    description: describe(
-      'Converte cada landing page do workspace num site de uma página (cabeçalho e rodapé viram componentes globais). Landing pages publicadas viram sites publicados e o link `/l/<token>` passa a redirecionar. Idempotente: páginas já migradas são puladas.',
-      crmAccess('privileged'),
-    ),
-    consent: true,
-    responses: {
-      200: {
-        description: 'Resumo da migração.',
-        schema: SiteLandingMigrationReportDTO,
-      },
-    },
-    errors: CRM_PRIVILEGED_ERRORS,
   },
   {
     method: 'get',

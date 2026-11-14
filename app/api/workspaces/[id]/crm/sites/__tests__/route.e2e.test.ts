@@ -191,18 +191,4 @@ describe('site lifecycle', () => {
       (await postJson(`${base}/${site.id}/publish`, {}, viewer.cookie)).status,
     ).toBe(403)
   })
-
-  it('migrates landing pages for admins only', async () => {
-    const { user, workspace } = await authenticatedOwner()
-    const path = `/api/workspaces/${workspace.id}/crm/sites/migrate-landing-pages`
-    const migrated = await postJson(path, {}, user.cookie)
-    expect(migrated.status).toBe(200)
-    expect((await migrated.json()).data).toMatchObject({
-      created: 0,
-      failed: 0,
-    })
-
-    const member = await addMember(workspace.id, 'MEMBER')
-    expect((await postJson(path, {}, member.cookie)).status).toBe(403)
-  })
 })

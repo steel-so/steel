@@ -442,14 +442,6 @@ async function validateReferences(
 ): Promise<Result<void>> {
   const invalid = (message: string) => err(validationError(message))
 
-  if (dto.landingPageId) {
-    const page = await CrmCampaignLookupRepository.findLandingPage(
-      workspaceId,
-      dto.landingPageId,
-    )
-    if (!page.ok) return page
-    if (!page.value) return invalid('Landing page não encontrada')
-  }
   if (dto.formId) {
     const form = await CrmCampaignLookupRepository.findForm(
       workspaceId,
@@ -536,8 +528,7 @@ function toUpdateData(
         : whatsappVariables
   }
   // One destination at a time: picking a type clears the other ids.
-  const clear = (keep: 'LANDING_PAGE' | 'FORM' | 'SITE_PAGE' | null) => {
-    if (keep !== 'LANDING_PAGE') data.landingPageId = null
+  const clear = (keep: 'FORM' | 'SITE_PAGE' | null) => {
     if (keep !== 'FORM') data.formId = null
     if (keep !== 'SITE_PAGE') {
       data.siteId = null
@@ -552,11 +543,7 @@ function toUpdateData(
   return data
 }
 
-const MISSING_DESTINATION: Record<
-  'LANDING_PAGE' | 'FORM' | 'SITE_PAGE',
-  string
-> = {
-  LANDING_PAGE: 'Escolha a landing page de destino',
+const MISSING_DESTINATION: Record<'FORM' | 'SITE_PAGE', string> = {
   FORM: 'Escolha o formulário de destino',
   SITE_PAGE: 'Escolha o site e a página de destino',
 }
@@ -609,9 +596,6 @@ export const CrmCampaignService = {
     const tokens = await CrmCampaignLookupRepository.destinationTokens(
       workspaceId,
       {
-        landingPageIds: campaigns.value.flatMap((c) =>
-          c.landingPageId ? [c.landingPageId] : [],
-        ),
         formIds: campaigns.value.flatMap((c) => (c.formId ? [c.formId] : [])),
       },
     )
@@ -625,9 +609,7 @@ export const CrmCampaignService = {
             : undefined
         const onSite = site ? siteDestination(site, campaign.sitePageId) : null
         const destinationId =
-          campaign.destinationType === 'FORM'
-            ? campaign.formId
-            : campaign.landingPageId
+          campaign.destinationType === 'FORM' ? campaign.formId : null
         return {
           ...toCrmCampaignDTO(
             campaign,
@@ -836,16 +818,6 @@ export const CrmCampaignService = {
         updatedAt: site.updatedAt.toISOString(),
         pages: pages.map(({ formTokens: _tokens, ...page }) => page),
       })),
-      // Migrated landing pages live on as sites (a draft still pointing to
-      // one shows it from its own `destination` summary).
-      landingPages: options.value.landingPages
-        .filter((page) => page.migratedSiteId === null)
-        .map((page) => ({
-          id: page.id,
-          title: page.title,
-          published: page.status === 'PUBLISHED',
-          shareToken: page.shareToken,
-        })),
       forms: options.value.forms.map((form) => ({
         id: form.id,
         name: form.name,

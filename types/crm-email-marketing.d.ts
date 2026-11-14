@@ -129,9 +129,8 @@ export interface CrmEmailRenderDTO {
   text: string
 }
 
-/** Quick picks of the link picker: published landing pages and forms. */
+/** Quick picks of the link picker: published forms. */
 export interface CrmEmailLinkTargetsDTO {
-  landingPages: { id: string; title: string; url: string }[]
   forms: { id: string; name: string; url: string }[]
 }
 

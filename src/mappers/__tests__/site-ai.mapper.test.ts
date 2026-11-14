@@ -5,7 +5,6 @@ import {
   toSiteAiFormData,
   toSiteAiFormDTO,
   toSiteAiProductDTOs,
-  toSiteAiTestimonial,
 } from '../site-ai.mapper'
 
 describe('toSiteAiProductDTOs', () => {
@@ -41,31 +40,6 @@ describe('toSiteAiProductDTOs', () => {
         price: expect.stringContaining('10,00'),
       },
     ])
-  })
-})
-
-describe('toSiteAiTestimonial', () => {
-  it('reads quote, author and role from a landing-page section', () => {
-    expect(
-      toSiteAiTestimonial({
-        type: 'TESTIMONIAL',
-        quote: '  Excelente  ',
-        authorName: 'Ana',
-        authorRole: 'Cliente',
-      }),
-    ).toEqual({ quote: 'Excelente', name: 'Ana', role: 'Cliente' })
-    expect(toSiteAiTestimonial({ quote: 'Bom', authorName: 'Rui' })).toEqual({
-      quote: 'Bom',
-      name: 'Rui',
-      role: '',
-    })
-  })
-
-  it('rejects content without quote or author', () => {
-    expect(toSiteAiTestimonial(null)).toBeNull()
-    expect(toSiteAiTestimonial('texto')).toBeNull()
-    expect(toSiteAiTestimonial({ quote: 'x' })).toBeNull()
-    expect(toSiteAiTestimonial({ authorName: 'x', quote: 5 })).toBeNull()
   })
 })
 

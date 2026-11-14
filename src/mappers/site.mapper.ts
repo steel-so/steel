@@ -30,7 +30,6 @@ export function toSiteDTO(site: Site, url: string): SiteDTO {
     publishedVersionId: site.publishedVersionId,
     publishedAt: site.publishedAt ? site.publishedAt.toISOString() : null,
     url,
-    sourceLandingPageId: site.sourceLandingPageId,
     createdById: site.createdById,
     updatedById: site.updatedById,
     createdAt: site.createdAt.toISOString(),

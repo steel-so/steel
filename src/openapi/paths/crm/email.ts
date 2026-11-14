@@ -245,7 +245,7 @@ const builderRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Links rápidos do editor de e-mail',
     description: describe(
-      'Landing pages e formulários publicados do workspace, com a URL pública, para o seletor de link do editor.',
+      'Formulários publicados do workspace, com a URL pública, para o seletor de link do editor.',
       crmAccess('email', 'VIEW'),
     ),
     responses: {

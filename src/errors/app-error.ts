@@ -583,12 +583,6 @@ export const crmFormNotFound = (): AppError =>
 export const crmFormNotPublished = (): AppError =>
   appError('CRM_FORM_NOT_PUBLISHED', 'Este formulário não está publicado')
 
-export const crmLandingPageTemplateNotFound = (): AppError =>
-  appError(
-    'CRM_LANDING_PAGE_TEMPLATE_NOT_FOUND',
-    'Modelo de landing page não encontrado',
-  )
-
 export const crmAiConversationNotFound = (): AppError =>
   appError('CRM_AI_CONVERSATION_NOT_FOUND', 'Conversa não encontrada')
 
@@ -766,9 +760,6 @@ export const crmNlSearchFailed = (): AppError =>
     'CRM_NL_SEARCH_FAILED',
     'Não consegui entender a busca agora — reformule a pergunta ou tente de novo em instantes',
   )
-
-export const crmLandingPageNotFound = (): AppError =>
-  appError('CRM_LANDING_PAGE_NOT_FOUND', 'Landing page não encontrada')
 
 export const crmSocialConnectionNotFound = (): AppError =>
   appError('CRM_SOCIAL_CONNECTION_NOT_FOUND', 'Conexão social não encontrada')

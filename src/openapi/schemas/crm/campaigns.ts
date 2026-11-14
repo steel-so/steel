@@ -42,13 +42,12 @@ const campaignShape = {
   }),
   status,
   destinationType: z
-    .enum(['LANDING_PAGE', 'FORM', 'SITE_PAGE'])
+    .enum(['FORM', 'SITE_PAGE'])
     .nullable()
     .meta({
       description:
-        'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); LANDING_PAGE = landing page antiga.',
+        'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); FORM = formulário do CRM (`formId`).',
     }),
-  landingPageId: z.string().nullable(),
   formId: z.string().nullable(),
   siteId: z.string().nullable(),
   sitePageId: z.string().nullable(),
@@ -95,7 +94,7 @@ const campaignShape = {
   }),
   destination: z
     .object({
-      type: z.enum(['LANDING_PAGE', 'FORM', 'SITE_PAGE']),
+      type: z.enum(['FORM', 'SITE_PAGE']),
       name: z.string(),
       pageTitle: z.string().nullable(),
       url: z.string().nullable(),
@@ -106,7 +105,7 @@ const campaignShape = {
 }
 
 const conversionKind = z.enum([
-  'LANDING_VIEW',
+  'LANDING_VIEW', // legacy rows only
   'FORM_SUBMISSION',
   'SITE_VIEW',
   'SITE_FORM_SUBMISSION',
@@ -205,7 +204,6 @@ export const CrmCampaignStatsDTO = dto(
         siteView: count(),
         siteForm: count(),
         crmForm: count(),
-        landingView: count(),
       }),
     }),
     convertedContacts: z.array(
@@ -293,14 +291,6 @@ export const CrmCampaignOptionsDTO = dto(
             isHome: z.boolean(),
           }),
         ),
-      }),
-    ),
-    landingPages: z.array(
-      z.object({
-        id: z.string(),
-        title: z.string(),
-        published: z.boolean(),
-        shareToken: z.string(),
       }),
     ),
     forms: z.array(

@@ -93,8 +93,6 @@ export {
   crmHookVaultItemNotFound,
   crmIntegrationKeyInvalid,
   crmIntegrationKeyNotFound,
-  crmLandingPageNotFound,
-  crmLandingPageTemplateNotFound,
   crmLeadAlreadyClosed,
   crmLeadAlreadyConverted,
   crmLeadDuplicate,

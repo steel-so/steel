@@ -1,8 +1,5 @@
 import type { SiteFormField } from '@/src/lib/canvas-site/schemas'
-import type {
-  SiteAiFormData,
-  SiteAiTestimonialData,
-} from '@/src/lib/site-ai/sections'
+import type { SiteAiFormData } from '@/src/lib/site-ai/sections'
 import type { EmailProductRow } from '@/src/repositories/crm-email-builder.repository'
 import type { CrmFormDTO } from '@/types/crm-form'
 import type { SiteAiFormDTO, SiteAiProductDTO } from '@/types/site-ai'
@@ -14,23 +11,6 @@ export function toSiteAiProductDTOs(
 ): SiteAiProductDTO[] {
   const data = toEmailProductData(rows)
   return rows.map((row) => ({ id: row.id, ...data[row.id] }))
-}
-
-function text(value: unknown, max: number): string {
-  return typeof value === 'string' ? value.trim().slice(0, max) : ''
-}
-
-/** A landing-page testimonial section's content as testimonial data;
- * `null` when it has no quote or no author. */
-export function toSiteAiTestimonial(
-  content: unknown,
-): SiteAiTestimonialData | null {
-  if (typeof content !== 'object' || content === null) return null
-  const record = content as Record<string, unknown>
-  const quote = text(record.quote, 1000)
-  const name = text(record.authorName, 120)
-  if (!quote || !name) return null
-  return { quote, name, role: text(record.authorRole, 160) }
 }
 
 export function toSiteAiFormDTO(form: CrmFormDTO): SiteAiFormDTO {

@@ -135,8 +135,8 @@ export const crmHookVaultRoutes: RouteConfig[] = [
     tags: ['CRM · IA'],
     summary: 'Ajustar o texto de um campo com IA',
     description: describe(
-      'Uma rodada do mini chat de IA de um campo de texto do CRM: landing pages (`LANDING_PAGE`), propostas e modelos (`DOCUMENT`) e publicações de redes sociais (`SOCIAL`). Sem estado: o cliente envia o texto atual do campo e o histórico curto (até 12 mensagens, terminando no usuário) a cada rodada; nenhum outro dado do CRM vai ao provedor. Usa a IA do workspace (mesmo modelo do assistente do CRM) e consome a cota mensal de IA.',
-      'Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e, conforme `surface`, a permissão `landing-pages` × `EDIT`, `documents` × `EDIT` ou `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam).',
+      'Uma rodada do mini chat de IA de um campo de texto do CRM: propostas e modelos (`DOCUMENT`) e publicações de redes sociais (`SOCIAL`). Sem estado: o cliente envia o texto atual do campo e o histórico curto (até 12 mensagens, terminando no usuário) a cada rodada; nenhum outro dado do CRM vai ao provedor. Usa a IA do workspace (mesmo modelo do assistente do CRM) e consome a cota mensal de IA.',
+      'Acesso: sessão + membro do workspace com o módulo **CRM** habilitado e, conforme `surface`, a permissão `documents` × `EDIT` ou `social` × `CREATE` no perfil (OWNER/ADMIN sempre passam).',
     ),
     body: CrmTextAiAssistSchema,
     responses: {

@@ -9,8 +9,8 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
 
 /**
- * Read-only lookups of the records a campaign points to (landing pages,
- * forms, e-mail templates, mailing lists, WhatsApp connections/templates),
+ * Read-only lookups of the records a campaign points to (forms,
+ * e-mail templates, mailing lists, WhatsApp connections/templates),
  * always scoped to the campaign's workspace.
  */
 
@@ -18,7 +18,7 @@ export interface CampaignDestinationRecord {
   id: string
   token: string
   published: boolean
-  /** Landing page title or form name. */
+  /** Form name. */
   name?: string
 }
 
@@ -140,30 +140,6 @@ export const CrmCampaignLookupRepository = {
     }
   },
 
-  async findLandingPage(
-    workspaceId: string,
-    id: string,
-  ): Promise<Result<CampaignDestinationRecord | null>> {
-    try {
-      const page = await prisma.crmLandingPage.findFirst({
-        where: { id, workspaceId, deletedAt: null },
-        select: { id: true, shareToken: true, status: true, title: true },
-      })
-      return ok(
-        page
-          ? {
-              id: page.id,
-              token: page.shareToken,
-              published: page.status === 'PUBLISHED',
-              name: page.title,
-            }
-          : null,
-      )
-    } catch (error) {
-      return err(dbError('Failed to find campaign landing page', error))
-    }
-  },
-
   async findForm(
     workspaceId: string,
     id: string,
@@ -271,25 +247,16 @@ export const CrmCampaignLookupRepository = {
   /** Destination tokens of many campaigns at once (list view links). */
   async destinationTokens(
     workspaceId: string,
-    ids: { landingPageIds: string[]; formIds: string[] },
+    ids: { formIds: string[] },
   ): Promise<Result<Map<string, string>>> {
     try {
-      const [pages, forms] = await Promise.all([
-        ids.landingPageIds.length
-          ? prisma.crmLandingPage.findMany({
-              where: { workspaceId, id: { in: ids.landingPageIds } },
-              select: { id: true, shareToken: true },
-            })
-          : [],
-        ids.formIds.length
-          ? prisma.crmForm.findMany({
-              where: { workspaceId, id: { in: ids.formIds } },
-              select: { id: true, publicToken: true },
-            })
-          : [],
-      ])
+      const forms = ids.formIds.length
+        ? await prisma.crmForm.findMany({
+            where: { workspaceId, id: { in: ids.formIds } },
+            select: { id: true, publicToken: true },
+          })
+        : []
       const map = new Map<string, string>()
-      for (const page of pages) map.set(page.id, page.shareToken)
       for (const form of forms) map.set(form.id, form.publicToken)
       return ok(map)
     } catch (error) {
@@ -300,14 +267,6 @@ export const CrmCampaignLookupRepository = {
   /** Everything the wizard pickers list, in one round trip. */
   async listOptions(workspaceId: string): Promise<
     Result<{
-      landingPages: {
-        id: string
-        title: string
-        status: string
-        shareToken: string
-        /** Site this landing page was migrated into, if any. */
-        migratedSiteId: string | null
-      }[]
       forms: { id: string; name: string; status: string; publicToken: string }[]
       emailTemplates: {
         id: string
@@ -326,21 +285,14 @@ export const CrmCampaignLookupRepository = {
   > {
     try {
       const [
-        landingPages,
         forms,
         emailTemplates,
         canvasTemplates,
         mailingLists,
         connections,
         sites,
-        migrated,
         quickReplies,
       ] = await Promise.all([
-        prisma.crmLandingPage.findMany({
-          where: { workspaceId, deletedAt: null },
-          select: { id: true, title: true, status: true, shareToken: true },
-          orderBy: { updatedAt: 'desc' },
-        }),
         prisma.crmForm.findMany({
           where: { workspaceId, deletedAt: null },
           select: { id: true, name: true, status: true, publicToken: true },
@@ -393,28 +345,13 @@ export const CrmCampaignLookupRepository = {
           orderBy: { updatedAt: 'desc' },
           take: MAX_PICKER_SITES,
         }),
-        prisma.site.findMany({
-          where: {
-            workspaceId,
-            deletedAt: null,
-            sourceLandingPageId: { not: null },
-          },
-          select: { id: true, sourceLandingPageId: true },
-        }),
         prisma.whatsAppQuickReply.findMany({
           where: { workspaceId },
           orderBy: { shortcut: 'asc' },
         }),
       ])
-      const migratedTo = new Map(
-        migrated.map((site) => [site.sourceLandingPageId, site.id]),
-      )
       const canvas = new Set(canvasTemplates.map((template) => template.id))
       return ok({
-        landingPages: landingPages.map((page) => ({
-          ...page,
-          migratedSiteId: migratedTo.get(page.id) ?? null,
-        })),
         forms,
         emailTemplates: emailTemplates.map((template) => ({
           ...template,

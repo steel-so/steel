@@ -157,13 +157,6 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'publishedAt', label: 'Publicado em' },
     { key: 'createdAt', label: 'Criado em' },
   ],
-  'landing-pages': [
-    { key: 'title', label: 'Título' },
-    { key: 'status', label: 'Status' },
-    { key: 'viewsCount', label: 'Acessos' },
-    { key: 'publishedAt', label: 'Publicado em' },
-    { key: 'createdAt', label: 'Criado em' },
-  ],
   'whatsapp-conversations': [
     { key: 'contactName', label: 'Contato' },
     { key: 'contactWaId', label: 'Telefone' },
@@ -196,7 +189,6 @@ export const VIEW_SOURCE_LABELS: Record<ViewSource, string> = {
   tasks: 'Tarefas',
   notes: 'Notas',
   forms: 'Formulários',
-  'landing-pages': 'Landing pages',
   'whatsapp-conversations': 'Conversas do WhatsApp',
   'whatsapp-broadcasts': 'Transmissões do WhatsApp',
   ...SD_SOURCE_LABELS,
@@ -221,7 +213,6 @@ export const SOURCE_MODULE: Record<
   tasks: 'CRM',
   notes: 'CRM',
   forms: 'CRM',
-  'landing-pages': 'CRM',
   'whatsapp-conversations': 'COMMUNICATION',
   'whatsapp-broadcasts': 'COMMUNICATION',
   'sd-tickets': 'SERVICE_DESK',
@@ -267,7 +258,6 @@ const SOURCE_PATH: Record<ViewSource, string> = {
   tasks: 'crm/tasks',
   notes: 'crm/notes',
   forms: 'crm/forms',
-  'landing-pages': 'crm/landing-pages',
   'whatsapp-conversations': 'whatsapp/conversations',
   'whatsapp-broadcasts': 'whatsapp/broadcasts',
   ...SD_SOURCE_PATH,
@@ -290,7 +280,9 @@ export function sourceNeedsLookups(source: ChartSource): boolean {
 /** Traduz a fonte (valor do enum) para o caminho de API completo. */
 export function sourceResource(source: ChartSource): string {
   if (source === 'socials') return ''
-  return SOURCE_PATH[source]
+  // Widgets saved with a removed source (e.g. the old landing pages) have no
+  // path: they just show their error state instead of breaking the board.
+  return SOURCE_PATH[source] ?? ''
 }
 
 export const COMPARE_RANGE_LABELS: Record<CompareRange, string> = {

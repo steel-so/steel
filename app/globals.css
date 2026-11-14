@@ -107,38 +107,6 @@
   --highlight: oklch(0.852 0.199 91.936);
 }
 
-/*
- * As landing pages do CRM (builder e /l/[shareToken]) têm paleta própria,
- * fixa por template (fiel ao Figma) — não devem herdar o dark mode do
- * visitante/usuário Steel. Como o dark mode aqui é 100% via variável CSS
- * (`.dark { --background: ...; }`, sem `dark:` nos componentes), reafirmar
- * os mesmos valores de `:root` num escopo mais próximo do que `.dark`
- * (aplicado lá em cima no `<html>`) sobrescreve a cascata e trava o
- * subtree em light, mesmo com `.dark` em algum ancestral.
- */
-.landing-page-light-scope {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.147 0.004 49.25);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.147 0.004 49.25);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.216 0.006 56.043);
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.97 0.001 106.424);
-  --secondary-foreground: oklch(0.216 0.006 56.043);
-  --muted: oklch(0.97 0.001 106.424);
-  --muted-foreground: oklch(0.553 0.013 58.071);
-  --accent: oklch(0.97 0.001 106.424);
-  --accent-foreground: oklch(0.216 0.006 56.043);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.923 0.003 48.717);
-  --input: oklch(0.923 0.003 48.717);
-  --ring: oklch(0.709 0.01 56.259);
-  color-scheme: light;
-}
-
 @theme inline {
   --color-brand: var(--brand);
   --color-highlight: var(--highlight);

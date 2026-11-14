@@ -99,7 +99,7 @@ export const crmSiteStudioRoutes: RouteConfig[] = [
     tags: TAG,
     summary: 'Listar imagens dos sites',
     description: describe(
-      'Biblioteca de mídia do editor: imagens enviadas para os sites do workspace e as das landing pages antigas, das mais novas para as mais antigas (até 500).',
+      'Biblioteca de mídia do editor: imagens enviadas para os sites do workspace e as herdadas do editor antigo de landing pages, das mais novas para as mais antigas (até 500).',
       crmAccess('landing-pages', 'VIEW'),
     ),
     responses: {

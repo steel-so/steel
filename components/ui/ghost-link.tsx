@@ -23,7 +23,7 @@ const GhostLinkTargetsContext = createContext<GhostLinkTarget[]>([])
 
 /**
  * In-page targets offered as one-click destinations in every GhostLink
- * below it (the landing-page builder passes the page's section anchors).
+ * below it (a builder can pass the page's section anchors).
  */
 export const GhostLinkTargetsProvider = GhostLinkTargetsContext.Provider
 

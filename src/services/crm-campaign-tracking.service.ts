@@ -39,7 +39,6 @@ const REPLY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 /**
  * Does a visit/submission belong to the campaign's destination?
  *
- * - landing page view → the campaign's landing page;
  * - CRM form page submission → the campaign's form;
  * - site page view → any page of the campaign's site (the visitor may land
  *   on it from a menu link carrying the parameters);
@@ -47,24 +46,17 @@ const REPLY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
  *   form embedded in some site page.
  */
 export function matchesDestination(
-  campaign: Pick<
-    CrmCampaign,
-    'destinationType' | 'landingPageId' | 'formId' | 'siteId'
-  >,
+  campaign: Pick<CrmCampaign, 'destinationType' | 'formId' | 'siteId'>,
   input: {
     kind: CrmCampaignConversionKind
-    landingPageId?: string
     formId?: string
     siteId?: string
   },
 ): boolean {
   const type = campaign.destinationType
   switch (input.kind) {
-    case 'LANDING_VIEW':
-      return (
-        type === 'LANDING_PAGE' &&
-        campaign.landingPageId === input.landingPageId
-      )
+    case 'LANDING_VIEW': // legacy kind: nothing produces it anymore
+      return false
     case 'FORM_SUBMISSION':
       return type === 'FORM' && campaign.formId === input.formId
     case 'SITE_VIEW':
@@ -79,16 +71,16 @@ export function matchesDestination(
 
 /**
  * Does it mark the recipient as converted? A form sent (from the form page
- * or a site page) converts form and site campaigns; a view converts landing
- * campaigns and site campaigns on their chosen page.
+ * or a site page) converts form and site campaigns; a view converts site
+ * campaigns on their chosen page.
  */
 export function convertsRecipient(
   campaign: Pick<CrmCampaign, 'destinationType' | 'sitePageId'>,
   input: { kind: CrmCampaignConversionKind; sitePageId?: string },
 ): boolean {
   switch (input.kind) {
-    case 'LANDING_VIEW':
-      return campaign.destinationType === 'LANDING_PAGE'
+    case 'LANDING_VIEW': // legacy kind: nothing produces it anymore
+      return false
     case 'SITE_VIEW':
       return (
         campaign.destinationType === 'SITE_PAGE' &&
@@ -166,10 +158,7 @@ export const CrmCampaignTrackingService = {
         campaignDestinationUrl(
           BETTER_AUTH_URL,
           typeof ref === 'string'
-            ? {
-                type: campaign.destinationType as 'LANDING_PAGE' | 'FORM',
-                token: ref,
-              }
+            ? { type: 'FORM', token: ref }
             : { type: 'SITE_PAGE', url: ref.url },
         ),
         {
@@ -183,7 +172,7 @@ export const CrmCampaignTrackingService = {
   },
 
   /**
-   * A visit (landing page, site page) or submission (form page, form on a
+   * A visit (site page) or submission (form page, form on a
    * site page) arriving with campaign parameters. Attributed to the
    * recipient when the signed token matches, otherwise to the campaign by
    * its `utm_campaign` slug. The destination must be the campaign's (see
@@ -196,7 +185,6 @@ export const CrmCampaignTrackingService = {
       kind: CrmCampaignConversionKind
       sourceRef: string
       ref: CrmCampaignRefDTO
-      landingPageId?: string
       formId?: string
       siteId?: string
       sitePageId?: string

@@ -136,7 +136,7 @@ export function CrmCampaignsList({
         <div className='min-w-0' data-tour='campaigns-header'>
           <h1 className='font-semibold text-lg'>Campanhas</h1>
           <p className='text-muted-foreground text-sm'>
-            Leve contatos do e-mail (e do WhatsApp) até uma landing page ou
+            Leve contatos do e-mail (e do WhatsApp) até um site ou
             formulário e acompanhe as conversões.
           </p>
         </div>

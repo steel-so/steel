@@ -618,20 +618,16 @@ describe('CrmEmailBuilderService', () => {
   })
 
   describe('linkTargets()', () => {
-    it('lists published landing pages and forms with public URLs', async () => {
+    it('lists published forms with public URLs', async () => {
       asRole('VIEWER')
       mockedBuilder.listPublishedLinkTargets.mockResolvedValueOnce(
         ok({
-          landingPages: [{ id: 'l1', title: 'Promo', shareToken: 'tok' }],
           forms: [{ id: 'f1', name: 'Contato', publicToken: 'ft' }],
         }),
       )
       expect(
         expectOk(await CrmEmailBuilderService.linkTargets('u1', 'ws1')),
       ).toEqual({
-        landingPages: [
-          { id: 'l1', title: 'Promo', url: 'https://steel.test/l/tok' },
-        ],
         forms: [{ id: 'f1', name: 'Contato', url: 'https://steel.test/f/ft' }],
       })
     })

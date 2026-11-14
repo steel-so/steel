@@ -1,7 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 import { seedCrmForm } from '@/src/__tests__/factories/crm-form.factory'
-import { seedCrmLandingPage } from '@/src/__tests__/factories/crm-landing-page.factory'
 import {
   createSiteDocument,
   seedSite,
@@ -94,14 +93,12 @@ describe('SiteRepository', () => {
           slug: 'sem-globais',
           theme: {},
           settings: {},
-          sourceLandingPageId: 'landing-x',
         },
         pages: [pageInput({ isHome: false })],
         globals: [],
       }),
     )
     expect(site.homePageId).toBeNull()
-    expect(site.sourceLandingPageId).toBe('landing-x')
   })
 
   it('maps a slug collision to SITE_SLUG_TAKEN', async () => {
@@ -259,49 +256,33 @@ describe('SiteRepository', () => {
     )
   })
 
-  it('finds the site migrated from a landing page', async () => {
+  it('resolves the legacy landing page address of a live site', async () => {
     const { workspace, user } = await setup()
-    const landing = await seedCrmLandingPage(workspace.id, user.id)
     expect(
-      expectOk(await SiteRepository.findBySourceLandingPageId(landing.id)),
+      expectOk(await SiteRepository.findPublishedSlugByLandingShareToken('tok')),
     ).toBeNull()
+
+    const draft = await seedSite(workspace.id, user.id, {
+      slug: 'rascunho',
+      legacyLandingShareToken: 'tok-draft',
+    })
+    expect(draft.legacyLandingShareToken).toBe('tok-draft')
     expect(
       expectOk(
-        await SiteRepository.findPublishedSlugByLandingShareToken(
-          landing.shareToken,
-        ),
-      ),
-    ).toBeNull()
-    expect(
-      expectOk(
-        await SiteRepository.findPublishedSlugByLandingShareToken('nope'),
+        await SiteRepository.findPublishedSlugByLandingShareToken('tok-draft'),
       ),
     ).toBeNull()
 
-    const site = await seedSite(workspace.id, user.id, {
+    await seedSite(workspace.id, user.id, {
       slug: 'migrada',
-      sourceLandingPageId: landing.id,
+      legacyLandingShareToken: 'tok-live',
       status: 'PUBLISHED',
     })
     expect(
-      expectOk(await SiteRepository.findBySourceLandingPageId(landing.id))?.id,
-    ).toBe(site.id)
-    expect(
       expectOk(
-        await SiteRepository.findPublishedSlugByLandingShareToken(
-          landing.shareToken,
-        ),
+        await SiteRepository.findPublishedSlugByLandingShareToken('tok-live'),
       ),
     ).toBe('migrada')
-
-    const all = expectOk(
-      await SiteRepository.listLandingPagesForMigration(workspace.id),
-    )
-    expect(all.map((l) => l.id)).toEqual([landing.id])
-    expect(Array.isArray(all[0].sections)).toBe(true)
-    expect(
-      expectOk(await SiteRepository.listLandingPagesForMigration()).length,
-    ).toBeGreaterThanOrEqual(1)
   })
 
   it('loads only published forms of the workspace', async () => {
@@ -325,16 +306,6 @@ describe('SiteRepository', () => {
       ]),
     )
     expect(forms.map((f) => f.id)).toEqual([published.id])
-
-    expect(
-      expectOk(await SiteRepository.findFormsByIds(workspace.id, [])),
-    ).toEqual([])
-    const byId = expectOk(
-      await SiteRepository.findFormsByIds(workspace.id, [draft.id, foreign.id]),
-    )
-    expect(byId).toEqual([
-      { id: draft.id, name: draft.name, publicToken: draft.publicToken },
-    ])
   })
 
   it('records an anonymous view', async () => {
@@ -369,12 +340,6 @@ describe('SiteRepository', () => {
         .mockImplementation(fail as never),
       vi.spyOn(prisma.crmForm, 'findMany').mockImplementation(fail as never),
       vi.spyOn(prisma.siteView, 'create').mockImplementation(fail as never),
-      vi
-        .spyOn(prisma.crmLandingPage, 'findFirst')
-        .mockImplementation(fail as never),
-      vi
-        .spyOn(prisma.crmLandingPage, 'findMany')
-        .mockImplementation(fail as never),
       vi.spyOn(prisma, '$transaction').mockImplementation(fail as never),
     ]
     const results = await Promise.all([
@@ -382,7 +347,6 @@ describe('SiteRepository', () => {
       SiteRepository.countByWorkspace('w'),
       SiteRepository.findById('s', 'w'),
       SiteRepository.isSlugTaken('x'),
-      SiteRepository.findBySourceLandingPageId('l'),
       SiteRepository.update('s', { updatedById: 'u' }),
       SiteRepository.softDelete('s', 'x'),
       SiteRepository.findPublishedBySlug('x'),
@@ -390,7 +354,6 @@ describe('SiteRepository', () => {
       SiteRepository.listVersions('s'),
       SiteRepository.findVersion('s', 'v'),
       SiteRepository.findPublishedForms('w', ['f']),
-      SiteRepository.findFormsByIds('w', ['f']),
       SiteRepository.recordView({
         siteId: 's',
         pageId: null,
@@ -399,7 +362,6 @@ describe('SiteRepository', () => {
         referrer: null,
       }),
       SiteRepository.findPublishedSlugByLandingShareToken('t'),
-      SiteRepository.listLandingPagesForMigration(),
       SiteRepository.createWithPages({
         site: {
           workspaceId: 'w',

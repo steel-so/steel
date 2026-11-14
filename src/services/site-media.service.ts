@@ -10,8 +10,8 @@ import { assertSitesPermission } from './site-access'
 
 /**
  * Media library of the site editor ("Mídia"): images uploaded for the
- * workspace's sites, plus the old landing-page images so migrated sites can
- * reuse them. Files live in public buckets under `<workspaceId>/`; the URL
+ * workspace's sites, plus the images of the removed landing page editor (ADR 0068) so
+ * migrated sites can reuse them. Files live in public buckets under `<workspaceId>/`; the URL
  * stored in the page documents is the only pointer, so the listing comes
  * straight from the bucket.
  */

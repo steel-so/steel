@@ -126,7 +126,6 @@ describe('CrmCampaignWizard', () => {
         siteId: 's1',
         sitePageId: 'home',
         formId: null,
-        landingPageId: null,
       }),
     )
     // The link is the last choice: next comes the review.

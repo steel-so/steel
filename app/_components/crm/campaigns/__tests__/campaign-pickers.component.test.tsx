@@ -151,21 +151,10 @@ describe('DestinationStep', () => {
     })
   })
 
-  it('should label legacy landing pages and suggest migrating', () => {
+  it('should only offer sites and forms as destinations', () => {
     renderDestination(campaign({ destinationType: null, formId: null }))
-    fireEvent.click(screen.getByRole('tab', { name: /Landing pages antigas/ }))
-    expect(screen.getByText(/ainda não foram migradas/)).toBeTruthy()
-    expect(
-      screen
-        .getByRole('link', { name: 'Migrar para Sites' })
-        .getAttribute('href'),
-    ).toBe('/acme/crm/sites')
-    fireEvent.click(screen.getByRole('button', { name: /Página BF/ }))
-    expect(draftOf()).toMatchObject({
-      destinationType: 'LANDING_PAGE',
-      landingPageId: 'l1',
-    })
-    expect(screen.getAllByText('Landing page antiga').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('tab', { name: /Landing pages/ })).toBeNull()
+    expect(screen.getAllByRole('tab')).toHaveLength(2)
   })
 })
 
@@ -433,7 +422,6 @@ describe('ConversionsByDestination', () => {
     expect(section.textContent).toContain('Visitas no site5')
     expect(section.textContent).toContain('Formulários no site2')
     expect(section.textContent).toContain('Formulário do CRM1')
-    // Legacy landing pages only show when they converted.
-    expect(section.textContent).not.toContain('Landing page antiga')
+    expect(section.textContent).not.toContain('Landing page')
   })
 })

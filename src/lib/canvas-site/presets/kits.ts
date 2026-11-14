@@ -7,7 +7,7 @@ import { defaultSiteTheme, type SiteTheme } from '../theme'
 
 /**
  * The three visual styles of the ready-made sections, taken from the
- * landing-page kits (`app/_components/crm/landing-page/sections/*`):
+ * landing-page kits of the removed legacy builder (ADR 0068):
  *
  * - **agency** ("Agência", kits Agency/Job site): airy, centered headings,
  *   red overline, colorful cards with deep shadows, mist bands.

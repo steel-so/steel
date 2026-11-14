@@ -120,9 +120,6 @@ export const CrmEmailRenderDTO = dto(
 export const CrmEmailLinkTargetsDTO = dto(
   'CrmEmailLinkTargets',
   z.object({
-    landingPages: z.array(
-      z.object({ id: z.string(), title: z.string(), url: z.string() }),
-    ),
     forms: z.array(
       z.object({ id: z.string(), name: z.string(), url: z.string() }),
     ),

@@ -55,7 +55,6 @@ export function createFakeSite(overrides?: Partial<Site>): Site {
     homePageId: null,
     publishedVersionId: null,
     publishedAt: null,
-    sourceLandingPageId: null,
     createdById: createId(),
     updatedById: null,
     createdAt: now,
@@ -135,7 +134,10 @@ export async function seedSite(
   workspaceId: string,
   createdById: string,
   overrides?: Partial<
-    Pick<Site, 'name' | 'slug' | 'status' | 'deletedAt' | 'sourceLandingPageId'>
+    Pick<
+      Site,
+      'name' | 'slug' | 'status' | 'deletedAt' | 'legacyLandingShareToken'
+    >
   >,
 ) {
   return prisma.site.create({

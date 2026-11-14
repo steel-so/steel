@@ -100,9 +100,6 @@ export function crmSitesApi(workspaceId: string) {
     /** CRM forms of the workspace (the form picker of `site.form`). */
     forms: () =>
       apiFetch<CrmFormDTO[]>(`/api/workspaces/${workspaceId}/crm/forms`),
-    /** Old landing pages (only counted, for the migration banner). */
-    landingPages: () =>
-      apiFetch<unknown[]>(`/api/workspaces/${workspaceId}/crm/landing-pages`),
   }
 }
 
@@ -125,8 +122,6 @@ export const crmSitesKeys = {
     ['crm-sites', workspaceId, 'site', siteId, 'changes'] as const,
   media: (workspaceId: string) => ['crm-sites', workspaceId, 'media'] as const,
   forms: (workspaceId: string) => ['crm-sites', workspaceId, 'forms'] as const,
-  landingPages: (workspaceId: string) =>
-    ['crm-sites', workspaceId, 'landing-pages'] as const,
 }
 
 function siteMediaItem(item: SiteMediaItemDTO): MediaItem {
@@ -157,15 +152,6 @@ export function useCrmSites(workspaceId: string) {
   return useQuery<SiteSummaryDTO[]>({
     queryKey: crmSitesKeys.list(workspaceId),
     queryFn: () => crmSitesApi(workspaceId).list(),
-  })
-}
-
-/** Count of the old landing pages (migration banner). */
-export function useLegacyLandingPageCount(workspaceId: string) {
-  return useQuery<number>({
-    queryKey: crmSitesKeys.landingPages(workspaceId),
-    queryFn: async () => (await crmSitesApi(workspaceId).landingPages()).length,
-    staleTime: 5 * 60_000,
   })
 }
 

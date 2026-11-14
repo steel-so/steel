@@ -29,7 +29,7 @@ export function validateImage(
 /**
  * Chave de mídia de CRM prefixada pelo workspace. O nome do arquivo é
  * aleatório (a URL pública é o único ponteiro, guardado no conteúdo da
- * landing page/proposta), então o prefixo é a única forma de saber a quem o
+ * proposta/site), então o prefixo é a única forma de saber a quem o
  * objeto pertence — é o que permite incluí-lo no backup do workspace e
  * apagá-lo na exclusão. Objetos gravados antes desta mudança ficaram na raiz
  * do bucket; veja `collectWorkspaceFileRefs` em

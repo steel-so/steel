@@ -17,7 +17,6 @@ export function campaign(
     slug: 'black-friday',
     status: 'DRAFT',
     destinationType: 'FORM',
-    landingPageId: null,
     formId: 'f1',
     siteId: null,
     sitePageId: null,
@@ -107,9 +106,6 @@ export function options(
         updatedAt: '2026-10-14T12:00:00.000Z',
         pages: [],
       },
-    ],
-    landingPages: [
-      { id: 'l1', title: 'Página BF', published: true, shareToken: 'ltok' },
     ],
     forms: [
       {
@@ -289,7 +285,7 @@ export function stats(
       visits: 0,
       submissions: 3,
       byChannel: { email: 2, whatsapp: 1, unknown: 0 },
-      byDestination: { siteView: 5, siteForm: 2, crmForm: 1, landingView: 0 },
+      byDestination: { siteView: 5, siteForm: 2, crmForm: 1 },
     },
     convertedContacts: [
       {

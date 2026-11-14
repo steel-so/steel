@@ -36,9 +36,6 @@ vi.mock('@/src/services/crm-company.service', () => ({
 vi.mock('@/src/services/crm-form.service', () => ({
   CrmFormService: { list: vi.fn() },
 }))
-vi.mock('@/src/services/crm-landing-page.service', () => ({
-  CrmLandingPageService: { list: vi.fn() },
-}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
@@ -53,7 +50,6 @@ import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmCompanyService } from '@/src/services/crm-company.service'
 import { CrmFormService } from '@/src/services/crm-form.service'
-import { CrmLandingPageService } from '@/src/services/crm-landing-page.service'
 import { CrmLeadService } from '@/src/services/crm-lead.service'
 import { CrmOpportunityService } from '@/src/services/crm-opportunity.service'
 import { CrmSalesMetricsService } from '@/src/services/crm-sales-metrics.service'
@@ -467,7 +463,6 @@ describe('widgetData()', () => {
       ['tasks', CrmTaskService.list],
       ['companies', CrmCompanyService.list],
       ['forms', CrmFormService.list],
-      ['landing-pages', CrmLandingPageService.list],
     ] as const
     for (const [source, list] of cases) {
       vi.mocked(list).mockResolvedValue(

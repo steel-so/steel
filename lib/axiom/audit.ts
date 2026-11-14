@@ -97,7 +97,6 @@ export type AuditEntity =
   | 'crm_email_brand'
   | 'crm_mailing_list'
   | 'crm_workflow'
-  | 'crm_landing_page'
   | 'crm_social_connection'
   | 'crm_scheduled_post'
   | 'crm_email_account'
@@ -403,7 +402,7 @@ export type AuditAction =
   | 'lock'
   | 'unlock'
   | 'duplicate'
-  // Site builder: landing page → site migration
+  // Legacy imports (documents)
   | 'migrate'
   // Sites S4: A/B test lifecycle
   | 'pause'

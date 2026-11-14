@@ -84,13 +84,7 @@ describe('send window (America/Sao_Paulo)', () => {
 })
 
 describe('campaign URLs', () => {
-  it('should build landing and form destinations', () => {
-    expect(
-      buildDestinationUrl('https://app.test/', {
-        type: 'LANDING_PAGE',
-        token: 'abc',
-      }),
-    ).toBe('https://app.test/l/abc')
+  it('should build form destinations', () => {
     expect(
       buildDestinationUrl('https://app.test', { type: 'FORM', token: 'xyz' }),
     ).toBe('https://app.test/f/xyz')
@@ -98,7 +92,7 @@ describe('campaign URLs', () => {
 
   it('should append the UTM parameters and the ref', () => {
     const url = new URL(
-      withCampaignParams('https://app.test/l/abc?x=1', {
+      withCampaignParams('https://app.test/f/abc?x=1', {
         source: 'email',
         medium: 'campanha',
         campaign: 'black-friday',
@@ -111,7 +105,7 @@ describe('campaign URLs', () => {
     expect(url.searchParams.get('utm_campaign')).toBe('black-friday')
     expect(url.searchParams.get('stc')).toBe('tok')
     expect(
-      withCampaignParams('https://app.test/l/abc', {
+      withCampaignParams('https://app.test/f/abc', {
         source: 'whatsapp',
         medium: 'm',
         campaign: 'c',

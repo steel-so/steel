@@ -2,7 +2,7 @@
  * Normaliza um pathname para agrupar requisições da mesma rota no painel
  * Analytics: ids (cuid2, uuid, números, hashes, tokens) viram `[id]`, o slug
  * do workspace nas páginas privadas vira `[workspace]` e o segmento dos links
- * públicos (formulário, proposta, landing page, descadastro) vira `[token]`.
+ * públicos (formulário, proposta, descadastro) vira `[token]`.
  * Roda no momento do log — a rota normalizada vai para `request.route`.
  */
 

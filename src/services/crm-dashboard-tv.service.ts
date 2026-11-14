@@ -38,7 +38,6 @@ import {
 import { CrmCompanyService } from './crm-company.service'
 import { loadDashboardLookups } from './crm-dashboard.service'
 import { CrmFormService } from './crm-form.service'
-import { CrmLandingPageService } from './crm-landing-page.service'
 import { CrmLeadService } from './crm-lead.service'
 import { CrmOpportunityService } from './crm-opportunity.service'
 import { CrmSalesMetricsService } from './crm-sales-metrics.service'
@@ -61,7 +60,6 @@ const TV_ROW_SOURCES = [
   'tasks',
   'companies',
   'forms',
-  'landing-pages',
 ] as const satisfies readonly ViewSource[]
 type TvRowSource = (typeof TV_ROW_SOURCES)[number]
 
@@ -107,8 +105,6 @@ async function listRows(
         return CrmCompanyService.list(actorId, workspaceId, { icp: undefined })
       case 'forms':
         return CrmFormService.list(actorId, workspaceId)
-      case 'landing-pages':
-        return CrmLandingPageService.list(actorId, workspaceId)
     }
   })()
   if (!result.ok) return result

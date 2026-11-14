@@ -42,7 +42,6 @@ export function fakeSite(overrides: Partial<SiteDTO> = {}): SiteDTO {
     publishedVersionId: null,
     publishedAt: null,
     url: 'https://clinica.sites.example.com',
-    sourceLandingPageId: null,
     createdById: 'u1',
     updatedById: null,
     createdAt: '2026-10-01T12:00:00.000Z',

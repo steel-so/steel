@@ -68,7 +68,7 @@ describe('CRM sidebar pages', () => {
   )
 })
 
-describe('landing pages moved to Sites', () => {
+describe('landing pages removed (ADR 0068)', () => {
   it('redirects the old list to /crm/sites', async () => {
     const { user, workspace } = await authenticatedOwner()
     const res = await fetch(`${BASE_URL}/${workspace.slug}/crm/landing-pages`, {
@@ -81,14 +81,19 @@ describe('landing pages moved to Sites', () => {
     )
   })
 
-  it('renders the old builder route without a server error', async () => {
+  it('redirects the old builder route to /crm/sites too', async () => {
     const { user, workspace } = await authenticatedOwner()
     const res = await fetch(
       `${BASE_URL}/${workspace.slug}/crm/landing-pages/unknown-id`,
-      { headers: { ...defaultHeaders, Cookie: user.cookie } },
+      {
+        headers: { ...defaultHeaders, Cookie: user.cookie },
+        redirect: 'manual',
+      },
     )
-    expect(res.status).toBe(200)
-    expect(await res.text()).not.toContain('Application error')
+    expect(res.status).toBe(307)
+    expect(new URL(res.headers.get('location') ?? '', BASE_URL).pathname).toBe(
+      `/${workspace.slug}/crm/sites`,
+    )
   })
 })
 

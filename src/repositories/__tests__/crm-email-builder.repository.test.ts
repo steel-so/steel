@@ -6,7 +6,6 @@ import {
   seedCrmEmailBuilderTemplate,
 } from '@/src/__tests__/factories/crm-email-marketing.factory'
 import { seedCrmForm } from '@/src/__tests__/factories/crm-form.factory'
-import { seedCrmLandingPage } from '@/src/__tests__/factories/crm-landing-page.factory'
 import { seedCrmPerson } from '@/src/__tests__/factories/crm-person.factory'
 import { seedCrmProduct } from '@/src/__tests__/factories/crm-product.factory'
 import { seedUser } from '@/src/__tests__/factories/user.factory'
@@ -243,22 +242,17 @@ describe('CrmEmailBuilderRepository', () => {
   })
 
   describe('listPublishedLinkTargets()', () => {
-    it('should list only published, live landing pages and forms of the workspace', async () => {
+    it('should list only published, live forms of the workspace', async () => {
       const [workspace, other, user] = await Promise.all([
         seedWorkspace(),
         seedWorkspace(),
         seedUser(),
       ])
-      const page = await seedCrmLandingPage(workspace.id, user.id, {
-        title: 'Black Friday',
-        status: 'PUBLISHED',
-      })
-      await seedCrmLandingPage(workspace.id, user.id, { status: 'DRAFT' })
-      await seedCrmLandingPage(workspace.id, user.id, {
+      await seedCrmForm(other.id, user.id, { status: 'PUBLISHED' })
+      await seedCrmForm(workspace.id, user.id, {
         status: 'PUBLISHED',
         deletedAt: new Date(),
       })
-      await seedCrmLandingPage(other.id, user.id, { status: 'PUBLISHED' })
       const form = await seedCrmForm(workspace.id, user.id, {
         name: 'Contato',
         status: 'PUBLISHED',
@@ -269,9 +263,6 @@ describe('CrmEmailBuilderRepository', () => {
         await CrmEmailBuilderRepository.listPublishedLinkTargets(workspace.id),
       )
       expect(targets).toEqual({
-        landingPages: [
-          { id: page.id, title: 'Black Friday', shareToken: page.shareToken },
-        ],
         forms: [
           { id: form.id, name: 'Contato', publicToken: form.publicToken },
         ],
