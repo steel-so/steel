@@ -168,6 +168,13 @@ describe('developer guides (content/dev)', () => {
     for (const page of pages) {
       for (const match of page.source.matchAll(/\]\((\/[^)\s]*)\)/g)) {
         const [target, anchor] = match[1].split('#')
+        // A screenshot is a static file under public/, not a page or a route.
+        if (/\.(webp|png|jpe?g|gif|svg|avif)$/i.test(target)) {
+          if (!fs.existsSync(path.join(process.cwd(), 'public', target))) {
+            broken.push(`${page.href} -> ${match[1]} (image file missing)`)
+          }
+          continue
+        }
         // `/dev/api` and `/dev/api/v1` are the references (routes).
         const isContent =
           (target.startsWith('/dev/') && !/^\/dev\/api(\/|$)/.test(target)) ||

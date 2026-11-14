@@ -180,9 +180,21 @@ describe('repository content (content/docs)', () => {
 
     const byHref = new Map(pages.map((p) => [p.href, p]))
     const broken: string[] = []
+    const imageExists = async (target: string) =>
+      fs
+        .access(path.join(process.cwd(), 'public', target))
+        .then(() => true)
+        .catch(() => false)
     for (const p of pages) {
       for (const match of p.source.matchAll(/\]\((\/docs[^)\s]*)\)/g)) {
         const [target, anchor] = match[1].split('#')
+        // A screenshot is a static file under public/, not a page.
+        if (/\.(webp|png|jpe?g|gif|svg|avif)$/i.test(target)) {
+          if (!(await imageExists(target))) {
+            broken.push(`${p.href} -> ${match[1]} (image file missing)`)
+          }
+          continue
+        }
         const dest = byHref.get(target)
         if (!dest) broken.push(`${p.href} -> ${match[1]}`)
         else if (anchor && !dest.headings.some((h) => h.id === anchor)) {

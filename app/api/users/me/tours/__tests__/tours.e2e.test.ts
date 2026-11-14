@@ -95,7 +95,7 @@ describe('PUT /api/users/me/tours (e2e)', () => {
     expect(body.data[0].status).toBe('COMPLETED')
   })
 
-  it('should return 400 for a tour that does not exist', async () => {
+  it('should return 422 for a tour that does not exist', async () => {
     const { cookie } = await createAuthenticatedUser()
 
     const res = await put(cookie, {
@@ -104,12 +104,12 @@ describe('PUT /api/users/me/tours (e2e)', () => {
       status: 'COMPLETED',
     })
 
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
     const body = await res.json()
     expect(body.error.code).toBe('VALIDATION_ERROR')
   })
 
-  it('should return 400 for an invalid status', async () => {
+  it('should return 422 for an invalid status', async () => {
     const { cookie } = await createAuthenticatedUser()
 
     const res = await put(cookie, {
@@ -118,6 +118,6 @@ describe('PUT /api/users/me/tours (e2e)', () => {
       status: 'OPEN',
     })
 
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(422)
   })
 })
