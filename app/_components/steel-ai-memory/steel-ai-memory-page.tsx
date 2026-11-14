@@ -327,7 +327,7 @@ export function SteelAiMemoryPage({
             </SteelAiNotice>
           ) : null}
 
-          <InputGroup>
+          <InputGroup data-tour='memory-search'>
             <InputGroupAddon>
               <SteelIcon icon={Search01Icon} strokeWidth={2} />
             </InputGroupAddon>
@@ -352,34 +352,38 @@ export function SteelAiMemoryPage({
             </p>
           ) : (
             <>
-              <MemorySection
-                title='Workspace'
-                description='Vale para todos do workspace. Só administradores editam.'
-                scope='WORKSPACE'
-                items={data.workspace}
-                canAdd={enabled && data.canManageWorkspace && !searching}
-                emptyText={
-                  searching
-                    ? 'Nada encontrado.'
-                    : 'Nenhum fato do workspace ainda.'
-                }
-                slug={slug}
-                workspaceId={workspaceId}
-              />
-              <MemorySection
-                title='Pessoal'
-                description='Só você e o Steel AI, nas suas conversas.'
-                scope='PERSONAL'
-                items={data.personal}
-                canAdd={enabled && !searching}
-                emptyText={
-                  searching
-                    ? 'Nada encontrado.'
-                    : 'Nenhum fato pessoal ainda. Conte ao Steel AI suas preferências e ele lembra.'
-                }
-                slug={slug}
-                workspaceId={workspaceId}
-              />
+              <div data-tour='memory-workspace'>
+                <MemorySection
+                  title='Workspace'
+                  description='Vale para todos do workspace. Só administradores editam.'
+                  scope='WORKSPACE'
+                  items={data.workspace}
+                  canAdd={enabled && data.canManageWorkspace && !searching}
+                  emptyText={
+                    searching
+                      ? 'Nada encontrado.'
+                      : 'Nenhum fato do workspace ainda.'
+                  }
+                  slug={slug}
+                  workspaceId={workspaceId}
+                />
+              </div>
+              <div data-tour='memory-personal'>
+                <MemorySection
+                  title='Pessoal'
+                  description='Só você e o Steel AI, nas suas conversas.'
+                  scope='PERSONAL'
+                  items={data.personal}
+                  canAdd={enabled && !searching}
+                  emptyText={
+                    searching
+                      ? 'Nada encontrado.'
+                      : 'Nenhum fato pessoal ainda. Conte ao Steel AI suas preferências e ele lembra.'
+                  }
+                  slug={slug}
+                  workspaceId={workspaceId}
+                />
+              </div>
             </>
           )}
         </div>

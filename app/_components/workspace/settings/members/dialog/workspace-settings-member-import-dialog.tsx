@@ -64,7 +64,14 @@ export function WorkspaceSettingsMemberImportDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant='outline' size='sm' className='h-8' />}
+        render={
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-8'
+            data-tour='members-import'
+          />
+        }
       >
         Importar CSV
       </DialogTrigger>

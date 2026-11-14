@@ -395,6 +395,7 @@ export function WikiSidePanel({
     <aside
       aria-label='Painel da página'
       data-testid='wiki-side-panel'
+      data-tour='wiki-side-panel'
       className='flex w-72 shrink-0 flex-col border-l border-secondary p-3 lg:w-80'
     >
       <PanelTabs {...props} />
