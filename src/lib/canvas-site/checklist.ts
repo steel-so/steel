@@ -92,7 +92,9 @@ export function siteChecklist(doc: CanvasDocument): PublishCheckItem[] {
     if (node.type === SITE_TYPES.form && isBlank(props.formToken)) {
       items.push({
         code: 'FORM_NO_DESTINATION',
-        level: 'error',
+        // A warning, not a block: sites born from a template ship with a form
+        // that still has no destination, and "Publicar" must stay available.
+        level: 'warning',
         message:
           'Formulário sem destino: escolha um formulário do CRM para receber as respostas',
         nodeId: node.id,

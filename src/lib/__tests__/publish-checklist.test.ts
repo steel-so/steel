@@ -179,7 +179,7 @@ describe('siteChecklist', () => {
     ])
   })
 
-  it('blocks forms without a destination and flags started empty links', () => {
+  it('warns about forms without a destination and flags started empty links', () => {
     const items = siteChecklist(
       site(
         { type: 'site.form', props: { formToken: '' } },
@@ -200,7 +200,7 @@ describe('siteChecklist', () => {
       ),
     )
     expect(items.map((item) => [item.code, item.level])).toEqual([
-      ['FORM_NO_DESTINATION', 'error'],
+      ['FORM_NO_DESTINATION', 'warning'],
       ['LINK_EMPTY', 'warning'],
     ])
     expect(items[0].nodeId).toBe('n0')

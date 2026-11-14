@@ -376,7 +376,7 @@ describe('SiteService.publish', () => {
     )
   })
 
-  it('refuses a form without destination but never stops on warnings', async () => {
+  it('publishes a form without destination: it only warns', async () => {
     const withForm = createSiteDocument()
     withForm.nodes.s1.children = ['h1', 'f1']
     withForm.nodes.f1 = {
@@ -387,24 +387,12 @@ describe('SiteService.publish', () => {
     pages.listWithDocuments.mockResolvedValueOnce(
       ok([{ ...home, document: withForm as never }]),
     )
-    const error = expectErr(
-      await SiteService.publish('u1', WS, site.id),
-      'SITE_DOCUMENT_INVALID',
-    )
-    expect(error.details).toEqual([
-      expect.objectContaining({
-        id: 'home',
-        problems: [expect.stringContaining('Formulário sem destino')],
-      }),
-    ])
-    expect(sites.publish).not.toHaveBeenCalled()
-
-    // A page without SEO title is only a warning: the publish goes on.
     const version = createFakeSiteVersion({ siteId: site.id, number: 6 })
     sites.publish.mockResolvedValue(
       ok({ site: { ...site, status: 'PUBLISHED' }, version }),
     )
     expectOk(await SiteService.publish('u1', WS, site.id))
+    expect(sites.publish).toHaveBeenCalled()
   })
 
   it('propagates read and publish failures', async () => {

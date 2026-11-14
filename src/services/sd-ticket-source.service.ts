@@ -191,9 +191,10 @@ async function loadConversation(
   }
   if (messageCount > 0) messages = lines.map((m) => m.line)
   for (const m of [...lines].reverse()) {
-    if (m.incoming) {
-      // A media placeholder ("[imagem]") makes a poor title.
-      lastCustomerText = m.line.text.startsWith('[') ? null : m.line.text
+    // A media placeholder ("[imagem]") makes a poor title: keep looking for the
+    // customer's latest actual text.
+    if (m.incoming && !m.line.text.startsWith('[')) {
+      lastCustomerText = m.line.text
       break
     }
   }

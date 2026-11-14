@@ -116,7 +116,12 @@ export function MediaLibrary({
   const [query, setQuery] = useState('')
   const [uploading, setUploading] = useState(0)
   const [removingId, setRemovingId] = useState<string | null>(null)
-  const media = useQuery({ queryKey: provider.key, queryFn: provider.list })
+  // No silent retries: a failure shows right away with "Tentar de novo".
+  const media = useQuery({
+    queryKey: provider.key,
+    queryFn: provider.list,
+    retry: false,
+  })
 
   async function upload(files: File[]) {
     setUploading((count) => count + files.length)
