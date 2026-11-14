@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -43,14 +43,13 @@ function TourAction({
     : `/${tours.slug}${entry.path}`
 
   return (
-    <Button
-      size='xs'
-      variant='outline'
-      nativeButton={false}
-      render={<Link href={href} onClick={onNavigate} />}
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={buttonVariants({ size: 'xs', variant: 'outline' })}
     >
       {entry.direct ? 'Abrir' : 'Ir para a tela'}
-    </Button>
+    </Link>
   )
 }
 
