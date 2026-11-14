@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-
 // The API reference moved to the developer site (/dev/api). Old links keep
-// working.
-export function GET(request: Request) {
-  return NextResponse.redirect(new URL('/dev/api', request.url), 308)
+// working. The Location is relative on purpose: behind the proxy the request
+// URL is the container's own address (0.0.0.0:3000), never the public host.
+export function GET() {
+  return new Response(null, { status: 308, headers: { Location: '/dev/api' } })
 }

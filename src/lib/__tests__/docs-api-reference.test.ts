@@ -88,10 +88,22 @@ describe('toPublicOpenApi', () => {
   })
 
   it('tolerates a spec without paths, tags or groups', () => {
-    expect(toPublicOpenApi({}, 'https://x.test')).toMatchObject({
-      paths: {},
-      tags: [],
-      'x-tagGroups': [],
-    })
+    const out = toPublicOpenApi({}, 'https://x.test')
+    expect(out).toMatchObject({ paths: {}, tags: [] })
+    // An empty `x-tagGroups` makes Scalar hide every operation.
+    expect(out).not.toHaveProperty('x-tagGroups')
+  })
+
+  it('keeps every operation visible when the spec has no tag groups (API v1)', () => {
+    const out = toPublicOpenApi(
+      {
+        tags: [{ name: 'v1 · CRM' }],
+        paths: { '/crm/people': { get: { tags: ['v1 · CRM'] } } },
+      },
+      'https://x.test',
+      '/api/v1',
+    )
+    expect(out).not.toHaveProperty('x-tagGroups')
+    expect(Object.keys(out.paths ?? {})).toEqual(['/crm/people'])
   })
 })

@@ -51,7 +51,9 @@ export function toPublicOpenApi(
     ...spec,
     servers: [{ url: `${siteUrl}${basePath}`, description: 'Steel' }],
     tags,
-    'x-tagGroups': tagGroups,
+    // Scalar lists no operation when `x-tagGroups` is present but empty, so
+    // the key only exists when there is a group to show.
+    ...(tagGroups.length > 0 ? { 'x-tagGroups': tagGroups } : {}),
     paths,
   }
 }
