@@ -17,7 +17,7 @@ UI em `app/_components/whatsapp/chatbots/*` e `zap/chatbots`.
   uma sessão ativa por conversa; a criação concorrente vira `null` e quem perdeu
   reaproveita a vencedora.
 - O fluxo é um grafo no formato do React Flow: `nodes` (`start`, `message`,
-  `menu`, `question`, `condition`, `set-variable`, `webhook`, `send-form`,
+  `menu`, `question`, `condition`, `set-variable`, `webhook`, `send-form`, `create-lead`, `open-ticket`,
   `handoff-human`, `handoff-ai`, `end`) e `edges` com `sourceHandle` (`next`, id da opção do menu,
   id do ramo da condição, `else`, `invalid`, `error`). Limites em
   `CHATBOT_LIMITS` (100 blocos, 300 ligações, 10 opções por menu).

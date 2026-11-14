@@ -1,6 +1,6 @@
 ---
 title: IA, atendimento e sentimento
-description: Resposta automática por IA com base de conhecimento, passagem para humano, fechamento automático e alertas de sentimento negativo.
+description: Resposta automática por IA com base de conhecimento, verificações antes de ligar, passagem para humano (inclusive quando a cota acaba), fechamento automático e alertas de sentimento negativo.
 section: comunicacao
 order: 8
 ---
@@ -12,7 +12,7 @@ order: 8
 
 ## Resposta automática por IA
 
-Em **Configurações › IA**, use **Configurar IA**:
+Em **Configurações › IA e conhecimento**, use **Configurar IA**:
 
 - **IA ativa**: a IA responde as conversas novas até um atendente assumir.
 - **Ler imagens e áudios**: a IA entende fotos e transcreve áudios. Requer um
@@ -22,9 +22,39 @@ Em **Configurações › IA**, use **Configurar IA**:
 - **Base de conhecimento**: envie documentos (PDF, DOCX, TXT ou CSV, até 10 MB)
   para a IA consultar. Documentos escaneados (só imagem) não são lidos.
 
+![Tela IA e conhecimento com os interruptores IA ativa e Ler imagens e áudios, as instruções da IA, o bloco de avaliação e o botão Salvar configuração](/docs/comunicacao/ia-configuracao.webp)
+
 O provedor e o modelo da IA são escolhidos em
 [Ajustes › Steel IA](/docs/steel-ai/ajustes), e o uso conta na cota mensal de IA
 do workspace.
+
+### Verificações antes de ligar
+
+A tela confere o que impediria a IA de responder e avisa antes de você ligar:
+
+- Em **vermelho**, o que bloqueia: os recursos de IA estão desligados para o
+  workspace, ou o provedor do modelo de resposta não está disponível (escolha
+  outro modelo). Com algum desses avisos, **Salvar configuração** não deixa
+  ligar a **IA ativa**: resolva primeiro.
+- Em cinza, o que não impede de salvar mas impede de funcionar: *a cota mensal
+  de IA acabou*. A IA fica sem responder até o próximo ciclo ou até a cota ser
+  aumentada, e os clientes ficam sem resposta automática.
+
+### O que a IA consulta
+
+Além dos documentos enviados aqui, a IA de atendimento consulta os artigos da
+**base de conhecimento do ServiceDesk** e as páginas da **Wiki**, quando esses
+módulos estão ligados no workspace. Como a resposta vai direto ao cliente, só
+entra o que é público:
+
+- Artigos da base de conhecimento **visíveis no portal**. Artigos internos
+  nunca são usados.
+- Páginas da Wiki **publicadas** com link público. Rascunhos e páginas não
+  publicadas nunca são usados.
+
+O **copiloto do atendente** (que só sugere texto para você revisar) segue as
+permissões de quem o usa. Se nada serve de referência para a pergunta, a IA não
+inventa: ela aciona o atendimento humano.
 
 ### Passagem para humano
 
@@ -32,6 +62,21 @@ Quando o cliente pede uma pessoa ou a IA não consegue ajudar, ela para de
 responder, a conversa fica **Em atendimento** e aparece *"Esta conversa foi
 transferida para atendimento humano."* O responsável é avisado; se não houver
 responsável, os administradores são.
+
+### IA sem cota: assuma
+
+Se a IA não pode responder porque a **cota mensal acabou** (ou o provedor está
+indisponível ou sem chave), o Steel não deixa o cliente sem resposta:
+
+- A IA é desligada **naquela conversa**, que passa para **Em atendimento** e
+  volta para a fila quando não tinha responsável.
+- A linha do tempo mostra **IA sem cota, assuma**, com o motivo (cota acabada ou
+  provedor indisponível).
+- Os administradores recebem um aviso *"A IA do WhatsApp parou de responder"*,
+  no máximo uma vez por dia para cada motivo.
+
+Um atendente assume a conversa normalmente. Quando a cota voltar, use **Retomar
+atendimento da IA** na conversa.
 
 ## Fechamento automático
 

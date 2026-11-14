@@ -1,6 +1,6 @@
 ---
 title: Conversas
-description: A caixa de atendimento em tempo real, estados da conversa, transferência, fechamento, anexos, áudio e chamada de vídeo.
+description: A caixa de atendimento em tempo real, janela de 24 horas, mensagens que falharam, transferência por equipe, contexto do cliente, chamado a partir da conversa, anexos, áudio e chamada de vídeo.
 section: comunicacao
 order: 2
 ---
@@ -12,6 +12,8 @@ real: mensagens novas aparecem sem recarregar a página.
 
 - Abas **Ativas**, **Fechadas** e **Arquivadas**.
 - Filtro por conexão e **Buscar conversa**.
+- Um segundo filtro separa **Todas as conversas**, as **suas**, a **fila** (sem
+  atendente) e cada **equipe**.
 - Em cada conversa: **Fixar**, **Arquivar**, **Limpar conversa** e **Excluir
   conversa** (excluir é para administradores).
 
@@ -23,8 +25,39 @@ real: mensagens novas aparecem sem recarregar a página.
 | **Em atendimento** | Alguém da equipe está cuidando |
 | **Fechada** | Encerrada; uma nova mensagem do contato reabre |
 
-**Transferir conversa** passa a conversa para outro membro. **Fechar conversa**
-aceita um motivo opcional.
+**Fechar conversa** aceita um motivo opcional.
+
+## Transferir e equipes
+
+No cabeçalho da conversa:
+
+- **Transferir conversa** passa a conversa para outro membro (**Transferir
+  para**). **Devolver para a fila** tira o atendente e deixa a conversa
+  disponível para a equipe.
+- **Mover para outra equipe** (ícone de pessoas) coloca a conversa na fila de
+  outra equipe; **Tirar da equipe** a deixa sem equipe. Só aparece o que o seu
+  papel permite.
+
+![Cabeçalho de uma conversa com o menu Transferir para aberto, listando o próprio atendente](/docs/comunicacao/conversa-transferir.webp)
+
+![Cabeçalho de uma conversa com o menu Mover para a equipe aberto, listando Financeiro, Suporte e Vendas](/docs/comunicacao/conversa-mover-para-equipe.webp)
+
+As equipes são criadas em **Equipes**, no menu da Comunicação. Quem pode ver
+cada conversa depende da equipe:
+
+- O **dono** vê tudo. O **administrador** também, a menos que participe de
+  alguma equipe: nesse caso vale a regra de equipe, como para os membros.
+- Um **agente** vê as conversas atribuídas a ele e a fila das equipes de que
+  participa.
+- Um **líder** vê também as conversas dos agentes da equipe que lidera e a fila
+  sem equipe.
+
+Se você transfere ou move uma conversa para fora do seu alcance, o aviso da
+operação diz *"Você deixará de ver esta conversa na sua lista"*: ela não sumiu,
+passou a ser de outra pessoa ou equipe. A distribuição automática e os avisos de
+fila estão em [Fila e distribuição](/docs/comunicacao/fila-e-distribuicao).
+
+![Tela Equipes de atendimento com três equipes, cada uma com seus líderes e agentes](/docs/comunicacao/equipes-de-atendimento.webp)
 
 ## Iniciar uma conversa
 
@@ -43,6 +76,106 @@ O compositor tem emojis, **Anexo** (até 16 MB por arquivo), **Gravar áudio**,
 **Enviar contato** e **Template**. Para responder uma mensagem específica, use
 **Responder**. Digite <Kbd>/</Kbd> para as
 [mensagens rápidas](/docs/comunicacao/mensagens-rapidas).
+
+**Rascunho por conversa.** O texto que você começou a digitar fica guardado
+neste navegador, separado para cada conversa: trocar de conversa ou recarregar a
+página não o perde, e ele nunca aparece em outra conversa. O rascunho é de cada
+navegador (não acompanha você em outro computador) e some quando a mensagem é
+enviada.
+
+### Janela de 24 horas (Meta)
+
+Nas conexões da **Meta**, o WhatsApp só permite texto livre até 24 horas depois
+da última mensagem do contato. Passado esse prazo, o campo de mensagem avisa
+*"Passaram 24 horas desde a última mensagem de …: só é possível enviar um modelo
+(template) aprovado"* e o botão **Escolher modelo** abre a lista de templates. A
+Z-API não tem essa regra.
+
+![Parte inferior de uma conversa na Meta com o aviso de 24 horas, o botão Escolher modelo e o campo de mensagem travado](/docs/comunicacao/conversa-janela-24h-modelo.webp)
+
+Na lista, só templates **aprovados** podem ser enviados. Os outros aparecem com
+o motivo: *em análise* (costuma levar alguns minutos), *rejeitado* (com o motivo
+da Meta, quando ele existe), *pausado por baixa qualidade* ou *desativado*. A
+lista também fica vazia, com *"Nenhum template sincronizado"*, enquanto ninguém
+sincronizou os templates da conexão: veja [Templates](/docs/comunicacao/templates).
+
+## Mensagem que não foi enviada
+
+Quando o provedor recusa uma mensagem, ela aparece com o motivo em português e o
+que fazer, em vez de um código:
+
+- Se o problema é a janela de 24 horas (ou um limite parecido da Meta), o botão
+  é **Usar modelo**, que abre a lista de templates.
+- Nos demais casos, e se a mensagem era um texto, o botão é **Reenviar**. Antes
+  de reenviar, leia a orientação: um erro de número sem WhatsApp, de limite de
+  envios ou de pagamento da conta Meta volta a falhar se nada mudar.
+
+Mensagens de mídia que falharam mostram o motivo, mas não têm **Reenviar**:
+envie o arquivo de novo.
+
+## Apagar uma mensagem
+
+Clique com o botão direito na mensagem e escolha **Apagar mensagem** (o mesmo
+menu tem **Responder** e **Reagir**). O Steel confirma antes: *"Ela é removida
+só do Steel. O cliente continua vendo a mensagem no WhatsApp dele."*
+
+![Janela Apagar esta mensagem? explicando que a mensagem sai só do Steel e o cliente continua vendo no WhatsApp](/docs/comunicacao/apagar-mensagem-confirmacao.webp)
+
+## Avisos da conversa
+
+### Aviso de número desconectado
+
+Quando o número da conversa está **Desconectado** ou **Com problema**, uma faixa
+vermelha diz que as mensagens não são enviadas nem recebidas e o campo de
+mensagem fica travado (*"O número está desconectado. Avise o administrador."*).
+A lista de conversas mostra o mesmo aviso para cada número fora do ar. Dono e
+administradores veem o link **Reconectar**, que leva a
+[Conexões](/docs/comunicacao/conexoes).
+
+![Conversa de um número desconectado, com a faixa vermelha no topo e o campo de mensagem travado](/docs/comunicacao/conversa-numero-desconectado.webp)
+
+### Conexão em tempo real
+
+Se a conexão em tempo real da página cair (rede instável, por exemplo), aparece
+o selo **Reconectando…** no canto da tela. Enquanto ela não volta, a caixa de
+conversas se atualiza sozinha a cada 15 segundos, então nada se perde.
+
+## Contexto do cliente
+
+O botão **Contexto do cliente** (ícone de painel, no cabeçalho) abre ao lado da
+conversa a ficha do contato, ligando o WhatsApp ao CRM e ao ServiceDesk: **Leads
+abertos**, **Oportunidades** e **Chamados** daquele cliente. Em telas menores o
+painel abre sobre a conversa.
+
+![Conversa com o painel Contexto do cliente aberto, mostrando um lead aberto, oportunidades e chamados vazios e os botões Criar oportunidade e Criar tarefa](/docs/comunicacao/contexto-do-cliente.webp)
+
+- Se o contato ainda não está no CRM, **Criar lead** o cadastra como lead sem
+  sair da conversa. Também há **Criar oportunidade** e **Criar tarefa**.
+- Quem não tem acesso ao CRM vê *"O contexto do CRM não está disponível para
+  você neste workspace"*. Os blocos de chamados só aparecem com o módulo
+  ServiceDesk ligado.
+
+Nos cadastros do CRM (pessoas, empresas e oportunidades) os botões
+**WhatsApp** e **Ligar** fazem o caminho inverso: abrem a conversa com o
+contato ou ligam para ele. Ficam desabilitados quando o cadastro não tem
+telefone ou quando você não tem permissão para iniciar conversas. O botão
+**Ligar** da própria conversa (ícone de telefone) usa o seu ramal: veja
+[Ligações](/docs/comunicacao/ligacoes).
+
+## Criar chamado a partir da conversa
+
+Com o módulo **ServiceDesk** ligado no workspace, o ícone **Criar chamado** do
+cabeçalho abre um chamado já preenchido: título e descrição vêm das últimas
+mensagens, o **Tipo** (requisição, incidente…) e uma **Observação** opcional
+você escolhe, e o **Solicitante** é o contato da conversa. Se a conversa já
+tem um chamado aberto, a janela pede a confirmação antes de criar outro.
+
+![Janela Criar chamado com título, tipo, solicitante, observação, opção de incluir as últimas mensagens e o botão Criar chamado](/docs/comunicacao/criar-chamado-da-conversa.webp)
+
+O chamado fica ligado à conversa: você vê e responde pela aba de WhatsApp do
+chamado, e as próximas mensagens do cliente continuam chegando na Comunicação.
+Se o ServiceDesk estiver configurado para avisar o solicitante, ele recebe a
+confirmação com o número do chamado.
 
 ## Baixar a conversa
 

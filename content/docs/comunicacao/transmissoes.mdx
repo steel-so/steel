@@ -1,6 +1,6 @@
 ---
 title: Transmissões
-description: Envie a mesma mensagem para vários contatos, com mídia, importação por planilha e descadastro por palavra-chave.
+description: Envie a mesma mensagem para vários contatos, com confirmação de custo, cancelamento, reenvio de falhas, importação por planilha e descadastro por palavra-chave.
 section: comunicacao
 order: 6
 ---
@@ -15,8 +15,9 @@ intervalo automático entre os envios (4 segundos).
 
 ## Lista de transmissão
 
-Em **Transmissões**, clique em **Nova lista de transmissão** e informe nome,
-conexão, mensagem, mídia (opcional) e os contatos.
+Em **Transmissões**, clique em **Nova lista** e informe nome, conexão, mensagem,
+mídia (opcional) e os contatos. Contatos descadastrados aparecem marcados e não
+recebem.
 
 | Mídia | Formatos | Limite |
 | --- | --- | --- |
@@ -25,19 +26,80 @@ conexão, mensagem, mídia (opcional) e os contatos.
 | Áudio | | 16 MB |
 | Documento | PDF, Word, Excel, PowerPoint, TXT | 16 MB |
 
-Com mídia, a mensagem vai como legenda. Ao iniciar, a transmissão passa por
-**Na fila**, **Enviando** e **Concluída** (ou **Falhou**).
+Com mídia, a mensagem vai como legenda. A lista nasce como **Rascunho**.
+
+![Tela Transmissões com duas listas: um rascunho com os botões Validar base e Iniciar, e uma lista que falhou com os botões Métricas, Ver falhas e Reenviar falhos](/docs/comunicacao/transmissoes-lista.webp)
+
+### Iniciar com confirmação
+
+**Iniciar** não envia na hora: abre a confirmação *"Iniciar o envio de …?"* com
+o que vai acontecer.
+
+![Janela de confirmação Iniciar o envio, informando para quantos contatos vai a mensagem, o custo estimado em reais e a opção de cancelar depois](/docs/comunicacao/transmissao-confirmar-inicio.webp)
+
+- Quantos contatos recebem e por qual número. Quem se descadastrou é ignorado.
+- Nas conexões **Meta**, o **custo estimado**: até a quantidade de contatos
+  vezes o preço de referência de uma mensagem de marketing. É um teto de
+  referência; o valor real depende do tipo de mensagem e da janela de 24 horas
+  (veja [Custos](/docs/comunicacao/custos)).
+- Se o número tem **limite de gasto**, quanto ainda resta no mês. Quando o
+  limite é do tipo que bloqueia, a confirmação avisa que os envios restantes
+  ficam **bloqueados** se ele acabar.
+- Que você ainda pode cancelar o que não foi enviado.
+
+Confirme com **Iniciar envio**. Com um intervalo automático entre os envios, a
+transmissão passa por **Agendada**, **Enviando** e **Concluída** (ou **Falhou**).
+
+### Cancelar um envio
+
+Enquanto a lista está **Agendada** ou **Enviando**, **Cancelar envio** (com
+confirmação) descarta o que ainda não saiu. O que já foi enviado não pode ser
+desfeito.
+
+### Falhas e reenvio
+
+Quando algum contato falha, a coluna de progresso mostra *"N falhas"* e um motivo
+resumido, e a linha ganha dois botões:
+
+- **Ver falhas** lista cada contato que falhou com o motivo individual
+  (número sem WhatsApp, janela de 24 horas, limite de gasto, número
+  desconectado…).
+- **Reenviar falhos** (com confirmação) tenta de novo todos os que falharam. Em
+  **Ver falhas**, depois que a lista termina, você também pode marcar só
+  alguns contatos e usar **Reenviar selecionados**.
+
+![Janela Envios que falharam com dois contatos, cada um com o motivo da falha em vermelho, e o botão Reenviar selecionados](/docs/comunicacao/transmissao-ver-falhas.webp)
+
+<Callout type='aviso'>
+  Leia o motivo antes de reenviar: se o problema continua (número desconectado,
+  janela de 24 horas, limite de gasto), os contatos falham outra vez. Só uma
+  lista concluída pode ser reenviada.
+</Callout>
 
 ## Importar planilha (CSV)
 
-Para lembretes com data (consultas, vencimentos), use **Importar planilha
-(CSV)**:
+Para lembretes com data (consultas, vencimentos), use **Importar planilha**:
 
+- Clique em **Baixar planilha modelo** para começar com as colunas certas.
 - Escolha a conexão, um **template aprovado** e quantas horas antes da data de
   referência a mensagem deve sair.
 - Colunas obrigatórias: `telefone`, `data_referencia` e `var_1`, `var_2`… (as
-  variáveis do template). A coluna `nome` é opcional.
-- Linhas recusadas são listadas pelo número da linha.
+  variáveis do template). A coluna `nome` é opcional. Escreva a data como
+  `15/12/2026 09:30`, no horário de Brasília.
+- Clique em **Conferir planilha**: antes de agendar, o Steel mostra quantos
+  envios serão criados, as primeiras linhas (telefone, data da consulta ou
+  evento e data de envio) e as linhas recusadas, com o número da linha e o
+  motivo.
+- **Confirmar e agendar N envio(s)** cria a lista. **Voltar** volta à planilha
+  sem agendar nada.
+
+![Janela Importar planilha (CSV) com o modelo de colunas, conexão, template aprovado, horas antes da data, validação de WhatsApp e arquivo CSV](/docs/comunicacao/transmissao-importar-planilha.webp)
+
+<Callout type='nota'>
+  A importação precisa de pelo menos um template **aprovado**; sem ele, o campo
+  mostra *"Nenhum template aprovado neste workspace ainda"*. Veja
+  [Templates](/docs/comunicacao/templates).
+</Callout>
 
 ## Pular números sem WhatsApp
 
@@ -104,5 +166,9 @@ confirmação na conversa. A IA não responde a essa mensagem.
 - Quem saiu é pulado no envio, mesmo que tenha saído depois de a lista ser
   criada.
 - As conversas individuais continuam normalmente.
+- O descadastro vale para **qualquer envio automático** por WhatsApp, não só
+  para transmissões: campanhas do CRM, avisos de chamados do ServiceDesk,
+  documentos enviados pelo Steel e ações de automação que mandam mensagem. Se o
+  Steel não consegue confirmar a situação do contato, ele não envia.
 
 Para reinscrever, veja [Contatos](/docs/comunicacao/contatos-e-grupos#descadastro-e-reinscrição).
