@@ -228,7 +228,7 @@ function Composer({
   return (
     <Card className='p-4 sm:p-6'>
       <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
-        <div className='space-y-2'>
+        <div data-tour='crm-social-platforms' className='space-y-2'>
           <span className='font-medium text-sm'>Plataformas</span>
           <div className='flex flex-wrap gap-2'>
             {CRM_PUBLISHABLE_PLATFORMS.map((platform) => {
@@ -336,7 +336,7 @@ function Composer({
           </FieldGroup>
         )}
 
-        <div className='space-y-2'>
+        <div data-tour='crm-social-content' className='space-y-2'>
           <span className='font-medium text-sm'>Conteúdo</span>
           <Textarea
             value={content}
@@ -351,7 +351,7 @@ function Composer({
           </span>
         </div>
 
-        <div className='space-y-2'>
+        <div data-tour='crm-social-media' className='space-y-2'>
           <span className='font-medium text-sm'>Mídia</span>
           <Input
             ref={fileRef}
@@ -443,7 +443,7 @@ function Composer({
           </div>
         )}
 
-        <div className='space-y-2'>
+        <div data-tour='crm-social-when' className='space-y-2'>
           <span className='font-medium text-sm'>Quando publicar</span>
           <div className='flex flex-wrap items-center gap-3'>
             <Button
@@ -474,7 +474,11 @@ function Composer({
         </div>
 
         <div className='flex justify-end'>
-          <Button type='submit' disabled={createPost.isPending}>
+          <Button
+            type='submit'
+            disabled={createPost.isPending}
+            data-tour='crm-social-submit'
+          >
             <SteelIcon
               icon={mode === 'now' ? SentIcon : Calendar01Icon}
               strokeWidth={2}
@@ -767,7 +771,7 @@ export function CrmSocialScheduleStudio({
           onCreated={refetch}
         />
 
-        <div className='space-y-3'>
+        <div data-tour='crm-social-queue' className='space-y-3'>
           <h3 className='font-heading font-semibold text-base text-muted-foreground tracking-tight'>
             Agendamentos
           </h3>

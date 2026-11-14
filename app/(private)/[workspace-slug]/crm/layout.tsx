@@ -72,7 +72,11 @@ export default async function CrmLayout({
         <ContextSidebar>
           <ContextHeader title='CRM' />
           <NavGroup>
-            <NavItem href={`${base}/leads`} icon={UserSearch01Icon}>
+            <NavItem
+              href={`${base}/leads`}
+              icon={UserSearch01Icon}
+              data-tour='crm-home-leads'
+            >
               Leads
             </NavItem>
             <NavItem href={`${base}/cadences`} icon={Route01Icon}>

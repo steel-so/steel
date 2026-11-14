@@ -1162,7 +1162,7 @@ export function DataTable<TData extends WithId>({
     <div ref={rootRef} className='flex h-full min-h-0 flex-col gap-3 p-4'>
       {/* Toolbar */}
       <div className='flex shrink-0 flex-wrap items-center gap-2'>
-        <div className='relative mr-auto'>
+        <div data-tour='crm-table-search' className='relative mr-auto'>
           <SteelIcon
             icon={Search01Icon}
             strokeWidth={2}
@@ -1182,7 +1182,12 @@ export function DataTable<TData extends WithId>({
         <Popover>
           <PopoverTrigger
             render={
-              <Button variant='outline' size='sm' data-shortcut-filters>
+              <Button
+                variant='outline'
+                size='sm'
+                data-shortcut-filters
+                data-tour='crm-table-filter'
+              >
                 <SteelIcon icon={FilterIcon} strokeWidth={2} />
                 Filtrar
                 {columnFilters.length > 0 ? (
@@ -1290,7 +1295,11 @@ export function DataTable<TData extends WithId>({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant='outline' size='sm'>
+              <Button
+                variant='outline'
+                size='sm'
+                data-tour='crm-table-columns'
+              >
                 Colunas
                 <SteelIcon icon={ArrowDown01Icon} strokeWidth={2} />
               </Button>
@@ -1314,7 +1323,10 @@ export function DataTable<TData extends WithId>({
         </DropdownMenu>
 
         {kanban ? (
-          <div className='flex items-center gap-0.5 rounded-md border p-0.5'>
+          <div
+            data-tour='crm-table-views'
+            className='flex items-center gap-0.5 rounded-md border p-0.5'
+          >
             <Button
               type='button'
               variant={viewMode === 'table' ? 'secondary' : 'ghost'}
@@ -1339,7 +1351,7 @@ export function DataTable<TData extends WithId>({
         {headerExtra}
         {headerAction ??
           (disableInlineCreate ? null : (
-            <Button size='sm' onClick={addRow}>
+            <Button size='sm' onClick={addRow} data-tour='crm-table-new'>
               <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
               {newRecordLabel(createTitle)}
             </Button>

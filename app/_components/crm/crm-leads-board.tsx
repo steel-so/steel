@@ -379,7 +379,7 @@ export function CrmLeadsBoard({
             : `${visibleLeads.length} de ${leads.length} leads`}
         </p>
         <div className='flex items-center gap-2'>
-          <div className='relative'>
+          <div data-tour='leads-search' className='relative'>
             <SteelIcon
               icon={Search01Icon}
               strokeWidth={2}
@@ -396,7 +396,12 @@ export function CrmLeadsBoard({
           <Popover>
             <PopoverTrigger
               render={
-                <Button variant='outline' size='sm' data-shortcut-filters>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  data-shortcut-filters
+                  data-tour='leads-filter'
+                >
                   <SteelIcon icon={FilterIcon} strokeWidth={2} />
                   Filtrar
                   {activeFilters.length > 0 ? (
@@ -502,6 +507,7 @@ export function CrmLeadsBoard({
             size='sm'
             variant='outline'
             onClick={() => setApolloOpen(true)}
+            data-tour='leads-apollo'
           >
             <SteelIcon icon={Download01Icon} strokeWidth={2} />
             Importar da Apollo
@@ -511,7 +517,11 @@ export function CrmLeadsBoard({
             entity='leads'
             onImported={refetch}
           />
-          <Button size='sm' onClick={() => setCreateOpen(true)}>
+          <Button
+            size='sm'
+            onClick={() => setCreateOpen(true)}
+            data-tour='leads-new'
+          >
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Novo lead
           </Button>
@@ -613,6 +623,7 @@ export function CrmLeadsBoard({
 
       <div
         ref={boardRef}
+        data-tour='leads-board'
         className='flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2'
       >
         {LEAD_STAGES.map((stage) => (

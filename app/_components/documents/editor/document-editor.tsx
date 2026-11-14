@@ -166,7 +166,10 @@ function DocumentEditorTitle() {
   }
 
   return (
-    <div className='flex min-w-0 items-center gap-1.5'>
+    <div
+      data-tour='crm-doc-title'
+      className='flex min-w-0 items-center gap-1.5'
+    >
       <FocusedBackLink
         href={`/${slug}/crm/documents/${document.id}`}
         label='Voltar para o documento'
@@ -228,6 +231,7 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         variant='ghost'
         onClick={() => setPreview(store.getState().doc)}
         data-testid='document-preview-open'
+        data-tour='crm-doc-preview'
         aria-label='Pré-visualizar'
         title='Pré-visualizar'
       >
@@ -249,6 +253,7 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         className='ml-1'
         onClick={() => setSending(true)}
         data-testid='document-send-open'
+        data-tour='crm-doc-send'
       >
         <SteelIcon icon={SentIcon} data-icon='inline-start' />
         {sent ? 'Atualizar versão' : 'Enviar'}
