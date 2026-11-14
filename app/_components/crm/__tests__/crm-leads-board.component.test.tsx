@@ -150,6 +150,14 @@ describe('<CrmLeadsBoard /> create dialog', () => {
 
     fireEvent.click(submit)
     expect(notify.error).toHaveBeenLastCalledWith('Informe o nome do lead.')
+    // Every problem is also written next to its field.
+    expect(
+      screen.getAllByRole('alert').map((alert) => alert.textContent),
+    ).toEqual([
+      'Informe o nome do lead.',
+      'Informe o e-mail ou o telefone do lead.',
+      'Informe de onde veio o lead (origem).',
+    ])
 
     type('Nome *', 'Diego Alves')
     fireEvent.click(submit)

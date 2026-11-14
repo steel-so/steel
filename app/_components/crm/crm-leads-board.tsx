@@ -1986,25 +1986,36 @@ function CreateLeadDialog({
   const [phone, setPhone] = useState('')
   const [source, setSource] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  // Each message sits next to its field; the toast repeats the first one.
+  const [errors, setErrors] = useState<{
+    name?: string
+    contact?: string
+    source?: string
+  }>({})
 
   function reset() {
     setName('')
     setEmail('')
     setPhone('')
     setSource('')
+    setErrors({})
   }
 
   async function handleSubmit() {
-    if (!name.trim()) {
-      notify.error('Informe o nome do lead.')
-      return
+    const found = {
+      name: name.trim() ? undefined : 'Informe o nome do lead.',
+      contact:
+        email.trim() || phone.trim()
+          ? undefined
+          : 'Informe o e-mail ou o telefone do lead.',
+      source: source.trim()
+        ? undefined
+        : 'Informe de onde veio o lead (origem).',
     }
-    if (!email.trim() && !phone.trim()) {
-      notify.error('Informe o e-mail ou o telefone do lead.')
-      return
-    }
-    if (!source.trim()) {
-      notify.error('Informe de onde veio o lead (origem).')
+    setErrors(found)
+    const first = found.name ?? found.contact ?? found.source
+    if (first) {
+      notify.error(first)
       return
     }
 
@@ -2046,8 +2057,17 @@ function CreateLeadDialog({
             <Input
               autoFocus
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              aria-invalid={errors.name ? true : undefined}
+              onChange={(e) => {
+                setName(e.target.value)
+                setErrors((prev) => ({ ...prev, name: undefined }))
+              }}
             />
+            {errors.name ? (
+              <p role='alert' className='text-destructive text-xs'>
+                {errors.name}
+              </p>
+            ) : null}
           </div>
           <p className='-mb-2 text-muted-foreground text-xs'>
             * Obrigatório. Informe também o e-mail ou o telefone.
@@ -2058,22 +2078,46 @@ function CreateLeadDialog({
               <Input
                 type='email'
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={errors.contact ? true : undefined}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setErrors((prev) => ({ ...prev, contact: undefined }))
+                }}
               />
             </div>
             <div className='grid gap-1.5'>
               <Label className='text-muted-foreground text-xs'>Telefone</Label>
-              <PhoneInput value={phone} onValueChange={setPhone} />
+              <PhoneInput
+                value={phone}
+                onValueChange={(next) => {
+                  setPhone(next)
+                  setErrors((prev) => ({ ...prev, contact: undefined }))
+                }}
+              />
             </div>
           </div>
+          {errors.contact ? (
+            <p role='alert' className='-mt-2 text-destructive text-xs'>
+              {errors.contact}
+            </p>
+          ) : null}
           <div className='grid gap-1.5'>
             <Label className='text-muted-foreground text-xs'>Origem *</Label>
             <Input
               list='crm-lead-source-options'
               value={source}
               placeholder='De onde veio este lead?'
-              onChange={(e) => setSource(e.target.value)}
+              aria-invalid={errors.source ? true : undefined}
+              onChange={(e) => {
+                setSource(e.target.value)
+                setErrors((prev) => ({ ...prev, source: undefined }))
+              }}
             />
+            {errors.source ? (
+              <p role='alert' className='text-destructive text-xs'>
+                {errors.source}
+              </p>
+            ) : null}
             <datalist id='crm-lead-source-options'>
               {LEAD_SOURCE_SUGGESTIONS.map((option) => (
                 <option key={option} value={option} />

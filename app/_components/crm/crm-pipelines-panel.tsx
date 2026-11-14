@@ -257,6 +257,13 @@ function CrmPipelineStagesList({
         </form>
       ) : null}
       <div data-tour='pipelines-stages' className='flex flex-col gap-1'>
+        {stages && stages.length > 0 ? (
+          <p className='text-muted-foreground text-xs'>
+            O número à direita de cada etapa é a chance de fechar o negócio
+            quando ele chega nela. Serve para a previsão de vendas
+            {canEdit ? '; clique no número para mudar.' : '.'}
+          </p>
+        ) : null}
         {!isLoading && stages?.length === 0 && (
           <p className='text-sm text-muted-foreground'>
             Nenhuma etapa cadastrada
