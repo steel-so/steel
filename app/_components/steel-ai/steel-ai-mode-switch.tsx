@@ -82,6 +82,7 @@ export function SteelAiModeSwitch({
   return (
     <fieldset
       aria-label='Modo do Steel AI'
+      data-tour='ai-modes'
       className={cn(
         'm-0 inline-flex h-7 min-w-0 shrink-0 items-center gap-0.5 rounded-md border-0 bg-muted p-0.5',
         className,

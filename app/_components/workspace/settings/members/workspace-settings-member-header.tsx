@@ -41,7 +41,7 @@ export function WorkspaceSettingsMemberHeader({
   return (
     <div className='flex flex-col gap-1 pb-3.5'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-2' data-tour='members-seats'>
           <span>Pessoas</span>
           {seats && (
             <Badge

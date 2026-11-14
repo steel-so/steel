@@ -299,6 +299,7 @@ export function SteelAiSkillsPage({
             <Button
               size='sm'
               aria-label='Nova skill'
+              data-tour='skills-new'
               className='max-sm:size-8 max-sm:px-0'
               onClick={() => setEditing({ kind: 'create' })}
             >
@@ -310,7 +311,7 @@ export function SteelAiSkillsPage({
       />
       <div className='min-h-0 flex-1 overflow-y-auto'>
         <div className='mx-auto w-full max-w-3xl space-y-6 px-4 pt-2 pb-8 sm:px-6 sm:pt-4'>
-          <header className='space-y-1'>
+          <header className='space-y-1' data-tour='skills-intro'>
             <h1 className='font-semibold text-lg'>Skills</h1>
             <p className='max-w-prose text-muted-foreground text-sm'>
               Instruções reutilizáveis que você chama digitando{' '}

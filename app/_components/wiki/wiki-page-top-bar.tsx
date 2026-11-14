@@ -342,6 +342,7 @@ export function WikiPageTopBar({
           size='sm'
           disabled={publishPending || readOnly}
           onClick={togglePublish}
+          data-tour='wiki-publish'
           aria-label={published ? 'Cancelar publicação' : 'Publicar'}
         >
           <SteelIcon icon={Globe02Icon} strokeWidth={2} />
@@ -350,7 +351,10 @@ export function WikiPageTopBar({
           </span>
         </Button>
 
-        <div className='flex items-center max-sm:hidden'>
+        <div
+          className='flex items-center max-sm:hidden'
+          data-tour='wiki-quick-actions'
+        >
           <IconAction
             label={lockLabel}
             disabled={!canManageLock || lockPending}

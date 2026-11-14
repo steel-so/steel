@@ -66,20 +66,22 @@ export function MembersManager({
           resultCount={data?.total ?? 0}
           seats={data?.seats}
         />
-        <DataTable
-          columns={columns}
-          data={data?.members ?? []}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={data?.total ?? 0}
-          onPageChange={setPage}
-          isLoading={isLoading}
-          loadingMessage='Carregando membros...'
-          emptyMessage='Nenhum membro encontrado.'
-          itemLabel={{ one: 'membro', other: 'membros' }}
-        />
+        <div data-tour='members-table'>
+          <DataTable
+            columns={columns}
+            data={data?.members ?? []}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={data?.total ?? 0}
+            onPageChange={setPage}
+            isLoading={isLoading}
+            loadingMessage='Carregando membros...'
+            emptyMessage='Nenhum membro encontrado.'
+            itemLabel={{ one: 'membro', other: 'membros' }}
+          />
+        </div>
       </div>
       <PendingInvitationsList workspaceId={workspaceId} />
     </div>

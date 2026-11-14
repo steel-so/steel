@@ -137,6 +137,7 @@ export function WhiteboardEditor({
           )}
           <span
             role='status'
+            data-tour='whiteboard-status'
             className={cn(
               'flex shrink-0 items-center gap-1 text-muted-foreground text-xs',
               status.tone,
@@ -160,6 +161,7 @@ export function WhiteboardEditor({
           <Button
             variant='outline'
             size='sm'
+            data-tour='whiteboard-history'
             onClick={() => setHistoryOpen(true)}
           >
             <SteelIcon icon={Clock01Icon} strokeWidth={2} />
@@ -192,7 +194,11 @@ export function WhiteboardEditor({
       )}
       {/* The canvas owns the keyboard: Excalidraw's single-key tools
           (R, H, 1–9…) must not trigger the app's "G → …" navigation. */}
-      <div data-shortcuts-trap className='relative min-h-0 flex-1'>
+      <div
+        data-shortcuts-trap
+        data-tour='whiteboard-canvas'
+        className='relative min-h-0 flex-1'
+      >
         <WhiteboardCanvas
           key={initialBoard.id}
           board={initialBoard}

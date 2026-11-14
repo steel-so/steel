@@ -131,6 +131,7 @@ export function WikiToolbar({
   return (
     <Toolbar
       data-testid='wiki-toolbar'
+      data-tour='wiki-toolbar'
       className='sticky top-0 z-40 flex w-full items-center gap-1 border-b border-b-border bg-background/95 px-2 py-1 backdrop-blur-sm supports-backdrop-blur:bg-background/60'
     >
       <div
