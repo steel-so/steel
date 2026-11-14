@@ -1,18 +1,133 @@
 ---
-title: "14 de novembro de 2026: telas mais claras no CRM e no WhatsApp"
+title: "14 de novembro de 2026: chamado a partir do WhatsApp, cadastro único e editor visual"
 slug: novidades-de-14-de-novembro
 date: 2026-11-14
-summary: Importação de leads, pessoas e empresas por planilha, confirmação antes de excluir, uma conexão do WhatsApp mais fácil de escolher entre a Meta e a Z-API, e avisos que dizem o que aconteceu e o que fazer.
-tags: [CRM, COMUNICACAO]
+summary: Crie chamado direto da conversa, vincule clientes do CRM, do ServiceDesk e do WhatsApp, redimensione imagens arrastando, publique com a conferência do que falta, e conecte sistemas pela API e pelos webhooks. Mais telas claras e confirmações.
+tags: [CRM, COMUNICACAO, SERVICEDESK, PLATAFORMA]
 version: 2026.11.14
 cover: /changelog/2026-11-14/capa-novidades-de-14-de-novembro.jpg
 ---
 
-Esta atualização tira dúvidas de quem usa o dia a dia do CRM e do WhatsApp:
-cada tela passa a dizer o que faz, o que falta e o que acontece depois do
-clique.
+Esta atualização faz três coisas. Liga o CRM, o ServiceDesk e o WhatsApp entre
+si, deixa o editor visual mais fácil de usar e deixa cada tela mais clara:
+ela diz o que faz, o que falta e o que acontece depois do clique.
 
-## Importar leads, pessoas e empresas por planilha
+## Crie um chamado direto da conversa do WhatsApp
+
+Na conversa, o botão de chamado abre **Criar chamado** já preenchido: o título
+vem da última mensagem de texto do cliente (uma imagem não vira título), o
+solicitante e o contato são reconhecidos e a descrição traz as últimas
+mensagens, se você quiser. O mesmo vale para o lead, a pessoa e a oportunidade
+do CRM.
+
+![Janela Criar chamado aberta a partir de uma conversa, com título, tipo, solicitante e a prévia da descrição](/changelog/2026-11-14/criar-chamado-da-conversa.webp)
+
+Se a mesma origem já tem um chamado aberto, o Steel avisa ("Já existe chamado em
+aberto para esta origem") e só cria outro se você marcar. O chamado criado
+aparece numa barra abaixo do cabeçalho da conversa, e a conversa fica ligada ao
+chamado.
+
+## Um cadastro só entre CRM, ServiceDesk e WhatsApp
+
+Cliente e contato do ServiceDesk e contato do WhatsApp agora podem ser
+**vinculados** à empresa ou à pessoa do CRM. Na ficha do cliente ou do contato, o
+painel **Cadastro no CRM** mostra o vínculo atual e sugere candidatos com o
+motivo (**Mesmo CNPJ**, **Mesmo e-mail**, **Mesmo telefone**). **Vincular** e
+**Desvincular** (com confirmação) ficam a um clique. O contato do WhatsApp tem o
+mesmo painel em **Comunicação › Contatos › Editar**.
+
+![Painel Cadastro no CRM na ficha de um cliente do ServiceDesk, com a sugestão Mesmo CNPJ e o botão Vincular](/changelog/2026-11-14/cadastro-unico-sugestao.webp)
+
+O vínculo gravado sempre vale mais do que o casamento por texto (CNPJ, e-mail,
+telefone ou nome). O casamento por texto continua como reserva.
+
+## Cliente no CRM, dentro do chamado e da conversa
+
+Na lateral do chamado aparece o cartão **Cliente no CRM**: a empresa, o ARR, o
+dono da conta e o contato, com **Abrir no CRM**.
+
+![Cartão Cliente no CRM na lateral de um chamado, com empresa, ARR, dono da conta e contato](/changelog/2026-11-14/cliente-no-crm-no-chamado.webp)
+
+Na conversa do WhatsApp, o botão **Contexto do cliente** abre um painel com o
+contato, as oportunidades e os chamados dele, e atalhos para **Criar lead**,
+**Criar oportunidade** e **Criar tarefa**. Pessoa, empresa e oportunidade do CRM
+ganham os botões **WhatsApp** e **Ligar**, e a ficha mostra a **Visão 360**.
+
+![Painel Contexto do cliente aberto ao lado de uma conversa, com os botões Criar lead, Criar oportunidade e Criar tarefa](/changelog/2026-11-14/contexto-do-cliente.webp)
+
+## Avisos ao solicitante pelo WhatsApp, com modelo aprovado
+
+Em **ServiceDesk › Configurações › WhatsApp**, a seção **Avisos ao solicitante**
+deixa escolher, para cada evento do chamado (inclusive o novo **Chamado
+criado**), o modelo aprovado e as variáveis. Fora da janela de 24 horas o aviso
+só sai por modelo, e quem pediu para não receber não recebe.
+
+![Seção Avisos ao solicitante com o evento Chamado criado, o modelo e as variáveis](/changelog/2026-11-14/avisos-ao-solicitante.webp)
+
+## A janela de 24 horas do WhatsApp, sem susto
+
+Quando a janela de 24 horas com o cliente fechou, o campo de texto trava e a
+conversa mostra o motivo e o botão **Escolher modelo**. Uma mensagem que a Meta
+recusa por isso aparece com **Falhou**, o motivo em português e **Usar modelo**.
+A janela vale para o contato naquele número: uma conversa nova, aberta a partir do
+CRM, já nasce com a janela do contato.
+
+![Conversa com a janela de 24 horas fechada, o aviso e o botão Escolher modelo](/changelog/2026-11-14/janela-de-24-horas.webp)
+
+## Editor visual: arraste, redimensione e publique com segurança
+
+No editor de Sites, de e-mail e de Documentos:
+
+- **Redimensione arrastando.** Imagem, divisor e espaçador ganham alças na
+  lateral e no canto; uma etiqueta mostra a largura × altura enquanto você puxa.
+  As setas movem um elemento livre em 1 px (10 px com Shift) e **Ctrl+A**
+  seleciona todos do mesmo nível.
+
+![Imagem selecionada no editor com as alças de redimensionar e a etiqueta de tamanho durante o arrasto](/changelog/2026-11-14/redimensionar-arrastando.webp)
+
+- **Biblioteca de imagens.** **Escolher da biblioteca** no painel da imagem, com
+  busca, envio e exclusão com confirmação. Documentos ganham a aba **Mídia**.
+  Arraste uma imagem para o editor, ou cole com Ctrl+V, para criar um bloco ou
+  trocar a imagem selecionada.
+
+![Biblioteca de imagens do editor com busca, envio e a lista de imagens](/changelog/2026-11-14/biblioteca-de-imagens.webp)
+
+- **Texto alternativo.** O campo pede a descrição da imagem ou a marcação
+  **Imagem decorativa**.
+- **Antes de publicar ou enviar.** Sites mostra a lista **Antes de publicar** com
+  avisos (imagem sem descrição, link sem endereço, botão sem link, página sem
+  título para os buscadores, formulário sem destino). Eles **não impedem** a
+  publicação. Em Documentos, o que impede o envio, como uma tabela de preços
+  vazia, aparece como erro e o botão **Enviar** explica por quê.
+
+![Janela Antes de publicar com cinco avisos e o botão Publicar agora habilitado](/changelog/2026-11-14/sites-avisos-ao-publicar.webp)
+
+- **Rascunho recuperável.** Se um salvamento falha em Documentos, o Steel guarda
+  uma cópia no navegador e, ao reabrir, oferece **Recuperar** ou **Descartar**.
+- **Tablet.** A partir de 768 px o editor abre, com a barra lateral e as
+  propriedades em gavetas.
+
+## Formulários com salvamento automático
+
+O editor de formulários salva sozinho cerca de 1,5 segundo depois da última
+alteração, com **Salvar agora** ao lado do indicador. Tem **Desfazer** e
+**Refazer**, reordenar campos arrastando (também pelo teclado), **Duplicar campo**
+e prévia em computador, tablet e celular. Sair com alterações pendentes pergunta
+**Sair sem salvar?**.
+
+![Editor de formulários com a lista de campos, a alça de arrastar e a pré-visualização](/changelog/2026-11-14/formularios-reordenar-campos.webp)
+
+## Conecte outros sistemas pela API e pelos webhooks
+
+A API v1 ganhou pessoas, empresas e documentos do CRM e clientes, contatos e
+artigos da base de conhecimento do ServiceDesk, com listar, criar, ler, alterar
+e excluir (e publicar ou despublicar o artigo). Há 23 eventos novos de webhook,
+como `crm.person.created`, `crm.document.accepted`, `servicedesk.customer.updated` e
+`servicedesk.kb_article.published`. Os eventos antigos não mudaram. Veja **API v1
+› Cadastros** e **Webhooks › Eventos** no site de desenvolvedores.
+
+## Telas mais claras
+### Importar leads, pessoas e empresas por planilha
 
 No funil de **CRM › Leads**, ao lado de **Importar da Apollo**, agora há o botão
 **Importar CSV**. Ele também aparece em **Pessoas** e **Empresas**. Escolha a
@@ -24,7 +139,7 @@ no fim quantas linhas entraram e quais foram recusadas, cada uma com o motivo.
 Uma linha com problema não impede as demais. Contatos que já existem não são
 duplicados: a linha é recusada e o motivo aparece na lista.
 
-## Confirmação antes de excluir
+### Confirmação antes de excluir
 
 Excluir um funil, uma etapa, um relatório, uma lista de e-mail, uma conta
 registrada e vários outros itens do CRM e do WhatsApp agora pede uma confirmação
@@ -32,7 +147,7 @@ em linguagem simples. O aviso diz **o que será perdido** e se dá para desfazer
 
 ![Aviso Remover o funil Vendas, explicando que as etapas serão removidas e que não será possível desfazer](/changelog/2026-11-14/confirmar-exclusao.webp)
 
-## Conectar um número do WhatsApp sem dúvida
+### Conectar um número do WhatsApp sem dúvida
 
 Em **Ajustes › WhatsApp**, **Adicionar conexão** agora compara as duas formas de
 conectar lado a lado. A **Meta (API oficial)** vem marcada como **Recomendada**:
@@ -49,7 +164,7 @@ estar vazia e o caminho para resolver, em vez de uma tela em branco.
 
 ![Tela de Grupos do WhatsApp explicando que grupos só funcionam com um número da Z-API e como conectar um](/changelog/2026-11-14/grupos-sem-z-api.webp)
 
-## E-mail e agenda: um registro manual, e agora está dito
+### E-mail e agenda: um registro manual, e agora está dito
 
 A tela antes chamada de e-mail e agenda sugeria que o Steel lia a sua caixa de
 entrada. Não lê. Ela passa a se chamar **Registro manual de e-mails** e traz um
@@ -58,7 +173,7 @@ equipe ver o histórico no CRM. Nada é enviado nem recebido a partir dela.
 
 ![Tela Registro manual de e-mails com o aviso de que não há sincronização com Gmail ou Outlook](/changelog/2026-11-14/registro-manual-de-emails.webp)
 
-## Avisos que explicam o que fazer
+### Avisos que explicam o que fazer
 
 As mensagens de erro foram reescritas em português claro. Quando o envio falha
 por causa da janela de 24 horas do WhatsApp, a mensagem diz que é preciso usar um
