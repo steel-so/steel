@@ -234,6 +234,7 @@ export function SdConfigItemsView({
   const createButton = (
     <Button
       size='sm'
+      data-tour='sd-ci-new'
       onClick={() => setForm({ open: true, item: null, parent: null })}
     >
       <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
@@ -318,6 +319,7 @@ export function SdConfigItemsView({
               <Button
                 size='sm'
                 variant='outline'
+                data-tour='sd-ci-types'
                 onClick={() => setTypesOpen(true)}
               >
                 <SteelIcon icon={Settings02Icon} strokeWidth={2} />

@@ -542,7 +542,10 @@ function Header({
       />
 
       <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
-        <dl className='flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-xs'>
+        <dl
+          data-tour='sd-ticket-meta'
+          className='flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-xs'
+        >
           {ticket.priority ? (
             <div className='flex items-center gap-1.5'>
               <dt className='sr-only'>Prioridade</dt>
@@ -599,7 +602,10 @@ function Header({
         </dl>
 
         <div className='flex flex-wrap items-center gap-1 sm:ml-auto'>
-          <div className='flex items-center gap-1.5'>
+          <div
+            data-tour='sd-ticket-phase'
+            className='flex items-center gap-1.5'
+          >
             <SdOptionSelect
               aria-label='Mudar fase'
               allowClear={false}
@@ -632,7 +638,7 @@ function Header({
                 Detalhes
               </Button>
             )}
-            <Button size='sm' onClick={onReply}>
+            <Button size='sm' data-tour='sd-ticket-reply' onClick={onReply}>
               Responder
               <ShortcutKbd
                 id='sd.ticket.reply'

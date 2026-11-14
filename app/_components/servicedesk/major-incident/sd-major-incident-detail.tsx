@@ -89,7 +89,10 @@ function UpdateComposer({
   }
 
   return (
-    <section className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'>
+    <section
+      data-tour='sd-incident-update'
+      className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'
+    >
       <h2 className='font-medium text-sm'>Nova atualização</h2>
       <div className='grid gap-3 sm:grid-cols-2'>
         <FieldBlock label='Situação'>
@@ -153,7 +156,7 @@ function notifyLabel(update: SdMajorIncidentUpdateDTO): string | null {
 
 function Timeline({ updates }: { updates: SdMajorIncidentUpdateDTO[] }) {
   return (
-    <ol className='flex flex-col gap-3'>
+    <ol data-tour='sd-incident-timeline' className='flex flex-col gap-3'>
       {updates.map((update) => (
         <li
           key={update.id}
@@ -221,7 +224,10 @@ function ChildrenPanel({
   const suggested = suggestions.data?.items ?? []
 
   return (
-    <section className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'>
+    <section
+      data-tour='sd-incident-children'
+      className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'
+    >
       <div className='flex items-center justify-between gap-2'>
         <h2 className='font-medium text-sm'>
           Chamados filhos ({incident.children.length})
@@ -351,7 +357,10 @@ function PagesPanel({
   }
 
   return (
-    <section className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'>
+    <section
+      data-tour='sd-incident-pages'
+      className='flex flex-col gap-3 rounded-lg border border-border bg-card p-4'
+    >
       <div className='flex items-center justify-between gap-2'>
         <h2 className='font-medium text-sm'>Páginas de status</h2>
         {active && !editing ? (
@@ -456,7 +465,10 @@ export function SdMajorIncidentDetail({
         Incidentes maiores
       </Link>
 
-      <header className='flex flex-wrap items-start justify-between gap-3'>
+      <header
+        data-tour='sd-incident-header'
+        className='flex flex-wrap items-start justify-between gap-3'
+      >
         <div className='flex min-w-0 flex-col gap-2'>
           <div className='flex flex-wrap items-center gap-2'>
             <SdIncidentStatusBadge status={incident.status} />

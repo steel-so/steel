@@ -901,6 +901,7 @@ export function SdFilterBar({
           />
           <Input
             ref={searchRef}
+            data-tour='sd-board-search'
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder='Buscar por título, descrição ou código…'
@@ -913,7 +914,12 @@ export function SdFilterBar({
         <Popover>
           <PopoverTrigger
             render={
-              <Button variant='outline' size='sm' data-shortcut-filters>
+              <Button
+                variant='outline'
+                size='sm'
+                data-shortcut-filters
+                data-tour='sd-board-filter'
+              >
                 <SteelIcon icon={FilterIcon} strokeWidth={2} />
                 Filtrar
                 {active > 0 ? (
@@ -942,7 +948,7 @@ export function SdFilterBar({
         <Popover>
           <PopoverTrigger
             render={
-              <Button variant='outline' size='sm'>
+              <Button variant='outline' size='sm' data-tour='sd-board-sort'>
                 <SteelIcon icon={ArrowUpDownIcon} strokeWidth={2} />
                 Ordenar
                 {sorted ? (

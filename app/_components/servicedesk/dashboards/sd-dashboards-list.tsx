@@ -249,7 +249,7 @@ export function SdDashboardsList({
   return (
     <div className='flex h-full min-h-0 flex-col gap-4 p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div>
+        <div data-tour='sd-dashboards-title'>
           <h1 className='font-semibold text-lg'>Painéis</h1>
           <p className='text-muted-foreground text-sm'>
             Indicadores do ServiceDesk: SLA, backlog, MTTR, CSAT e custos. Abra
@@ -257,7 +257,7 @@ export function SdDashboardsList({
           </p>
         </div>
         {canCreate ? (
-          <Button size='sm' onClick={openCreate}>
+          <Button size='sm' data-tour='sd-dashboards-new' onClick={openCreate}>
             <SteelIcon icon={Add01Icon} strokeWidth={2} />
             Novo painel
           </Button>
@@ -298,7 +298,10 @@ export function SdDashboardsList({
           ) : null}
         </div>
       ) : (
-        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+        <div
+          data-tour='sd-dashboards-grid'
+          className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'
+        >
           {dashboards.map((dashboard) => (
             <DashboardCard
               key={dashboard.id}

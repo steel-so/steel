@@ -77,6 +77,15 @@ export function sdSettingsNavGroups(
     : grouped
 }
 
+/** Anchors of the sections the ServiceDesk settings tour points at. */
+const TOUR_ANCHORS: Record<string, { 'data-tour': string }> = {
+  flows: { 'data-tour': 'sd-settings-flows' },
+  catalog: { 'data-tour': 'sd-settings-catalog' },
+  priorities: { 'data-tour': 'sd-settings-priorities' },
+  sla: { 'data-tour': 'sd-settings-sla' },
+  automations: { 'data-tour': 'sd-settings-automations' },
+}
+
 /** Section item: a real `<Link>`, marked active by `?tab=`. */
 function SdSettingsNavItem({
   tab,
@@ -88,7 +97,11 @@ function SdSettingsNavItem({
   active: boolean
 }) {
   return (
-    <Link href={`${base}/settings?tab=${tab.id}`} className='block'>
+    <Link
+      href={`${base}/settings?tab=${tab.id}`}
+      className='block'
+      {...TOUR_ANCHORS[tab.id]}
+    >
       <Button
         variant={active ? 'secondary' : 'ghost'}
         size='sm'

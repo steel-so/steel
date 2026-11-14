@@ -537,6 +537,7 @@ export function SdTicketBoard({
 
         <fieldset
           aria-label='Modo de exibição'
+          data-tour='sd-board-modes'
           className='flex items-center gap-0.5 rounded-md border p-0.5'
         >
           {MODES.map((mode) => (
@@ -567,6 +568,7 @@ export function SdTicketBoard({
 
         <Button
           size='sm'
+          data-tour='sd-board-new'
           onClick={() => setCreating({ type: effectiveType ?? 'INCIDENT' })}
         >
           <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
@@ -582,6 +584,7 @@ export function SdTicketBoard({
         <div
           role='tablist'
           aria-label='Tipo de chamado'
+          data-tour='sd-board-types'
           className='flex shrink-0 items-center gap-1 border-b px-4'
         >
           {[null, ...SD_TICKET_TYPES].map((type) => (
@@ -604,7 +607,11 @@ export function SdTicketBoard({
         </div>
       )}
 
-      <div ref={listRef} className='min-h-0 flex-1 overflow-auto'>
+      <div
+        ref={listRef}
+        data-tour='sd-board-content'
+        className='min-h-0 flex-1 overflow-auto'
+      >
         {state.mode === 'kanban' ? (
           effectiveType ? (
             <TypeKanban

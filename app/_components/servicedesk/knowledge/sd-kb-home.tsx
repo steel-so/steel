@@ -89,7 +89,7 @@ export function SdKbHome({
       </section>
 
       {(categories.data?.length ?? 0) > 0 && (
-        <section className='space-y-3'>
+        <section data-tour='sd-kb-categories' className='space-y-3'>
           <h2 className='font-medium text-sm'>Categorias</h2>
           <SdKbCategoryCards
             categories={categories.data ?? []}
@@ -129,7 +129,7 @@ export function SdKbHome({
           <Skeleton className='h-40' />
         </div>
       ) : (
-        <div className='grid gap-6 md:grid-cols-3'>
+        <div data-tour='sd-kb-lists' className='grid gap-6 md:grid-cols-3'>
           <HomeColumn title='Atualizados recentemente' icon={Clock01Icon}>
             <SdKbArticleList
               articles={sdKbTop(all, 'updatedAt')}

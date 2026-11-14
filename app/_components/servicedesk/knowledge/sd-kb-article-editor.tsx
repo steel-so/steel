@@ -258,6 +258,7 @@ export function SdKbArticleEditor({
             <Button
               variant={preview ? 'secondary' : 'ghost'}
               size='sm'
+              data-tour='sd-kb-article-preview'
               aria-pressed={preview}
               onClick={() => {
                 flush()
@@ -277,6 +278,7 @@ export function SdKbArticleEditor({
                     variant='ghost'
                     size='icon-sm'
                     aria-label={published ? 'Despublicar' : 'Publicar'}
+                    data-tour='sd-kb-article-publish'
                     data-status={article.status}
                     disabled={setStatus.isPending}
                     onClick={togglePublish}
@@ -304,6 +306,7 @@ export function SdKbArticleEditor({
                           variant='ghost'
                           size='icon-sm'
                           aria-label='Revisão e detalhes'
+                          data-tour='sd-kb-article-details'
                         />
                       }
                     />
@@ -553,6 +556,7 @@ export function SdKbArticleEditor({
         // same centered column.
         <div
           data-kb-editor={article.id}
+          data-tour='sd-kb-editor'
           className='flex min-h-0 flex-1 flex-col'
         >
           <KbRichEditor

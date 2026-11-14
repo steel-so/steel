@@ -37,6 +37,7 @@ export function SdChangeViewSwitch({
     <nav
       className='inline-flex items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5'
       aria-label='Visão das mudanças'
+      data-tour='sd-change-views'
     >
       <Link
         href={base}

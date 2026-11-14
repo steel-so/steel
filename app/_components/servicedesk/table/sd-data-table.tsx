@@ -209,6 +209,7 @@ export function SdDataTable<T extends { id: string }>({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
             aria-label='Buscar'
+            data-tour='sd-table-search'
             className='h-8 w-64 pl-8'
           />
         </div>
@@ -217,7 +218,7 @@ export function SdDataTable<T extends { id: string }>({
           <Popover>
             <PopoverTrigger
               render={
-                <Button variant='outline' size='sm'>
+                <Button variant='outline' size='sm' data-tour='sd-table-filter'>
                   <SteelIcon icon={FilterIcon} strokeWidth={2} />
                   Filtrar
                   {activeFilterCount > 0 ? (
@@ -248,7 +249,7 @@ export function SdDataTable<T extends { id: string }>({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant='outline' size='sm'>
+              <Button variant='outline' size='sm' data-tour='sd-table-columns'>
                 <SteelIcon icon={LayoutTable01Icon} strokeWidth={2} />
                 Colunas
               </Button>
