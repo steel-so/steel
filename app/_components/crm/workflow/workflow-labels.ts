@@ -42,7 +42,16 @@ export const WORKFLOW_NODE_LABELS: Record<CrmWorkflowNodeType, string> = {
   'send-email': 'Enviar e-mail',
   'draft-email': 'Rascunho de e-mail',
   form: 'Formulário',
+  'send-whatsapp-template': 'Enviar WhatsApp',
+  'create-ticket': 'Criar chamado',
 }
+
+export const TICKET_TYPE_LABELS = {
+  INCIDENT: 'Incidente',
+  SERVICE_REQUEST: 'Requisição',
+  CHANGE: 'Mudança',
+  PROBLEM: 'Problema',
+} as const
 
 export const WORKFLOW_ENTITY_LABELS: Record<CrmWorkflowEntity, string> = {
   company: 'Empresa',

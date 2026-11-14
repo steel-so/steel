@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CanvasEditorProps } from '@/app/_components/canvas/types'
+import { CanvasStoreProvider } from '@/app/_components/canvas/use-canvas'
 import {
   fetchBody,
   mockFetch,
@@ -54,18 +55,20 @@ vi.mock('@/app/_components/canvas/canvas-editor', () => ({
   CanvasEditor: (props: CanvasEditorProps) => {
     const store = props.store as NonNullable<CanvasEditorProps['store']>
     return (
-      <div>
-        <div data-testid='editor-title'>{props.title as ReactNode}</div>
-        <div>{props.actions?.({ store })}</div>
-        <div>{props.documentSettings?.({ store })}</div>
-        <span data-testid='viewport'>{props.viewportWidths.base}</span>
-        <button
-          type='button'
-          onClick={() => void props.onSave(store.getState().doc)}
-        >
-          salvar agora
-        </button>
-      </div>
+      <CanvasStoreProvider store={store}>
+        <div>
+          <div data-testid='editor-title'>{props.title as ReactNode}</div>
+          <div>{props.actions?.({ store })}</div>
+          <div>{props.documentSettings?.({ store })}</div>
+          <span data-testid='viewport'>{props.viewportWidths.base}</span>
+          <button
+            type='button'
+            onClick={() => void props.onSave(store.getState().doc)}
+          >
+            salvar agora
+          </button>
+        </div>
+      </CanvasStoreProvider>
     )
   },
 }))

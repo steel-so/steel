@@ -22,15 +22,21 @@ import {
   Analytics01Icon,
   ArrowLeft02Icon,
   BrowserIcon,
+  Copy01Icon,
   Delete02Icon,
   DragDropVerticalIcon,
   Globe02Icon,
+  Redo02Icon,
+  Undo02Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
+import { SaveStatus } from '@/app/_components/canvas/save-status'
 import { CrmLandingPageMetrics } from '@/app/_components/crm/crm-landing-page-metrics'
+import { LandingImageAlt } from '@/app/_components/crm/landing-page/image-alt'
 import { sectionAnchors } from '@/app/_components/crm/landing-page/section-anchors'
+import { withText } from '@/app/_components/crm/landing-page/sections/overrides'
 import {
   getSectionDefinition,
   SECTION_REGISTRY,
@@ -67,6 +73,7 @@ import {
   useUpdateCrmLandingPage,
 } from '@/src/hooks/use-crm-landing-page'
 import { useCrmTextAi } from '@/src/hooks/use-crm-text-ai'
+import { useEditorHistory } from '@/src/hooks/use-editor-history'
 import { getLandingPageTemplate } from '@/src/lib/landing-page-templates'
 import type { CrmLandingPageSectionContent } from '@/src/schemas/crm-landing-page-section.schema'
 import type {
@@ -151,9 +158,12 @@ function CrmLandingPageBuilderInner({
   const [status, setStatus] = React.useState<CrmLandingPageStatusDTO>(
     initial.status,
   )
-  const [sections, setSections] = React.useState<SectionItem[]>(() =>
-    toSectionItems(initial),
-  )
+  const history = useEditorHistory<SectionItem[]>(toSectionItems(initial))
+  const sections = history.state
+  // Always the latest list, even between a set() and the next render.
+  const sectionsRef = React.useRef(sections)
+  sectionsRef.current = sections
+  const lastQueued = React.useRef(sections)
   const [metricsOpen, setMetricsOpen] = React.useState(false)
   const publicUrl =
     typeof window !== 'undefined'
@@ -189,6 +199,7 @@ function CrmLandingPageBuilderInner({
     updatePage.mutate(payload, {
       onSuccess: () => setSaveState('saved'),
       onError: (error) => {
+        pendingSave.current = { ...payload, ...pendingSave.current }
         setSaveState('error')
         notify.error(
           error,
@@ -234,38 +245,62 @@ function CrmLandingPageBuilderInner({
     })
   }
 
+  const scheduleSectionsRef = React.useRef(scheduleSectionsSave)
+  scheduleSectionsRef.current = scheduleSectionsSave
+
+  // Every change to the section list (edit, undo, redo) reaches the server
+  // through this one effect.
+  React.useEffect(() => {
+    if (sections === lastQueued.current) return
+    lastQueued.current = sections
+    scheduleSectionsRef.current(sections)
+  }, [sections])
+
+  function commit(next: SectionItem[], group?: string) {
+    sectionsRef.current = next
+    history.set(next, group)
+  }
+
   function updateSection(key: string, content: CrmLandingPageSectionContent) {
-    setSections((cur) => {
-      const next = cur.map((s) => (s.key === key ? { ...s, content } : s))
-      scheduleSectionsSave(next)
-      return next
-    })
+    commit(
+      sectionsRef.current.map((s) => (s.key === key ? { ...s, content } : s)),
+      `content:${key}`,
+    )
   }
 
   function removeSection(key: string) {
-    setSections((cur) => {
-      const next = cur.filter((s) => s.key !== key)
-      scheduleSectionsSave(next)
-      return next
-    })
+    commit(sectionsRef.current.filter((s) => s.key !== key))
   }
 
-  function addSection(type: keyof typeof SECTION_REGISTRY) {
+  function newSection(type: keyof typeof SECTION_REGISTRY): SectionItem {
     keyCounter.current += 1
     const definition = getSectionDefinition(initial.templateKey, type)
-    setSections((cur) => {
-      const next = [
-        ...cur,
-        {
-          key: `new-${keyCounter.current}`,
-          type,
-          enabled: true,
-          content: definition.createDefaultContent(),
-        },
-      ]
-      scheduleSectionsSave(next)
-      return next
-    })
+    return {
+      key: `new-${keyCounter.current}`,
+      type,
+      enabled: true,
+      content: definition.createDefaultContent(),
+    }
+  }
+
+  function insertSection(type: keyof typeof SECTION_REGISTRY, index: number) {
+    const cur = sectionsRef.current
+    const at = Math.min(Math.max(index, 0), cur.length)
+    commit([...cur.slice(0, at), newSection(type), ...cur.slice(at)])
+  }
+
+  function duplicateSection(key: string) {
+    const cur = sectionsRef.current
+    const index = cur.findIndex((s) => s.key === key)
+    const source = cur[index]
+    if (!source) return
+    keyCounter.current += 1
+    const copy: SectionItem = {
+      ...source,
+      key: `new-${keyCounter.current}`,
+      content: structuredClone(source.content),
+    }
+    commit([...cur.slice(0, index + 1), copy, ...cur.slice(index + 1)])
   }
 
   const sensors = useSensors(
@@ -278,15 +313,38 @@ function CrmLandingPageBuilderInner({
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    setSections((cur) => {
-      const oldIndex = cur.findIndex((s) => s.key === active.id)
-      const newIndex = cur.findIndex((s) => s.key === over.id)
-      if (oldIndex === -1 || newIndex === -1) return cur
-      const next = arrayMove(cur, oldIndex, newIndex)
-      scheduleSectionsSave(next)
-      return next
-    })
+    const cur = sectionsRef.current
+    const oldIndex = cur.findIndex((s) => s.key === active.id)
+    const newIndex = cur.findIndex((s) => s.key === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+    commit(arrayMove(cur, oldIndex, newIndex))
   }
+
+  // Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z and Ctrl+Y. Text fields keep their own
+  // native undo, so the shortcut only acts outside them.
+  const { undo, redo } = history
+  React.useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey)) return
+      const target = event.target as HTMLElement | null
+      if (
+        target?.closest('input, textarea, select, [contenteditable="true"]')
+      ) {
+        return
+      }
+      const key = event.key.toLowerCase()
+      if (key === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redo()
+        else undo()
+      } else if (key === 'y') {
+        event.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undo, redo])
 
   function onTitleChange(next: string) {
     setTitle(next)
@@ -376,24 +434,30 @@ function CrmLandingPageBuilderInner({
           className='min-w-0 flex-1 bg-transparent font-semibold text-sm outline-none placeholder:text-muted-foreground/60'
         />
 
-        <span
-          role='status'
-          aria-live='polite'
-          className={cn(
-            'shrink-0 text-xs',
-            saveState === 'error'
-              ? 'text-destructive'
-              : 'text-muted-foreground',
-          )}
-        >
-          {saveState === 'saving'
-            ? 'Salvando…'
-            : saveState === 'saved'
-              ? 'Salvo'
-              : saveState === 'error'
-                ? 'Não salvo'
-                : ''}
-        </span>
+        <div className='flex items-center'>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label='Desfazer'
+            title='Desfazer (Ctrl+Z)'
+            disabled={!history.canUndo}
+            onClick={history.undo}
+          >
+            <SteelIcon icon={Undo02Icon} strokeWidth={2} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon-sm'
+            aria-label='Refazer'
+            title='Refazer (Ctrl+Shift+Z)'
+            disabled={!history.canRedo}
+            onClick={history.redo}
+          >
+            <SteelIcon icon={Redo02Icon} strokeWidth={2} />
+          </Button>
+        </div>
+
+        <SaveStatus status={saveState} onRetry={flushSave} />
 
         <Button variant='ghost' size='sm' onClick={() => setMetricsOpen(true)}>
           <SteelIcon icon={Analytics01Icon} strokeWidth={2} />
@@ -447,39 +511,29 @@ function CrmLandingPageBuilderInner({
                 strategy={verticalListSortingStrategy}
               >
                 <div className='landing-page-light-scope mx-auto flex flex-col gap-4 p-4'>
-                  {sections.map((section) => (
-                    <SortableSection
-                      key={section.key}
-                      section={section}
-                      templateKey={initial.templateKey}
-                      workspaceId={workspaceId}
-                      onChange={(content) =>
-                        updateSection(section.key, content)
-                      }
-                      onRemove={() => removeSection(section.key)}
-                    />
+                  {sections.map((section, index) => (
+                    <React.Fragment key={section.key}>
+                      {index === 0 ? null : (
+                        <SectionInserter
+                          onPick={(type) => insertSection(type, index)}
+                        />
+                      )}
+                      <SortableSection
+                        section={section}
+                        templateKey={initial.templateKey}
+                        workspaceId={workspaceId}
+                        onChange={(content) =>
+                          updateSection(section.key, content)
+                        }
+                        onDuplicate={() => duplicateSection(section.key)}
+                        onRemove={() => removeSection(section.key)}
+                      />
+                    </React.Fragment>
                   ))}
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant='outline' className='self-center'>
-                          <SteelIcon icon={Add01Icon} strokeWidth={2} />
-                          Adicionar seção
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent>
-                      {Object.values(SECTION_REGISTRY).map((definition) => (
-                        <DropdownMenuItem
-                          key={definition.type}
-                          onClick={() => addSection(definition.type)}
-                        >
-                          {definition.label}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <AddSectionMenu
+                    onPick={(type) => insertSection(type, sections.length)}
+                  />
                 </div>
               </SortableContext>
             </DndContext>
@@ -554,12 +608,14 @@ function SortableSection({
   templateKey,
   workspaceId,
   onChange,
+  onDuplicate,
   onRemove,
 }: {
   section: SectionItem
   templateKey: string
   workspaceId: string
   onChange: (content: CrmLandingPageSectionContent) => void
+  onDuplicate: () => void
   onRemove: () => void
 }) {
   const {
@@ -592,7 +648,7 @@ function SortableSection({
         <button
           type='button'
           aria-label='Reordenar seção'
-          className='cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing'
+          className='cursor-grab touch-none rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing pointer-coarse:p-2.5'
           {...attributes}
           {...listeners}
         >
@@ -601,30 +657,112 @@ function SortableSection({
         <span className='text-muted-foreground text-xs'>
           {definition.label}
         </span>
+        <Button
+          variant='ghost'
+          size='icon-xs'
+          className='ml-auto pointer-coarse:size-9'
+          aria-label={`Duplicar a seção ${definition.label}`}
+          title='Duplicar seção'
+          onClick={onDuplicate}
+        >
+          <SteelIcon icon={Copy01Icon} strokeWidth={2} size={14} />
+        </Button>
         <ConfirmAction
           trigger={
             <Button
               variant='ghost'
               size='icon-xs'
-              className='ml-auto'
+              className='pointer-coarse:size-9'
               aria-label={`Remover a seção ${definition.label}`}
             >
               <SteelIcon icon={Delete02Icon} strokeWidth={2} size={14} />
             </Button>
           }
           title={`Remover a seção "${definition.label}"?`}
-          description='O conteúdo desta seção será apagado da página. Não dá para desfazer.'
+          description='A seção sai da página. Se mudar de ideia, use Desfazer logo em seguida.'
           confirmLabel='Remover seção'
           onConfirm={onRemove}
         />
       </div>
       <GhostAiSection value={definition.label}>
-        <Component
-          content={section.content}
-          onChange={onChange}
-          workspaceId={workspaceId}
-        />
+        <LandingImageAlt
+          texts={section.content.texts}
+          onEdit={(key, alt) => onChange(withText(section.content, key, alt))}
+        >
+          <Component
+            content={section.content}
+            onChange={onChange}
+            workspaceId={workspaceId}
+          />
+        </LandingImageAlt>
       </GhostAiSection>
+    </div>
+  )
+}
+
+function SectionPicker({
+  onPick,
+}: {
+  onPick: (type: keyof typeof SECTION_REGISTRY) => void
+}) {
+  return (
+    <DropdownMenuContent>
+      {Object.values(SECTION_REGISTRY).map((definition) => (
+        <DropdownMenuItem
+          key={definition.type}
+          onClick={() => onPick(definition.type)}
+        >
+          {definition.label}
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
+  )
+}
+
+function AddSectionMenu({
+  onPick,
+}: {
+  onPick: (type: keyof typeof SECTION_REGISTRY) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant='outline' className='self-center'>
+            <SteelIcon icon={Add01Icon} strokeWidth={2} />
+            Adicionar seção
+          </Button>
+        }
+      />
+      <SectionPicker onPick={onPick} />
+    </DropdownMenu>
+  )
+}
+
+/** Thin "+" between two sections; always visible on touch, on hover/focus elsewhere. */
+function SectionInserter({
+  onPick,
+}: {
+  onPick: (type: keyof typeof SECTION_REGISTRY) => void
+}) {
+  return (
+    <div className='-my-2 flex h-4 items-center justify-center opacity-0 transition-opacity focus-within:opacity-100 hover:opacity-100 pointer-coarse:opacity-100'>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant='outline'
+              size='icon-xs'
+              className='rounded-full bg-background'
+              aria-label='Inserir seção aqui'
+              title='Inserir seção aqui'
+            >
+              <SteelIcon icon={Add01Icon} strokeWidth={2} size={14} />
+            </Button>
+          }
+        />
+        <SectionPicker onPick={onPick} />
+      </DropdownMenu>
     </div>
   )
 }

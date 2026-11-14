@@ -28,6 +28,10 @@ import {
 import { BLOCK_TYPE_SET } from '../blocks'
 import { TableControl } from '../controls'
 import {
+  DocumentImageAltControl,
+  DocumentImageSrcControl,
+} from '../image-controls'
+import {
   ALIGN_OPTIONS,
   alignField,
   colorField,
@@ -559,7 +563,9 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
                   {pad(row).map((cell, index) => (
                     <td
                       key={index}
-                      data-label={header ? plainLabel(header[index]) : undefined}
+                      data-label={
+                        header ? plainLabel(header[index]) : undefined
+                      }
                     >
                       {renderVars(cell, ctx)}
                     </td>
@@ -650,15 +656,25 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     propsSchema: documentImageSchema,
     defaultProps: () => ({ src: '', alt: '' }),
     accepts: false,
+    resizable: {
+      widthPath: 'width',
+      widthUnit: '%',
+      min: { width: 10 },
+      max: { width: 100 },
+    },
     inspector: [
       section('image', 'Imagem', [
         {
           path: 'src',
           label: 'Imagem',
-          control: { kind: 'text', placeholder: 'https://…', maxLength: 2000 },
-          help: 'Endereço da imagem (envie pela biblioteca de mídia e cole o link).',
+          control: { kind: 'custom', component: DocumentImageSrcControl },
+          help: 'Arraste um arquivo, envie, escolha da biblioteca ou informe o endereço.',
         },
-        textField('alt', 'Texto alternativo', { maxLength: 500 }),
+        {
+          path: 'alt',
+          label: 'Acessibilidade',
+          control: { kind: 'custom', component: DocumentImageAltControl },
+        },
         textField('caption', 'Legenda', { maxLength: 500 }),
       ]),
       section(
@@ -686,7 +702,7 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
             attributes={attributes}
             icon={Image01Icon}
             title='Imagem'
-            hint='Cole o endereço da imagem no painel ao lado.'
+            hint='Arraste uma imagem para cá ou escolha no painel ao lado.'
           />
         ) : null
       }
@@ -702,7 +718,7 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
         >
           <img
             src={src}
-            alt={varsText(p.alt, ctx)}
+            alt={p.decorative ? '' : varsText(p.alt, ctx)}
             loading={print ? undefined : 'lazy'}
             style={{
               borderRadius: p.radius ?? 'var(--d-radius)',
@@ -890,8 +906,8 @@ export function contentDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
             fields: [
               {
                 path: 'src',
-                label: 'Endereço da imagem',
-                control: { kind: 'text', maxLength: 2000 },
+                label: 'Imagem',
+                control: { kind: 'custom', component: DocumentImageSrcControl },
               },
               textField('alt', 'Texto alternativo', { maxLength: 500 }),
               textField('caption', 'Legenda', { maxLength: 500 }),

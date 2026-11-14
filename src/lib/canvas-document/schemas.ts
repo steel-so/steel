@@ -165,6 +165,8 @@ export const documentPageBreakSchema = z.object({})
 export const documentImageSchema = z.object({
   src: urlText.optional(),
   alt: shortText.optional(),
+  /** Decorative image: readers skip it, so an empty `alt` is intended. */
+  decorative: z.boolean().optional(),
   caption: shortText.optional(),
   /** % of the column. */
   width: z.number().min(10).max(100).optional(),

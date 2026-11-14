@@ -10,6 +10,18 @@ type Params = { params: Promise<{ id: string }> }
 
 const MAX_BYTES = 5 * 1024 * 1024 // 5MB, matches validateImage's own cap
 
+/** Images already uploaded to the workspace's e-mail/document builders. */
+export const GET = withAxiom(async (_request: NextRequest, ctx: Params) => {
+  const auth = await getAuthSession()
+  if (!auth.ok) return handleError(auth.error)
+
+  const { id } = await ctx.params
+  const listed = await CrmEmailBuilderService.listImages(auth.value.user.id, id)
+  if (!listed.ok) return handleError(listed.error)
+
+  return successResponse(listed.value)
+})
+
 /** Image upload of the visual e-mail builder (raw body, image/*). */
 export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   const auth = await getAuthSession()

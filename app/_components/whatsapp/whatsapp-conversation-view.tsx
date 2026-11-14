@@ -10,6 +10,7 @@ import {
   MoneyReceive01Icon,
   MoreVerticalIcon,
   RefreshIcon,
+  SidebarRightIcon,
   StarIcon,
   UserBlock01Icon,
   UserGroup03Icon,
@@ -21,6 +22,8 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { PhoneCallCard } from '@/app/_components/phone-calls/phone-call-card'
+import { CreateTicketFromSourceButton } from '@/app/_components/servicedesk/ticket-source/create-ticket-from-source-button'
+import { SdConversationTicketsBar } from '@/app/_components/servicedesk/ticket-source/sd-linked-tickets'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { AskSteelAiButton } from '@/app/_components/steel-ai-ask/ask-steel-ai-button'
 import { AiFeedbackButtons } from '@/app/_components/steel-ai-quality/ai-feedback-buttons'
@@ -213,16 +216,24 @@ export function WhatsappConversationView({
   workspaceId,
   conversation,
   connection = null,
+  connectionMissing = false,
   onSelectConversation,
   onBack,
+  contextOpen,
+  onToggleContext,
 }: {
   workspaceId: string
   conversation: WhatsAppConversationDTO
   /** The number this conversation runs on (provider drives the 24h rule). */
   connection?: WhatsAppConnectionDTO | null
+  /** The connections loaded and none matches this conversation's number. */
+  connectionMissing?: boolean
   onSelectConversation?: (conversation: WhatsAppConversationDTO) => void
   /** `U`: close the conversation and go back to the list. */
   onBack?: () => void
+  /** Customer 360 side panel: open state and toggle (button hidden without it). */
+  contextOpen?: boolean
+  onToggleContext?: () => void
 }) {
   const [callOpen, setCallOpen] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
@@ -773,6 +784,22 @@ export function WhatsappConversationView({
               <SteelIcon icon={Invoice01Icon} size={18} />
             </Button>
           )}
+          {onToggleContext && (
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              aria-label='Contexto do cliente'
+              aria-pressed={contextOpen === true}
+              title={
+                contextOpen
+                  ? 'Ocultar o contexto do cliente'
+                  : 'Ver o contexto do cliente: CRM, oportunidades e chamados'
+              }
+              onClick={onToggleContext}
+            >
+              <SteelIcon icon={SidebarRightIcon} size={18} />
+            </Button>
+          )}
           {canEdit && (
             <Button
               variant='ghost'
@@ -934,6 +961,12 @@ export function WhatsappConversationView({
               ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
+          <CreateTicketFromSourceButton
+            workspaceId={workspaceId}
+            source='conversation'
+            sourceId={conversation.id}
+            iconOnly
+          />
           {canBlock || canUnblock ? (
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -1041,7 +1074,34 @@ export function WhatsappConversationView({
         </div>
       ) : null}
 
+      {connectionMissing && !connection ? (
+        <div
+          role='alert'
+          className='border-b bg-muted px-4 py-2 text-destructive text-sm'
+        >
+          Conexão do WhatsApp não encontrada: o número desta conversa foi
+          removido ou você não tem acesso a ele, então o envio de mensagens está
+          indisponível.
+          {slug ? (
+            <>
+              {' '}
+              <Link
+                href={`/${slug}/settings/whatsapp`}
+                className='font-medium underline underline-offset-2'
+              >
+                Ver conexões
+              </Link>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
       <WhatsappPhoneCallBanner call={phoneCall.data} />
+
+      <SdConversationTicketsBar
+        workspaceId={workspaceId}
+        conversationId={conversation.id}
+      />
 
       <WhatsappAdReferralBanner
         workspaceId={workspaceId}

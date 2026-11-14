@@ -7,8 +7,15 @@ vi.mock('@/lib/axiom/logger', () => ({
 }))
 
 import { logger } from '@/lib/axiom/logger'
-import { ensurePublicBucket, putObject } from '@/src/lib/storage/s3'
-import { persistCrmEmailImage } from '../media/crm-email-media.service'
+import {
+  ensurePublicBucket,
+  listObjects,
+  putObject,
+} from '@/src/lib/storage/s3'
+import {
+  listCrmEmailImages,
+  persistCrmEmailImage,
+} from '../media/crm-email-media.service'
 import {
   persistCrmLandingPageImage,
   persistCrmLandingPageVideo,
@@ -144,6 +151,59 @@ describe('persistCrmLandingPageVideo()', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'crm_landing_page_media.persist_video_failed',
       expect.objectContaining({ message: 'bucket policy denied' }),
+    )
+  })
+})
+
+describe('listCrmEmailImages()', () => {
+  it('lists the workspace images newest first', async () => {
+    vi.mocked(listObjects).mockResolvedValueOnce([
+      {
+        key: 'ws1/old.png',
+        size: 1,
+        lastModified: new Date('2026-01-01T00:00:00Z'),
+      },
+      {
+        key: 'ws1/new.png',
+        size: 2,
+        lastModified: new Date('2026-02-01T00:00:00Z'),
+      },
+      { key: 'ws1/none.png', size: 3 },
+    ])
+
+    const items = expectOk(await listCrmEmailImages('ws1'))
+
+    expect(listObjects).toHaveBeenCalledWith('crm-email-images', 'ws1/')
+    expect(items.map((item) => item.id)).toEqual([
+      'new.png',
+      'old.png',
+      'none.png',
+    ])
+    expect(items[0]).toMatchObject({
+      size: 2,
+      uploadedAt: '2026-02-01T00:00:00.000Z',
+    })
+    expect(items[0].url).toMatch(/\/crm-email-images\/ws1\/new\.png$/)
+    expect(items[2].uploadedAt).toBeNull()
+  })
+
+  it('maps a storage failure to a STORAGE_ERROR', async () => {
+    vi.mocked(listObjects).mockRejectedValueOnce(new Error('boom'))
+
+    expectErr(await listCrmEmailImages('ws1'), 'STORAGE_ERROR')
+    expect(logger.error).toHaveBeenCalledWith(
+      'crm_email_media.list_failed',
+      expect.objectContaining({ message: 'boom' }),
+    )
+  })
+
+  it('stringifies a non-Error failure', async () => {
+    vi.mocked(listObjects).mockRejectedValueOnce('nope')
+
+    expectErr(await listCrmEmailImages('ws1'), 'STORAGE_ERROR')
+    expect(logger.error).toHaveBeenCalledWith(
+      'crm_email_media.list_failed',
+      expect.objectContaining({ message: 'nope' }),
     )
   })
 })

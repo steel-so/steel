@@ -15,6 +15,10 @@ import {
 import { SdTicketContextRepository } from '@/src/repositories/sd-ticket-context.repository'
 import { SdTicketEscalationRepository } from '@/src/repositories/sd-ticket-escalation.repository'
 import { SdConditionsSchema } from '@/src/schemas/sd-rule.schema'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from './crm-retention.service'
 import { runSdAutomations } from './sd-automation-engine'
 import { notifySdEvent } from './sd-notification.service'
 import {
@@ -177,6 +181,20 @@ async function processTicket(t: SdTicketWithRelations, run: WorkspaceRun) {
   }
   if (breachedWhat.length > 0) {
     await notifySla(t, run, 'sla.breached', breachedWhat.join(' e '))
+    // Optional CRM follow-up for the account owner (never fails the tick).
+    await runRetentionSafely('sla_breach', () =>
+      CrmRetentionService.onSlaBreach({
+        workspaceId: t.workspaceId,
+        ticket: {
+          id: t.id,
+          code: sdTicketCode(t, run.config.prefixes),
+          title: t.title,
+          customer: t.company ?? t.customer,
+        },
+        what: breachedWhat.join(' e '),
+        now: run.now,
+      }),
+    )
   }
 
   const atRisk = timers.filter((i) => i.timer.state === 'at_risk')

@@ -9,7 +9,15 @@ import {
   useCanvasEditor,
 } from './editor-context'
 import { DEFAULT_VIEWPORTS, fitZoom } from './frame/canvas-stage'
+import { freeContext, nudgeFreeChild } from './lib/resize-write'
 import { stepZoom } from './top-bar'
+
+const ARROW_DELTAS: Record<string, [number, number] | undefined> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+}
 
 /** Keys typed into a field belong to the field. */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -93,6 +101,15 @@ export function handleEditorKey(
     store.setZoom(fitZoom(width, ctx.frame.scroller?.clientWidth ?? 0))
     return true
   }
+  if (mod && key === 'a') {
+    // Every sibling of the selected element (or the page's top level).
+    const anchor = first ?? state.doc.rootId
+    const parent = first ? parentOf(state.doc, first) : state.doc.rootId
+    const siblings = parent ? (getNode(state.doc, parent)?.children ?? []) : []
+    const ids = siblings.length > 0 ? siblings : [anchor]
+    store.select(ids)
+    return true
+  }
   if (mod && (key === 'c' || key === 'x')) {
     if (selection.length === 0) return false
     const fragment: CanvasFragment | null = store.copy(selection)
@@ -123,6 +140,27 @@ export function handleEditorKey(
     return true
   }
   if (!first) return false
+  const step = event.shiftKey ? 10 : 1
+  const arrow = ARROW_DELTAS[event.key]
+  if (arrow && !mod && !event.altKey) {
+    // Freely positioned elements move 1 px (Shift: 10 px) per key press.
+    const movable = selection.filter((id) =>
+      freeContext(store, ctx.catalog, id),
+    )
+    if (movable.length > 0) {
+      for (const id of movable) {
+        nudgeFreeChild(
+          store,
+          ctx.catalog,
+          ctx.frame,
+          id,
+          arrow[0] * step,
+          arrow[1] * step,
+        )
+      }
+      return true
+    }
+  }
   if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
     const delta = event.key === 'ArrowUp' ? -1 : 1
     if (event.altKey) nudge(store, first, delta)

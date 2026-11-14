@@ -120,6 +120,7 @@ describe('developer guides (content/dev)', () => {
       '/dev/api-v1/conta',
       '/dev/api-v1/servicedesk',
       '/dev/api-v1/crm',
+      '/dev/api-v1/cadastros',
       '/dev/api-v1/comunicacao',
       '/dev/api-v1/webhooks',
       '/dev/webhooks',

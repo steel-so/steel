@@ -423,6 +423,12 @@ export function layoutDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     propsSchema: documentDividerSchema,
     defaultProps: () => ({}),
     accepts: false,
+    resizable: {
+      widthPath: 'width',
+      widthUnit: '%',
+      min: { width: 10 },
+      max: { width: 100 },
+    },
     inspector: [
       section(
         'divider',
@@ -481,6 +487,11 @@ export function layoutDefinitions(ctx: DocCtx): CanvasComponentDefinition[] {
     propsSchema: documentSpacerSchema,
     defaultProps: () => ({ height: 32 }),
     accepts: false,
+    resizable: {
+      heightPath: 'height',
+      min: { height: 0 },
+      max: { height: 400 },
+    },
     inspector: [
       section('spacer', 'Espaço', [
         {

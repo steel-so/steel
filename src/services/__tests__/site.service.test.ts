@@ -11,6 +11,7 @@ import {
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { appError } from '@/src/errors/app-error'
+import { siteCatalog } from '@/src/lib/canvas-site'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
@@ -373,6 +374,25 @@ describe('SiteService.publish', () => {
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'publish', outcome: 'failure' }),
     )
+  })
+
+  it('publishes a form without destination: it only warns', async () => {
+    const withForm = createSiteDocument()
+    withForm.nodes.s1.children = ['h1', 'f1']
+    withForm.nodes.f1 = {
+      id: 'f1',
+      type: 'site.form',
+      props: siteCatalog.components['site.form'].defaultProps(),
+    }
+    pages.listWithDocuments.mockResolvedValueOnce(
+      ok([{ ...home, document: withForm as never }]),
+    )
+    const version = createFakeSiteVersion({ siteId: site.id, number: 6 })
+    sites.publish.mockResolvedValue(
+      ok({ site: { ...site, status: 'PUBLISHED' }, version }),
+    )
+    expectOk(await SiteService.publish('u1', WS, site.id))
+    expect(sites.publish).toHaveBeenCalled()
   })
 
   it('propagates read and publish failures', async () => {

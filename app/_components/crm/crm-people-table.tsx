@@ -11,6 +11,8 @@ import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
+import { Customer360Panel } from '@/app/_components/customer-360/customer-360-panel'
+import { CustomerContactButtons } from '@/app/_components/customer-360/customer-contact-buttons'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import {
   customFieldColumns,
@@ -139,6 +141,19 @@ export function CrmPeopleTable({
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-6'>
+              <CustomerContactButtons
+                workspaceId={workspaceId}
+                slug={slug}
+                target={{ personId: record.id }}
+                hasPhone={
+                  Array.isArray(record.phones) && record.phones.length > 0
+                }
+              />
+              <Customer360Panel
+                workspaceId={workspaceId}
+                slug={slug}
+                personId={record.id}
+              />
               <CrmPersonNewslettersCard
                 workspaceId={workspaceId}
                 personId={record.id}

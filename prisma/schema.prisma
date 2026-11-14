@@ -1292,10 +1292,14 @@ model WhatsAppContact {
   whatsappCheckedAt     DateTime?             @map("whatsapp_checked_at")
   /// Identificador privado (LID) devolvido pela Z-API na checagem.
   whatsappLid           String?               @map("whatsapp_lid")
+  /// Cadastro único (ADR 0066): pessoa do CRM que é este contato. Opcional;
+  /// sem vínculo, o casamento por telefone continua valendo como reserva.
+  crmPersonId           String?               @map("crm_person_id")
   createdAt             DateTime              @default(now()) @map("created_at")
   updatedAt             DateTime              @updatedAt @map("updated_at")
 
   workspace            Workspace                     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmPerson            CrmPerson?                    @relation("WhatsAppContactCrmPerson", fields: [crmPersonId], references: [id], onDelete: SetNull)
   conversations        WhatsAppConversation[]
   broadcastRecipients  WhatsAppBroadcastRecipient[]
   aiCampaignRecipients WhatsAppAiCampaignRecipient[]
@@ -1308,6 +1312,7 @@ model WhatsAppContact {
   @@unique([workspaceId, waId])
   @@unique([workspaceId, bsuid])
   @@index([workspaceId])
+  @@index([crmPersonId])
   @@map("whatsapp_contacts")
 }
 
@@ -1589,6 +1594,9 @@ enum WhatsAppConversationEventKind {
   /// Copilot summary written when the conversation changed hands; `reason`
   /// is the summary text (internal: never sent to the contact).
   TRANSFER_SUMMARY
+  /// The auto-reply could not run (quota used up or provider down) and a
+  /// person must take over; `reason` says which.
+  AI_UNAVAILABLE
 }
 
 /// Quem disparou o evento: um atendente (AGENT), uma nova mensagem do
@@ -1616,6 +1624,8 @@ enum WhatsAppConversationEventSource {
   PIX
   /// Agent copilot (Z7), e.g. the summary on transfer.
   COPILOT
+  /// Automatic AI reply (quota/provider failure).
+  AI_REPLY
 }
 
 /// Linha do tempo da conversa (fechada/reaberta...), exibida entre as
@@ -2526,6 +2536,8 @@ model CrmCompany {
   enrichment    CrmCompanyEnrichment?
   health        CrmCustomerHealth?
   contracts     CrmContract[]
+  // cadastro-unico (ADR 0066): ServiceDesk customers linked to this company
+  sdCustomers   SdCustomer[]  @relation("SdCustomerCrmCompany")
 
   @@unique([workspaceId, domain])
   @@unique([workspaceId, cnpj])
@@ -2570,7 +2582,11 @@ model CrmPerson {
   calendarEvents                CrmCalendarEvent[]
   proposalsAsContact            CrmProposal[]       @relation("CrmProposalContact")
   phoneCalls                    WhatsAppPhoneCall[]
+  sdTickets                     SdTicket[]
   newsletterSubscriptions       CrmNewsletterSubscriber[]
+  // cadastro-unico (ADR 0066)
+  sdContacts                    SdContact[]         @relation("SdContactCrmPerson")
+  whatsappContacts              WhatsAppContact[]   @relation("WhatsAppContactCrmPerson")
 
   @@index([workspaceId])
   @@index([companyId])
@@ -2716,6 +2732,7 @@ model CrmOpportunity {
   calendarEvents CrmCalendarEvent[]
   proposals      CrmProposal[]
   phoneCalls     WhatsAppPhoneCall[]
+  sdTickets      SdTicket[]
   pixCharges     WhatsAppPixCharge[]
   boletoCharges  WhatsAppBoletoCharge[]
   health         CrmOpportunityHealth?
@@ -2898,6 +2915,7 @@ model CrmLead {
   @@index([workspaceId, position])
   @@map("crm_leads")
   documents Document[]
+  sdTickets SdTicket[]
 }
 
 /// Tentativa (ou contato efetivo) registrada nas etapas 01/02 do painel de
@@ -5689,6 +5707,8 @@ enum NotificationKind {
   WHATSAPP_COST_BUDGET_WARNING
   /// Comunicação: monthly cost reached the budget.
   WHATSAPP_COST_BUDGET_REACHED
+  /// Comunicação: the AI auto-reply stopped (quota used up or provider down).
+  WHATSAPP_AI_UNAVAILABLE
   /// CRM newsletter (ADR 0054): a sending domain became VERIFIED.
   CRM_SENDING_DOMAIN_VERIFIED
   /// CRM newsletter (ADR 0054): a VERIFIED sending domain stopped verifying.
@@ -6139,12 +6159,16 @@ model SdCustomer {
   notes        String?
   customFields Json           @default("{}") @map("custom_fields")
   active       Boolean        @default(true)
+  /// Cadastro único (ADR 0066): empresa do CRM que é este cliente. Opcional;
+  /// sem vínculo, o casamento por CNPJ/nome continua valendo como reserva.
+  crmCompanyId String?        @map("crm_company_id")
   createdById  String         @map("created_by_id")
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   deletedAt    DateTime?      @map("deleted_at")
 
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmCompany       CrmCompany?         @relation("SdCustomerCrmCompany", fields: [crmCompanyId], references: [id], onDelete: SetNull)
   createdBy        User                @relation("SdCustomerCreatedBy", fields: [createdById], references: [id])
   contacts         SdContactCustomer[]
   ticketsAsClient  SdTicket[]          @relation("SdTicketCustomer")
@@ -6155,6 +6179,7 @@ model SdCustomer {
 
   @@index([workspaceId, kind])
   @@index([workspaceId, document])
+  @@index([crmCompanyId])
   @@index([deletedAt])
   @@map("sd_customers")
 }
@@ -6170,6 +6195,8 @@ model SdContact {
   whatsapp     String?
   /// Usuário da plataforma que é este contato (chat interno / portal).
   userId       String?   @map("user_id")
+  /// Cadastro único (ADR 0066): pessoa do CRM que é este contato.
+  crmPersonId  String?   @map("crm_person_id")
   notes        String?
   customFields Json      @default("{}") @map("custom_fields")
   active       Boolean   @default(true)
@@ -6179,6 +6206,7 @@ model SdContact {
   deletedAt    DateTime? @map("deleted_at")
 
   workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  crmPerson      CrmPerson?          @relation("SdContactCrmPerson", fields: [crmPersonId], references: [id], onDelete: SetNull)
   user           User?               @relation("SdContactUser", fields: [userId], references: [id], onDelete: SetNull)
   createdBy      User                @relation("SdContactCreatedBy", fields: [createdById], references: [id])
   customers      SdContactCustomer[]
@@ -6190,6 +6218,7 @@ model SdContact {
   @@index([workspaceId, email])
   @@index([workspaceId, whatsapp])
   @@index([userId])
+  @@index([crmPersonId])
   @@index([deletedAt])
   @@map("sd_contacts")
 }
@@ -6732,6 +6761,11 @@ model SdTicket {
   parentId                 String?         @map("parent_id")
   /// Conversa do WhatsApp vinculada (aba WhatsApp do chamado).
   whatsappConversationId   String?         @map("whatsapp_conversation_id")
+  /// CRM records the ticket was opened from (ticket-from-conversation): the
+  /// ticket shows them and their timeline lists the ticket back.
+  crmLeadId                String?         @map("crm_lead_id")
+  crmPersonId              String?         @map("crm_person_id")
+  crmOpportunityId         String?         @map("crm_opportunity_id")
   escalationLevel          Int             @default(0) @map("escalation_level")
   tags                     String[]        @default([])
   customFields             Json            @default("{}") @map("custom_fields")
@@ -6799,6 +6833,9 @@ model SdTicket {
   children               SdTicket[]              @relation("SdTicketTree")
   aiSuggestions          SdAiSuggestion[]
   whatsappConversation   WhatsAppConversation?   @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
+  crmLead                CrmLead?                @relation(fields: [crmLeadId], references: [id], onDelete: SetNull)
+  crmPerson              CrmPerson?              @relation(fields: [crmPersonId], references: [id], onDelete: SetNull)
+  crmOpportunity         CrmOpportunity?         @relation(fields: [crmOpportunityId], references: [id], onDelete: SetNull)
   slaPolicy              SdSlaPolicy?            @relation(fields: [slaPolicyId], references: [id], onDelete: SetNull)
   contract               SdContract?             @relation(fields: [contractId], references: [id], onDelete: SetNull)
   participants           SdTicketParticipant[]
@@ -6836,6 +6873,9 @@ model SdTicket {
   @@index([workspaceId, createdAt])
   @@index([parentId])
   @@index([whatsappConversationId])
+  @@index([crmLeadId])
+  @@index([crmPersonId])
+  @@index([crmOpportunityId])
   @@index([deletedAt])
   @@map("sd_tickets")
 }
@@ -13884,6 +13924,8 @@ enum CrmRetentionSource {
   SURVEY_DETRACTOR
   /// The churn risk of a company entered the high band or jumped.
   HEALTH_DROP
+  /// A ServiceDesk ticket of a customer breached its SLA.
+  SLA_BREACH
 }
 
 /// Per-workspace switches of the retention follow-up: what a detractor answer
@@ -13895,6 +13937,8 @@ model CrmRetentionSettings {
   onDetractor       Boolean  @default(true) @map("on_detractor")
   /// A customer-health drop creates a retention task.
   onHealthDrop      Boolean  @default(true) @map("on_health_drop")
+  /// A ServiceDesk SLA breach of a customer creates a task for the account owner.
+  onSlaBreach       Boolean  @default(false) @map("on_sla_breach")
   /// Also open a retention deal (first open stage of the default pipeline).
   createOpportunity Boolean  @default(false) @map("create_opportunity")
   /// Days until the retention task is due.

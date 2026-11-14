@@ -20,6 +20,7 @@ export function toCrmRetentionSettingsDTO(
     workspaceId: settings.workspaceId,
     onDetractor: settings.onDetractor,
     onHealthDrop: settings.onHealthDrop,
+    onSlaBreach: settings.onSlaBreach,
     createOpportunity: settings.createOpportunity,
     taskDueDays: settings.taskDueDays,
     isDefault: false,

@@ -21,6 +21,7 @@ import { sdRecurringRoutes } from './servicedesk/recurring'
 import { sdReportRoutes } from './servicedesk/reports'
 import { sdRiskRoutes } from './servicedesk/risk'
 import { sdSwarmRoutes } from './servicedesk/swarm'
+import { sdTicketSourceRoutes } from './servicedesk/ticket-source'
 import { sdTicketTabRoutes } from './servicedesk/ticket-tabs'
 import { sdWfmRoutes } from './servicedesk/wfm'
 import { sdWhatsappAiRoutes } from './servicedesk/whatsapp-ai'
@@ -57,6 +58,7 @@ const routes: RouteConfig[] = [
   ...sdInventoryFollowupRoutes,
   ...sdLicenseRoutes,
   ...sdNlConfigRoutes,
+  ...sdTicketSourceRoutes,
 ]
 
 export function registerServiceDeskPaths(registry: OpenApiRegistry): void {

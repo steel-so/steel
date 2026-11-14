@@ -9,6 +9,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { evaluateSdConditions } from '@/src/lib/servicedesk/conditions'
 import { sdNotifyTicketOf } from '@/src/lib/servicedesk/notify'
 import { publishSdTicketEvent } from '@/src/lib/servicedesk/realtime'
+import { CrossEngineWhatsappRepository } from '@/src/repositories/cross-engine-whatsapp.repository'
 import { SdAutomationRepository } from '@/src/repositories/sd-automation.repository'
 import {
   SdTicketRepository,
@@ -103,6 +104,13 @@ const SETTABLE_STRING = new Set([
 ])
 
 const running = new Set<string>()
+
+/**
+ * Loaded on demand: the cross-engine service pulls in the CRM, ServiceDesk
+ * and WhatsApp services, which import this module back.
+ */
+const crossEngine = () =>
+  import('./cross-engine-actions.service').then((m) => m.CrossEngineActions)
 
 interface ActionContext {
   event: SdAutomationEvent
@@ -243,6 +251,183 @@ async function applyTemplate(
     if (!inserted.ok) return inserted
   }
   return updated
+}
+
+type ActionParams<T extends SdAutomationAction['type']> = Extract<
+  SdAutomationAction,
+  { type: T }
+>['params']
+
+/** `{{code}}`, `{{title}}`, `{{requester}}`, `{{phase}}` of the ticket. */
+function ticketValues(t: SdTicketWithRelations, ctx: ActionContext) {
+  return {
+    code: sdTicketCode(t, ctx.config.prefixes),
+    title: t.title,
+    requester: t.requester?.name ?? t.contact?.name ?? '',
+    phase: t.phase.name,
+  }
+}
+
+function renderTicketText(
+  text: string,
+  values: Record<string, string>,
+): string {
+  return text.replace(
+    /\{\{\s*(\w+)\s*\}\}/g,
+    (_, key: string) => values[key] ?? '',
+  )
+}
+
+async function skipRecord(
+  t: SdTicketWithRelations,
+  ctx: ActionContext,
+  action: string,
+  reason: string,
+  message: string,
+): Promise<void> {
+  logger.info('servicedesk.automation.action_skipped', {
+    workspaceId: t.workspaceId,
+    ticketId: t.id,
+    ruleId: ctx.rule.id,
+    action,
+    reason,
+  })
+  await recordSdTicketEvent({
+    workspaceId: t.workspaceId,
+    ticketId: t.id,
+    actorKind: 'SYSTEM',
+    action: 'automation.skipped',
+    toValue: message,
+    meta: { via: 'automation', ruleId: ctx.rule.id, action, reason },
+  })
+}
+
+/** Template or text to whoever the ticket is about (opt-out, 24 h window). */
+async function sendWhatsappTemplate(
+  t: SdTicketWithRelations,
+  params: ActionParams<'send_whatsapp_template'>,
+  ctx: ActionContext,
+): Promise<Result<SdTicketWithRelations>> {
+  const recipient = await CrossEngineWhatsappRepository.ticketRecipient(
+    t.workspaceId,
+    t.id,
+  )
+  if (!recipient.ok) return recipient
+  if (!recipient.value?.phone) {
+    await skipRecord(
+      t,
+      ctx,
+      'send_whatsapp_template',
+      'no_phone',
+      'O chamado não tem um contato com telefone: o WhatsApp não foi enviado.',
+    )
+    return ok(t)
+  }
+  const values = ticketValues(t, ctx)
+  const sent = await (await crossEngine()).sendWhatsApp({
+    workspaceId: t.workspaceId,
+    source: 'sd_automation',
+    refId: ctx.rule.id,
+    connectionId: params.connectionId,
+    phone: recipient.value.phone,
+    templateId: params.templateId,
+    variables: params.variables.map((key) => values[key]),
+    text: params.text ? renderTicketText(params.text, values) : null,
+  })
+  if (!sent.ok) return sent
+  if (sent.value.status === 'skipped') {
+    await skipRecord(
+      t,
+      ctx,
+      'send_whatsapp_template',
+      sent.value.reason,
+      sent.value.message,
+    )
+  }
+  return ok(t)
+}
+
+async function createCrmTask(
+  t: SdTicketWithRelations,
+  params: ActionParams<'create_crm_task'>,
+  ctx: ActionContext,
+): Promise<Result<SdTicketWithRelations>> {
+  const values = ticketValues(t, ctx)
+  const created = await (await crossEngine()).createCrmTask({
+    workspaceId: t.workspaceId,
+    source: 'sd_automation',
+    refId: ctx.rule.id,
+    authorId: t.assigneeId,
+    title: renderTicketText(params.title, values),
+    body: [
+      params.description ? renderTicketText(params.description, values) : null,
+      `Chamado ${values.code}: ${t.title}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
+    assigneeId: params.assigneeId,
+    dueInMinutes: params.dueInMinutes,
+  })
+  if (!created.ok) return created
+  await recordSdTicketEvent({
+    workspaceId: t.workspaceId,
+    ticketId: t.id,
+    actorKind: 'SYSTEM',
+    action: 'crm_task.created',
+    toValue: renderTicketText(params.title, values),
+    meta: {
+      via: 'automation',
+      ruleId: ctx.rule.id,
+      crmTaskId: created.value.taskId,
+    },
+  })
+  return ok(t)
+}
+
+async function createCrmLead(
+  t: SdTicketWithRelations,
+  params: ActionParams<'create_crm_lead'>,
+  ctx: ActionContext,
+): Promise<Result<SdTicketWithRelations>> {
+  const recipient = await CrossEngineWhatsappRepository.ticketRecipient(
+    t.workspaceId,
+    t.id,
+  )
+  if (!recipient.ok) return recipient
+  if (!recipient.value?.phone && !recipient.value?.email) {
+    await skipRecord(
+      t,
+      ctx,
+      'create_crm_lead',
+      'no_contact',
+      'O chamado não tem um contato com telefone ou e-mail: o lead não foi criado.',
+    )
+    return ok(t)
+  }
+  const created = await (await crossEngine()).createLead({
+    workspaceId: t.workspaceId,
+    source: 'sd_automation',
+    refId: ctx.rule.id,
+    authorId: t.assigneeId,
+    name: recipient.value.name,
+    phone: recipient.value.phone,
+    email: recipient.value.email,
+    company: recipient.value.company,
+    origin: params.origin,
+  })
+  if (!created.ok) return created
+  await recordSdTicketEvent({
+    workspaceId: t.workspaceId,
+    ticketId: t.id,
+    actorKind: 'SYSTEM',
+    action: created.value.created ? 'crm_lead.created' : 'crm_lead.reused',
+    meta: {
+      via: 'automation',
+      ruleId: ctx.rule.id,
+      crmLeadId: created.value.leadId,
+    },
+  })
+  return ok(t)
 }
 
 async function execute(
@@ -405,6 +590,12 @@ async function execute(
     }
     case 'apply_template':
       return applyTemplate(t, action.params.templateId, ctx)
+    case 'send_whatsapp_template':
+      return sendWhatsappTemplate(t, action.params, ctx)
+    case 'create_crm_task':
+      return createCrmTask(t, action.params, ctx)
+    case 'create_crm_lead':
+      return createCrmLead(t, action.params, ctx)
     case 'escalate': {
       const result = await escalateSdTicket(
         t,

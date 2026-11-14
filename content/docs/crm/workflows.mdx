@@ -23,13 +23,24 @@ uma sequência de **ações**.
 | --- | --- |
 | **Registros** | Criar, atualizar, excluir, buscar e "upsert" de registros |
 | **Controle** | Iterar, Filtro, If / Else e Atraso |
-| **Comunicação** | Enviar e-mail e rascunho de e-mail |
+| **Comunicação** | Enviar e-mail, rascunho de e-mail e **Enviar WhatsApp** (modelo aprovado ou texto) |
+| **ServiceDesk** | **Criar chamado** a partir do registro (precisa do módulo ServiceDesk) |
 | **Humano** | Formulário: o workflow pausa até alguém responder |
 
 O **Atraso** pausa a execução pelo tempo escolhido (segundos, minutos, horas ou
 dias) e depois continua sozinho a partir da etapa seguinte. Enquanto espera, a
 execução aparece como **Aguardando** no histórico, com o horário em que vai
 continuar. No **Testar**, o atraso só é registrado e o teste segue direto.
+
+**Enviar WhatsApp.** Escolha o número, o telefone do contato e o modelo
+aprovado (a Meta aceita o modelo a qualquer hora). Quem pediu para não receber
+mensagens (LGPD) é ignorado: a etapa termina sem enviar e o histórico
+mostra o motivo; o workflow continua. O texto livre só sai dentro da janela de 24
+horas (Meta) ou em números Z-API. No **Testar**, nada é enviado nem criado.
+
+**Criar chamado.** Abre um chamado no ServiceDesk com título e descrição
+montados por expressões. Informe o telefone ou e-mail do solicitante para
+ligar o chamado ao contato do ServiceDesk.
 
 ## Ciclo de vida
 

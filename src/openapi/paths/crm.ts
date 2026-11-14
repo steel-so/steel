@@ -4,6 +4,8 @@ import { crmApolloRoutes } from './crm/apollo'
 import { crmCadenceRoutes } from './crm/cadences'
 import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
+import { crmCustomer360Routes } from './crm/customer-360'
+import { crmCustomerLinkRoutes } from './crm/customer-links'
 import { crmDealsRoutes } from './crm/deals'
 import { crmDocumentAnalyticsRoutes } from './crm/document-analytics'
 import { crmDocumentExportsRoutes } from './crm/document-exports'
@@ -56,7 +58,9 @@ const routes: RouteConfig[] = [
   ...crmCnpjRoutes,
   ...crmCadenceRoutes,
   ...crmDuplicateRoutes,
+  ...crmCustomerLinkRoutes,
   ...crmDealsRoutes,
+  ...crmCustomer360Routes,
   ...crmHealthRoutes,
   ...crmEmailRoutes,
   ...crmEmailEditorRoutes,

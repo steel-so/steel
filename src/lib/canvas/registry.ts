@@ -53,7 +53,14 @@ export type InspectorControl =
   /** Color, gradient or image (+ position/size/repeat). */
   | { kind: 'background'; allowImage?: boolean; allowGradient?: boolean }
   /** Media library picker / upload. */
-  | { kind: 'image'; accept?: string[] }
+  | {
+      kind: 'image'
+      accept?: string[]
+      /** Prop path that receives the file's `{ width, height }` once it
+       * loads (cleared with the image): the page reserves the space and the
+       * layout does not jump. */
+      dimensionsPath?: string
+    }
   /** URL, page, anchor, e-mail, phone, file. Catalogs restrict `targets`. */
   | {
       kind: 'link'
@@ -181,7 +188,35 @@ export interface CanvasComponentDefinition<
     childPath: string
     enabled: (props: P, breakpoint: CanvasBreakpoint) => boolean
   }
+  /**
+   * Direct resizing: the selection box shows pull handles and the drag
+   * writes the size back to these prop paths (responsive-aware, one undo
+   * step per drag). Declare only the dimensions the element really stores:
+   * an image that keeps its aspect ratio declares just `widthPath`.
+   */
+  resizable?: Resizable
   render: (props: CanvasRenderProps<P>) => ReactNode
+}
+
+/** How an element is pulled to a new size on the canvas. */
+export interface Resizable {
+  /** Prop path holding the width (number, or `{ value, unit }` with
+   * `widthFormat: 'size'`). */
+  widthPath?: string
+  /** Prop path holding the height (number, px). */
+  heightPath?: string
+  /** `number` (default) stores a plain number; `size` stores
+   * `{ value, unit: widthUnit }`. */
+  widthFormat?: 'number' | 'size'
+  /** Unit the width is stored in (default `px`). `%` is relative to the
+   * parent's content width. */
+  widthUnit?: 'px' | '%'
+  /** Fixed width / height ratio; without it Shift locks the ratio the
+   * element had when the drag started. */
+  aspect?: number
+  /** Limits in the stored units (`widthUnit` for width, px for height). */
+  min: { width?: number; height?: number }
+  max: { width?: number; height?: number }
 }
 
 export interface CanvasCatalog {

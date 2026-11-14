@@ -59,6 +59,7 @@ import {
   mirrorSdWhatsappMessage,
   publishSdTicketMessage,
 } from './sd-whatsapp-inbound.service'
+import { WHATSAPP_OPTED_OUT_MESSAGE } from './whatsapp-opt-out'
 
 /**
  * Aba WhatsApp do chamado (só agentes): a conversa vinculada, envio de
@@ -115,6 +116,7 @@ async function linkedConversation(
   const found = await SdWhatsappRepository.findConversation(
     loaded.ticket.workspaceId,
     id,
+    loaded.ticket.id,
   )
   if (!found.ok) return found
   if (!found.value) return err(sdWhatsappConversationNotFound())
@@ -139,6 +141,11 @@ async function sendable(
     return err(sdTicketClosed())
   const conversation = await linkedConversation(loaded.value)
   if (!conversation.ok) return conversation
+  // A template starts a business-initiated message: a contact that opted out
+  // (LGPD) must not receive it. Free text only answers the contact's window.
+  if (kind === 'template' && conversation.value.contact.broadcastOptedOutAt) {
+    return err(validationError(WHATSAPP_OPTED_OUT_MESSAGE))
+  }
   if (kind === 'free') {
     const last = await SdWhatsappRepository.lastInboundAt(conversation.value.id)
     if (!last.ok) return last
@@ -267,6 +274,7 @@ export const SdWhatsappService = {
       const found = await SdWhatsappRepository.findConversation(
         workspaceId,
         ticket.whatsappConversationId,
+        ticket.id,
       )
       if (!found.ok) return found
       conversation = found.value

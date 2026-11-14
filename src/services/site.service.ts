@@ -4,6 +4,7 @@ import { logger } from '@/lib/axiom/logger'
 import { appError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { revalidateSites } from '@/src/lib/sites/cache'
+import { siteSnapshotChecks } from '@/src/lib/sites/checks'
 import {
   createEmptySiteDocument,
   validateSiteDocument,
@@ -78,6 +79,20 @@ function validateDraft(snapshot: SiteSnapshot): InvalidDocument[] {
         id: global.id,
         name: global.name,
         problems: checked.error,
+      })
+    }
+  }
+  // Blocking checks (errors only; warnings never stop a publish).
+  for (const item of siteSnapshotChecks(snapshot)) {
+    if (item.level !== 'error' || !item.documentId) continue
+    const entry = invalid.find((doc) => doc.id === item.documentId)
+    if (entry) {
+      entry.problems.push(item.message)
+    } else {
+      invalid.push({
+        id: item.documentId,
+        name: item.documentName ?? '',
+        problems: [item.message],
       })
     }
   }

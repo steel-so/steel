@@ -20,6 +20,7 @@ export function createFakeWhatsAppContact(
     hasWhatsapp: null,
     whatsappCheckedAt: null,
     whatsappLid: null,
+    crmPersonId: null,
     createdAt: now,
     updatedAt: now,
     _count: { conversations: 0 },

@@ -544,6 +544,7 @@ export const WhatsAppBroadcastService = {
     actorId: string,
     workspaceId: string,
     id: string,
+    recipientIds?: string[],
   ): Promise<Result<WhatsAppBroadcastListDetailDTO>> {
     const membership = await assertModuleMember(
       actorId,
@@ -569,7 +570,10 @@ export const WhatsAppBroadcastService = {
       )
     }
 
-    const reset = await WhatsAppBroadcastRepository.resetFailedRecipients(id)
+    const reset = await WhatsAppBroadcastRepository.resetFailedRecipients(
+      id,
+      recipientIds,
+    )
     if (!reset.ok) return reset
     if (reset.value.length === 0) {
       return err(
@@ -598,7 +602,11 @@ export const WhatsAppBroadcastService = {
       action: 'update',
       actorId,
       targetId: id,
-      meta: { status: 'RUNNING', retriedRecipients: reset.value.length },
+      meta: {
+        status: 'RUNNING',
+        retriedRecipients: reset.value.length,
+        ...(recipientIds ? { selected: true } : {}),
+      },
     })
 
     const fresh = await WhatsAppBroadcastRepository.findById(id, workspaceId)

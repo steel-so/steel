@@ -224,6 +224,8 @@ export function backgroundToCss(
 export const canvasImageSchema = z.object({
   src: z.string().max(2000),
   alt: z.string().max(500),
+  /** Decorative image: readers skip it, so an empty `alt` is intended. */
+  decorative: z.boolean().optional(),
 })
 export type CanvasImage = z.infer<typeof canvasImageSchema>
 

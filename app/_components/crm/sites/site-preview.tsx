@@ -1,16 +1,20 @@
 'use client'
 
-import type { IconSvgElement } from '@hugeicons/react'
-import {
-  ComputerIcon,
-  PencilEdit02Icon,
-  SmartPhone01Icon,
-  Tablet01Icon,
-} from '@hugeicons-pro/core-stroke-rounded'
+import { PencilEdit02Icon } from '@hugeicons-pro/core-stroke-rounded'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import {
+  DeviceSwitcher,
+  PREVIEW_DEVICES,
+  type PreviewDevice,
+} from '@/app/_components/canvas/preview/device-switcher'
+import { applyFrameTheme } from '@/app/_components/canvas/preview/frame-theme'
+import {
+  type PreviewTheme,
+  ThemeSwitcher,
+} from '@/app/_components/canvas/preview/theme-switcher'
 import { FocusedBackLink } from '@/app/_components/layout/focused-screen'
 import { SITE_CHROME_CSS } from '@/app/(sites)/_components/site-chrome-css'
 import { SteelIcon } from '@/components/icon/icon'
@@ -48,19 +52,6 @@ import { applyVariantChoices } from '@/src/lib/sites/experiments'
 import { orderPages, toPageLinks } from './site-editor-context'
 import { SiteStatusBadge } from './site-status-badge'
 
-type Device = 'base' | 'tablet' | 'mobile'
-
-const DEVICES: Array<{
-  id: Device
-  label: string
-  icon: IconSvgElement
-  width: number | null
-}> = [
-  { id: 'base', label: 'Computador', icon: ComputerIcon, width: null },
-  { id: 'tablet', label: 'Tablet', icon: Tablet01Icon, width: 768 },
-  { id: 'mobile', label: 'Celular', icon: SmartPhone01Icon, width: 375 },
-]
-
 /** Same rendering mode as the published page (no quirks). */
 const STANDARDS_DOC =
   '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head><body></body></html>'
@@ -87,6 +78,7 @@ function PreviewFrame({
   links,
   currentPageId,
   width,
+  theme,
   onNavigate,
   cms,
   newsletters,
@@ -108,6 +100,7 @@ function PreviewFrame({
   links: SitePageLink[]
   currentPageId: string
   width: number | null
+  theme: PreviewTheme
   onNavigate: (pageId: string) => void
 }) {
   const iframe = useRef<HTMLIFrameElement>(null)
@@ -162,6 +155,11 @@ function PreviewFrame({
       mount.doc.removeEventListener('submit', onSubmit, true)
     }
   }, [mount, links])
+
+  // Light or dark browser (native: `color-scheme` and the dark hooks).
+  useEffect(() => {
+    if (mount) applyFrameTheme(mount.doc, theme)
+  }, [mount, theme])
 
   // Each page starts at the top.
   useEffect(() => {
@@ -260,7 +258,8 @@ export function SitePreview({
   const api = useMemo(() => crmSitesApi(workspaceId), [workspaceId])
   const { site, pages, globals } = useCrmSite(workspaceId, siteId)
   const [pageId, setPageId] = useState<string | null>(initialPageId ?? null)
-  const [device, setDevice] = useState<Device>('base')
+  const [device, setDevice] = useState<PreviewDevice>('base')
+  const [previewTheme, setPreviewTheme] = useState<PreviewTheme>('light')
 
   const home =
     pages.data?.find((page) => page.id === site.data?.homePageId) ??
@@ -343,7 +342,7 @@ export function SitePreview({
   }, [currentId])
 
   const failed = site.error || pages.error || globals.error || page.error
-  const width = DEVICES.find((item) => item.id === device)?.width ?? null
+  const width = PREVIEW_DEVICES[device].width
   const editorHref = `/${slug}/crm/sites/${siteId}${currentId ? `?page=${currentId}` : ''}`
 
   return (
@@ -394,28 +393,18 @@ export function SitePreview({
             </SelectContent>
           </Select>
         ) : null}
-        <div
-          role='toolbar'
-          aria-label='Tamanho de tela'
-          className='hidden items-center gap-0.5 rounded-md bg-muted p-0.5 md:flex'
-        >
-          {DEVICES.map((item) => (
-            <button
-              key={item.id}
-              type='button'
-              aria-pressed={device === item.id}
-              aria-label={item.label}
-              title={item.label}
-              onClick={() => setDevice(item.id)}
-              className={cn(
-                'flex h-7 w-8 items-center justify-center rounded-[5px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none',
-                device === item.id && 'bg-background text-foreground shadow-xs',
-              )}
-            >
-              <SteelIcon icon={item.icon} className='size-4' />
-            </button>
-          ))}
-        </div>
+        <DeviceSwitcher
+          value={device}
+          onChange={setDevice}
+          className='hidden md:flex'
+        />
+        <ThemeSwitcher
+          value={previewTheme}
+          onChange={setPreviewTheme}
+          lightLabel='Ver com navegador claro'
+          darkLabel='Ver com navegador escuro'
+          className='hidden md:flex'
+        />
         <Button
           size='sm'
           variant='outline'
@@ -448,6 +437,7 @@ export function SitePreview({
             links={links}
             currentPageId={currentId}
             width={width}
+            theme={previewTheme}
             onNavigate={setPageId}
             cms={cms}
             newsletters={newsletters}

@@ -13,6 +13,7 @@ export {
   documentCatalog,
   validateDocumentContent,
 } from './catalog'
+export { documentChecklist } from './checklist'
 export { fieldValueError, formatFieldValue } from './components/views'
 export * from './constants'
 export type {

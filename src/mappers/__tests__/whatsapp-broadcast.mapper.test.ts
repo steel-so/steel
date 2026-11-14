@@ -38,6 +38,18 @@ describe('toWhatsAppBroadcastListDTO()', () => {
     )
   })
 
+  it('should prefer the most common failure reason', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b6' }, [
+      { status: 'FAILED', errorMessage: 'Outro motivo' },
+      { status: 'FAILED', errorMessage: 'Limite de gasto atingido' },
+      { status: 'FAILED', errorMessage: 'Limite de gasto atingido' },
+    ])
+
+    expect(toWhatsAppBroadcastListDTO(list).failureReason).toBe(
+      'Limite de gasto atingido',
+    )
+  })
+
   it('should have no failure reason when nothing failed', () => {
     const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b5' }, [
       { status: 'SENT' },

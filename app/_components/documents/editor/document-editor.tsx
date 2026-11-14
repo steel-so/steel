@@ -12,9 +12,12 @@ import {
   useState,
 } from 'react'
 import { CanvasEditor } from '@/app/_components/canvas/canvas-editor'
+import { usePublishChecks } from '@/app/_components/canvas/checklist/use-publish-checks'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
+import type { CanvasImageBlock } from '@/app/_components/canvas/types'
 import { DocumentExportButton } from '@/app/_components/documents/export/document-export-button'
 import { FocusedBackLink } from '@/app/_components/layout/focused-screen'
+import { useEmailMediaProvider } from '@/app/_components/media/use-email-media'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -39,6 +42,7 @@ import {
   type UpdateDocumentBody,
   useDocument,
 } from '@/src/hooks/use-documents'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { CanvasCatalog } from '@/src/lib/canvas/registry'
 import { type CanvasStore, createCanvasStore } from '@/src/lib/canvas/store'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
@@ -51,6 +55,7 @@ import {
   parseDocumentTheme,
   validateDocumentContent,
 } from '@/src/lib/canvas-document'
+import { documentChecklist } from '@/src/lib/canvas-document/checklist'
 import { documentVariablesTab } from '@/src/lib/canvas-document/variables-tab'
 import {
   DEFAULT_DOCUMENT_SETTINGS,
@@ -65,6 +70,7 @@ import {
   DocumentEditorProvider,
   useDocumentEditor,
 } from './document-editor-context'
+import { documentMediaTab } from './document-media-tab'
 import {
   DocumentPreviewDialog,
   SAMPLE_VARIABLES,
@@ -72,8 +78,18 @@ import {
 import { DocumentSettingsPanel } from './document-settings-panel'
 import { EDITOR_FONTS } from './editor-theme'
 
-/** "Variáveis" tab of the catalog (merge tags into the selected text). */
-const EXTRA_TABS = [documentVariablesTab()]
+/** "Variáveis" (merge tags into the selected text) and "Mídia" tabs. */
+const EXTRA_TABS = [documentVariablesTab(), documentMediaTab()]
+
+/** The document image block (drop or paste a picture on the canvas). */
+const DOCUMENT_IMAGE_BLOCK: CanvasImageBlock = {
+  type: 'image',
+  toProps: (src, current) => ({
+    src,
+    alt: typeof current?.alt === 'string' ? current.alt : '',
+    decorative: current?.decorative === true ? true : undefined,
+  }),
+}
 
 /** Row changes (settings, theme, title…) are saved this long after the
  * last one. */
@@ -197,6 +213,13 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
   const [preview, setPreview] = useState<CanvasDocument | null>(null)
   const [sending, setSending] = useState(false)
   const sent = Boolean(document.currentVersion)
+  const checks = usePublishChecks(documentChecklist)
+
+  function pickCheck(item: PublishCheckItem) {
+    if (!item.nodeId) return
+    store.select(item.nodeId)
+    setSending(false)
+  }
 
   return (
     <div className='flex items-center gap-1'>
@@ -246,6 +269,8 @@ function DocumentEditorActions({ store }: { store: CanvasStore }) {
         onOpenChange={setSending}
         beforeSend={async () => (await flushMeta()) && (await save())}
         onSent={setDocument}
+        checks={checks.items}
+        onPickCheck={pickCheck}
       />
     </div>
   )
@@ -454,6 +479,7 @@ function DocumentCanvasEditor({
     }
   }
 
+  const mediaProvider = useEmailMediaProvider(workspaceId)
   const onUploadImage = useCallback(
     async (file: File) => {
       try {
@@ -545,6 +571,8 @@ function DocumentCanvasEditor({
         documentSettings={() => <DocumentSettingsPanel />}
         onSave={onSave}
         onUploadImage={onUploadImage}
+        mediaProvider={mediaProvider}
+        imageBlock={DOCUMENT_IMAGE_BLOCK}
       />
       <AlertDialog open={conflict}>
         <AlertDialogContent>

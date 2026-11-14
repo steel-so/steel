@@ -30,6 +30,7 @@ import {
 import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
 import { CrmOnboardingChecklist } from '@/app/_components/onboarding-checklist/crm-onboarding-checklist'
+import { SdLinkedTicketsSection } from '@/app/_components/servicedesk/ticket-source/sd-linked-tickets'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
@@ -861,6 +862,12 @@ function LeadStagePanel({
 
       <div className='flex flex-col gap-6 px-4'>
         <LeadContacts workspaceId={workspaceId} slug={slug} lead={lead} />
+
+        <SdLinkedTicketsSection
+          workspaceId={workspaceId}
+          source='lead'
+          sourceId={lead.id}
+        />
 
         <LeadAgentRow workspaceId={workspaceId} leadId={lead.id} />
 

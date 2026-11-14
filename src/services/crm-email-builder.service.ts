@@ -80,7 +80,11 @@ import type {
 } from '@/types/crm-email-marketing'
 import { assertModuleMember } from './authz'
 import { snapshotTemplateVersion } from './crm-email-template-history'
-import { persistCrmEmailImage } from './media/crm-email-media.service'
+import {
+  type CrmEmailImageItem,
+  listCrmEmailImages,
+  persistCrmEmailImage,
+} from './media/crm-email-media.service'
 
 /**
  * Visual e-mail builder (CRM): brand, rendering, test sends and the render
@@ -573,6 +577,18 @@ export const CrmEmailBuilderService = {
       await CrmEmailBuilderRepository.listPublishedLinkTargets(workspaceId)
     if (!targets.ok) return targets
     return ok(toCrmEmailLinkTargetsDTO(targets.value, baseEmailUrl))
+  },
+
+  async listImages(
+    actorId: string,
+    workspaceId: string,
+  ): Promise<Result<CrmEmailImageItem[]>> {
+    const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
+      resource: 'email',
+      action: 'VIEW',
+    })
+    if (!membership.ok) return membership
+    return listCrmEmailImages(workspaceId)
   },
 
   async uploadImage(

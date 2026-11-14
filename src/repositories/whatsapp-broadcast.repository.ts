@@ -404,10 +404,15 @@ export const WhatsAppBroadcastRepository = {
   /** Puts every FAILED recipient back to PENDING; returns their ids. */
   async resetFailedRecipients(
     broadcastListId: string,
+    recipientIds?: string[],
   ): Promise<Result<string[]>> {
     try {
       const failed = await prisma.whatsAppBroadcastRecipient.findMany({
-        where: { broadcastListId, status: 'FAILED' },
+        where: {
+          broadcastListId,
+          status: 'FAILED',
+          ...(recipientIds ? { id: { in: recipientIds } } : {}),
+        },
         select: { id: true },
         orderBy: { id: 'asc' },
       })

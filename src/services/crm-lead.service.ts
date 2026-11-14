@@ -92,6 +92,9 @@ export type CrmLeadIntakeActor =
         | 'whatsapp_ad'
         | 'whatsapp_flow'
         | 'meeting'
+        | 'crm_workflow'
+        | 'sd_automation'
+        | 'whatsapp_chatbot'
       refId: string
     }
 

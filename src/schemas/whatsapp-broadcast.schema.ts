@@ -40,3 +40,12 @@ export const CreateWhatsAppBroadcastSchema = z
 export type CreateWhatsAppBroadcastDTO = z.infer<
   typeof CreateWhatsAppBroadcastSchema
 >
+
+/** Optional body of `retry-failed`: only these recipients (default: all failed). */
+export const RetryFailedWhatsAppBroadcastSchema = z.object({
+  recipientIds: z.array(z.string().min(1)).min(1).max(1000).optional(),
+})
+
+export type RetryFailedWhatsAppBroadcastDTO = z.infer<
+  typeof RetryFailedWhatsAppBroadcastSchema
+>

@@ -13,6 +13,8 @@ import {
 } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
+  type ChatbotActionRequest,
+  type ChatbotActionResponse,
   type ChatbotContext,
   type ChatbotOutput,
   type ChatbotRunResult,
@@ -533,10 +535,72 @@ async function recordNodeStats(
   }
 }
 
-function chatbotContext(contact: WhatsAppContact): ChatbotContext {
+/**
+ * Loaded on demand: the cross-engine service pulls in the CRM, ServiceDesk
+ * and WhatsApp services, which import this module back.
+ */
+const crossEngine = () =>
+  import('./cross-engine-actions.service').then((m) => m.CrossEngineActions)
+
+interface ChatbotOrigin {
+  workspaceId: string
+  conversationId: string
+  chatbotId: string
+}
+
+/** Runs a CRM lead / ServiceDesk ticket block; a failure only logs. */
+async function runChatbotAction(
+  contact: WhatsAppContact,
+  origin: ChatbotOrigin,
+  request: ChatbotActionRequest,
+): Promise<ChatbotActionResponse> {
+  const base = {
+    workspaceId: origin.workspaceId,
+    source: 'chatbot' as const,
+    refId: origin.chatbotId,
+  }
+  const fail = (code: string, message: string): ChatbotActionResponse => {
+    logger.warn('whatsapp.chatbot.action_failed', {
+      workspaceId: origin.workspaceId,
+      conversationId: origin.conversationId,
+      kind: request.kind,
+      code,
+      message,
+    })
+    return { ok: false, reason: code }
+  }
+  if (request.kind === 'create-lead') {
+    const lead = await (await crossEngine()).createLead({
+      ...base,
+      name: request.name || contact.name || contact.waId,
+      phone: request.phone,
+      email: request.email,
+      company: request.company,
+      origin: request.origin,
+    })
+    if (!lead.ok) return fail(lead.error.code, lead.error.message)
+    return { ok: true, value: lead.value.leadId }
+  }
+  const ticket = await (await crossEngine()).openTicket({
+    ...base,
+    type: request.ticketType,
+    title: request.title,
+    description: request.description,
+    phone: contact.waId,
+    whatsappConversationId: origin.conversationId,
+  })
+  if (!ticket.ok) return fail(ticket.error.code, ticket.error.message)
+  return { ok: true, value: ticket.value.code }
+}
+
+function chatbotContext(
+  contact: WhatsAppContact,
+  origin: ChatbotOrigin,
+): ChatbotContext {
   return {
     contact: { name: contact.name, phone: contact.waId },
     callWebhook: callChatbotWebhook,
+    runAction: (request) => runChatbotAction(contact, origin, request),
   }
 }
 
@@ -723,7 +787,11 @@ export const WhatsAppChatbotRuntimeService = {
 
     const flow = parseStoredFlow(session.definition)
     const state = parseChatbotState(session.state)
-    const ctx = chatbotContext(contact)
+    const ctx = chatbotContext(contact, {
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      chatbotId: session.chatbotId,
+    })
     const text = message.text ?? ''
     const run: ChatbotRunResult = state.started
       ? await resumeFlow(

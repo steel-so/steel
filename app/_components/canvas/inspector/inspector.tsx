@@ -2,6 +2,7 @@
 
 import {
   ArrowRight01Icon,
+  Cancel01Icon,
   Copy01Icon,
   Cursor01Icon,
   Delete02Icon,
@@ -250,7 +251,13 @@ function NodeInspector({
  * Right panel: document settings when nothing is selected, the node
  * inspector for one selection, bulk actions for several.
  */
-export function CanvasInspector() {
+export function CanvasInspector({
+  compact = false,
+  onClose,
+}: {
+  compact?: boolean
+  onClose?: () => void
+} = {}) {
   const { store, props } = useCanvasEditor()
   const selection = useCanvasStore((state) => state.selection)
   const rootId = useCanvasStore((state) => state.doc.rootId)
@@ -326,8 +333,26 @@ export function CanvasInspector() {
     <aside
       aria-label='Propriedades'
       data-testid='canvas-inspector'
-      className='flex h-full w-72 shrink-0 flex-col border-l bg-background xl:w-80'
+      className={cn(
+        'flex h-full w-72 shrink-0 flex-col border-l bg-background xl:w-80',
+        compact && 'absolute inset-y-0 right-0 z-30 shadow-xl',
+      )}
     >
+      {compact && (
+        <div className='flex h-9 shrink-0 items-center justify-end border-b px-2'>
+          <button
+            type='button'
+            aria-label='Fechar propriedades'
+            onClick={() => {
+              store.select(null)
+              onClose?.()
+            }}
+            className='flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none'
+          >
+            <SteelIcon icon={Cancel01Icon} className='size-4' />
+          </button>
+        </div>
+      )}
       {body}
     </aside>
   )

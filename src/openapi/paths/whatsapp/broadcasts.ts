@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { CreateWhatsAppBroadcastSchema } from '@/src/schemas/whatsapp-broadcast.schema'
+import {
+  CreateWhatsAppBroadcastSchema,
+  RetryFailedWhatsAppBroadcastSchema,
+} from '@/src/schemas/whatsapp-broadcast.schema'
 import { CreateWhatsAppBroadcastImportSchema } from '@/src/schemas/whatsapp-broadcast-import.schema'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
@@ -137,6 +140,7 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
     summary: 'Disparar transmissão',
     description: `Enfileira o envio de um rascunho (\`DRAFT\`): um job por destinatário no worker, espaçados de 4 s. A lista vai para \`RUNNING\` (ou direto para \`DONE\` se todos estiverem descadastrados) e os contadores avançam conforme o worker envia. ${OPT_OUT} Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
     params: PARAMS,
+    body: { schema: RetryFailedWhatsAppBroadcastSchema, required: false },
     responses: {
       200: {
         description: 'Transmissão em andamento.',
@@ -180,7 +184,7 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
     path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/retry-failed',
     tags: [TAG],
     summary: 'Reenviar os que falharam',
-    description: `Recoloca na fila os destinatários \`FAILED\` de uma transmissão já terminada (\`DONE\` ou \`FAILED\`), espaçados de 4 s, e a lista volta para \`RUNNING\`. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
+    description: `Recoloca na fila os destinatários \`FAILED\` de uma transmissão já terminada (\`DONE\` ou \`FAILED\`), espaçados de 4 s, e a lista volta para \`RUNNING\`. O corpo é opcional: com \`recipientIds\` reenvia só aqueles que falharam. Auditado. ${perm('broadcasts', 'CREATE')}`,
     params: PARAMS,
     responses: {
       200: {

@@ -9,6 +9,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { PublishChecklist } from '@/app/_components/canvas/checklist/publish-checklist'
 import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -30,6 +31,7 @@ import {
   siteExperimentKeys,
   useSiteExperimentImpact,
 } from '@/src/hooks/use-site-experiments'
+import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { SiteChangeItem, SiteChangesDTO } from '@/types/site-studio'
 import { ExperimentPublishNotice } from './experiments/publish-notice'
 import { useSiteEditor } from './site-editor-context'
@@ -152,6 +154,22 @@ export function PublishDialog({
     open && phase.step === 'review',
   )
   const restarts = impact.data?.experiments.length ?? 0
+  const checks: PublishCheckItem[] =
+    phase.step === 'review' || phase.step === 'publishing'
+      ? (phase.changes.checks ?? [])
+      : []
+  // Errors stop the publish (the server refuses it too); warnings do not.
+  const blocked = checks.some((item) => item.level === 'error')
+
+  async function openCheck(item: PublishCheckItem) {
+    const id = item.documentId
+    if (!id) return
+    onOpenChange(false)
+    await openTarget({
+      kind: globals.some((global) => global.id === id) ? 'global' : 'page',
+      id,
+    })
+  }
 
   useEffect(() => {
     if (!open) return
@@ -308,6 +326,31 @@ export function PublishDialog({
               <Summary changes={phase.changes} />
             ) : null}
 
+            {checks.length > 0 ? (
+              <section className='grid gap-1.5' aria-label='Antes de publicar'>
+                <h3 className='font-medium text-muted-foreground text-xs'>
+                  Antes de publicar
+                </h3>
+                <div className='max-h-48 overflow-y-auto rounded-md border p-1'>
+                  <PublishChecklist
+                    items={checks}
+                    onPick={(item) => void openCheck(item)}
+                    errorHint='Impede a publicação'
+                    warningHint='Recomendado corrigir'
+                  />
+                </div>
+                {blocked ? (
+                  <p role='status' className='text-destructive text-xs'>
+                    Corrija os itens que impedem a publicação para continuar.
+                  </p>
+                ) : (
+                  <p className='text-muted-foreground text-xs'>
+                    Os avisos não impedem a publicação.
+                  </p>
+                )}
+              </section>
+            ) : null}
+
             {phase.step === 'review' || phase.step === 'publishing' ? (
               <ExperimentPublishNotice impact={impact.data} />
             ) : null}
@@ -373,6 +416,7 @@ export function PublishDialog({
                   onClick={() => void publish(phase.changes)}
                   disabled={
                     phase.step === 'publishing' ||
+                    blocked ||
                     (phase.changes.total === 0 && !phase.changes.firstPublish)
                   }
                   data-testid='publish-confirm'

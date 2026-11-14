@@ -121,7 +121,7 @@ export function buildNlConfigSystem(input: {
   } else if (kind === 'AUTOMATION') {
     lines.push(
       `Forma: {"name":string,"description":string|null,"event":${Object.keys(EVENT_LABEL).join('|')},"conditions":[],"actions":[...],"stopProcessing":boolean,"active":boolean}`,
-      'Ações ({"type","params"}): set_field{field,value}; assign_department{departmentId}; assign_user{userId}; round_robin{departmentId?}; add_participant{userId}; add_tag{tag}; notify{userIds[],assignee,requester,departmentLeads,email,title,message}; post_message{body,visibility:PUBLIC|INTERNAL}; create_task{title,description?,assigneeId?,dueInMinutes?}; escalate{kind:FUNCTIONAL|HIERARCHICAL,toDepartmentId?,toUserId?,reason}. Use ao menos uma ação.',
+      'Ações ({"type","params"}): set_field{field,value}; assign_department{departmentId}; assign_user{userId}; round_robin{departmentId?}; add_participant{userId}; add_tag{tag}; notify{userIds[],assignee,requester,departmentLeads,email,title,message}; post_message{body,visibility:PUBLIC|INTERNAL}; create_task{title,description?,assigneeId?,dueInMinutes?}; send_whatsapp_template{connectionId,templateId?,variables[code|title|requester|phase],text?}; create_crm_task{title,description?,assigneeId?,dueInMinutes?}; create_crm_lead{origin}; escalate{kind:FUNCTIONAL|HIERARCHICAL,toDepartmentId?,toUserId?,reason}. Use ao menos uma ação.',
     )
   } else {
     lines.push(
@@ -245,6 +245,12 @@ function actionText(action: Json, refs: SdNlRefs): string {
       return `Criar tarefa “${String(p.title)}”${p.assigneeId ? ` para ${nameOf(refs.users, p.assigneeId)}` : ''}${p.dueInMinutes ? ` (prazo de ${formatMinutes(Number(p.dueInMinutes))})` : ''}`
     case 'apply_template':
       return 'Aplicar um modelo de chamado'
+    case 'send_whatsapp_template':
+      return 'Enviar WhatsApp ao contato do chamado (respeita quem não quer receber)'
+    case 'create_crm_task':
+      return `Criar tarefa no CRM “${String(p.title)}”${p.assigneeId ? ` para ${nameOf(refs.users, p.assigneeId)}` : ''}`
+    case 'create_crm_lead':
+      return 'Criar lead no CRM com o contato do chamado'
     case 'escalate':
       return `Escalonar (${p.kind === 'FUNCTIONAL' ? 'funcional' : 'hierárquico'})${p.toDepartmentId ? ` para ${nameOf(refs.departments, p.toDepartmentId)}` : ''}${p.toUserId ? ` para ${nameOf(refs.users, p.toUserId)}` : ''}: ${String(p.reason)}`
     default:

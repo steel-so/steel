@@ -11,11 +11,13 @@ export const CRM_RETENTION_DUE_DAYS_MAX = 30
 export const CRM_RETENTION_DEFAULTS = {
   onDetractor: true,
   onHealthDrop: true,
+  onSlaBreach: false,
   createOpportunity: false,
   taskDueDays: 2,
 } as const satisfies {
   onDetractor: boolean
   onHealthDrop: boolean
+  onSlaBreach: boolean
   createOpportunity: boolean
   taskDueDays: number
 }
@@ -24,6 +26,7 @@ export const UpdateCrmRetentionSettingsSchema = z
   .object({
     onDetractor: z.boolean().optional(),
     onHealthDrop: z.boolean().optional(),
+    onSlaBreach: z.boolean().optional(),
     createOpportunity: z.boolean().optional(),
     taskDueDays: z
       .number()

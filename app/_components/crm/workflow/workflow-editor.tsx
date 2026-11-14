@@ -22,9 +22,11 @@ import {
   PlayIcon,
   PlusSignIcon,
   Search01Icon,
+  Ticket01Icon,
   Time04Icon,
   WaterPumpIcon,
   WebhookIcon,
+  WhatsappIcon,
   WorkflowCircle01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import {
@@ -236,6 +238,18 @@ const NODE_META: Record<
     description: 'Pausa até alguém responder',
     icon: BulbIcon,
     group: 'Humano',
+  },
+  'send-whatsapp-template': {
+    label: WORKFLOW_NODE_LABELS['send-whatsapp-template'],
+    description: 'Envia um modelo aprovado, respeitando quem não quer receber',
+    icon: WhatsappIcon,
+    group: 'Comunicação',
+  },
+  'create-ticket': {
+    label: WORKFLOW_NODE_LABELS['create-ticket'],
+    description: 'Abre um chamado no ServiceDesk',
+    icon: Ticket01Icon,
+    group: 'ServiceDesk',
   },
 }
 
@@ -1074,6 +1088,10 @@ function defaultNodeData(type: CrmWorkflowNodeType): CrmWorkflowNodeData {
         title: 'Preencha o formulário',
         fields: [{ name: 'field_1', type: 'text', required: false }],
       }
+    case 'send-whatsapp-template':
+      return { type, connectionId: '', to: '', variables: [] }
+    case 'create-ticket':
+      return { type, ticketType: 'INCIDENT', title: '' }
   }
 }
 

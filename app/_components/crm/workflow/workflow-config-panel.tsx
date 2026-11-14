@@ -7,6 +7,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import type * as React from 'react'
 import { useEffect, useState } from 'react'
+import { CrossEngineSendFields } from '@/app/_components/whatsapp/cross-engine-send-fields'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
 import { ConfirmAction } from '@/components/ui/confirm-action'
@@ -27,7 +28,9 @@ import {
   type CrmWorkflowTrigger,
   type CrmWorkflowTriggerData,
 } from '@/src/schemas/crm-workflow.schema'
+import { SD_TICKET_TYPES } from '@/src/schemas/sd-rule.schema'
 import {
+  TICKET_TYPE_LABELS,
   WORKFLOW_DELAY_UNIT_LABELS,
   WORKFLOW_ENTITY_LABELS,
   WORKFLOW_FORM_FIELD_TYPE_LABELS,
@@ -86,6 +89,7 @@ export function WorkflowConfigPanel({
       >
         <NodeForm
           node={node}
+          workspaceId={workspaceId}
           onChange={(data) => onUpdateNode(node.id, data)}
         />
       </PanelShell>
@@ -301,9 +305,11 @@ function TriggerForm({
 
 function NodeForm({
   node,
+  workspaceId,
   onChange,
 }: {
   node: CrmWorkflowNode
+  workspaceId?: string
   onChange: (data: CrmWorkflowNodeData) => void
 }) {
   const { data } = node
@@ -328,7 +334,7 @@ function NodeForm({
           }
         />
       </Field>
-      {renderBody(data, onChange)}
+      {renderBody(data, onChange, workspaceId)}
     </div>
   )
 }
@@ -336,6 +342,7 @@ function NodeForm({
 function renderBody(
   data: CrmWorkflowNodeData,
   onChange: (next: CrmWorkflowNodeData) => void,
+  workspaceId?: string,
 ) {
   switch (data.type) {
     case 'create-record':
@@ -522,6 +529,89 @@ function renderBody(
       )
     case 'form':
       return <FormFieldsEditor data={data} onChange={onChange} />
+    case 'send-whatsapp-template':
+      return (
+        <>
+          <Field
+            label='Telefone do contato (expressão)'
+            hint='Com DDD. O contato precisa ter aceitado receber mensagens.'
+          >
+            <Input
+              value={data.to}
+              onChange={(e) => onChange({ ...data, to: e.target.value })}
+              placeholder='{{trigger.record.phones.0}}'
+            />
+          </Field>
+          <CrossEngineSendFields
+            workspaceId={workspaceId}
+            value={{
+              connectionId: data.connectionId,
+              templateId: data.templateId,
+              variables: data.variables,
+              text: data.text,
+            }}
+            onChange={(next) => onChange({ ...data, ...next })}
+          />
+        </>
+      )
+    case 'create-ticket':
+      return (
+        <>
+          <Field label='Tipo do chamado'>
+            <NativeSelect
+              value={data.ticketType}
+              options={SD_TICKET_TYPES.map((t) => ({
+                value: t,
+                label: TICKET_TYPE_LABELS[t],
+              }))}
+              onChange={(ticketType) =>
+                onChange({
+                  ...data,
+                  ticketType: ticketType as (typeof SD_TICKET_TYPES)[number],
+                })
+              }
+            />
+          </Field>
+          <Field label='Título (expressão)'>
+            <Input
+              value={data.title}
+              onChange={(e) => onChange({ ...data, title: e.target.value })}
+              placeholder='Contato com {{trigger.record.name}}'
+            />
+          </Field>
+          <Field label='Descrição (opcional)'>
+            <textarea
+              value={data.description ?? ''}
+              onChange={(e) =>
+                onChange({ ...data, description: e.target.value || undefined })
+              }
+              rows={4}
+              className='w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm'
+            />
+          </Field>
+          <Field
+            label='Telefone do solicitante (opcional)'
+            hint='Liga o chamado ao contato do ServiceDesk com este telefone ou e-mail.'
+          >
+            <Input
+              value={data.phone ?? ''}
+              onChange={(e) =>
+                onChange({ ...data, phone: e.target.value || undefined })
+              }
+              placeholder='{{trigger.record.phones.0}}'
+            />
+          </Field>
+          <Field label='E-mail do solicitante (opcional)'>
+            <Input
+              value={data.email ?? ''}
+              onChange={(e) =>
+                onChange({ ...data, email: e.target.value || undefined })
+              }
+              placeholder='{{trigger.record.emails.0}}'
+            />
+          </Field>
+        </>
+      )
   }
 }
 

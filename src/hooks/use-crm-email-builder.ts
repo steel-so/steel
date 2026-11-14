@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  MediaItem,
+  MediaProvider,
+} from '@/app/_components/media/media-types'
+import type {
   CrmEmailBrandInput,
   EmailBuilderContact,
   EmailBuilderDocument,
@@ -167,4 +171,39 @@ export function uploadCrmEmailImage(workspaceId: string, file: File) {
     },
     'Erro ao enviar a imagem',
   )
+}
+
+interface CrmEmailImageDTO {
+  id: string
+  url: string
+  size: number
+  uploadedAt: string | null
+}
+
+/**
+ * Image library of the visual e-mail and document builders (one bucket per
+ * workspace): lists what was uploaded and uploads new files.
+ */
+export function crmEmailMediaProvider(workspaceId: string): MediaProvider {
+  return {
+    key: ['crm-email-images', workspaceId],
+    list: async () =>
+      (
+        await apiFetch<CrmEmailImageDTO[]>(
+          `/api/workspaces/${workspaceId}/crm/email-builder/images`,
+          undefined,
+          'Não foi possível carregar as imagens',
+        )
+      ).map((item): MediaItem => ({ ...item, removable: false })),
+    upload: async (file) => {
+      const { url } = await uploadCrmEmailImage(workspaceId, file)
+      return {
+        id: url.slice(url.lastIndexOf('/') + 1),
+        url,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        removable: false,
+      }
+    },
+  }
 }

@@ -137,6 +137,51 @@ describe('CrmRetentionRepository', () => {
       expect(expectOk(await Repo.findCompany('other', company.id))).toBeNull()
     })
 
+    it('should find a company by CNPJ digits or by name', async () => {
+      const { workspace, user } = await setup()
+      const company = await seedCrmCompany(workspace.id, user.id, {
+        name: 'Acme',
+        cnpj: '12.345.678/0001-90',
+        accountOwnerId: user.id,
+      })
+
+      const byDocument = expectOk(
+        await Repo.findCompanyByIdentity(workspace.id, {
+          document: '12345678000190',
+          names: [],
+        }),
+      )
+      expect(byDocument).toEqual({
+        id: company.id,
+        name: 'Acme',
+        accountOwnerId: user.id,
+      })
+      expect(
+        expectOk(
+          await Repo.findCompanyByIdentity(workspace.id, {
+            document: '99999999000100',
+            names: ['ACME', ''],
+          }),
+        ),
+      ).toMatchObject({ id: company.id })
+      expect(
+        expectOk(
+          await Repo.findCompanyByIdentity(workspace.id, {
+            document: null,
+            names: [' '],
+          }),
+        ),
+      ).toBeNull()
+      expect(
+        expectOk(
+          await Repo.findCompanyByIdentity('other', {
+            document: '12345678000190',
+            names: ['Acme'],
+          }),
+        ),
+      ).toBeNull()
+    })
+
     it('should find the phone of a WhatsApp contact of the workspace', async () => {
       const { workspace } = await setup()
       const contact = await prisma.whatsAppContact.create({
@@ -265,6 +310,12 @@ describe('CrmRetentionRepository', () => {
       [
         'findCompany',
         () => Repo.findCompany('w', 'c'),
+        'crmCompany',
+        'findFirst',
+      ],
+      [
+        'findCompanyByIdentity',
+        () => Repo.findCompanyByIdentity('w', { document: null, names: ['A'] }),
         'crmCompany',
         'findFirst',
       ],

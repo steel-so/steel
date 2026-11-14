@@ -680,6 +680,29 @@ describe('WhatsAppBroadcastRepository', () => {
       expect(row?.errorMessage).toBeNull()
     })
 
+    it('should reset only the requested failed recipients', async () => {
+      const { list, recipients } = await listWithTwoRecipients()
+      for (const recipient of recipients) {
+        expectOk(
+          await WhatsAppBroadcastRepository.updateRecipientStatus(
+            recipient.id,
+            { status: 'FAILED', errorMessage: 'boom' },
+          ),
+        )
+      }
+
+      const ids = expectOk(
+        await WhatsAppBroadcastRepository.resetFailedRecipients(list.id, [
+          recipients[1].id,
+        ]),
+      )
+      expect(ids).toEqual([recipients[1].id])
+      const untouched = await prisma.whatsAppBroadcastRecipient.findUnique({
+        where: { id: recipients[0].id },
+      })
+      expect(untouched?.status).toBe('FAILED')
+    })
+
     it('should return an empty list when nothing failed', async () => {
       const { list } = await listWithTwoRecipients()
       expect(

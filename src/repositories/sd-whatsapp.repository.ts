@@ -73,10 +73,18 @@ export interface SdTicketMessageInput {
 }
 
 export const SdWhatsappRepository = {
-  /** Conversa de uma conexão do ServiceDesk na workspace (`null` = não é). */
+  /**
+   * Conversa de uma conexão do ServiceDesk na workspace (`null` = não é).
+   *
+   * Com `linkedTicketId`, vale também a conversa do zap (conexão
+   * `COMMUNICATION`) que esse chamado já tem vinculada: foi vinculada por quem
+   * abriu o chamado a partir dela (`SdTicketSourceService`), então quem vê o
+   * chamado vê a conversa. Sem o id, só as conversas do ServiceDesk.
+   */
   async findConversation(
     workspaceId: string,
     conversationId: string,
+    linkedTicketId?: string,
   ): Promise<Result<SdWaConversation | null>> {
     return sdDb('Failed to find ServiceDesk WhatsApp conversation', () =>
       prisma.whatsAppConversation.findFirst({
@@ -84,7 +92,17 @@ export const SdWhatsappRepository = {
           id: conversationId,
           workspaceId,
           deletedAt: null,
-          connection: SD_CONNECTION,
+          ...(linkedTicketId
+            ? {
+                OR: [
+                  { connection: SD_CONNECTION },
+                  {
+                    connection: { module: 'COMMUNICATION' as const },
+                    sdTickets: { some: { id: linkedTicketId } },
+                  },
+                ],
+              }
+            : { connection: SD_CONNECTION }),
         },
         include: SD_WA_CONVERSATION_INCLUDE,
       }),

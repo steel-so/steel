@@ -334,9 +334,11 @@ describe('create', () => {
         toValue: { id: 'new', label: 'INC-000042' },
       }),
     )
-    // Sem responsável: só o aviso de "novo na fila" (líderes do time).
+    // Sem responsável: o aviso de "novo na fila" (líderes do time) e a
+    // confirmação "chamado criado" ao cliente.
     expect(notifyMock.mock.calls.map((call) => call[0].event)).toEqual([
       'ticket.created_in_department',
+      'ticket.created',
     ])
     expect(publishMock).toHaveBeenCalledWith(
       'ws1',
@@ -350,6 +352,40 @@ describe('create', () => {
       ticket: { id: 'new', code: 'INC-000042', number: 42 },
       actorId: 'u1',
     })
+  })
+
+  it('sends the "chamado criado" acknowledgement only when a team member opens it', async () => {
+    expectOk(await SdTicketEngine.create('ws1', baseInput(), system, config()))
+    expect(notifyMock.mock.calls.map((call) => call[0].event)).not.toContain(
+      'ticket.created',
+    )
+
+    notifyMock.mockClear()
+    expectOk(
+      await SdTicketEngine.create(
+        'ws1',
+        baseInput({ channel: 'PORTAL' }),
+        agent,
+        config(),
+      ),
+    )
+    expect(notifyMock.mock.calls.map((call) => call[0].event)).not.toContain(
+      'ticket.created',
+    )
+
+    notifyMock.mockClear()
+    expectOk(
+      await SdTicketEngine.create(
+        'ws1',
+        baseInput({ channel: 'WHATSAPP' }),
+        agent,
+        config(),
+      ),
+    )
+    const created = notifyMock.mock.calls
+      .map((call) => call[0])
+      .find((call) => call.event === 'ticket.created')
+    expect(created?.payload.title).toBe('Chamado INC-000042 criado')
   })
 
   it('keeps an empty description as null and propagates create errors', async () => {

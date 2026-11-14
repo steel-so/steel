@@ -295,6 +295,19 @@ describe('SiteStudioService.pendingChanges', () => {
     expect(sites.findVersion).not.toHaveBeenCalled()
   })
 
+  it('attaches the pre-publish checks of the draft', async () => {
+    const changes = expectOk(
+      await SiteStudioService.pendingChanges('u1', WS, 'site1'),
+    )
+    expect(changes.checks).toEqual([
+      expect.objectContaining({
+        code: 'PAGE_SEO_TITLE_MISSING',
+        level: 'warning',
+        documentId: 'home',
+      }),
+    ])
+  })
+
   it('compares the draft with the live version', async () => {
     const published = { ...site, publishedVersionId: 'v1' }
     sites.findById.mockResolvedValue(ok(published))

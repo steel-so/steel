@@ -74,7 +74,12 @@ export async function seedCrmOpportunity(
   overrides?: Partial<
     Pick<
       CrmOpportunity,
-      'name' | 'amount' | 'companyId' | 'position' | 'deletedAt'
+      | 'name'
+      | 'amount'
+      | 'companyId'
+      | 'pointOfContactId'
+      | 'position'
+      | 'deletedAt'
     >
   >,
 ) {

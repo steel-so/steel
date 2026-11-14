@@ -35,9 +35,14 @@ O catálogo vivo, com os tipos dos módulos do seu token, está em
 | [`servicedesk.ticket.created`](#servicedeskticketcreated) | ServiceDesk |
 | [`servicedesk.ticket.updated`](#servicedeskticketupdated) | ServiceDesk |
 | [`servicedesk.ticket.assigned` e os outros avisos do chamado](#avisos-do-chamado) | ServiceDesk |
+| [`servicedesk.customer.*`](#clientes-e-empresas-do-servicedesk) | ServiceDesk |
+| [`servicedesk.contact.*`](#contatos-do-servicedesk) | ServiceDesk |
+| [`servicedesk.kb_article.*`](#base-de-conhecimento) | ServiceDesk |
 | [`crm.lead.created`](#crmleadcreated) | CRM |
 | [`crm.opportunity.stage_changed`](#oportunidade-mudou-de-etapa) | CRM |
 | [`crm.deal.won` e `crm.deal.lost`](#crmdealwon-e-crmdeallost) | CRM |
+| [`crm.person.*` e `crm.company.*`](#pessoas-e-empresas-do-crm) | CRM |
+| [`crm.document.*`](#documentos) | CRM |
 | [`communication.message.received`](#communicationmessagereceived) | Comunicação |
 | [`communication.conversation.waiting`](#communicationconversationwaiting) | Comunicação |
 | [`agents.approval.pending`](#agentsapprovalpending) | Steel Agents |
@@ -189,6 +194,127 @@ Exemplo, `servicedesk.sla.at_risk`:
 }
 ```
 
+### Clientes e empresas do ServiceDesk
+
+`servicedesk.customer.created`, `servicedesk.customer.updated` e
+`servicedesk.customer.deleted`. Saem em qualquer caminho: tela, importação de
+planilha ou [API v1](/dev/api-v1/cadastros). No `deleted`, o `customer` é o
+último estado antes da exclusão.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.customer.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "customer": {
+      "id": "cm2cus000000example",
+      "kind": "COMPANY",
+      "personType": "LEGAL",
+      "name": "Acme Ltda",
+      "tradeName": "Acme",
+      "document": "12345678000190",
+      "email": "contato@acme.com.br",
+      "phone": "1130000000",
+      "whatsapp": "5511999990000",
+      "city": "São Paulo",
+      "state": "SP",
+      "active": true,
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+| Campo de `data.customer` | O que é |
+| --- | --- |
+| `kind` | `CLIENT` (pessoa) ou `COMPANY` (empresa) |
+| `personType` | `INDIVIDUAL` (CPF) ou `LEGAL` (CNPJ) |
+| `document` | CPF/CNPJ só com dígitos, ou `null` |
+| `phone`, `whatsapp` | Só dígitos; o WhatsApp com DDI |
+| `active` | `false` para cadastro inativo |
+
+Notas internas e campos personalizados **não** vão no evento: busque
+`GET /api/v1/servicedesk/customers/{customerId}`.
+
+### Contatos do ServiceDesk
+
+`servicedesk.contact.created`, `servicedesk.contact.updated` e
+`servicedesk.contact.deleted`, com o mesmo critério dos clientes.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.contact.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "contact": {
+      "id": "cm2sct000000example",
+      "name": "Carlos Lima",
+      "jobTitle": "Analista de TI",
+      "email": "carlos@acme.com.br",
+      "phone": null,
+      "whatsapp": "5511988887777",
+      "userId": null,
+      "active": true,
+      "customerIds": [
+        "cm2cus000000example"
+      ],
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+`data.contact.customerIds` lista os clientes/empresas vinculados (o principal
+primeiro). `userId` é o usuário da plataforma que é este contato, ou `null`.
+
+### Base de conhecimento
+
+`servicedesk.kb_article.created` (nasce como rascunho),
+`servicedesk.kb_article.updated`, `servicedesk.kb_article.published`,
+`servicedesk.kb_article.unpublished` (voltou para rascunho ou revisão) e
+`servicedesk.kb_article.deleted`.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "servicedesk.kb_article.published",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "article": {
+      "id": "cm2kba000000example",
+      "title": "Como redefinir a senha da VPN",
+      "status": "PUBLISHED",
+      "visibility": "PORTAL",
+      "parentId": null,
+      "categoryId": null,
+      "tags": [
+        "vpn",
+        "acesso"
+      ],
+      "sourceTicketId": null,
+      "publishedAt": "2026-10-18T12:05:00.000Z",
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+O evento traz os metadados, **sem o conteúdo**: busque
+`GET /api/v1/servicedesk/kb/articles/{articleId}`. O salvamento automático do
+editor (só o texto) não gera `updated`; mudar título, categoria, visibilidade
+ou tags, sim. Arquivar e restaurar um artigo também não geram evento.
+
 ## CRM
 
 ### crm.lead.created
@@ -310,6 +436,151 @@ entre duas etapas de ganho não gera um segundo `crm.deal.won`.
 ```
 
 `amount` é o valor do negócio, ou `null` quando não foi informado.
+
+### Pessoas e empresas do CRM
+
+`crm.person.created`, `crm.person.updated`, `crm.person.deleted` e os três
+equivalentes de empresa (`crm.company.*`). Saem por qualquer caminho: tela,
+importação, formulário ou [API v1](/dev/api-v1/cadastros). No `deleted`, o
+registro é o último estado antes da exclusão (que é lógica no Steel).
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.person.created",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "person": {
+      "id": "cm2per000000example",
+      "name": "Maria Souza",
+      "emails": [
+        "maria@example.com"
+      ],
+      "phones": [
+        "+5511999990000"
+      ],
+      "city": "São Paulo",
+      "jobTitle": "Gerente de TI",
+      "companyId": "cm2cmp000000example",
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.company.updated",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "company": {
+      "id": "cm2cmp000000example",
+      "name": "Acme Ltda",
+      "cnpj": "12345678000190",
+      "domain": "acme.com.br",
+      "employees": 120,
+      "arr": 240000,
+      "icp": true,
+      "accountOwnerId": "cm2usr000000example",
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example"
+  }
+}
+```
+
+| Campo | O que é |
+| --- | --- |
+| `person.emails`, `person.phones` | Listas, na ordem do cadastro |
+| `person.companyId` | Empresa do CRM vinculada, ou `null` |
+| `company.cnpj` | Só com dígitos, ou `null` |
+| `company.arr` | Receita anual recorrente em reais, ou `null` |
+| `company.icp` | `true` se está no perfil de cliente ideal |
+| `company.accountOwnerId` | Dono da conta, ou `null` |
+
+Campos personalizados, LinkedIn e avatar **não** vão no evento: busque o
+registro em `GET /api/v1/crm/people/{personId}` ou
+`GET /api/v1/crm/companies/{companyId}`.
+
+### Documentos
+
+`crm.document.created`, `crm.document.updated`, `crm.document.deleted`,
+`crm.document.sent` (enviado a um ou mais destinatários, com `recipients`),
+`crm.document.accepted` e `crm.document.declined` (o leitor respondeu pelo
+link público).
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.document.sent",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "document": {
+      "id": "cm2doc000000example",
+      "title": "Proposta comercial - Acme",
+      "ownerId": "cm2usr000000example",
+      "kind": "PROPOSAL",
+      "status": "SENT",
+      "isTemplate": false,
+      "companyId": "cm2cmp000000example",
+      "personId": null,
+      "opportunityId": "cm2opp000000example",
+      "leadId": null,
+      "totalValue": 12000,
+      "validUntil": "2026-11-18T12:00:00.000Z",
+      "sentAt": "2026-10-18T12:05:00.000Z",
+      "acceptedAt": null,
+      "createdAt": "2026-10-18T12:00:00.000Z",
+      "updatedAt": "2026-10-18T12:05:00.000Z"
+    },
+    "actorId": "cm2usr000000example",
+    "recipients": 1
+  }
+}
+```
+
+Aceite e recusa não têm `actorId`: quem responde é o leitor do link, descrito em
+`reader`.
+
+```json
+{
+  "id": "evt_cm2x7k3p0000abcd",
+  "type": "crm.document.declined",
+  "createdAt": "2026-10-18T12:00:00.000Z",
+  "workspaceId": "cm2ws0001",
+  "data": {
+    "document": {
+      "id": "cm2doc000000example",
+      "title": "Proposta comercial - Acme",
+      "ownerId": "cm2usr000000example"
+    },
+    "reader": {
+      "name": "Maria Souza",
+      "email": "maria@example.com"
+    },
+    "reason": "Fora do orçamento deste trimestre."
+  }
+}
+```
+
+| Campo | O que é |
+| --- | --- |
+| `document.kind` | `PROPOSAL`, `CONTRACT`, `QUOTE`, `PRESENTATION`, `TERMS`, `REPORT` ou `OTHER` |
+| `document.status` | `DRAFT`, `SENT`, `VIEWED`, `ACCEPTED`, `DECLINED`, `EXPIRED` ou `ARCHIVED` |
+| `document.companyId`, `personId`, `opportunityId`, `leadId` | Vínculos com o CRM, ou `null` |
+| `document.totalValue` | Valor total em reais, ou `null` |
+| `reader.email` | E-mail do leitor, ou `null` quando o link era genérico e ele não informou |
+| `reason` | Motivo da recusa; `null` no aceite |
+
+O conteúdo do documento, os destinatários e os links **não** vão no evento. O
+salvamento automático do editor também não gera `updated`.
 
 ## Comunicação
 

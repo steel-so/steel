@@ -32,6 +32,7 @@ export function createFakeSdCustomer(
     ibgeCode: '3550308',
     notes: null,
     customFields: {},
+    crmCompanyId: null,
     active: true,
     createdById: createId(),
     createdAt: now,

@@ -19,6 +19,7 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
 vi.mock('../sd-notification.service', () => ({
   activeWhatsappConnection: vi.fn(),
 }))
+vi.mock('../whatsapp-opt-out', () => ({ checkWhatsAppOptOut: vi.fn() }))
 
 import { sendSdStatusMaintenanceEmail } from '@/src/lib/mail/servicedesk/send-sd-status-update'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -26,6 +27,7 @@ import { SdStatusMaintenanceRepository } from '@/src/repositories/sd-status-main
 import { SdStatusPageRepository } from '@/src/repositories/sd-status-page.repository'
 import { activeWhatsappConnection } from '../sd-notification.service'
 import { SdStatusMaintenanceNotifyService } from '../sd-status-maintenance-notify.service'
+import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
 const windows = vi.mocked(SdStatusMaintenanceRepository)
 const pages = vi.mocked(SdStatusPageRepository)
@@ -60,6 +62,7 @@ beforeEach(() => {
   pages.findWorkspaceName.mockResolvedValue(ok('Stratus'))
   vi.mocked(activeWhatsappConnection).mockResolvedValue({ id: 'c' } as never)
   vi.mocked(WhatsAppSend.text).mockResolvedValue(ok({} as never))
+  vi.mocked(checkWhatsAppOptOut).mockResolvedValue('allowed')
   vi.mocked(sendSdStatusMaintenanceEmail).mockResolvedValue({ id: 'm' })
 })
 
@@ -157,6 +160,18 @@ describe('SdStatusMaintenanceNotifyService.deliver', () => {
     vi.mocked(sendSdStatusMaintenanceEmail).mockRejectedValue('plain')
     expectOk(await SdStatusMaintenanceNotifyService.deliver('mw1', 'scheduled'))
   })
+
+  it.each(['opted_out', 'unverified'] as const)(
+    'does not message a WhatsApp subscriber that is %s',
+    async (status) => {
+      vi.mocked(checkWhatsAppOptOut).mockResolvedValue(status)
+      const out = expectOk(
+        await SdStatusMaintenanceNotifyService.deliver('mw1', 'scheduled'),
+      )
+      expect(out).toMatchObject({ total: 2, sent: 1, failed: 0 })
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+    },
+  )
 
   it('counts WhatsApp subscribers as failed without a connection', async () => {
     vi.mocked(activeWhatsappConnection).mockResolvedValue(null)

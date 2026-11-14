@@ -1,6 +1,8 @@
 'use client'
 
 import { Add01Icon, Search01Icon } from '@hugeicons-pro/core-stroke-rounded'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -190,6 +192,10 @@ export function WhatsappGroupSidebar({
 }) {
   const [search, setSearch] = useState('')
   const groups = useWhatsAppGroups(workspaceId)
+  const connections = useWhatsAppConnections(workspaceId)
+  const params = useParams<{ 'workspace-slug'?: string }>()
+  const slug = params?.['workspace-slug'] ?? ''
+  const hasZapi = (connections.data ?? []).some((c) => c.provider === 'ZAPI')
 
   const filtered = (groups.data ?? []).filter((group) =>
     group.name.toLowerCase().includes(search.toLowerCase()),
@@ -210,11 +216,29 @@ export function WhatsappGroupSidebar({
       (groups.data ?? []).length === 0 ? (
         <div className='space-y-2 px-3 py-6 text-center text-sm'>
           <p className='font-medium'>Nenhum grupo ainda</p>
-          <p className='text-muted-foreground text-xs'>
-            Grupos só funcionam com um número conectado pela Z-API (a API
-            oficial da Meta não tem grupos). Conecte um número da Z-API em
-            Ajustes › Conexões ou crie um grupo no botão acima.
-          </p>
+          {hasZapi || !connections.isSuccess ? (
+            <p className='text-muted-foreground text-xs'>
+              Os grupos dos números conectados pela Z-API aparecem aqui. Crie um
+              grupo novo no botão + acima.
+            </p>
+          ) : (
+            <>
+              <p className='text-muted-foreground text-xs'>
+                Grupos só funcionam com um número conectado pela Z-API (a API
+                oficial da Meta não tem grupos). Conecte um número da Z-API para
+                usar grupos.
+              </p>
+              {slug ? (
+                <Button
+                  size='sm'
+                  variant='outline'
+                  render={<Link href={`/${slug}/settings/whatsapp`} />}
+                >
+                  Abrir conexões
+                </Button>
+              ) : null}
+            </>
+          )}
         </div>
       ) : (
         <p className='px-3 py-6 text-center text-muted-foreground text-sm'>

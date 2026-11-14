@@ -26,6 +26,7 @@ import { frameRectOf } from '../lib/frame-handle'
 import { useCanvasStore } from '../use-canvas'
 import { FreeDrag } from './free-drag'
 import { InlineToolbar } from './inline-toolbar'
+import { ResizeHandles } from './resize-handles'
 
 function sameRect(a: Rect | null, b: Rect | null) {
   return (
@@ -175,6 +176,18 @@ function SelectionBox({ id, primary }: { id: CanvasNodeId; primary: boolean }) {
           scale={scale}
         />
       )}
+      {primary &&
+        !isRoot &&
+        !locked &&
+        !editingText &&
+        definition?.resizable && (
+          <ResizeHandles
+            id={id}
+            resizable={definition.resizable}
+            rect={rect}
+            scale={scale}
+          />
+        )}
       {primary && !isRoot && !editingText && (
         <div
           className={cn(

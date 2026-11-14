@@ -47,6 +47,7 @@ import {
   resolveSdKbReader,
 } from './sd-kb-access'
 import { SdKbMediaService } from './sd-kb-media.service'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 const ENTITY = 'sd_kb_article'
 const RELATED_LIMIT = 5
@@ -186,7 +187,13 @@ export const SdKbArticleService = {
       articleId: result.value.id,
     })
     void indexSearchDocument('sd-kb-article', workspaceId, result.value.id)
-    return ok(toSdKbArticleDTO(result.value))
+    const created = toSdKbArticleDTO(result.value)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'kb_article',
+      action: 'created',
+      record: created,
+    })
+    return ok(created)
   },
 
   /**
@@ -236,7 +243,17 @@ export const SdKbArticleService = {
 
     const myVote = await SdKbEngagementCache.getVote(articleId, actorId)
     void indexSearchDocument('sd-kb-article', workspaceId, articleId)
-    return ok(toSdKbArticleDTO(result.value, myVote))
+    const updated = toSdKbArticleDTO(result.value, myVote)
+    // The editor autosaves the content alone every few seconds: that is not
+    // an event (a metadata change, or content sent with it, is).
+    if (!contentOnly) {
+      void emitEntityWebhook(workspaceId, actorId, {
+        entity: 'kb_article',
+        action: 'updated',
+        record: updated,
+      })
+    }
+    return ok(updated)
   },
 
   /** Publicar (carimba `publishedAt`) ou voltar para rascunho. */
@@ -279,7 +296,13 @@ export const SdKbArticleService = {
 
     const myVote = await SdKbEngagementCache.getVote(articleId, actorId)
     void indexSearchDocument('sd-kb-article', workspaceId, articleId)
-    return ok(toSdKbArticleDTO(result.value, myVote))
+    const changed = toSdKbArticleDTO(result.value, myVote)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'kb_article',
+      action: dto.status === 'PUBLISHED' ? 'published' : 'unpublished',
+      record: changed,
+    })
+    return ok(changed)
   },
 
   /** Move/reordena na árvore, barrando ciclos (pai dentro de descendente). */
@@ -404,6 +427,11 @@ export const SdKbArticleService = {
     )
     await SdKbMediaService.purgeArticles(workspaceId, subtree.value)
     void indexSearchDocument('sd-kb-article', workspaceId, articleId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'kb_article',
+      action: 'deleted',
+      record: toSdKbArticleDTO(existing.value),
+    })
     return ok(undefined)
   },
 

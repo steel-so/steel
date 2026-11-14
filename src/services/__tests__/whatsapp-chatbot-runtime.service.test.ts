@@ -50,6 +50,12 @@ vi.mock('@/src/lib/queue/queues', () => ({
   getWhatsappAiReplyQueue: vi.fn(),
 }))
 vi.mock('@/src/services/authz', () => ({ assertMember: vi.fn() }))
+const { crossEngine } = vi.hoisted(() => ({
+  crossEngine: { createLead: vi.fn(), openTicket: vi.fn() },
+}))
+vi.mock('@/src/services/cross-engine-actions.service', () => ({
+  CrossEngineActions: crossEngine,
+}))
 vi.mock('@/src/services/whatsapp-sla.service', () => ({
   WhatsAppSlaService: { onClosed: vi.fn(async () => undefined) },
 }))
@@ -935,6 +941,114 @@ describe('runStep()', () => {
       'generate-ai-reply',
       expect.objectContaining({ instruction: 'Seja breve' }),
     )
+  })
+
+  describe('cross-engine nodes', () => {
+    const bridgeFlow = (
+      type: 'create-lead' | 'open-ticket',
+      data: Record<string, unknown>,
+    ): ChatbotFlow => ({
+      nodes: [
+        { id: 'start', type: 'start', position: { x: 0, y: 0 }, data: {} },
+        { id: 'n', type, position: { x: 0, y: 0 }, data: data as never },
+        {
+          id: 'ok',
+          type: 'message',
+          position: { x: 0, y: 0 },
+          data: { text: 'Código {{codigo}}' },
+        },
+        {
+          id: 'bad',
+          type: 'message',
+          position: { x: 0, y: 0 },
+          data: { text: 'Falhou' },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'start', sourceHandle: 'next', target: 'n' },
+        { id: 'e2', source: 'n', sourceHandle: 'next', target: 'ok' },
+        { id: 'e3', source: 'n', sourceHandle: 'error', target: 'bad' },
+      ],
+    })
+    const leadData = {
+      name: '{{contact_name}}',
+      phone: '{{contact_phone}}',
+      email: 'ana@acme.com.br',
+      company: 'Acme',
+      origin: 'Bot',
+      resultVariable: 'codigo',
+    }
+    const ticketData = {
+      ticketType: 'INCIDENT',
+      title: 'Sem sinal',
+      description: '{{last_message}}',
+      resultVariable: 'codigo',
+    }
+    const sentTexts = () => send.text.mock.calls.map((c) => c[1].text)
+
+    it('creates the lead for the contact and uses the result in the next block', async () => {
+      prepare({ flow: bridgeFlow('create-lead', leadData) })
+      crossEngine.createLead.mockResolvedValue(
+        ok({ leadId: 'lead-7', created: true }),
+      )
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      expect(crossEngine.createLead).toHaveBeenCalledWith({
+        workspaceId: 'ws',
+        source: 'chatbot',
+        refId: 'bot-1',
+        name: 'Ana',
+        phone: '5511',
+        email: 'ana@acme.com.br',
+        company: 'Acme',
+        origin: 'Bot',
+      })
+      expect(sentTexts()).toEqual(['Código lead-7'])
+    })
+
+    it('opens the ticket linked to the conversation and shares its code', async () => {
+      prepare({ flow: bridgeFlow('open-ticket', ticketData), text: 'caiu' })
+      crossEngine.openTicket.mockResolvedValue(
+        ok({ ticketId: 't1', code: 'INC-000009', reused: false }),
+      )
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      expect(crossEngine.openTicket).toHaveBeenCalledWith({
+        workspaceId: 'ws',
+        source: 'chatbot',
+        refId: 'bot-1',
+        type: 'INCIDENT',
+        title: 'Sem sinal',
+        description: 'caiu',
+        phone: '5511',
+        whatsappConversationId: 'cv1',
+      })
+      expect(sentTexts()).toEqual(['Código INC-000009'])
+    })
+
+    it('uses the contact name when the lead name is empty and the error exit on failure', async () => {
+      prepare({
+        flow: bridgeFlow('create-lead', { ...leadData, name: '{{x}}' }),
+      })
+      crossEngine.createLead.mockResolvedValue(err(databaseError('falhou')))
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      expect(crossEngine.createLead).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Ana' }),
+      )
+      expect(sentTexts()).toEqual(['Falhou'])
+      expect(logger.warn).toHaveBeenCalledWith(
+        'whatsapp.chatbot.action_failed',
+        expect.objectContaining({
+          kind: 'create-lead',
+          code: 'DATABASE_ERROR',
+        }),
+      )
+    })
+
+    it('takes the error exit when the ticket cannot be opened', async () => {
+      prepare({ flow: bridgeFlow('open-ticket', ticketData) })
+      crossEngine.openTicket.mockResolvedValue(err(databaseError('falhou')))
+      expectOk(await WhatsAppChatbotRuntimeService.runStep(step))
+      expect(sentTexts()).toEqual(['Falhou'])
+    })
   })
 
   describe('send form node', () => {

@@ -18,6 +18,7 @@ import {
 } from './crm-custom-field-sync'
 import { CrmDuplicateService } from './crm-duplicate.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
+import { emitEntityWebhook } from './webhook-entity-events'
 
 export const CrmPersonService = {
   async list(
@@ -128,6 +129,11 @@ export const CrmPersonService = {
     })
 
     void indexSearchDocument('crm-person', workspaceId, merged.value.id)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'person',
+      action: 'created',
+      record: merged.value,
+    })
     void CrmDuplicateService.flagOnArrival(
       workspaceId,
       'PERSON',
@@ -214,6 +220,11 @@ export const CrmPersonService = {
     })
 
     void indexSearchDocument('crm-person', workspaceId, personId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'person',
+      action: 'updated',
+      record: merged.value,
+    })
     return ok(merged.value)
   },
 
@@ -258,6 +269,11 @@ export const CrmPersonService = {
     })
 
     void indexSearchDocument('crm-person', workspaceId, personId)
+    void emitEntityWebhook(workspaceId, actorId, {
+      entity: 'person',
+      action: 'deleted',
+      record: toCrmPersonDTO(existing.value),
+    })
     return ok(undefined)
   },
 
