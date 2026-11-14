@@ -487,7 +487,16 @@ export function WhatsappConversationSidebar({
             }
           >
             <SelectTrigger className='w-full' aria-label='Filtrar por conexão'>
-              <SelectValue placeholder='Todas as conexões' />
+              <SelectValue placeholder='Todas as conexões'>
+                {(value: string | null) => {
+                  const current = connections.find(
+                    (connection) => connection.id === value,
+                  )
+                  return current
+                    ? `${current.label} · ${current.phoneNumber}`
+                    : 'Todas as conexões'
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               <SelectGroup>

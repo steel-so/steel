@@ -1119,7 +1119,7 @@ export function WhatsappSettingsBroadcasts({
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell className='space-x-1.5'>
+                <TableCell className='space-x-1.5 space-y-1.5 whitespace-normal'>
                   {canValidate &&
                   (broadcast.status === 'DRAFT' ||
                     broadcast.status === 'QUEUED') ? (
