@@ -7,6 +7,7 @@ import { Muted } from '@/components/typography/text/muted'
 import { cn } from '@/lib/utils'
 import type { SdKbArticleSummaryDTO } from '@/types/sd-kb-article'
 import { SdKbReviewDueBadge, SdKbStatusBadge } from './sd-kb-status-badge'
+import { sdKbRelativeTime } from './sd-kb-utils'
 
 /**
  * Lista compacta de artigos (home, relacionados, busca). `onSelect` para o
@@ -35,9 +36,18 @@ export function SdKbArticleList({
     return <Muted className='py-2 text-sm'>{empty}</Muted>
   }
 
+  // Same title twice: show when each was updated so they can be told apart.
+  const titleCount = new Map<string, number>()
+  for (const article of articles) {
+    const key = (article.title || '').trim().toLowerCase()
+    titleCount.set(key, (titleCount.get(key) ?? 0) + 1)
+  }
+
   return (
     <ul className={cn('divide-y', className)}>
       {articles.map((article) => {
+        const isTwin =
+          (titleCount.get((article.title || '').trim().toLowerCase()) ?? 0) > 1
         const body = (
           <>
             <span className='mt-0.5 w-4 shrink-0 text-center'>
@@ -47,7 +57,10 @@ export function SdKbArticleList({
             </span>
             <span className='min-w-0 flex-1'>
               <span className='flex items-center gap-2'>
-                <span className='truncate font-medium text-sm'>
+                <span
+                  title={article.title || 'Sem título'}
+                  className='truncate font-medium text-sm'
+                >
                   {article.title || 'Sem título'}
                 </span>
                 {showStatus && article.status !== 'PUBLISHED' && (
@@ -57,6 +70,11 @@ export function SdKbArticleList({
                   <SdKbReviewDueBadge reviewDueAt={article.reviewDueAt} />
                 )}
               </span>
+              {isTwin && (
+                <span className='text-muted-foreground text-xs'>
+                  Atualizado {sdKbRelativeTime(article.updatedAt)}
+                </span>
+              )}
               {excerptFor?.(article) && (
                 <span className='line-clamp-2 text-muted-foreground text-xs'>
                   {excerptFor(article)}

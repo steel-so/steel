@@ -94,7 +94,10 @@ export function SdGeneralTab() {
   )
   const policyOptions = (config?.slaPolicies ?? []).map((p) => ({
     value: p.id,
-    label: p.isDefault ? `${p.name} (padrão)` : p.name,
+    label:
+      p.isDefault && p.name.trim().toLowerCase() !== 'padrão'
+        ? `${p.name} (padrão)`
+        : p.name,
   }))
 
   if (!draft || !settings.data) {
@@ -230,14 +233,14 @@ export function SdGeneralTab() {
       >
         <ToggleRow
           label='Exigir solução ao resolver'
-          description='Fases RESOLVED pedem o texto da solução e a classificação da solução.'
+          description='Fases de resolvido pedem o texto da solução e a classificação da solução.'
           checked={draft.requireSolutionOnResolve}
           onCheckedChange={(value) => set('requireSolutionOnResolve', value)}
           disabled={!canEdit}
         />
         <ToggleRow
           label='Exigir assinatura ao fechar'
-          description='Fases CLOSED só aceitam o chamado com a assinatura de aceite colhida.'
+          description='Fases de fechado só aceitam o chamado com a assinatura de aceite colhida.'
           checked={draft.requireSignatureOnClose}
           onCheckedChange={(value) => set('requireSignatureOnClose', value)}
           disabled={!canEdit}

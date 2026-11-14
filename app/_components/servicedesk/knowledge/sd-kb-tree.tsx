@@ -239,7 +239,9 @@ function SdKbTreeItem({
           ) : (
             <SteelIcon icon={File02Icon} strokeWidth={2} className='shrink-0' />
           )}
-          <span className='truncate'>{node.title || 'Sem título'}</span>
+          <span title={node.title || 'Sem título'} className='truncate'>
+            {node.title || 'Sem título'}
+          </span>
           {node.status === 'DRAFT' && (
             <span
               title='Rascunho'

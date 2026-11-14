@@ -66,7 +66,7 @@ function ArticleRow({
   onToggleResolved: () => void
 }) {
   return (
-    <li className='flex items-start gap-3 border-b px-3 py-2.5 last:border-b-0'>
+    <li className='flex flex-wrap items-start gap-x-3 gap-y-2 border-b px-3 py-2.5 last:border-b-0'>
       <span className='mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-sm'>
         {article.icon ?? (
           <SteelIcon icon={BookOpen01Icon} strokeWidth={2} className='size-4' />
@@ -75,10 +75,13 @@ function ArticleRow({
       <button
         type='button'
         onClick={onOpen}
-        className='flex min-w-0 flex-1 flex-col text-left'
+        className='flex min-w-[12rem] flex-1 flex-col text-left'
       >
         <span className='flex min-w-0 items-center gap-2'>
-          <span className='truncate font-medium text-sm hover:underline'>
+          <span
+            title={article.title || 'Sem título'}
+            className='min-w-0 truncate font-medium text-sm hover:underline'
+          >
             {article.title || 'Sem título'}
           </span>
           {canEdit && article.status !== 'PUBLISHED' ? (
@@ -105,7 +108,7 @@ function ArticleRow({
         ) : null}
       </button>
       {canEdit ? (
-        <div className='flex shrink-0 items-center gap-1'>
+        <div className='ml-auto flex shrink-0 items-center gap-1'>
           <Button
             variant={resolved ? 'secondary' : 'ghost'}
             size='xs'
@@ -235,7 +238,7 @@ export function SdTicketKnowledgeTab({
   const suggested = (suggestions.data ?? []).filter((s) => !linkedIds.has(s.id))
 
   return (
-    <div className='grid gap-6 p-4 lg:grid-cols-2'>
+    <div className='grid gap-6 p-4 2xl:grid-cols-2'>
       <section className='flex flex-col gap-3'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <h3 className='font-semibold text-sm'>

@@ -516,7 +516,10 @@ function DepartmentDialog({
               onChange={setCalendarId}
               options={(calendars.data ?? []).map((c) => ({
                 value: c.id,
-                label: c.isDefault ? `${c.name} (padrão)` : c.name,
+                label:
+                  c.isDefault && c.name.trim().toLowerCase() !== 'padrão'
+                    ? `${c.name} (padrão)`
+                    : c.name,
               }))}
               allowEmpty
               emptyLabel='Padrão da workspace'

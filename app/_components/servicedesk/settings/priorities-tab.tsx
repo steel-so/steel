@@ -51,6 +51,8 @@ interface ScaleSpec {
   >
   title: string
   singular: string
+  /** Placeholder for the add field: the noun's gender decides "Novo"/"Nova". */
+  newLabel: string
   description: string
   hasColor: boolean
   hasDescription: boolean
@@ -62,6 +64,7 @@ const SCALES: ScaleSpec[] = [
     resource: 'impacts',
     title: 'Impacto',
     singular: 'impacto',
+    newLabel: 'Novo impacto',
     description: 'Quanto do negócio é afetado. Nível maior = mais impacto.',
     hasColor: false,
     hasDescription: true,
@@ -71,6 +74,7 @@ const SCALES: ScaleSpec[] = [
     resource: 'urgencies',
     title: 'Urgência',
     singular: 'urgência',
+    newLabel: 'Nova urgência',
     description: 'Quão rápido precisa de solução. Nível maior = mais urgente.',
     hasColor: false,
     hasDescription: true,
@@ -80,6 +84,7 @@ const SCALES: ScaleSpec[] = [
     resource: 'priorities',
     title: 'Prioridade',
     singular: 'prioridade',
+    newLabel: 'Nova prioridade',
     description:
       'Derivada da matriz ou escolhida manualmente. Nível maior = mais prioritário.',
     hasColor: true,
@@ -90,6 +95,7 @@ const SCALES: ScaleSpec[] = [
     resource: 'severities',
     title: 'Severidade',
     singular: 'severidade',
+    newLabel: 'Nova severidade',
     description: 'Gravidade técnica, independente da prioridade.',
     hasColor: true,
     hasDescription: true,
@@ -231,7 +237,7 @@ function ScaleEditor({ spec }: { spec: ScaleSpec }) {
           className='flex flex-wrap items-center gap-2'
         >
           <Input
-            placeholder={`Nova ${spec.singular}`}
+            placeholder={spec.newLabel}
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
