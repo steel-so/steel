@@ -150,8 +150,11 @@ export function imageDefinition(ctx: SiteRenderContext) {
       const src = safeSrc(p.image.src)
       if (!src && !editing) return null
       const link = siteLink(p.link, ctx)
+      // Editor only: the selection box measures the image, not the wrapper.
+      const box = editing ? { 'data-canvas-box': '' } : {}
       const img = src ? (
         <img
+          {...box}
           className={link.href ? undefined : 's-media'}
           src={src}
           alt={p.image.alt}
@@ -165,7 +168,7 @@ export function imageDefinition(ctx: SiteRenderContext) {
         <Placeholder label='Escolha uma imagem no painel à direita' />
       )
       const media = link.href ? (
-        <a {...link} className='s-media'>
+        <a {...link} {...box} className='s-media'>
           {img}
         </a>
       ) : (

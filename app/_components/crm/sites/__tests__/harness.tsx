@@ -125,6 +125,8 @@ export function renderInEditor(
     canDelete: true,
     api: crmSitesApi(WS),
     open: vi.fn(async () => {}),
+    queueSelection: vi.fn(),
+    takeSelection: vi.fn(() => null),
     setTheme: vi.fn(),
     flushTheme: vi.fn(async () => true),
     setSite: vi.fn(),

@@ -11,7 +11,8 @@ import {
   Settings02Icon,
   ViewIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useCanvasEditor } from '@/app/_components/canvas/editor-context'
 import { FocusedBackLink } from '@/app/_components/layout/focused-screen'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils'
 import { templateLabel } from '@/src/lib/sites/blog/templates'
 import { PublishDialog } from './publish-dialog'
 import { RedirectsDialog } from './redirects-dialog'
+import { revealNode } from './reveal-node'
 import { orderPages, useSiteEditor } from './site-editor-context'
 import { SiteSettingsDialog } from './site-settings-dialog'
 import { SiteStatusBadge } from './site-status-badge'
@@ -129,8 +131,15 @@ function TargetSwitcher() {
 
 /** Left side of the top bar: back, site name (settings), target, status. */
 export function SiteEditorTitle() {
-  const { slug, site } = useSiteEditor()
+  const { slug, site, takeSelection } = useSiteEditor()
+  const { store, frame } = useCanvasEditor()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // The canvas remounts per page: apply the block queued by the publish
+  // checklist as soon as the new document is in place.
+  useEffect(() => {
+    const nodeId = takeSelection()
+    if (nodeId) revealNode(store, frame, nodeId)
+  }, [takeSelection, store, frame])
   return (
     <div className='flex min-w-0 items-center gap-1.5'>
       <FocusedBackLink

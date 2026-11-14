@@ -57,13 +57,30 @@ export function elementOf(
   return handle.document?.querySelector<HTMLElement>(attr(id)) ?? null
 }
 
+/**
+ * Element whose box is the node's visible box. Usually the node element
+ * itself; a component whose own box is wider than what it shows (an image
+ * narrower than its wrapper) marks the inner element with `data-canvas-box`.
+ */
+export function boxElementOf(
+  handle: FrameHandle,
+  id: CanvasNodeId,
+): HTMLElement | null {
+  const element = elementOf(handle, id)
+  if (!element) return null
+  const inner = element.querySelector<HTMLElement>('[data-canvas-box]')
+  return inner && inner.closest('[data-canvas-id]') === element
+    ? inner
+    : element
+}
+
 /** Node box in frame coordinates (the iframe never scrolls: it is as tall
  * as its content and the stage scrolls instead). */
 export function frameRectOf(
   handle: FrameHandle,
   id: CanvasNodeId,
 ): Rect | null {
-  const element = elementOf(handle, id)
+  const element = boxElementOf(handle, id)
   if (!element) return null
   const box = element.getBoundingClientRect()
   return { x: box.left, y: box.top, width: box.width, height: box.height }

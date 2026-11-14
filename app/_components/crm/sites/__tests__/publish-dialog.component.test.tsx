@@ -216,6 +216,33 @@ describe('<PublishDialog />', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('queues the offending block before opening another page', async () => {
+    routes({
+      ...CHANGES,
+      checks: [
+        {
+          code: 'IMAGE_ALT_MISSING',
+          level: 'warning',
+          message: 'Imagem sem texto alternativo',
+          documentId: 'blog',
+          documentName: 'Blog',
+          nodeId: 'n_img',
+        },
+      ],
+    })
+    const { ctx } = renderInEditor(
+      <PublishDialog open onOpenChange={() => {}} />,
+    )
+    const dialog = await screen.findByTestId('publish-dialog')
+    fireEvent.click(
+      await within(dialog).findByText('Imagem sem texto alternativo'),
+    )
+    await waitFor(() =>
+      expect(ctx.open).toHaveBeenCalledWith({ kind: 'page', id: 'blog' }),
+    )
+    expect(ctx.queueSelection).toHaveBeenCalledWith('n_img')
+  })
+
   it('goes back to the summary when publishing fails', async () => {
     routes(CHANGES, {
       status: 503,

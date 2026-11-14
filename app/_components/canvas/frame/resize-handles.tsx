@@ -9,7 +9,7 @@ import type { CanvasNodeId } from '@/src/lib/canvas/types'
 import { useCanvasEditor } from '../editor-context'
 import type { Rect } from '../lib/drop-target'
 import { writeField } from '../lib/fields'
-import { elementOf } from '../lib/frame-handle'
+import { boxElementOf, elementOf } from '../lib/frame-handle'
 import {
   handlesFor,
   type ResizeHandle,
@@ -205,7 +205,9 @@ export function ResizeHandles({
       if (!element || !parent) return
       event.preventDefault()
       event.stopPropagation()
-      const box = boxIn(element, parent)
+      // The visible box (an image can be narrower than its wrapper).
+      const box = boxIn(boxElementOf(frame, id) ?? element, parent)
+      const flowLeft = boxIn(element, parent).x
       const parentWidth = parent.clientWidth
       let lines: { x: number[]; y: number[] }
       if (free) {
@@ -223,7 +225,7 @@ export function ResizeHandles({
       } else {
         // In the flow the width snaps to full / three quarters / half…
         lines = {
-          x: FLOW_WIDTH_STEPS.map((step) => box.x + parentWidth * step),
+          x: FLOW_WIDTH_STEPS.map((step) => flowLeft + parentWidth * step),
           y: [],
         }
       }
