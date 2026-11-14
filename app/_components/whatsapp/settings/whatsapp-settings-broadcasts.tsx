@@ -324,7 +324,12 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               onValueChange={(value) => setConnectionId(value ?? undefined)}
             >
               <SelectTrigger id='broadcastConnection' className='w-full'>
-                <SelectValue placeholder='Selecione a conexão' />
+                <SelectValue placeholder='Selecione a conexão'>
+                  {(value: string | null) =>
+                    (connections.data ?? []).find((c) => c.id === value)
+                      ?.label ?? 'Selecione a conexão'
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -734,7 +739,12 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                 onValueChange={(value) => setConnectionId(value ?? undefined)}
               >
                 <SelectTrigger id='importConnection' className='w-full'>
-                  <SelectValue placeholder='Selecione a conexão' />
+                  <SelectValue placeholder='Selecione a conexão'>
+                    {(value: string | null) =>
+                      (connections.data ?? []).find((c) => c.id === value)
+                        ?.label ?? 'Selecione a conexão'
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>

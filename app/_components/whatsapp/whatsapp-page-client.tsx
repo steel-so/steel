@@ -118,6 +118,7 @@ export function WhatsappPageClient({
         <WhatsappConversationSidebar
           workspaceId={workspaceId}
           connections={connections.data ?? []}
+          connectionsReady={connections.isSuccess}
           connectionId={connectionId}
           onConnectionChange={setConnectionId}
           selectedConversationId={selected?.id ?? null}

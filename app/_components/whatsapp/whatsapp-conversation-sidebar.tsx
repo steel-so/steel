@@ -225,7 +225,16 @@ function NewConversationDialog({
               onValueChange={(value) => setContactId(value ?? undefined)}
             >
               <SelectTrigger id='newConvContact' className='w-full'>
-                <SelectValue placeholder='Selecione um contato' />
+                <SelectValue placeholder='Selecione um contato'>
+                  {(value: string | null) => {
+                    const picked = (contacts.data ?? []).find(
+                      (contact) => contact.id === value,
+                    )
+                    return picked
+                      ? contactRecordTitle(picked)
+                      : 'Selecione um contato'
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
@@ -275,7 +284,12 @@ function NewConversationDialog({
                 onValueChange={(value) => setConnectionId(value ?? undefined)}
               >
                 <SelectTrigger id='newConvConnection' className='w-full'>
-                  <SelectValue placeholder='Selecione a conexão' />
+                  <SelectValue placeholder='Selecione a conexão'>
+                    {(value: string | null) =>
+                      connections.data?.find((c) => c.id === value)?.label ??
+                      'Selecione a conexão'
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
@@ -332,6 +346,7 @@ function formatRelativeTime(iso: string | null): string {
 export function WhatsappConversationSidebar({
   workspaceId,
   connections,
+  connectionsReady = true,
   connectionId,
   onConnectionChange,
   selectedConversationId,
@@ -340,6 +355,12 @@ export function WhatsappConversationSidebar({
 }: {
   workspaceId: string
   connections: WhatsAppConnectionDTO[]
+  /**
+   * `false` while the connections are loading or failed to load: an empty
+   * list then does not mean "no number connected", so the empty state must
+   * not tell the admin to connect one.
+   */
+  connectionsReady?: boolean
   connectionId: string | undefined
   onConnectionChange: (connectionId: string | undefined) => void
   selectedConversationId: string | null
@@ -350,6 +371,7 @@ export function WhatsappConversationSidebar({
   const params = useParams<{ 'workspace-slug'?: string }>()
   const slug = params?.['workspace-slug'] ?? ''
   const isAdmin = useIsPrivileged()
+  const noConnection = connectionsReady && connections.length === 0
   const conversationScope = useWhatsAppConversationScope(workspaceId)
   const [search, setSearch] = useState('')
   // Ativas = abertas (NEW/IN_PROGRESS); fechadas saem da caixa de entrada.
@@ -600,12 +622,10 @@ export function WhatsappConversationSidebar({
         ) : filtered.length === 0 ? (
           <div className='space-y-2 px-3 py-6 text-center'>
             <p className='text-muted-foreground text-sm'>
-              {connections.length === 0
-                ? 'Nenhum número conectado'
-                : 'Nenhuma conversa'}
+              {noConnection ? 'Nenhum número conectado' : 'Nenhuma conversa'}
             </p>
             <p className='text-muted-foreground text-xs'>
-              {connections.length === 0
+              {noConnection
                 ? isAdmin
                   ? 'Conecte um número de WhatsApp para começar a atender.'
                   : 'Peça a um administrador para conectar um número de WhatsApp.'
@@ -619,7 +639,7 @@ export function WhatsappConversationSidebar({
                         ? 'Você só vê as conversas da sua equipe e as atribuídas a você.'
                         : 'As conversas aparecem aqui quando um contato escrever ou quando você iniciar uma pelo botão +.'}
             </p>
-            {connections.length === 0 && isAdmin && slug ? (
+            {noConnection && isAdmin && slug ? (
               <Link
                 href={`/${slug}/settings/whatsapp`}
                 className='inline-block font-medium text-sm underline underline-offset-2'
