@@ -34,7 +34,7 @@ const RESOURCE_LABEL: Record<string, string> = {
   people: 'Pessoas',
   opportunities: 'Oportunidades',
   products: 'Produtos',
-  pipelines: 'Pipelines',
+  pipelines: 'Funis',
   quotas: 'Metas',
   'custom-fields': 'Campos customizados',
   tasks: 'Tarefas',

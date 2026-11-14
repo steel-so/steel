@@ -435,7 +435,7 @@ export function PipelineBlock({
     return (
       <SalesEmpty
         title='Nenhum pipeline no CRM.'
-        hint='Crie um pipeline com etapas (Ganho/Perdido) em CRM › Pipelines.'
+        hint='Crie um pipeline com etapas (Ganho/Perdido) em CRM › Funis.'
       />
     )
   }
@@ -443,7 +443,7 @@ export function PipelineBlock({
     return (
       <SalesEmpty
         title='Este pipeline não tem etapas abertas.'
-        hint='Configure as etapas em CRM › Pipelines.'
+        hint='Configure as etapas em CRM › Funis.'
       />
     )
   }

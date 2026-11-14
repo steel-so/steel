@@ -12,8 +12,8 @@ import { getAuthSession } from '@/src/lib/auth-session'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
-  title: 'Pipelines | CRM | Steel',
-  description: 'Pipelines de vendas do workspace',
+  title: 'Funis | CRM | Steel',
+  description: 'Funis de vendas do workspace',
 }
 
 export default async function CrmPipelinesPage({
@@ -36,7 +36,7 @@ export default async function CrmPipelinesPage({
     <div className='flex h-full w-full min-h-0 flex-col'>
       <HeaderInternalNavigation>
         <HeaderBreadcrumbList>
-          <HeaderBreadcrumbCrumb title='Pipelines'>
+          <HeaderBreadcrumbCrumb title='Funis'>
             <SteelIcon
               icon={FunnelIcon}
               strokeWidth={2}

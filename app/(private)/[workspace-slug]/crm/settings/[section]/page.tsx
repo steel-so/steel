@@ -8,7 +8,7 @@ import { MembershipService } from '@/src/services/membership.service'
 export const metadata: Metadata = {
   title: 'Configurações do CRM | Steel',
   description:
-    'Pipelines, campos, regras do funil, perfis e privacidade do CRM',
+    'Funis, campos, regras do funil, perfis e privacidade do CRM',
 }
 
 export default async function CrmSettingsSectionPage({

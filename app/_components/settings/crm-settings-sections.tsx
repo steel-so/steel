@@ -52,12 +52,12 @@ function Titled({ title, children }: { title: string; children: ReactNode }) {
 export const CRM_SETTINGS_SECTIONS: CrmSettingsSection[] = [
   {
     id: 'pipelines',
-    label: 'Pipelines',
+    label: 'Funis',
     group: 'Funil de vendas',
     icon: Route01Icon,
     description: 'Funis e etapas de leads e oportunidades.',
     render: (id) => (
-      <Titled title='Pipelines'>
+      <Titled title='Funis'>
         <CrmPipelinesPanel workspaceId={id} />
       </Titled>
     ),

@@ -98,7 +98,7 @@ export default async function CrmLayout({
               Duplicados
             </NavItem>
             <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
-              Pipelines
+              Funis
             </NavItem>
             <NavItem href={`${base}/products`} icon={PackageIcon}>
               Produtos
