@@ -188,6 +188,44 @@ describe('WikiPageRepository — revamp', () => {
     })
   })
 
+  describe('listPublishedIds()', () => {
+    it('should return only live published pages of the workspace', async () => {
+      const workspace = await seedWorkspace()
+      const other = await seedWorkspace()
+      const user = await seedUser()
+      const published = await seedWikiPage(workspace.id, user.id, {
+        publicToken: 'a'.repeat(32),
+        publishedAt: new Date(),
+      })
+      const internal = await seedWikiPage(workspace.id, user.id)
+      const archived = await seedWikiPage(workspace.id, user.id, {
+        publicToken: 'b'.repeat(32),
+        publishedAt: new Date(),
+        archivedAt: new Date(),
+      })
+      const foreign = await seedWikiPage(other.id, user.id, {
+        publicToken: 'c'.repeat(32),
+        publishedAt: new Date(),
+      })
+
+      const ids = expectOk(
+        await WikiPageRepository.listPublishedIds(workspace.id, [
+          published.id,
+          internal.id,
+          archived.id,
+          foreign.id,
+        ]),
+      )
+
+      expect([...ids]).toEqual([published.id])
+    })
+
+    it('should not query when no ids are given', async () => {
+      const ids = expectOk(await WikiPageRepository.listPublishedIds('ws', []))
+      expect(ids.size).toBe(0)
+    })
+  })
+
   describe('setPublication() / findPublishedByToken()', () => {
     it('should publish, find by token and revoke', async () => {
       const workspace = await seedWorkspace()

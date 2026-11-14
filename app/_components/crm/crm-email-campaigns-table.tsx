@@ -12,6 +12,16 @@ import { EmailSenderPicker } from '@/app/_components/crm/email-sender-picker'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import { SteelIcon } from '@/components/icon/icon'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,10 +35,14 @@ import {
 } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { notify } from '@/lib/notify'
-import { renderCrmEmailTemplate } from '@/src/hooks/use-crm-email-builder'
+import {
+  renderCrmEmailTemplate,
+  useSendCrmEmailTest,
+} from '@/src/hooks/use-crm-email-builder'
 import {
   useCreateCrmEmailCampaign,
   useCrmEmailCampaignRecipients,
+  useCrmEmailOptOuts,
   useSendCrmEmailCampaign,
 } from '@/src/hooks/use-crm-email-marketing'
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
@@ -41,7 +55,9 @@ import type {
   CrmCampaignStatusDTO,
   CrmEmailCampaignDTO,
   CrmEmailTemplateDTO,
+  CrmMailingListDTO,
 } from '@/types/crm-email-marketing'
+import type { CrmPersonDTO } from '@/types/crm-person'
 
 type EditorRef = {
   getEmailHTML: () => Promise<string>
@@ -194,30 +210,73 @@ function CampaignSheet({
 }) {
   const open = viewing !== null
   const isNew = viewing === 'new'
+  // The composer keeps this up to date so closing the sheet never silently
+  // throws away a half-written campaign.
+  const dirtyRef = useRef(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
+
+  function requestClose() {
+    if (isNew && dirtyRef.current) {
+      setConfirmDiscard(true)
+      return
+    }
+    dirtyRef.current = false
+    onClose()
+  }
 
   return (
-    <Sheet open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <SheetContent
-        side='right'
-        showCloseButton={false}
-        className='flex w-full max-w-[640px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[640px] data-[side=right]:sm:max-w-[640px]'
-      >
-        {!open ? null : isNew ? (
-          <CampaignComposer
-            workspaceId={workspaceId}
-            slug={slug}
-            onClose={onClose}
-            onSent={onSent}
-          />
-        ) : (
-          <CampaignDetail
-            workspaceId={workspaceId}
-            id={viewing as string}
-            onClose={onClose}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
+    <>
+      <Sheet open={open} onOpenChange={(o) => (o ? null : requestClose())}>
+        <SheetContent
+          side='right'
+          showCloseButton={false}
+          className='flex w-full max-w-[640px] flex-col gap-0 overflow-hidden p-0 sm:max-w-[640px] data-[side=right]:sm:max-w-[640px]'
+        >
+          {!open ? null : isNew ? (
+            <CampaignComposer
+              workspaceId={workspaceId}
+              slug={slug}
+              dirtyRef={dirtyRef}
+              onClose={requestClose}
+              onSent={() => {
+                dirtyRef.current = false
+                onSent()
+              }}
+            />
+          ) : (
+            <CampaignDetail
+              workspaceId={workspaceId}
+              id={viewing as string}
+              onClose={onClose}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+      <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar esta campanha?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você começou a preencher a campanha e ela ainda não foi enviada.
+              Se fechar agora, o que foi preenchido será perdido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction
+              variant='destructive'
+              onClick={() => {
+                dirtyRef.current = false
+                setConfirmDiscard(false)
+                onClose()
+              }}
+            >
+              Descartar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -249,26 +308,49 @@ function PanelHeader({
 function Field({
   label,
   children,
+  required = false,
+  error,
 }: {
   label: React.ReactNode
   children: React.ReactNode
+  required?: boolean
+  error?: string
 }) {
   return (
     <div className='grid gap-1.5'>
-      <Label className='text-muted-foreground text-xs'>{label}</Label>
+      <Label className='text-muted-foreground text-xs'>
+        {label}
+        {required ? (
+          <span className='text-destructive' aria-hidden='true'>
+            {' '}
+            *
+          </span>
+        ) : null}
+      </Label>
       <div className='min-w-0'>{children}</div>
+      {error ? (
+        <p role='alert' className='text-destructive text-xs'>
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }
 
+type FieldErrors = Partial<
+  Record<'subject' | 'from' | 'recipients' | 'schedule' | 'link', string>
+>
+
 function CampaignComposer({
   workspaceId,
   slug,
+  dirtyRef,
   onClose,
   onSent,
 }: {
   workspaceId: string
   slug: string
+  dirtyRef: React.MutableRefObject<boolean>
   onClose: () => void
   onSent: () => void
 }) {
@@ -294,6 +376,57 @@ function CampaignComposer({
   const builderTemplate = templates.find(
     (t) => t.id === selectedTemplateId && t.kind === 'BUILDER',
   )
+  const [errors, setErrors] = useState<FieldErrors>({})
+  const sendTest = useSendCrmEmailTest(workspaceId, builderTemplate?.id ?? '')
+  const { items: people } = useCrmResourceList<CrmPersonDTO>(
+    workspaceId,
+    'people',
+  )
+  const { items: mailingLists } = useCrmResourceList<CrmMailingListDTO>(
+    workspaceId,
+    'mailing-lists',
+  )
+  const { isOptedOut } = useCrmEmailOptOuts(workspaceId)
+
+  dirtyRef.current = Boolean(
+    subject.trim() ||
+      selectedTemplateId ||
+      campaignLink.trim() ||
+      recipients.scope === 'SELECTED',
+  )
+
+  /** Approximate audience: the server still removes duplicates and opt-outs. */
+  const estimatedRecipients = useMemo(() => {
+    const eligible = people.filter(
+      (p) => p.emails.length > 0 && !isOptedOut(p.emails[0], p.id),
+    )
+    if (recipients.scope === 'ALL') return eligible.length
+    const fromPeople = eligible.filter((p) =>
+      recipients.personIds.includes(p.id),
+    ).length
+    const fromLists = mailingLists
+      .filter((l) => recipients.mailingListIds.includes(l.id))
+      .reduce((sum, l) => sum + l.memberCount, 0)
+    return fromPeople + fromLists + recipients.extraEmails.length
+  }, [people, mailingLists, recipients, isOptedOut])
+
+  function clearError(field: keyof FieldErrors) {
+    setErrors((cur) => (cur[field] ? { ...cur, [field]: undefined } : cur))
+  }
+
+  async function handleSendTest() {
+    if (!builderTemplate) return
+    try {
+      const result = await sendTest.mutateAsync({})
+      notify.success(
+        result?.to
+          ? `Teste enviado para ${result.to}`
+          : 'Teste enviado para o seu e-mail',
+      )
+    } catch (err) {
+      notify.error(err)
+    }
+  }
 
   // Visual-builder templates are rendered by the server (sample contact).
   useEffect(() => {
@@ -319,23 +452,25 @@ function CampaignComposer({
     setEditorSeed(template.contentHtml)
   }
 
-  async function onSubmit() {
-    if (!subject.trim()) {
-      notify.error('Informe o assunto')
-      return
-    }
-    if (!fromAddress.trim()) {
-      notify.error('Informe o remetente')
-      return
-    }
+  type Prepared = {
+    payload: Parameters<typeof createCampaign.mutateAsync>[0]
+    scheduled: boolean
+  }
+  const [prepared, setPrepared] = useState<Prepared | null>(null)
+
+  /** Checks every field, shows all problems at once, and builds the payload. */
+  async function prepare(): Promise<Prepared | null> {
+    const next: FieldErrors = {}
+    if (!subject.trim()) next.subject = 'Informe o assunto do e-mail.'
+    if (!fromAddress.trim()) next.from = 'Escolha quem aparece como remetente.'
     if (
       recipients.scope === 'SELECTED' &&
       recipients.personIds.length === 0 &&
       recipients.mailingListIds.length === 0 &&
       recipients.extraEmails.length === 0
     ) {
-      notify.error('Selecione ao menos um destinatário')
-      return
+      next.recipients =
+        'Escolha pelo menos um contato, uma lista ou um e-mail avulso.'
     }
 
     let content: {
@@ -343,12 +478,11 @@ function CampaignComposer({
       contentJson?: string
       templateId?: string
       campaignLink?: string
-    }
+    } = {}
     if (builderTemplate) {
       const link = campaignLink.trim()
       if (link && !/^https?:\/\//.test(link)) {
-        notify.error('O link da campanha precisa começar com https://')
-        return
+        next.link = 'O link precisa começar com https://'
       }
       content = {
         templateId: builderTemplate.id,
@@ -357,8 +491,9 @@ function CampaignComposer({
     } else {
       const html = (await editorRef.current?.getEmailHTML())?.trim()
       if (!html) {
-        notify.error('Conteúdo vazio')
-        return
+        notify.error('O conteúdo do e-mail está vazio. Escreva a mensagem.')
+        setErrors(next)
+        return null
       }
       content = {
         contentHtml: html,
@@ -368,21 +503,25 @@ function CampaignComposer({
 
     let scheduledAt: string | undefined
     if (scheduleEnabled) {
-      if (!scheduledAtLocal) {
-        notify.error('Informe a data e hora do agendamento')
-        return
+      const date = scheduledAtLocal ? new Date(scheduledAtLocal) : null
+      if (!date) {
+        next.schedule = 'Informe a data e a hora do envio.'
+      } else if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
+        next.schedule = 'Escolha uma data e hora no futuro.'
+      } else {
+        scheduledAt = date.toISOString()
       }
-      const date = new Date(scheduledAtLocal)
-      if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
-        notify.error('Data de agendamento deve ser no futuro')
-        return
-      }
-      scheduledAt = date.toISOString()
     }
 
-    setSubmitting(true)
-    try {
-      const created = await createCampaign.mutateAsync({
+    setErrors(next)
+    if (Object.values(next).some(Boolean)) {
+      notify.error('Confira os campos marcados em vermelho.')
+      return null
+    }
+
+    return {
+      scheduled: Boolean(scheduledAt),
+      payload: {
         subject,
         ...content,
         fromAddress,
@@ -396,11 +535,18 @@ function CampaignComposer({
         extraEmails:
           recipients.scope === 'SELECTED' ? recipients.extraEmails : undefined,
         scheduledAt,
-      })
-      if (!scheduledAt) {
+      },
+    }
+  }
+
+  async function perform(ready: Prepared) {
+    setSubmitting(true)
+    try {
+      const created = await createCampaign.mutateAsync(ready.payload)
+      if (!ready.scheduled) {
         await sendCampaign.mutateAsync(created.id)
       }
-      notify.success(scheduledAt ? 'Campanha agendada' : 'Campanha enviada')
+      notify.success(ready.scheduled ? 'Campanha agendada' : 'Campanha enviada')
       onSent()
     } catch (err) {
       notify.error(err)
@@ -409,16 +555,31 @@ function CampaignComposer({
     }
   }
 
+  async function onSubmit() {
+    const ready = await prepare()
+    if (!ready) return
+    // Sending cannot be undone, so it asks first; scheduling can be changed.
+    if (ready.scheduled) {
+      await perform(ready)
+      return
+    }
+    setPrepared(ready)
+  }
+
   return (
     <>
       <PanelHeader onClose={onClose} title='Nova campanha' />
 
       <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden'>
         <div className='flex flex-col gap-5 p-4'>
-          <Field label='Assunto'>
+          <Field label='Assunto' required error={errors.subject}>
             <Input
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              aria-invalid={Boolean(errors.subject)}
+              onChange={(e) => {
+                setSubject(e.target.value)
+                clearError('subject')
+              }}
               placeholder='Novidades de junho'
             />
           </Field>
@@ -428,8 +589,16 @@ function CampaignComposer({
             workspaceSlug={slug}
             id='email-campaign-from'
             value={fromAddress}
-            onChange={setFromAddress}
+            onChange={(v) => {
+              setFromAddress(v)
+              clearError('from')
+            }}
           />
+          {errors.from ? (
+            <p role='alert' className='-mt-3 text-destructive text-xs'>
+              {errors.from}
+            </p>
+          ) : null}
 
           {templates.length > 0 ? (
             <Field label='Começar a partir de um modelo (opcional)'>
@@ -456,11 +625,15 @@ function CampaignComposer({
 
           {builderTemplate ? (
             <>
-              <Field label='Link da campanha'>
+              <Field label='Link da campanha' error={errors.link}>
                 <Input
                   type='url'
                   value={campaignLink}
-                  onChange={(e) => setCampaignLink(e.target.value)}
+                  aria-invalid={Boolean(errors.link)}
+                  onChange={(e) => {
+                    setCampaignLink(e.target.value)
+                    clearError('link')
+                  }}
                   placeholder='https://suaempresa.com.br/oferta?utm_source=email'
                 />
                 <p className='mt-1 text-muted-foreground text-xs'>
@@ -496,15 +669,24 @@ function CampaignComposer({
             </Field>
           )}
 
-          <Field label='Destinatários'>
+          <Field label='Destinatários' required error={errors.recipients}>
             <CrmEmailCampaignRecipientPicker
               workspaceId={workspaceId}
               value={recipients}
-              onChange={setRecipients}
+              onChange={(v) => {
+                setRecipients(v)
+                clearError('recipients')
+              }}
             />
+            <p className='mt-2 text-muted-foreground text-xs'>
+              {recipients.scope === 'ALL'
+                ? 'Por padrão, o e-mail vai para todos os contatos que têm e-mail.'
+                : 'Só os contatos, listas e e-mails escolhidos receberão.'}{' '}
+              Quem pediu para sair da lista (descadastro) nunca recebe.
+            </p>
           </Field>
 
-          <Field label='Agendamento'>
+          <Field label='Agendamento' error={errors.schedule}>
             <label className='flex items-center gap-2 text-sm'>
               <input
                 type='checkbox'
@@ -519,7 +701,11 @@ function CampaignComposer({
                 <Input
                   type='datetime-local'
                   value={scheduledAtLocal}
-                  onChange={(e) => setScheduledAtLocal(e.target.value)}
+                  aria-invalid={Boolean(errors.schedule)}
+                  onChange={(e) => {
+                    setScheduledAtLocal(e.target.value)
+                    clearError('schedule')
+                  }}
                 />
               </div>
             ) : null}
@@ -527,7 +713,20 @@ function CampaignComposer({
         </div>
       </div>
 
-      <div className='flex shrink-0 items-center justify-end gap-2 border-t p-3'>
+      <div className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-t p-3'>
+        {builderTemplate ? (
+          <Button
+            variant='outline'
+            onClick={handleSendTest}
+            disabled={submitting || sendTest.isPending}
+          >
+            {sendTest.isPending ? 'Enviando teste…' : 'Enviar teste para mim'}
+          </Button>
+        ) : (
+          <span className='mr-auto text-muted-foreground text-xs'>
+            Para receber um teste, comece a partir de um modelo.
+          </span>
+        )}
         <Button variant='ghost' onClick={onClose} disabled={submitting}>
           Cancelar
         </Button>
@@ -539,6 +738,33 @@ function CampaignComposer({
               : 'Enviar agora'}
         </Button>
       </div>
+
+      <AlertDialog
+        open={prepared !== null}
+        onOpenChange={(o) => (o ? null : setPrepared(null))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enviar a campanha agora?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`O e-mail "${subject.trim()}" será enviado agora para cerca de ${estimatedRecipients} ${estimatedRecipients === 1 ? 'pessoa' : 'pessoas'}, sem contar quem já pediu descadastro. Depois de enviado, não dá para cancelar.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={() => {
+                const ready = prepared
+                setPrepared(null)
+                if (ready) perform(ready)
+              }}
+            >
+              Enviar agora
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

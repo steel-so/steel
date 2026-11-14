@@ -333,6 +333,7 @@ export const WhatsAppWebhookService = {
         {
           unreadCount: { increment: 1 },
           lastMessageAt: new Date(),
+          lastInboundAt: new Date(),
           ...(serviceDesk ? {} : { aiActive }),
         },
       )
@@ -372,6 +373,7 @@ export const WhatsAppWebhookService = {
           extra: {
             unreadCount: { increment: 1 },
             lastMessageAt: new Date(),
+            lastInboundAt: new Date(),
             aiActive: reopenAi,
             aiHandoff: closedByButton,
             ...(input.routeTeamId && !closed.value.teamId
@@ -404,6 +406,7 @@ export const WhatsAppWebhookService = {
           aiHandoff: false,
           unreadCount: 1,
           lastMessageAt: new Date(),
+          lastInboundAt: new Date(),
           ...(input.routeTeamId ? { teamId: input.routeTeamId } : {}),
           ...queueEntry(),
         })
@@ -979,6 +982,7 @@ export const WhatsAppWebhookService = {
       await WhatsAppMessageRepository.updateStatusByProviderMessageId(
         input.providerMessageId,
         input.status,
+        input.error,
       )
     if (!result.ok) return result
     // CRM campaign messages are not chat messages: track them by provider id.

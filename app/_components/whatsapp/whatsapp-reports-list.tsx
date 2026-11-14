@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -167,14 +168,21 @@ export function WhatsappReportsList({
                   report.source}
               </Badge>
             </button>
-            <Button
-              size='icon-xs'
-              variant='ghost'
-              aria-label='Remover relatório'
-              onClick={() => handleDelete(report.id)}
-            >
-              <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-            </Button>
+            <ConfirmAction
+              trigger={
+                <Button
+                  size='icon-xs'
+                  variant='ghost'
+                  aria-label='Remover relatório'
+                >
+                  <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                </Button>
+              }
+              title={`Remover o relatório "${report.name}"?`}
+              description='O relatório e a configuração dele são apagados. Não dá para desfazer.'
+              confirmLabel='Remover'
+              onConfirm={() => handleDelete(report.id)}
+            />
           </div>
         ))}
         {!isLoading && (reports ?? []).length === 0 && (

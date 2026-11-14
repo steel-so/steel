@@ -80,6 +80,14 @@ describe('<CrmNotesTable />', { timeout: 15_000 }, () => {
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] nota$/)[0])
 
+    // The title is optional, so the create form can be submitted blank.
+    const dialog = await screen.findByRole('dialog')
+    const submit = within(dialog).getByRole('button', {
+      name: 'Criar',
+    }) as HTMLButtonElement
+    expect(submit.disabled).toBe(false)
+    fireEvent.click(submit)
+
     await waitFor(() =>
       expect(fetchBody(fetchSpy, /\/crm\/notes$/)).toEqual({}),
     )
@@ -88,46 +96,33 @@ describe('<CrmNotesTable />', { timeout: 15_000 }, () => {
     )
   })
 
-  it('removes a note that failed its first edit right after creation', async () => {
+  it('keeps the form open and adds nothing when creation fails', async () => {
     const fetchSpy = mockFetch([
       ...baseRoutes([]),
       {
         method: 'POST',
         match: /\/crm\/notes$/,
-        data: note({
-          id: 'n2',
-          title: null,
-          companyId: null,
-          opportunityId: null,
-        }),
-      },
-      {
-        method: 'PATCH',
-        match: '/crm/notes/n2',
         status: 400,
         error: 'Título muito longo',
       },
-      { method: 'DELETE', match: '/crm/notes/n2', data: null },
     ])
     renderTable()
     await screen.findByText('Nada por aqui ainda')
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] nota$/)[0])
-    const input = await screen.findByPlaceholderText('Reunião de kickoff')
-    fireEvent.change(input, { target: { value: 'x'.repeat(10) } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Título'), {
+      target: { value: 'x'.repeat(10) },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Criar' }))
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('Título muito longo'),
     )
-    await waitFor(() =>
-      expect(
-        fetchSpy.mock.calls.some(
-          ([u, init]) =>
-            init?.method === 'DELETE' && String(u).endsWith('/crm/notes/n2'),
-        ),
-      ).toBe(true),
-    )
-    expect(await screen.findByText('Nada por aqui ainda')).toBeTruthy()
+    expect(fetchBody(fetchSpy, /\/crm\/notes$/)).toEqual({
+      title: 'xxxxxxxxxx',
+    })
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByText('Nada por aqui ainda')).toBeTruthy()
   })
 })

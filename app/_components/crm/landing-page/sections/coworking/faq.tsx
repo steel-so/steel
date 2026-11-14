@@ -28,23 +28,23 @@ const CHEVRON_RIGHT = `${BASE}/faq-chevron-right.svg`
 export function faqDefaultContent(): FaqContent {
   return {
     type: 'FAQ',
-    title: 'Frequently asked questions',
+    title: 'Perguntas frequentes',
     items: [
       {
-        question: 'How to setup Shade Pro?',
+        question: 'Como configurar a Sua Empresa?',
         answer:
-          'With lots of unique blocks, you can easily build a page with coding. Build your next landing page. Integer ut obe ryn. Sed feugiat vitae turpis a porta.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page. Integer ut obe ryn. Sed feugiat vitae turpis a porta.',
       },
       {
-        question: 'Can I use Shade Pro for my clients?',
+        question: 'Posso usar a Sua Empresa para os meus clientes?',
         answer: '',
       },
       {
-        question: 'How often do you release update?',
+        question: 'Com que frequência vocês lançam atualizações?',
         answer: '',
       },
       {
-        question: 'How can I access to old version?',
+        question: 'Como acesso uma versão antiga?',
         answer: '',
       },
     ],

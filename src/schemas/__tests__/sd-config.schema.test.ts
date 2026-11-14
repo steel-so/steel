@@ -63,6 +63,44 @@ describe('sd-config shared schemas', () => {
 })
 
 describe('UpdateSdSettingsSchema', () => {
+  it('validates the requester WhatsApp templates', () => {
+    const valid = {
+      'ticket.resolved': {
+        templateName: 'chamado_resolvido',
+        language: 'pt_BR',
+        variables: ['code', 'headline'],
+      },
+    }
+    expect(
+      UpdateSdSettingsSchema.safeParse({ requesterWhatsappTemplates: valid })
+        .success,
+    ).toBe(true)
+    expect(
+      UpdateSdSettingsSchema.safeParse({
+        requesterWhatsappTemplates: {
+          'ticket.assigned': valid['ticket.resolved'],
+        },
+      }).success,
+    ).toBe(false)
+    expect(
+      UpdateSdSettingsSchema.safeParse({
+        requesterWhatsappTemplates: {
+          'ticket.resolved': {
+            ...valid['ticket.resolved'],
+            templateName: 'Nome Inválido',
+          },
+        },
+      }).success,
+    ).toBe(false)
+    expect(
+      UpdateSdSettingsSchema.safeParse({
+        requesterWhatsappTemplates: {
+          'ticket.resolved': { ...valid['ticket.resolved'], variables: ['x'] },
+        },
+      }).success,
+    ).toBe(false)
+  })
+
   it('exposes the default prefixes', () => {
     expect(SD_DEFAULT_TICKET_PREFIXES.INCIDENT).toBe('INC')
   })

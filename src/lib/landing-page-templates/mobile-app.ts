@@ -22,21 +22,21 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const mobileAppTemplate: LandingPageTemplateDefinition = {
   key: 'mobile-app',
-  name: 'Mobile App',
+  name: 'Aplicativo',
   description: 'Modelo para apps mobile e produtos SaaS de equipe remota.',
   sections: [
     {
       type: 'HEADER',
       content: {
         type: 'HEADER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         navLinks: [
-          { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Demonstrações', href: '#' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Get Started Now',
+        ctaLabel: 'Começar agora',
         ctaHref: '#footer',
       },
     },
@@ -44,10 +44,10 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        title: 'Manage your remote team work',
+        title: 'Gerencie o trabalho da sua equipe remota',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Explore more',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código. Publique seu site em poucos minutos.',
+        ctaLabel: 'Saiba mais',
         ctaHref: '#footer',
         imageUrl: '/landing-page-templates/mobile-app/hero-app-mockup.png',
       },
@@ -56,20 +56,20 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Collaborate with team members.',
+        title: 'Colabore com os membros da equipe.',
         subtitle:
-          'We share common trends and strategies for improving your rental income.',
+          'Compartilhamos tendências e estratégias para melhorar os seus resultados.',
         imageUrl: '/landing-page-templates/mobile-app/content-collaborate.png',
         items: [
           {
-            title: 'Project Based Groups',
+            title: 'Grupos por projeto',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
           {
-            title: 'Unlimited Video Meetings',
+            title: 'Reuniões em vídeo ilimitadas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
         ],
       },
@@ -78,20 +78,20 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'Organize remote team fast & easily.',
+        title: 'Organize a equipe remota com rapidez e facilidade.',
         subtitle:
-          'We share common trends and strategies for creating & improving your rental income.',
+          'Compartilhamos tendências e estratégias para criar e melhorar os seus resultados.',
         imageUrl: '/landing-page-templates/mobile-app/content-organize.png',
         items: [
           {
-            title: 'Create Unlimited Teams',
+            title: 'Crie equipes ilimitadas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
           {
-            title: 'Hasslefree Chat with Everyone',
+            title: 'Converse com todos sem complicação',
             description:
-              'With lots of unique blocks, you can easily build a page without coding.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
           },
         ],
       },
@@ -100,13 +100,13 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'STEPS',
       content: {
         type: 'STEPS',
-        title: 'How does it work?',
+        title: 'Como funciona?',
         subtitle:
-          'With lots of unique blocks, you can easily build a page easily without any coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever nenhum código.',
         items: [
-          { title: 'Install App', description: '' },
-          { title: 'Add Team Members', description: '' },
-          { title: 'Start Rolling!', description: '' },
+          { title: 'Instale o app', description: '' },
+          { title: 'Adicione os membros da equipe', description: '' },
+          { title: 'É só começar!', description: '' },
         ],
       },
     },
@@ -124,7 +124,7 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'OMG! I cannot believe that I have got a brand new landing page after getting Omega. It was super easy to edit and publish.',
+          'Uau! Nem acredito que ganhei uma página nova depois de usar o Ômega. Foi superfácil de editar e publicar.',
         authorName: 'Isaac Olson',
         avatarUrl:
           '/landing-page-templates/mobile-app/testimonial-avatar-1.png',
@@ -136,7 +136,7 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users who want success.",
+          'Simplesmente o melhor, bem acima dos concorrentes. Recomendo para iniciantes e para usuários avançados que querem resultado.',
         authorName: 'Barry Young',
         avatarUrl:
           '/landing-page-templates/mobile-app/testimonial-avatar-2.png',
@@ -148,7 +148,7 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'Must have book for all, who want to be Product Designer or Interaction Designer.',
+          'Leitura obrigatória para quem quer ser Designer de Produto ou de Interação.',
         authorName: 'Esther Allison',
         avatarUrl:
           '/landing-page-templates/mobile-app/testimonial-avatar-3.png',
@@ -159,37 +159,37 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'We made this app to solve your problems.',
+        title: 'Criamos este app para resolver os seus problemas.',
         items: [
           {
-            title: 'Unlimited Projects',
+            title: 'Projetos ilimitados',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
           {
-            title: 'Team Management',
+            title: 'Gestão de equipes',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
           {
-            title: 'File Sharing',
+            title: 'Compartilhamento de arquivos',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
           {
-            title: 'Video Meetings',
+            title: 'Reuniões em vídeo',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
           {
-            title: 'Time Tracking',
+            title: 'Controle de horas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
           {
-            title: 'Payment System',
+            title: 'Sistema de pagamentos',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
           },
         ],
       },
@@ -198,35 +198,35 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'PRICING',
       content: {
         type: 'PRICING',
-        title: 'Pricing made easy',
+        title: 'Preços descomplicados',
         subtitle:
-          'With lots of unique blocks, you can easily build a page easily without any coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever nenhum código.',
         plans: [
           {
-            name: 'Starter',
-            price: '$19',
-            period: '/ mo',
+            name: 'Inicial',
+            price: 'R$ 19',
+            period: '/ mês',
             features: [
-              'Upto 100 Team Members',
-              '100 GB Cloud Storage',
-              'Unlimited Meetings',
-              'Premium Support',
+              'Até 100 membros na equipe',
+              '100 GB de armazenamento',
+              'Reuniões ilimitadas',
+              'Suporte premium',
             ],
-            ctaLabel: 'Get Started Now',
+            ctaLabel: 'Começar agora',
             ctaHref: '#footer',
             highlighted: false,
           },
           {
-            name: 'Unlimited',
-            price: '$99',
-            period: '/ mo',
+            name: 'Ilimitado',
+            price: 'R$ 99',
+            period: '/ mês',
             features: [
-              'Unlimited Team Members',
-              'Unlimited Cloud Storage',
-              'Unlimited Meetings',
-              'Premium Support',
+              'Membros ilimitados na equipe',
+              'Armazenamento ilimitado',
+              'Reuniões ilimitadas',
+              'Suporte premium',
             ],
-            ctaLabel: 'Get Started Now',
+            ctaLabel: 'Começar agora',
             ctaHref: '#footer',
             highlighted: true,
           },
@@ -237,33 +237,33 @@ export const mobileAppTemplate: LandingPageTemplateDefinition = {
       type: 'FOOTER',
       content: {
         type: 'FOOTER',
-        logoText: 'Brainwave.io',
+        logoText: 'Sua Empresa',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de privacidade', href: '#' },
+              { label: 'Termos e condições', href: '#' },
+              { label: 'Política de devolução', href: '#' },
             ],
           },
         ],

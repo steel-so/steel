@@ -30,6 +30,8 @@ interface ImportBroadcastInput {
   csv: string
   validateWhatsapp?: boolean
   skipNoWhatsapp?: boolean
+  /** Only validates and returns a preview; nothing is created. */
+  dryRun?: boolean
 }
 
 export function useWhatsAppBroadcasts(workspaceId: string) {
@@ -115,6 +117,41 @@ export function useStartWhatsAppBroadcast(workspaceId: string) {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
+    },
+  })
+}
+
+export function useCancelWhatsAppBroadcast(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (broadcastId: string) =>
+      apiFetch<WhatsAppBroadcastListDetailDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/broadcasts/${broadcastId}/cancel`,
+        { method: 'POST' },
+        'Erro ao cancelar o envio',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
+    },
+  })
+}
+
+export function useRetryFailedWhatsAppBroadcast(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (broadcastId: string) =>
+      apiFetch<WhatsAppBroadcastListDetailDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/broadcasts/${broadcastId}/retry-failed`,
+        { method: 'POST' },
+        'Erro ao reenviar os que falharam',
+      ),
+    onSuccess: (_data, broadcastId) => {
+      queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
+      queryClient.invalidateQueries({
+        queryKey: ['whatsapp-broadcast', workspaceId, broadcastId],
+      })
     },
   })
 }

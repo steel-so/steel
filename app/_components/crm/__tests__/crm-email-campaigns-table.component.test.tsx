@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { forwardRef, useImperativeHandle } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -123,6 +123,13 @@ async function openComposer() {
   return screen.findByPlaceholderText('Novidades de junho')
 }
 
+async function confirmSend() {
+  // While the confirmation is open the composer behind it is inert, so the
+  // only accessible "Enviar agora" is the dialog's own action.
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Enviar agora' }))
+}
+
 function fill(subject: string, from: string) {
   fireEvent.change(screen.getByPlaceholderText('Novidades de junho'), {
     target: { value: subject },
@@ -142,17 +149,15 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     await openComposer()
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith('Informe o assunto'),
-    )
+    expect(await screen.findByText('Informe o assunto do e-mail.')).toBeTruthy()
 
     fireEvent.change(screen.getByPlaceholderText('Novidades de junho'), {
       target: { value: 'Oferta' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith('Informe o remetente'),
-    )
+    expect(
+      await screen.findByText('Escolha quem aparece como remetente.'),
+    ).toBeTruthy()
     expect(fetchBody(spy, /email-campaigns$/)).toBeUndefined()
   })
 
@@ -164,7 +169,9 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
     await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith('Conteúdo vazio'),
+      expect(notify.error).toHaveBeenCalledWith(
+        'O conteúdo do e-mail está vazio. Escreva a mensagem.',
+      ),
     )
     expect(fetchBody(spy, /email-campaigns$/)).toBeUndefined()
   })
@@ -178,11 +185,11 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith(
-        'Selecione ao menos um destinatário',
+    expect(
+      await screen.findByText(
+        'Escolha pelo menos um contato, uma lista ou um e-mail avulso.',
       ),
-    )
+    ).toBeTruthy()
   })
 
   it('creates and immediately sends an ALL-scope campaign', async () => {
@@ -191,6 +198,8 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     fill('Oferta', 'mkt@acme.com')
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
+    expect(await screen.findByText('Enviar a campanha agora?')).toBeTruthy()
+    await confirmSend()
 
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Campanha enviada'),
@@ -219,6 +228,7 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     fireEvent.click(ana)
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
+    await confirmSend()
     await waitFor(() => expect(notify.success).toHaveBeenCalled())
     expect(fetchBody(spy, /email-campaigns$/)).toMatchObject({
       recipientScope: 'SELECTED',
@@ -236,22 +246,18 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     fireEvent.click(screen.getByLabelText('Enviar mais tarde'))
     const submit = screen.getByRole('button', { name: 'Agendar envio' })
     fireEvent.click(submit)
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith(
-        'Informe a data e hora do agendamento',
-      ),
-    )
+    expect(
+      await screen.findByText('Informe a data e a hora do envio.'),
+    ).toBeTruthy()
 
     const dateInput = document.querySelector(
       'input[type="datetime-local"]',
     ) as HTMLInputElement
     fireEvent.change(dateInput, { target: { value: '2000-01-01T10:00' } })
     fireEvent.click(submit)
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith(
-        'Data de agendamento deve ser no futuro',
-      ),
-    )
+    expect(
+      await screen.findByText('Escolha uma data e hora no futuro.'),
+    ).toBeTruthy()
 
     fireEvent.change(dateInput, { target: { value: '2999-01-01T10:00' } })
     fireEvent.click(submit)
@@ -279,6 +285,7 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     fill('Oferta', 'mkt@acme.com')
 
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
+    await confirmSend()
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect((notify.error.mock.lastCall?.[0] as Error)?.message).toBe(
       'Remetente não verificado',

@@ -14,9 +14,9 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'OMG! I cannot believe that I have got a brand new landing page after getting Omega. It was super easy to edit and publish.',
+      'Uau! Não acredito que ganhei uma landing page totalmente nova com o Omega. Foi super fácil de editar e publicar.',
     authorName: 'Diego Morata',
-    authorRole: 'Web Developer',
+    authorRole: 'Desenvolvedor web',
     style: 'default',
   }
 }
@@ -25,9 +25,9 @@ export function testimonialSecondDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users.",
+      'Simplesmente o melhor. Superior a todos os outros. Eu recomendaria este produto para iniciantes e usuários avançados.',
     authorName: 'Franklin Hicks',
-    authorRole: 'Digital Marketer',
+    authorRole: 'Profissional de marketing digital',
     style: 'default',
   }
 }

@@ -14,7 +14,7 @@ import {
   Task01Icon,
   Video01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import { type ChangeEvent, useRef, useState } from 'react'
+import { type ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useQuickSend } from '@/app/_components/shortcuts/use-quick-send'
 import {
   contactRecordPhone,
@@ -77,6 +77,7 @@ import {
 } from '@/src/hooks/use-whatsapp-quick-replies'
 import { useWhatsAppTemplates } from '@/src/hooks/use-whatsapp-templates'
 import { TEMPLATE_STATUS_LABEL } from '@/src/lib/whatsapp/button-editor'
+import { readDraft, writeDraft } from '@/src/lib/whatsapp/draft-storage'
 import {
   fileNameFromUrl,
   findExactQuickReply,
@@ -88,6 +89,7 @@ import {
   parseMetaTemplateComponents,
   renderQuickReplyBody,
 } from '@/src/lib/whatsapp/template-variables'
+import type { WhatsAppConnectionDTO } from '@/types/whatsapp-connection'
 import type {
   WhatsAppMessageDTO,
   WhatsAppMessageTypeDTO,
@@ -153,6 +155,39 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+/** Plain text of a template's BODY component, for the picker preview. */
+function templateBodyText(components: unknown[]): string {
+  for (const component of components) {
+    if (
+      component &&
+      typeof component === 'object' &&
+      (component as { type?: string }).type === 'BODY'
+    ) {
+      const text = (component as { text?: unknown }).text
+      return typeof text === 'string' ? text : ''
+    }
+  }
+  return ''
+}
+
+/** Why a template in the picker cannot be sent (null = it can). */
+function templateBlockedReason(template: WhatsAppTemplateDTO): string | null {
+  switch (template.status) {
+    case 'APPROVED':
+      return null
+    case 'PENDING':
+      return 'Em análise pela Meta. Costuma levar alguns minutos.'
+    case 'REJECTED':
+      return template.statusReason
+        ? `Rejeitado pela Meta: ${template.statusReason}`
+        : 'Rejeitado pela Meta. Peça ao administrador para corrigir e reenviar.'
+    case 'PAUSED':
+      return 'Pausado pela Meta por baixa qualidade. Escolha outro modelo.'
+    default:
+      return 'Desativado pela Meta. Escolha outro modelo.'
+  }
+}
+
 function useAudioRecorder(onRecorded: (blob: Blob) => void) {
   const [isRecording, setIsRecording] = useState(false)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -201,6 +236,10 @@ export function WhatsappComposer({
   conversationId,
   contactName,
   disabled,
+  disabledReason,
+  windowClosed = false,
+  connection,
+  templatePickerRequest = 0,
   replyTarget,
   onClearReply,
 }: {
@@ -208,10 +247,32 @@ export function WhatsappComposer({
   conversationId: string
   contactName?: string | null
   disabled?: boolean
+  /** Said to the agent while `disabled`: a blocked composer must explain why. */
+  disabledReason?: string
+  /** Meta only: 24h since the contact's last message, so only templates go. */
+  windowClosed?: boolean
+  /** The conversation's number: templates belong to one connection. */
+  connection?: Pick<WhatsAppConnectionDTO, 'id' | 'provider' | 'label'> | null
+  /** Bump to open the template picker (e.g. from a failed message). */
+  templatePickerRequest?: number
   replyTarget?: WhatsAppMessageDTO | null
   onClearReply?: () => void
 }) {
   const [text, setText] = useState('')
+  // Per-conversation draft: restored on mount, saved on every change (the
+  // view is remounted per conversation, so drafts never leak between them).
+  const draftLoaded = useRef(false)
+  useEffect(() => {
+    const draft = readDraft(workspaceId, conversationId)
+    if (draft) setText(draft)
+  }, [workspaceId, conversationId])
+  useEffect(() => {
+    if (!draftLoaded.current) {
+      draftLoaded.current = true
+      return
+    }
+    writeDraft(workspaceId, conversationId, text)
+  }, [workspaceId, conversationId, text])
   const quickSend = useQuickSend()
   const [attachments, setAttachments] = useState<StagedAttachment[]>([])
   const [emojiOpen, setEmojiOpen] = useState(false)
@@ -255,8 +316,8 @@ export function WhatsappComposer({
       )
       const uploaded = await uploadMedia.mutateAsync(file)
       await sendMedia.mutateAsync({ mediaUrl: uploaded.url, type: 'AUDIO' })
-    } catch {
-      notify.error('Erro ao enviar áudio')
+    } catch (error) {
+      notify.error(error, 'Erro ao enviar áudio')
     }
   })
 
@@ -322,13 +383,22 @@ export function WhatsappComposer({
     onApply: (quickReply) => pickQuickReply(quickReply, true),
   })
 
+  const connectionTemplates = (templates.data ?? []).filter(
+    (template) => !connection || template.connectionId === connection.id,
+  )
+  useEffect(() => {
+    if (templatePickerRequest > 0) setTemplateOpen(true)
+  }, [templatePickerRequest])
   const isUploading = attachments.some((a) => a.status === 'uploading')
   const isBusy =
     sendText.isPending ||
     sendMedia.isPending ||
     uploadMedia.isPending ||
     sendQuickReply.isPending
-  const isDisabled = Boolean(disabled) || isBusy || isUploading
+  // `lockedAll` blocks everything; `isDisabled` (free-form content) also
+  // blocks while the Meta 24h window is closed, when only templates go.
+  const lockedAll = Boolean(disabled) || isBusy || isUploading
+  const isDisabled = lockedAll || windowClosed
   const hasAttachments = attachments.length > 0
 
   function removeAttachment(id: string) {
@@ -389,8 +459,8 @@ export function WhatsappComposer({
         setAttachments((current) => current.filter((a) => !sentIds.has(a.id)))
         setText('')
         onClearReply?.()
-      } catch {
-        notify.error('Erro ao enviar arquivo')
+      } catch (error) {
+        notify.error(error, 'Erro ao enviar arquivo')
       }
       return
     }
@@ -403,8 +473,8 @@ export function WhatsappComposer({
       })
       setText('')
       onClearReply?.()
-    } catch {
-      notify.error('Erro ao enviar mensagem')
+    } catch (error) {
+      notify.error(error, 'Erro ao enviar mensagem')
     }
   }
 
@@ -442,8 +512,8 @@ export function WhatsappComposer({
           ),
         )
       },
-      onError: () => {
-        notify.error('Erro ao enviar arquivo')
+      onError: (error) => {
+        notify.error(error, 'Erro ao enviar arquivo')
         setAttachments((current) =>
           current.map((a) => (a.id === id ? { ...a, status: 'error' } : a)),
         )
@@ -453,6 +523,35 @@ export function WhatsappComposer({
 
   return (
     <div className='border-t p-2'>
+      {disabled && disabledReason ? (
+        <p
+          role='status'
+          className='mb-2 rounded-md bg-muted px-2.5 py-1.5 text-muted-foreground text-xs'
+        >
+          {disabledReason}
+        </p>
+      ) : null}
+      {!disabled && windowClosed ? (
+        <div
+          role='status'
+          className='mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted px-2.5 py-1.5 text-xs'
+        >
+          <span>
+            Passaram 24 horas desde a última mensagem de{' '}
+            {contactName?.trim() || 'o contato'}: só é possível enviar um modelo
+            (template) aprovado.
+          </span>
+          <Button
+            type='button'
+            size='xs'
+            variant='outline'
+            disabled={lockedAll}
+            onClick={() => setTemplateOpen(true)}
+          >
+            Escolher modelo
+          </Button>
+        </div>
+      ) : null}
       {replyTarget && (
         <div className='mb-2 flex items-center justify-between gap-2 rounded-md border-primary border-l-2 bg-muted/50 px-2.5 py-1.5'>
           <div className='flex min-w-0 items-center gap-2'>
@@ -607,58 +706,81 @@ export function WhatsappComposer({
               <Button
                 variant='ghost'
                 size='icon-sm'
-                disabled={isDisabled}
+                disabled={lockedAll}
                 aria-label='Template'
               >
                 <SteelIcon icon={File02Icon} size={18} />
               </Button>
             }
           />
-          <PopoverContent align='start' className='w-72 p-1'>
-            <div className='max-h-64 overflow-y-auto'>
-              {templates.data?.length ? (
-                templates.data.map((template) => (
-                  <button
-                    key={template.id}
-                    type='button'
-                    className='flex w-full flex-col items-start gap-0.5 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:opacity-50'
-                    disabled={
-                      template.status !== 'APPROVED' || sendTemplate.isPending
-                    }
-                    onClick={async () => {
-                      setTemplateOpen(false)
-                      const fields = extractTemplateFillableFields(
-                        parseMetaTemplateComponents(template.components),
-                      )
-                      if (hasFillableFields(fields)) {
-                        setPendingTemplate(template)
-                        setVariablesDialogOpen(true)
-                        return
-                      }
-                      try {
-                        await sendTemplate.mutateAsync({
-                          templateName: template.name,
-                          language: template.language,
-                        })
-                      } catch {
-                        notify.error('Erro ao enviar template')
-                      }
-                    }}
-                  >
-                    <span className='flex w-full min-w-0 items-center gap-1.5 font-medium'>
-                      <TemplateQualityBadge quality={template.quality} />
-                      <span className='truncate'>{template.name}</span>
-                    </span>
-                    <span className='text-muted-foreground text-xs'>
-                      {template.language} ·{' '}
-                      {TEMPLATE_STATUS_LABEL[template.status]}
-                    </span>
-                  </button>
-                ))
-              ) : (
+          <PopoverContent align='start' className='w-80 p-1'>
+            <div className='max-h-72 overflow-y-auto'>
+              {connection?.provider === 'ZAPI' ? (
+                <p className='p-2 text-muted-foreground text-xs'>
+                  O número {connection.label} usa Z-API, que não tem modelos
+                  (templates). Escreva a mensagem normalmente.
+                </p>
+              ) : !templates.data?.length ? (
                 <p className='p-2 text-muted-foreground text-xs'>
                   Nenhum template sincronizado
                 </p>
+              ) : connectionTemplates.length === 0 ? (
+                <p className='p-2 text-muted-foreground text-xs'>
+                  Nenhum modelo cadastrado para este número
+                  {connection ? ` (${connection.label})` : ''}. Peça ao
+                  administrador para criar e sincronizar em Configurações.
+                </p>
+              ) : (
+                connectionTemplates.map((template) => {
+                  const blocked = templateBlockedReason(template)
+                  const body = templateBodyText(template.components)
+                  return (
+                    <button
+                      key={template.id}
+                      type='button'
+                      title={blocked ?? undefined}
+                      className='flex w-full flex-col items-start gap-0.5 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:opacity-50'
+                      disabled={blocked !== null || sendTemplate.isPending}
+                      onClick={async () => {
+                        setTemplateOpen(false)
+                        const fields = extractTemplateFillableFields(
+                          parseMetaTemplateComponents(template.components),
+                        )
+                        if (hasFillableFields(fields)) {
+                          setPendingTemplate(template)
+                          setVariablesDialogOpen(true)
+                          return
+                        }
+                        try {
+                          await sendTemplate.mutateAsync({
+                            templateName: template.name,
+                            language: template.language,
+                          })
+                        } catch (error) {
+                          notify.error(error, 'Erro ao enviar template')
+                        }
+                      }}
+                    >
+                      <span className='flex w-full min-w-0 items-center gap-1.5 font-medium'>
+                        <TemplateQualityBadge quality={template.quality} />
+                        <span className='truncate'>{template.name}</span>
+                      </span>
+                      <span className='text-muted-foreground text-xs'>
+                        {template.language} ·{' '}
+                        {TEMPLATE_STATUS_LABEL[template.status]}
+                      </span>
+                      {blocked ? (
+                        <span className='text-muted-foreground text-xs'>
+                          {blocked}
+                        </span>
+                      ) : body ? (
+                        <span className='line-clamp-2 whitespace-pre-wrap text-muted-foreground text-xs'>
+                          {body}
+                        </span>
+                      ) : null}
+                    </button>
+                  )
+                })
               )}
             </div>
           </PopoverContent>
@@ -771,7 +893,11 @@ export function WhatsappComposer({
                 handleSend()
               }
             }}
-            placeholder='Digite uma mensagem'
+            placeholder={
+              windowClosed
+                ? 'Só é possível enviar um modelo (template) aprovado'
+                : 'Digite uma mensagem'
+            }
             aria-label='Mensagem'
             aria-controls={slash.open ? QUICK_REPLY_LIST_ID : undefined}
             title={quickSend.hint}
@@ -814,8 +940,8 @@ export function WhatsappComposer({
             })
             setVariablesDialogOpen(false)
             setPendingTemplate(null)
-          } catch {
-            notify.error('Erro ao enviar template')
+          } catch (error) {
+            notify.error(error, 'Erro ao enviar template')
           }
         }}
       />
@@ -844,8 +970,8 @@ export function WhatsappComposer({
                     try {
                       await sendContact.mutateAsync({ contactId: contact.id })
                       setShareContactOpen(false)
-                    } catch {
-                      notify.error('Erro ao enviar contato')
+                    } catch (error) {
+                      notify.error(error, 'Erro ao enviar contato')
                     }
                   }}
                 >

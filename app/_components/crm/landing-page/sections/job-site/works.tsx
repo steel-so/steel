@@ -27,33 +27,38 @@ const JOB_TAG_COLORS: Record<string, string> = {
   Remote: 'text-[#473bf0]',
   Contract: 'text-[#473bf0]',
   Internship: 'text-[#68d585]',
+  'Tempo integral': 'text-[#68d585]',
+  'Meio período': 'text-[#f64b4b]',
+  Remoto: 'text-[#473bf0]',
+  Contrato: 'text-[#473bf0]',
+  Estágio: 'text-[#68d585]',
 }
 
 export function worksDefaultContent(): WorksContent {
   return {
     type: 'WORKS',
-    title: 'Featured jobs',
+    title: 'Vagas em destaque',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding.',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
     items: [
       {
-        title: 'Senior Software Engineer — Dorfus, New York, USA',
-        category: 'Full-time',
+        title: 'Engenheiro(a) de Software Sênior — Dorfus, São Paulo, SP',
+        category: 'Tempo integral',
         imageUrl: `${BASE}/job-logo-dorfus.png`,
       },
       {
-        title: 'Product Designer — Coworks, Lake Colby, UK',
-        category: 'Remote',
+        title: 'Designer de Produto — Coworks, Curitiba, PR',
+        category: 'Remoto',
         imageUrl: `${BASE}/job-logo-coworks.svg`,
       },
       {
-        title: 'UX Designer — Askimat, California, USA',
-        category: 'Full-time',
+        title: 'Designer de UX — Askimat, Florianópolis, SC',
+        category: 'Tempo integral',
         imageUrl: `${BASE}/job-logo-askimat.png`,
       },
       {
-        title: 'Full-stack Web Developer — Greener, Katlynburgh, Sweden',
-        category: 'Part-time',
+        title: 'Desenvolvedor(a) Web Full-stack — Greener, Belo Horizonte, MG',
+        category: 'Meio período',
         imageUrl: `${BASE}/job-logo-greener.svg`,
       },
     ],
@@ -63,23 +68,23 @@ export function worksDefaultContent(): WorksContent {
 export function newsDefaultContent(): WorksContent {
   return {
     type: 'WORKS',
-    title: 'News that helps',
+    title: 'Notícias que ajudam',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
     items: [
       {
-        title: 'How to win any job you want. Get started with 5 steps.',
-        category: 'Career',
+        title: 'Como conquistar a vaga que você quer em 5 passos.',
+        category: 'Carreira',
         imageUrl: `${BASE}/news-1.png`,
       },
       {
-        title: '10 ways to reduce your office work depression.',
-        category: 'Lifestyle',
+        title: '10 formas de reduzir o desânimo no trabalho de escritório.',
+        category: 'Estilo de vida',
         imageUrl: `${BASE}/news-2.png`,
       },
       {
-        title: 'Why should you work as a team even on small projects.',
-        category: 'Career',
+        title: 'Por que trabalhar em equipe até nos projetos pequenos.',
+        category: 'Carreira',
         imageUrl: `${BASE}/news-3.png`,
       },
     ],

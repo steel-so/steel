@@ -38,3 +38,31 @@ export const CrmMemberDTO = dto(
     })
     .meta({ description: 'Membro do workspace, para atribuição no CRM.' }),
 )
+
+export const CrmRetentionSettingsDTO = dto(
+  'CrmRetentionSettings',
+  z.object({
+    workspaceId: z.string(),
+    onDetractor: z.boolean().meta({
+      description:
+        'Uma resposta detratora (NPS/CSAT) cria uma tarefa de retenção para o responsável da conta.',
+    }),
+    onHealthDrop: z.boolean().meta({
+      description:
+        'Uma queda de saúde do cliente cria uma tarefa de retenção para o responsável da conta.',
+    }),
+    createOpportunity: z.boolean().meta({
+      description: 'Abre também uma oportunidade de retenção.',
+    }),
+    taskDueDays: z.number().int().meta({
+      description: 'Prazo da tarefa, em dias.',
+      example: 2,
+    }),
+    isDefault: z.boolean().meta({
+      description:
+        '`true` enquanto o workspace nunca salvou as regras (valores padrão).',
+    }),
+    updatedById: z.string().nullable(),
+    updatedAt: z.iso.datetime().nullable(),
+  }),
+)

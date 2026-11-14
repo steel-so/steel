@@ -128,10 +128,11 @@ export function CrmOpportunitiesTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmOpportunityDTO>(
+  const list = useCrmResourceList<CrmOpportunityDTO>(
     workspaceId,
     'opportunities',
   )
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'OPPORTUNITY')
 
@@ -180,6 +181,7 @@ export function CrmOpportunitiesTable({
           createTitle='oportunidade'
           lookups={lookups}
           isLoading={isLoading}
+          error={error}
           searchPlaceholder='Buscar oportunidades…'
           refetch={refetch}
           headerExtra={
@@ -270,6 +272,7 @@ export function CrmOpportunitiesTable({
                 workspaceId={workspaceId}
                 opportunityId={record.id}
                 productOptions={lookups.options.products}
+                slug={slug}
                 onChanged={refetch}
               />
               <RecordDocumentsSection

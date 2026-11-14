@@ -13,14 +13,14 @@ export function factsDefaultContent(): FactsContent {
   return {
     type: 'FACTS',
     items: [
-      { value: '06', label: 'Offices are available on different countries' },
+      { value: '06', label: 'Escritórios disponíveis em diferentes países' },
       {
         value: '238',
-        label: 'Seats are available right now with dedicated support',
+        label: 'Lugares disponíveis agora, com suporte dedicado',
       },
       {
         value: '1,395',
-        label: 'People are using our co-work spaces right now',
+        label: 'Pessoas usando nossos espaços de coworking agora',
       },
     ],
   }

@@ -25,6 +25,7 @@ export function createFakeWhatsAppMessage(
     buttonPayload: null,
     sentiment: null,
     sentimentScore: null,
+    failureReason: null,
     deletedAt: null,
     createdAt: now,
     updatedAt: now,

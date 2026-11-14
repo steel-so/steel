@@ -10,6 +10,7 @@ import {
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
 import { CustomerHealthPanel } from '@/app/_components/crm/health/health-panel'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
@@ -59,8 +60,13 @@ const COLUMNS: GridColumn[] = [
     placeholder: 'linkedin.com/company/acme',
   },
   { key: 'address', header: 'Endereço (CEP)', kind: 'address' },
-  { key: 'arr', header: 'ARR', kind: 'money', placeholder: '250000' },
-  { key: 'icp', header: 'ICP', kind: 'boolean' },
+  {
+    key: 'arr',
+    header: 'Receita anual (ARR)',
+    kind: 'money',
+    placeholder: '250000',
+  },
+  { key: 'icp', header: 'Cliente ideal (ICP)', kind: 'boolean' },
   {
     key: 'accountOwnerId',
     header: 'Responsável pela conta',
@@ -93,10 +99,8 @@ export function CrmCompaniesTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmCompanyDTO>(
-    workspaceId,
-    'companies',
-  )
+  const list = useCrmResourceList<CrmCompanyDTO>(workspaceId, 'companies')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'COMPANY')
   const canEdit = useCan('companies', 'EDIT')
@@ -135,12 +139,23 @@ export function CrmCompaniesTable({
           createTitle='empresa'
           lookups={lookups}
           isLoading={isLoading}
+          error={error}
           searchPlaceholder='Buscar empresas…'
           refetch={refetch}
           headerExtra={
-            isPrivileged ? (
-              <CnpjBulkDialog workspaceId={workspaceId} onFinished={refetch} />
-            ) : null
+            <>
+              <CrmImportButton
+                workspaceId={workspaceId}
+                entity='companies'
+                onImported={refetch}
+              />
+              {isPrivileged ? (
+                <CnpjBulkDialog
+                  workspaceId={workspaceId}
+                  onFinished={refetch}
+                />
+              ) : null}
+            </>
           }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-4'>

@@ -27,19 +27,19 @@ const ICON_VARIANTS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'Listen music anytime, anywhere.',
+    title: 'Ouça música a qualquer hora, em qualquer lugar.',
     subtitle:
-      'We share common trends and strategies for improving your rental income.',
+      'Compartilhamos tendências e estratégias para você melhorar seus resultados.',
     items: [
       {
-        title: 'Comfortable Buds',
+        title: 'Fones confortáveis',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código.',
       },
       {
-        title: 'Powerful Bass',
+        title: 'Graves potentes',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código.',
       },
     ],
   }

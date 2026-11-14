@@ -10,6 +10,7 @@ import { useId, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -249,14 +250,23 @@ export function RedirectsDialog({
                           className='size-3.5'
                         />
                       </button>
-                      <button
-                        type='button'
-                        aria-label={`Excluir ${redirect.fromPath}`}
-                        onClick={() => void remove(redirect)}
-                        className='flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
-                      >
-                        <SteelIcon icon={Delete02Icon} className='size-3.5' />
-                      </button>
+                      <ConfirmAction
+                        trigger={
+                          <button
+                            type='button'
+                            aria-label={`Excluir ${redirect.fromPath}`}
+                            className='flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                          >
+                            <SteelIcon
+                              icon={Delete02Icon}
+                              className='size-3.5'
+                            />
+                          </button>
+                        }
+                        title='Excluir este redirecionamento?'
+                        description={`Quem acessar ${redirect.fromPath} deixa de ser levado ao novo endereço.`}
+                        onConfirm={() => remove(redirect)}
+                      />
                     </span>
                   ) : null}
                 </li>

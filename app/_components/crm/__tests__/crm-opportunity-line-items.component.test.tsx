@@ -141,6 +141,7 @@ describe('<CrmOpportunityLineItems />', () => {
     const { onChanged } = renderItems()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Remover item' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover' }))
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('Sem permissão para editar'),
@@ -200,6 +201,7 @@ describe('<CrmOpportunityLineItems />', () => {
     const { onChanged } = renderItems()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Remover item' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Remover' }))
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith(

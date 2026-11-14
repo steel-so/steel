@@ -19,10 +19,10 @@ const DEFAULT_BG = '/landing-page-templates/consultation/hero-bg.png'
 export function consultationHeroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    title: 'Get help from the expert consultants.',
+    title: 'Conte com a ajuda de consultores especialistas.',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Get started now',
+      'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+    ctaLabel: 'Comece agora',
     ctaHref: '#footer',
     imageUrl: DEFAULT_BG,
   }
@@ -71,7 +71,11 @@ function AlertStrip({
           className='underline underline-offset-2'
         >
           <GhostInput
-            value={textOf(content, 'alert.link', 'Get it now for $49')}
+            value={textOf(
+              content,
+              'alert.link',
+              'Garanta o seu agora por R$ 49',
+            )}
             onCommit={(v) => onChange?.(withText(content, 'alert.link', v))}
             placeholder='Texto do link'
             readOnly={readOnly}

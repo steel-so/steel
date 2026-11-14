@@ -13,6 +13,7 @@ export function createFakeSdNotifyOutcome(
     inApp: 1,
     email: 0,
     whatsapp: 0,
+    whatsappSkippedOptOut: 0,
     skipped: null,
     ...overrides,
   }

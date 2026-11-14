@@ -27,11 +27,11 @@ export function heroDefaultContent(): HeroContent {
     // fino entre Hero e Content 01) — reaproveitamos `eyebrow`, que aqui não
     // é usado acima do título (o design de referência não tem esse texto ali),
     // pra guardar o texto da faixa de anúncio renderizada no rodapé do Hero.
-    eyebrow: 'Interested how our software works for you?',
-    title: 'Make your business powerful with Shade.',
+    eyebrow: 'Quer saber como o nosso software funciona para você?',
+    title: 'Dê mais poder ao seu negócio com a Sua Empresa.',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-    ctaLabel: 'Get A Free Quote',
+      'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+    ctaLabel: 'Solicitar orçamento grátis',
     ctaHref: '#footer',
     imageUrl: DEFAULT_PORTRAIT,
   }
@@ -119,7 +119,7 @@ export function B2bHero({
             >
               <SteelIcon icon={PlayIcon} strokeWidth={2} size={18} />
               <GhostInput
-                value={textOf(content, 'video', 'Watch how we can help')}
+                value={textOf(content, 'video', 'Veja como podemos ajudar')}
                 onCommit={(v) => onChange?.(withText(content, 'video', v))}
                 placeholder='Texto do link'
                 readOnly={readOnly}

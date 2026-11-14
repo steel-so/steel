@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -137,14 +138,21 @@ export function WhatsappDashboardsList({
             >
               {dashboard.title}
             </button>
-            <Button
-              size='icon-xs'
-              variant='ghost'
-              aria-label='Remover painel'
-              onClick={() => handleDelete(dashboard.id)}
-            >
-              <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-            </Button>
+            <ConfirmAction
+              trigger={
+                <Button
+                  size='icon-xs'
+                  variant='ghost'
+                  aria-label='Remover painel'
+                >
+                  <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                </Button>
+              }
+              title={`Remover o painel "${dashboard.title}"?`}
+              description='O painel e os gráficos dele são apagados. Não dá para desfazer.'
+              confirmLabel='Remover'
+              onConfirm={() => handleDelete(dashboard.id)}
+            />
           </div>
         ))}
         {!isLoading && error && (

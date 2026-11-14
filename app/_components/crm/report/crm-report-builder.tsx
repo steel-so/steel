@@ -18,6 +18,7 @@ import {
 } from '@/app/_components/crm/report/query-helpers'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -245,14 +246,20 @@ function CrmReportBuilderInner({
             </a>
           }
         />
-        <Button
-          size='icon-sm'
-          variant='ghost'
-          aria-label='Excluir relatório'
-          onClick={handleDelete}
-        >
-          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button
+              size='icon-sm'
+              variant='ghost'
+              aria-label='Excluir relatório'
+            >
+              <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+            </Button>
+          }
+          title={`Excluir o relatório "${name.trim() || 'sem título'}"?`}
+          description='O relatório e a configuração dele serão apagados. Não dá para desfazer.'
+          onConfirm={handleDelete}
+        />
       </header>
 
       <div className='flex min-h-0 flex-1 flex-col lg:flex-row'>
@@ -288,18 +295,18 @@ function ModeSection({ query, setQuery }: SectionProps) {
   }
   return (
     <div className='flex flex-col gap-2'>
-      <Label>Modo</Label>
+      <Label>Como montar o relatório</Label>
       <div className='grid grid-cols-2 gap-1.5'>
         <ModeChip
           active={query.mode === 'join'}
-          title='Mesclar (JOIN)'
-          desc='Enriquece com colunas de fontes relacionadas'
+          title='Uma fonte principal'
+          desc='Parte de uma lista (ex.: leads) e acrescenta colunas de dados ligados a ela'
           onClick={() => switchTo('join')}
         />
         <ModeChip
           active={query.mode === 'union'}
-          title='Empilhar (UNION)'
-          desc='Junta registros de fontes diferentes'
+          title='Várias listas em uma'
+          desc='Junta, uma embaixo da outra, listas de fontes diferentes (ex.: leads e pessoas)'
           onClick={() => switchTo('union')}
         />
       </div>
@@ -834,7 +841,9 @@ function PreviewSection({
           <Skeleton className='h-64 w-full' />
         ) : !data || data.rows.length === 0 ? (
           <p className='rounded-lg border border-dashed bg-card py-16 text-center text-muted-foreground text-sm'>
-            Sem dados para a configuração atual.
+            Nenhum registro encontrado com esta configuração. Escolha ao menos
+            uma coluna e, se houver filtros, afrouxe-os. Se a fonte ainda não
+            tem registros, cadastre alguns no CRM e volte aqui.
           </p>
         ) : (
           <div className='overflow-auto rounded-lg border bg-card'>

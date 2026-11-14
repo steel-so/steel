@@ -40,10 +40,8 @@ export function CrmDashboardsTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmDashboardDTO>(
-    workspaceId,
-    'dashboards',
-  )
+  const list = useCrmResourceList<CrmDashboardDTO>(workspaceId, 'dashboards')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
 
@@ -57,6 +55,7 @@ export function CrmDashboardsTable({
       createTitle='painel'
       lookups={lookups}
       isLoading={isLoading}
+      error={error}
       searchPlaceholder='Buscar painéis…'
       refetch={refetch}
     />

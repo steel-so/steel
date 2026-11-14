@@ -13,9 +13,9 @@ export function consultationFactsDefaultContent(): FactsContent {
   return {
     type: 'FACTS',
     items: [
-      { value: '1M+', label: 'Customers visit Albino every months' },
-      { value: '93%', label: 'Satisfaction rate from our customers.' },
-      { value: '4.9', label: 'Average customer ratings out of 5.00!' },
+      { value: '1M+', label: 'Clientes nos visitam todos os meses' },
+      { value: '93%', label: 'Índice de satisfação dos nossos clientes.' },
+      { value: '4.9', label: 'Nota média dos clientes, em 5,00!' },
     ],
   }
 }

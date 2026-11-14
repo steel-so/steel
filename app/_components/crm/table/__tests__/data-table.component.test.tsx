@@ -1,5 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
 import type { Lookups } from '@/src/hooks/use-crm-workspace-lookups'
 import { DataTable } from '../data-table'
@@ -48,6 +54,24 @@ const ROWS = Array.from({ length: 25 }, (_, i) => {
   }
 })
 
+function renderEmptyTable(props: { error?: string | null } = {}) {
+  const refetch = vi.fn()
+  render(
+    <DataTable
+      columns={COLUMNS}
+      data={[]}
+      workspaceId='ws1'
+      slug='acme'
+      resource='people'
+      createTitle='pessoa'
+      lookups={LOOKUPS}
+      refetch={refetch}
+      {...props}
+    />,
+  )
+  return { refetch }
+}
+
 function renderTable() {
   return render(
     <DataTable
@@ -81,6 +105,9 @@ function openHeaderMenu(label: string) {
 }
 
 describe('<DataTable /> (CRM grid on TanStack Table v9)', () => {
+  // Filters and sorting persist in localStorage; start each test clean.
+  beforeEach(() => window.localStorage.clear())
+
   it('pages the rows ten at a time', () => {
     renderTable()
 
@@ -150,5 +177,66 @@ describe('<DataTable /> (CRM grid on TanStack Table v9)', () => {
 
     const summary = screen.getByText(/linha\(s\) selecionada\(s\)/)
     expect(summary.textContent?.replace(/\s+/g, ' ')).toContain('10 de 25')
+  })
+
+  it('offers "Limpar filtros" when the search hides every row', async () => {
+    renderTable()
+    fireEvent.change(screen.getByLabelText('Pesquisar…'), {
+      target: { value: 'zzz' },
+    })
+
+    expect(
+      await screen.findByText('Nenhum registro com estes filtros'),
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(await screen.findByText('Pessoa 01')).toBeTruthy()
+  })
+
+  it('shows the load error with a retry button', () => {
+    const { refetch } = renderEmptyTable({
+      error: 'Erro de rede. Tente novamente.',
+    })
+
+    expect(screen.getByText('Não foi possível carregar a lista')).toBeTruthy()
+    expect(screen.getByText('Erro de rede. Tente novamente.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the create form instead of inserting a placeholder record', () => {
+    renderEmptyTable()
+
+    fireEvent.click(screen.getAllByText('Nova pessoa')[0])
+
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByText('Criar pessoa')).toBeTruthy()
+  })
+})
+
+describe('<DataTable /> persisted view state', () => {
+  beforeEach(() => window.localStorage.clear())
+
+  it('restores the column filters saved for the same workspace and resource', async () => {
+    window.localStorage.setItem(
+      'steel:crm-table-state:ws1:people',
+      JSON.stringify({
+        filters: [{ id: 'city', value: 'natal' }],
+        sorting: [],
+      }),
+    )
+    renderTable()
+
+    // 12 people live in Natal: two pages instead of three.
+    await waitFor(() =>
+      expect(screen.getByText(/Página 1 de/).textContent).toContain('de 2'),
+    )
+  })
+
+  it('ignores a corrupted saved state', () => {
+    window.localStorage.setItem('steel:crm-table-state:ws1:people', '{nope')
+    renderTable()
+
+    expect(renderedNames()).toHaveLength(10)
   })
 })

@@ -9,6 +9,7 @@ import {
 import HeaderInternalNavigation from '@/app/_components/header/header-internal-navigation'
 import { SteelIcon } from '@/components/icon/icon'
 import { getAuthSession } from '@/src/lib/auth-session'
+import { DOCUMENT_KINDS } from '@/src/schemas/document.schema'
 import { MembershipService } from '@/src/services/membership.service'
 
 export const metadata: Metadata = {
@@ -18,14 +19,14 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ 'workspace-slug': string }>
-  searchParams: Promise<{ tab?: string | string[] }>
+  searchParams: Promise<{ tab?: string | string[]; kind?: string | string[] }>
 }
 
 export default async function CrmDocumentsPage({
   params,
   searchParams,
 }: Props) {
-  const [{ 'workspace-slug': slug }, { tab }] = await Promise.all([
+  const [{ 'workspace-slug': slug }, { tab, kind }] = await Promise.all([
     params,
     searchParams,
   ])
@@ -38,6 +39,12 @@ export default async function CrmDocumentsPage({
     slug,
   )
   if (!membership.ok || !membership.value) notFound()
+
+  const initialKind =
+    typeof kind === 'string' &&
+    (DOCUMENT_KINDS as readonly string[]).includes(kind)
+      ? kind
+      : ''
 
   return (
     <div className='flex h-full w-full min-h-0 flex-col'>
@@ -55,7 +62,9 @@ export default async function CrmDocumentsPage({
       <div className='min-h-0 flex-1 overflow-y-auto'>
         <DocumentsList
           workspaceId={membership.value.workspaceId}
+          key={`${tab ?? ''}:${kind ?? ''}`}
           slug={slug}
+          initialKind={initialKind}
           initialTab={tab === 'modelos' ? 'templates' : 'documents'}
         />
       </div>

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -136,16 +137,23 @@ export function WhatsAppAdSpends({
                       {formatBrl(row.amount)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='icon-sm'
-                        aria-label={`Excluir gasto de ${row.label ?? row.sourceId}`}
-                        disabled={remove.isPending}
-                        onClick={() => handleDelete(row.id)}
-                      >
-                        <SteelIcon icon={Delete02Icon} />
-                      </Button>
+                      <ConfirmAction
+                        trigger={
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            size='icon-sm'
+                            aria-label={`Excluir gasto de ${row.label ?? row.sourceId}`}
+                            disabled={remove.isPending}
+                          >
+                            <SteelIcon icon={Delete02Icon} />
+                          </Button>
+                        }
+                        title='Excluir este gasto?'
+                        description='O custo por lead e o retorno dos anúncios deste período serão recalculados sem ele.'
+                        pending={remove.isPending}
+                        onConfirm={() => handleDelete(row.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -18,6 +18,10 @@ vi.mock('@/src/repositories/workspace-module-access.repository')
 vi.mock('@/src/repositories/crm-health.repository')
 vi.mock('@/src/repositories/crm-health-signals.repository')
 vi.mock('../crm-notifications')
+vi.mock('../crm-retention.service', () => ({
+  CrmRetentionService: { onHealthDrop: vi.fn() },
+  runRetentionSafely: vi.fn(),
+}))
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -34,6 +38,10 @@ import {
   notifyCrmCustomerHealthDrop,
   notifyCrmOpportunityAtRisk,
 } from '../crm-notifications'
+import {
+  CrmRetentionService,
+  runRetentionSafely,
+} from '../crm-retention.service'
 
 const members = vi.mocked(MembershipRepository)
 const moduleAccess = vi.mocked(WorkspaceModuleAccessRepository)
@@ -291,6 +299,19 @@ describe('customer health', () => {
       expect.objectContaining({
         entity: 'crm_customer_health',
         targetId: 'c1',
+      }),
+    )
+    expect(runRetentionSafely).toHaveBeenCalledWith(
+      'health_drop',
+      expect.any(Function),
+    )
+    await vi.mocked(runRetentionSafely).mock.calls[0][1]()
+    expect(CrmRetentionService.onHealthDrop).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws',
+        company: { id: 'c1', name: 'Acme', accountOwnerId: 'owner1' },
+        riskScore: 80,
+        now,
       }),
     )
   })

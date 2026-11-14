@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestQueryClient,
   type FetchRoute,
@@ -36,6 +36,11 @@ vi.mock('@/components/ui/emoji-picker', () => ({
   EmojiPickerContent: () => null,
   EmojiPickerFooter: () => null,
 }))
+
+// Drafts persist per conversation in localStorage: start every test clean.
+beforeEach(() => {
+  window.localStorage.clear()
+})
 
 const API = '/api/workspaces/ws_1/whatsapp'
 const MESSAGES = `${API}/conversations/cv_1/messages`
@@ -133,8 +138,9 @@ function renderComposer(
   return { ...utils, onClearReply }
 }
 
+// By accessible name: the placeholder changes when the 24h window is closed.
 const textarea = () =>
-  screen.getByPlaceholderText('Digite uma mensagem') as HTMLTextAreaElement
+  screen.getByRole('textbox', { name: 'Mensagem' }) as HTMLTextAreaElement
 const sendButton = () =>
   screen.getByRole('button', { name: 'Enviar' }) as HTMLButtonElement
 
@@ -202,7 +208,10 @@ describe('<WhatsappComposer /> text', () => {
     fireEvent.click(sendButton())
 
     await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith('Erro ao enviar mensagem'),
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.anything(),
+        'Erro ao enviar mensagem',
+      ),
     )
     expect(textarea().value).toBe('Oi')
   })
@@ -381,7 +390,10 @@ describe('<WhatsappComposer /> attachments and contacts', () => {
     })
 
     expect(await screen.findByText('Falha no envio')).toBeTruthy()
-    expect(notify.error).toHaveBeenCalledWith('Erro ao enviar arquivo')
+    expect(notify.error).toHaveBeenCalledWith(
+      expect.anything(),
+      'Erro ao enviar arquivo',
+    )
     expect(sendButton().disabled).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remover anexo' }))
@@ -793,5 +805,95 @@ describe('<WhatsappComposer /> quick replies with buttons', () => {
       ),
     )
     expect(screen.getByText(/Mensagem rápida com botões/)).toBeTruthy()
+  })
+})
+
+describe('<WhatsappComposer /> usability guards', () => {
+  const META = { id: 'conn_1', provider: 'META' as const, label: 'Vendas' }
+
+  it('explains why the composer is locked', () => {
+    setup()
+    renderComposer({
+      disabled: true,
+      disabledReason: 'A IA está atendendo esta conversa.',
+    })
+    expect(screen.getByText('A IA está atendendo esta conversa.')).toBeTruthy()
+  })
+
+  it('only allows templates once the 24h window is closed', async () => {
+    setup()
+    renderComposer({ windowClosed: true, connection: META })
+
+    expect(screen.getByText(/Passaram 24 horas/)).toBeTruthy()
+    expect(textarea().disabled).toBe(true)
+    for (const name of ['Mensagem rápida', 'Emoji', 'Anexo']) {
+      expect(
+        (screen.getByRole('button', { name }) as HTMLButtonElement).disabled,
+      ).toBe(true)
+    }
+    expect(
+      (screen.getByRole('button', { name: 'Template' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher modelo' }))
+    expect(
+      await screen.findByRole('button', { name: /boas_vindas/ }),
+    ).toBeTruthy()
+  })
+
+  it('lists only the templates of the conversation number, with the reason', async () => {
+    setup([], {
+      templates: [
+        template('t1', 'boas_vindas', 'APPROVED'),
+        {
+          ...template('t2', 'outro_numero', 'APPROVED'),
+          connectionId: 'other',
+        },
+        {
+          ...template('t3', 'recusado', 'REJECTED'),
+          statusReason: 'Texto promocional demais',
+        },
+      ],
+    })
+    renderComposer({ connection: META })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Template' }))
+    expect(
+      await screen.findByRole('button', { name: /boas_vindas/ }),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /outro_numero/ })).toBeNull()
+    const rejected = screen.getByRole('button', { name: /recusado/ })
+    expect((rejected as HTMLButtonElement).disabled).toBe(true)
+    expect(within(rejected).getByText(/Texto promocional demais/)).toBeTruthy()
+  })
+
+  it('explains that Z-API has no templates', async () => {
+    setup()
+    renderComposer({
+      connection: { id: 'conn_z', provider: 'ZAPI', label: 'Suporte' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Template' }))
+    expect(await screen.findByText(/usa Z-API/)).toBeTruthy()
+  })
+
+  it('restores the draft of this conversation only', () => {
+    setup()
+    window.localStorage.setItem('steel:zap-draft:ws_1:cv_1', 'rascunho salvo')
+    window.localStorage.setItem(
+      'steel:zap-draft:ws_1:cv_2',
+      'de outra conversa',
+    )
+    renderComposer()
+    expect(textarea().value).toBe('rascunho salvo')
+  })
+
+  it('saves the draft while typing and clears it when emptied', () => {
+    setup()
+    renderComposer()
+    fireEvent.change(textarea(), { target: { value: 'Olá' } })
+    expect(window.localStorage.getItem('steel:zap-draft:ws_1:cv_1')).toBe('Olá')
+    fireEvent.change(textarea(), { target: { value: '' } })
+    expect(window.localStorage.getItem('steel:zap-draft:ws_1:cv_1')).toBeNull()
   })
 })

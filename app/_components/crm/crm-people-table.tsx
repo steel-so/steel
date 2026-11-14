@@ -7,6 +7,7 @@ import {
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
 import { CrmRecordTimeline } from '@/app/_components/crm/crm-record-timeline'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { CrmPersonNewslettersCard } from '@/app/_components/crm/newsletters/bridge/crm-person-newsletters-card'
 import { DataTable } from '@/app/_components/crm/table/data-table'
 import type { GridColumn } from '@/app/_components/crm/table/grid'
@@ -50,7 +51,7 @@ const COLUMNS: GridColumn[] = [
     key: 'jobTitle',
     header: 'Cargo',
     kind: 'text',
-    placeholder: 'Head of Sales',
+    placeholder: 'Gerente de vendas',
   },
   {
     key: 'linkedin',
@@ -90,10 +91,8 @@ export function CrmPeopleTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmPersonDTO>(
-    workspaceId,
-    'people',
-  )
+  const list = useCrmResourceList<CrmPersonDTO>(workspaceId, 'people')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const { data: customFields } = useCrmCustomFields(workspaceId, 'PERSON')
 
@@ -128,8 +127,16 @@ export function CrmPeopleTable({
           createTitle='pessoa'
           lookups={lookups}
           isLoading={isLoading}
+          error={error}
           searchPlaceholder='Buscar pessoas…'
           refetch={refetch}
+          headerExtra={
+            <CrmImportButton
+              workspaceId={workspaceId}
+              entity='people'
+              onImported={refetch}
+            />
+          }
           renderRecordExtra={(record) => (
             <div className='flex flex-col gap-6'>
               <CrmPersonNewslettersCard

@@ -9,7 +9,7 @@ import type { LandingPageTemplateDefinition } from './index'
  */
 export const agencyTemplate: LandingPageTemplateDefinition = {
   key: 'agency',
-  name: 'Agency',
+  name: 'Agência',
   description: 'Modelo para agências criativas e estúdios de design.',
   sections: [
     {
@@ -19,11 +19,11 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
         logoText: 'Brainwave.io',
         navLinks: [
           { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Get started a project',
+        ctaLabel: 'Iniciar um projeto',
         ctaHref: '#footer',
       },
     },
@@ -31,11 +31,11 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        eyebrow: "Let's shift your business",
-        title: 'Shift your business fast with Shade Pro.',
+        eyebrow: 'Vamos transformar o seu negócio',
+        title: 'Acelere o seu negócio com a Sua Empresa.',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Get started a project',
+          'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+        ctaLabel: 'Iniciar um projeto',
         ctaHref: '#footer',
         imageUrl: '/landing-page-templates/agency/hero-portrait.png',
       },
@@ -44,22 +44,23 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'SERVICES',
       content: {
         type: 'SERVICES',
-        title: 'We provide great services for our customers based on needs',
+        title:
+          'Entregamos serviços de excelência, sob medida para cada cliente',
         items: [
           {
-            title: 'Graphic Design',
+            title: 'Design Gráfico',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Web Development',
+            title: 'Desenvolvimento Web',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Content Writing',
+            title: 'Produção de Conteúdo',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
         ],
       },
@@ -69,9 +70,9 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'OMG! I cannot believe that I have got a brand new landing page after getting Albino. It was super easy to edit and publish.',
+          'Uau! Nem acredito que ganhei uma landing page nova. Foi muito fácil de editar e publicar.',
         authorName: 'Franklin Hicks',
-        authorRole: 'Web Developer',
+        authorRole: 'Desenvolvedor Web',
         avatarUrl: '/landing-page-templates/agency/testimonial-avatar-1.png',
         style: 'default',
       },
@@ -80,11 +81,10 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        eyebrow: 'Our Story',
-        title:
-          'We know how everything works and why your business is failing over and over again.',
+        eyebrow: 'Nossa história',
+        title: 'Sabemos como tudo funciona e por que o seu negócio não decola.',
         description:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand. With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Compartilhamos tendências e estratégias para aumentar a sua receita e manter a sua empresa sempre em alta demanda. Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: '/landing-page-templates/agency/about-photo-main.png',
         imageUrls: [
           '/landing-page-templates/agency/about-photo-2.png',
@@ -100,15 +100,15 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
           {
             value: '1M+',
             label:
-              'Customers visit Omega every month to get their service done.',
+              'Clientes nos procuram todo mês para resolver suas demandas.',
           },
           {
             value: '92%',
-            label: 'Satisfaction rate comes from our awesome customers.',
+            label: 'Índice de satisfação dos nossos clientes incríveis.',
           },
           {
             value: '4.9/5.0',
-            label: 'Average customer ratings we have got all over internet.',
+            label: 'Nota média que recebemos dos clientes em toda a internet.',
           },
         ],
       },
@@ -117,34 +117,34 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'People choose us because we serve the best for everyone',
-        subtitle: 'Why choose us',
+        title: 'As pessoas nos escolhem porque entregamos o melhor para todos',
+        subtitle: 'Por que nos escolher',
         items: [
           {
-            title: 'Dedicated project manager',
+            title: 'Gerente de projeto dedicado',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Organized tasks',
+            title: 'Tarefas organizadas',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Easy feedback sharing',
+            title: 'Feedback sem complicação',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
           {
-            title: 'Never miss deadline',
+            title: 'Prazos sempre cumpridos',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           },
         ],
-        ctaTitle: 'Ready to launch your next project?',
+        ctaTitle: 'Pronto para lançar o seu próximo projeto?',
         ctaDescription:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaLabel: 'Get started a project',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+        ctaLabel: 'Iniciar um projeto',
         ctaHref: '#footer',
       },
     },
@@ -152,27 +152,27 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       type: 'WORKS',
       content: {
         type: 'WORKS',
-        title: 'Our works describe why we are the best in the business',
-        subtitle: 'Case studies',
+        title: 'Nossos trabalhos mostram por que somos referência no mercado',
+        subtitle: 'Estudos de caso',
         items: [
           {
-            title: 'Aura Branding Design',
-            category: 'Graphic Design',
+            title: 'Identidade Visual Aura',
+            category: 'Design Gráfico',
             imageUrl: '/landing-page-templates/agency/work-1.png',
           },
           {
-            title: 'AB.S Snack Packaging',
-            category: 'Graphic Design',
+            title: 'Embalagem de Snacks AB.S',
+            category: 'Design Gráfico',
             imageUrl: '/landing-page-templates/agency/work-3.png',
           },
           {
-            title: 'Gradient Website Development',
-            category: 'Web Development',
+            title: 'Site Gradient',
+            category: 'Desenvolvimento Web',
             imageUrl: '/landing-page-templates/agency/work-2.png',
           },
           {
-            title: 'Magazine Content Writing',
-            category: 'Content Writing',
+            title: 'Conteúdo para Revista',
+            category: 'Produção de Conteúdo',
             imageUrl: '/landing-page-templates/agency/work-4.png',
           },
         ],
@@ -183,9 +183,9 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users.",
+          'Simplesmente o melhor, muito acima dos concorrentes. Recomendo para iniciantes e para usuários avançados.',
         authorName: 'Ian Klein',
-        authorRole: 'Digital Marketer',
+        authorRole: 'Profissional de Marketing Digital',
         avatarUrl: '/landing-page-templates/agency/testimonial-avatar-2.png',
         style: 'spotlight',
       },
@@ -195,47 +195,47 @@ export const agencyTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'FOOTER',
         logoText: 'Brainwave.io',
-        text: 'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaTitle: 'Ready to launch your next project?',
+        text: 'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+        ctaTitle: 'Pronto para lançar o seu próximo projeto?',
         ctaDescription:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaLabel: 'Get started a project',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+        ctaLabel: 'Iniciar um projeto',
         ctaHref: '#',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing Digital', href: '#' },
+              { label: 'Produção de Conteúdo', href: '#' },
+              { label: 'SEO para Empresas', href: '#' },
+              { label: 'Design de Interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
         ],

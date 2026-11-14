@@ -434,6 +434,7 @@ describe('<CrmLeadRulesSection />', () => {
     await screen.findByText('Origem é igual a "Google"')
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir regra' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Excluir' }))
 
     await waitFor(() =>
       expect(

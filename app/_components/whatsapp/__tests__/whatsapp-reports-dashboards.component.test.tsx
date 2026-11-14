@@ -163,6 +163,11 @@ describe('<WhatsappReportsList />', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Remover relatório' }),
     )
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect((notify.error.mock.calls[0][0] as Error).message).toBe(
       'Sem permissão',
@@ -255,6 +260,11 @@ describe('<WhatsappDashboardsList />', () => {
     fireEvent.click(
       screen.getAllByRole('button', { name: 'Remover painel' })[0],
     )
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
     await waitFor(() => expect(screen.queryByText('Sentimento')).toBeNull())
     expect(screen.getByText('Volume diário')).toBeTruthy()
     expect(
@@ -343,6 +353,11 @@ describe('<WhatsappDashboardsList />', () => {
 
     fireEvent.click(
       screen.getAllByRole('button', { name: 'Remover painel' })[0],
+    )
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
     )
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('Sem permissão'),

@@ -18,9 +18,9 @@ const BASE = '/landing-page-templates/coworking'
 export function aboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Work around very talented people.',
+    title: 'Trabalhe ao lado de pessoas muito talentosas.',
     description:
-      'With lots of unique blocks, you can easily build a page easily without any coding.',
+      'Com vários blocos prontos, você monta sua página facilmente, sem escrever código.',
     imageUrl: `${BASE}/about-photo-1.jpg`,
     imageUrls: [`${BASE}/about-photo-2.jpg`],
   }

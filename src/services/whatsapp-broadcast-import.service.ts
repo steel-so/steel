@@ -25,6 +25,8 @@ import { assertModuleMember } from './authz'
 import { assertFeature } from './feature-flag.service'
 import { WhatsAppContactValidationService } from './whatsapp-contact-validation.service'
 
+const PREVIEW_ROWS = 5
+
 export const WhatsAppBroadcastImportService = {
   async import(
     actorId: string,
@@ -70,7 +72,24 @@ export const WhatsAppBroadcastImportService = {
       rows,
       fields.body.variableCount,
       dto.sendOffsetHours,
+      { now: new Date() },
     )
+
+    if (dto.dryRun) {
+      return ok({
+        broadcastList: null,
+        createdCount: 0,
+        rejectedRows: rejected,
+        validCount: valid.length,
+        preview: valid.slice(0, PREVIEW_ROWS).map((row) => ({
+          rowNumber: row.rowNumber,
+          phone: row.phone,
+          contactName: row.contactName ?? null,
+          scheduledAt: row.scheduledAt.toISOString(),
+          appointmentAt: row.appointmentAt.toISOString(),
+        })),
+      })
+    }
 
     if (valid.length === 0) {
       return ok({

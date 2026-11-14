@@ -22,10 +22,10 @@ const DEFAULT_PORTRAIT = '/landing-page-templates/job-site/hero-portrait.png'
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    title: 'Find a dream job that changes life.',
+    title: 'Encontre o emprego dos sonhos que muda vidas.',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next job website.',
-    ctaLabel: 'Search',
+      'Com blocos prontos, você monta o seu portal de vagas facilmente, sem escrever código.',
+    ctaLabel: 'Buscar',
     ctaHref: '#jobs',
     imageUrl: DEFAULT_PORTRAIT,
   }
@@ -100,7 +100,7 @@ export function JobSiteHero({
                 value={textOf(
                   content,
                   'search.keyword',
-                  'Job title or keyword',
+                  'Cargo ou palavra-chave',
                 )}
                 onCommit={(v) =>
                   onChange?.(withText(content, 'search.keyword', v))
@@ -155,7 +155,7 @@ export function JobSiteHero({
             value={textOf(
               content,
               'search.hint',
-              'Try Product Designer, Software Engineer etc.',
+              'Experimente Designer de Produto, Engenheiro de Software etc.',
             )}
             onCommit={(v) => onChange?.(withText(content, 'search.hint', v))}
             placeholder='Dica de busca'

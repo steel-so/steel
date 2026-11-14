@@ -3,6 +3,7 @@
 import { QrCodeIcon, TradeMarkIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { type FormEvent, useState } from 'react'
 import { ConnectionSpendCapButton } from '@/app/_components/whatsapp/costs/whatsapp-spend-caps'
+import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -37,18 +38,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PhoneInput } from '@/components/ui/phone-input'
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   NEXT_PUBLIC_META_APP_ID,
   NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID,
 } from '@/lib/env/env'
 import { notify } from '@/lib/notify'
+import { cn } from '@/lib/utils'
 import {
   useConnectWhatsAppViaMeta,
   useCreateWhatsAppConnection,
@@ -63,8 +57,56 @@ import type {
   WhatsAppProviderDTO,
 } from '@/types/whatsapp-connection'
 
+const STATUS_LABEL: Record<WhatsAppConnectionDTO['status'], string> = {
+  CONNECTED: 'Conectado',
+  CONNECTING: 'Conectando',
+  DISCONNECTED: 'Desconectado',
+  ERROR: 'Com problema',
+}
+
+const STATUS_HINT: Partial<Record<WhatsAppConnectionDTO['status'], string>> = {
+  CONNECTING:
+    'Ainda não terminou de conectar. Se for Z-API, leia o QR Code com o celular.',
+  DISCONNECTED:
+    'Este número não está recebendo nem enviando mensagens agora. Reconecte para voltar a atender.',
+  ERROR: 'A conexão está com problema. Use "Testar conexão" para ver o motivo.',
+}
+
+const PROVIDER_LABEL: Record<WhatsAppProviderDTO, string> = {
+  ZAPI: 'Z-API',
+  META: 'Meta',
+  WIDGET: 'Widget',
+}
+
+const PROVIDER_OPTIONS: {
+  value: Exclude<WhatsAppProviderDTO, 'WIDGET'>
+  title: string
+  badge?: string
+  points: string[]
+}[] = [
+  {
+    value: 'META',
+    title: 'Meta (API oficial)',
+    badge: 'Recomendado',
+    points: [
+      'Número oficial, sem risco de bloqueio',
+      'Permite modelos (templates) aprovados e envio em massa',
+      'Texto livre só em até 24 horas após o cliente escrever',
+    ],
+  },
+  {
+    value: 'ZAPI',
+    title: 'Z-API (QR Code)',
+    points: [
+      'Conecta lendo um QR Code, como o WhatsApp Web',
+      'Texto livre a qualquer momento, sem modelos',
+      'Não é oficial: há risco de o número ser bloqueado',
+    ],
+  },
+]
+
 const EMPTY_FORM = {
-  provider: 'ZAPI' as WhatsAppProviderDTO,
+  provider: 'META' as WhatsAppProviderDTO,
   label: '',
   phoneNumber: '',
   zapiInstanceId: '',
@@ -78,6 +120,7 @@ const EMPTY_FORM = {
 function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [advanced, setAdvanced] = useState(false)
   const createConnection = useCreateWhatsAppConnection(workspaceId)
 
   function updateField<K extends keyof typeof EMPTY_FORM>(
@@ -113,6 +156,7 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
       onSuccess: () => {
         notify.success('Conexão criada')
         setForm(EMPTY_FORM)
+        setAdvanced(false)
         setOpen(false)
       },
       onError: (error) =>
@@ -127,141 +171,206 @@ function CreateConnectionDialog({ workspaceId }: { workspaceId: string }) {
         <DialogHeader>
           <DialogTitle>Nova conexão do WhatsApp</DialogTitle>
           <DialogDescription>
-            Conecte um número via Z-API ou via Meta Cloud API.
+            Escolha como o número será conectado.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-3'>
-          <div className='space-y-1.5'>
-            <Label htmlFor='provider'>Provedor</Label>
-            <Select
-              value={form.provider}
-              onValueChange={(value) =>
-                updateField(
-                  'provider',
-                  (value ?? 'ZAPI') as WhatsAppProviderDTO,
-                )
-              }
-            >
-              <SelectTrigger id='provider' className='w-full'>
-                <SelectValue placeholder='Provedor' />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectGroup>
-                  <SelectItem value='ZAPI'>Z-API</SelectItem>
-                  <SelectItem value='META'>Meta Cloud API</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className='space-y-1.5'>
-            <Label htmlFor='label'>Nome</Label>
-            <Input
-              id='label'
-              required
-              placeholder='Ex: Suporte, Vendas...'
-              value={form.label}
-              onChange={(event) => updateField('label', event.target.value)}
-            />
-          </div>
-
-          <div className='space-y-1.5'>
-            <Label htmlFor='phoneNumber'>Número (DDD + número)</Label>
-            <PhoneInput
-              id='phoneNumber'
-              required
-              value={form.phoneNumber}
-              onValueChange={(value) => updateField('phoneNumber', value)}
-            />
-          </div>
-
-          {form.provider === 'ZAPI' ? (
-            <>
-              <div className='space-y-1.5'>
-                <Label htmlFor='zapiInstanceId'>ID da instância</Label>
-                <Input
-                  id='zapiInstanceId'
-                  required
-                  value={form.zapiInstanceId}
-                  onChange={(event) =>
-                    updateField('zapiInstanceId', event.target.value)
-                  }
-                />
-              </div>
-              <div className='space-y-1.5'>
-                <Label htmlFor='zapiToken'>Token</Label>
-                <Input
-                  id='zapiToken'
-                  required
-                  type='password'
-                  value={form.zapiToken}
-                  onChange={(event) =>
-                    updateField('zapiToken', event.target.value)
-                  }
-                />
-              </div>
-              <div className='space-y-1.5'>
-                <Label htmlFor='zapiClientToken'>Client-Token</Label>
-                <Input
-                  id='zapiClientToken'
-                  type='password'
-                  aria-describedby='zapiClientToken-hint'
-                  value={form.zapiClientToken}
-                  onChange={(event) =>
-                    updateField('zapiClientToken', event.target.value)
-                  }
-                />
-                <p
-                  id='zapiClientToken-hint'
-                  className='text-muted-foreground text-xs'
+          <div
+            role='radiogroup'
+            aria-label='Provedor'
+            className='grid gap-2 sm:grid-cols-2'
+          >
+            {PROVIDER_OPTIONS.map((option) => {
+              const selected = form.provider === option.value
+              return (
+                // biome-ignore lint/a11y/useSemanticElements: a selectable card, not a bare radio input
+                <button
+                  key={option.value}
+                  type='button'
+                  role='radio'
+                  aria-checked={selected}
+                  onClick={() => updateField('provider', option.value)}
+                  className={cn(
+                    'rounded-lg border p-3 text-left transition-colors hover:bg-muted/50',
+                    selected && 'border-primary bg-muted/50',
+                  )}
                 >
-                  Token de segurança da conta (no painel da Z-API, em
-                  Segurança). Obrigatório quando a conta exige; sem ele a Z-API
-                  recusa as chamadas e o QR não aparece.
-                </p>
-              </div>
-            </>
+                  <span className='flex items-center gap-2 font-medium text-sm'>
+                    {option.title}
+                    {option.badge ? (
+                      <Badge variant='secondary'>{option.badge}</Badge>
+                    ) : null}
+                  </span>
+                  <ul className='mt-1.5 list-disc space-y-0.5 pl-4 text-muted-foreground text-xs'>
+                    {option.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </button>
+              )
+            })}
+          </div>
+
+          {form.provider === 'META' && !advanced ? (
+            <div className='space-y-2 rounded-lg border bg-muted/40 p-3 text-sm'>
+              <p>
+                O jeito mais fácil de conectar a Meta é o botão{' '}
+                <strong>Conectar com a Meta</strong>, na tela de conexões: você
+                entra na sua conta e o Steel configura tudo sozinho.
+              </p>
+              <Button
+                type='button'
+                size='xs'
+                variant='outline'
+                onClick={() => setAdvanced(true)}
+              >
+                Avançado: informar os dados manualmente
+              </Button>
+            </div>
           ) : (
             <>
               <div className='space-y-1.5'>
-                <Label htmlFor='metaPhoneNumberId'>Phone Number ID</Label>
+                <Label htmlFor='label'>Nome</Label>
                 <Input
-                  id='metaPhoneNumberId'
+                  id='label'
                   required
-                  value={form.metaPhoneNumberId}
-                  onChange={(event) =>
-                    updateField('metaPhoneNumberId', event.target.value)
-                  }
+                  placeholder='Ex: Suporte, Vendas...'
+                  value={form.label}
+                  onChange={(event) => updateField('label', event.target.value)}
                 />
               </div>
+
               <div className='space-y-1.5'>
-                <Label htmlFor='metaWabaId'>WhatsApp Business Account ID</Label>
-                <Input
-                  id='metaWabaId'
+                <Label htmlFor='phoneNumber'>Número (DDD + número)</Label>
+                <PhoneInput
+                  id='phoneNumber'
                   required
-                  value={form.metaWabaId}
-                  onChange={(event) =>
-                    updateField('metaWabaId', event.target.value)
-                  }
+                  value={form.phoneNumber}
+                  onValueChange={(value) => updateField('phoneNumber', value)}
                 />
               </div>
-              <div className='space-y-1.5'>
-                <Label htmlFor='metaAccessToken'>Access Token</Label>
-                <Input
-                  id='metaAccessToken'
-                  required
-                  type='password'
-                  value={form.metaAccessToken}
-                  onChange={(event) =>
-                    updateField('metaAccessToken', event.target.value)
-                  }
-                />
-              </div>
+
+              {form.provider === 'ZAPI' ? (
+                <>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='zapiInstanceId'>ID da instância</Label>
+                    <Input
+                      id='zapiInstanceId'
+                      required
+                      value={form.zapiInstanceId}
+                      onChange={(event) =>
+                        updateField('zapiInstanceId', event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='zapiToken'>Token</Label>
+                    <Input
+                      id='zapiToken'
+                      required
+                      type='password'
+                      value={form.zapiToken}
+                      onChange={(event) =>
+                        updateField('zapiToken', event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='zapiClientToken'>Client-Token</Label>
+                    <Input
+                      id='zapiClientToken'
+                      type='password'
+                      aria-describedby='zapiClientToken-hint'
+                      value={form.zapiClientToken}
+                      onChange={(event) =>
+                        updateField('zapiClientToken', event.target.value)
+                      }
+                    />
+                    <p
+                      id='zapiClientToken-hint'
+                      className='text-muted-foreground text-xs'
+                    >
+                      Token de segurança da conta (no painel da Z-API, em
+                      Segurança). Obrigatório quando a conta exige; sem ele a
+                      Z-API recusa as chamadas e o QR não aparece.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='metaPhoneNumberId'>Phone Number ID</Label>
+                    <Input
+                      id='metaPhoneNumberId'
+                      required
+                      aria-describedby='metaPhoneNumberId-hint'
+                      value={form.metaPhoneNumberId}
+                      onChange={(event) =>
+                        updateField('metaPhoneNumberId', event.target.value)
+                      }
+                    />
+                    <p
+                      id='metaPhoneNumberId-hint'
+                      className='text-muted-foreground text-xs'
+                    >
+                      No Gerenciador do WhatsApp da Meta, em Configurações da
+                      API: é o "ID do número de telefone".
+                    </p>
+                  </div>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='metaWabaId'>
+                      WhatsApp Business Account ID
+                    </Label>
+                    <Input
+                      id='metaWabaId'
+                      required
+                      aria-describedby='metaWabaId-hint'
+                      value={form.metaWabaId}
+                      onChange={(event) =>
+                        updateField('metaWabaId', event.target.value)
+                      }
+                    />
+                    <p
+                      id='metaWabaId-hint'
+                      className='text-muted-foreground text-xs'
+                    >
+                      Na mesma tela, o "ID da conta do WhatsApp Business".
+                    </p>
+                  </div>
+                  <div className='space-y-1.5'>
+                    <Label htmlFor='metaAccessToken'>Access Token</Label>
+                    <Input
+                      id='metaAccessToken'
+                      required
+                      type='password'
+                      aria-describedby='metaAccessToken-hint'
+                      value={form.metaAccessToken}
+                      onChange={(event) =>
+                        updateField('metaAccessToken', event.target.value)
+                      }
+                    />
+                    <p
+                      id='metaAccessToken-hint'
+                      className='text-muted-foreground text-xs'
+                    >
+                      Token permanente de um usuário do sistema, gerado no
+                      Gerenciador de Negócios da Meta, com permissão
+                      whatsapp_business_messaging.
+                    </p>
+                  </div>
+                </>
+              )}
             </>
           )}
 
           <DialogFooter>
-            <Button type='submit' disabled={createConnection.isPending}>
+            <Button
+              type='submit'
+              disabled={
+                createConnection.isPending ||
+                (form.provider === 'META' && !advanced)
+              }
+            >
               {createConnection.isPending ? 'Criando...' : 'Criar conexão'}
             </Button>
           </DialogFooter>
@@ -277,7 +386,23 @@ function MetaSignupButton({ workspaceId }: { workspaceId: string }) {
   const connect = useConnectWhatsAppViaMeta(workspaceId)
 
   if (!NEXT_PUBLIC_META_APP_ID || !NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID) {
-    return null
+    return (
+      <div className='flex flex-col items-end gap-1'>
+        <Button
+          size='sm'
+          variant='outline'
+          disabled
+          title='A conexão automática com a Meta ainda não foi ativada neste ambiente.'
+        >
+          Conectar com a Meta
+        </Button>
+        <p className='max-w-56 text-right text-muted-foreground text-xs'>
+          Indisponível: a conexão automática com a Meta ainda não foi ativada.
+          Fale com o suporte do Steel ou use "Adicionar conexão" e informe os
+          dados manualmente.
+        </p>
+      </div>
+    )
   }
   const appId = NEXT_PUBLIC_META_APP_ID
   const configId = NEXT_PUBLIC_META_EMBEDDED_SIGNUP_CONFIG_ID
@@ -357,15 +482,38 @@ function ZapiQrCodeDialog({
             código abaixo.
           </DialogDescription>
         </DialogHeader>
-        <div className='flex items-center justify-center py-4'>
-          {qrCode.data?.status === 'connected' ? (
+        <div className='flex flex-col items-center justify-center gap-3 py-4'>
+          {qrCode.isError ? (
+            <>
+              <p className='text-center text-destructive text-sm'>
+                {qrCode.error instanceof Error && qrCode.error.message
+                  ? qrCode.error.message
+                  : 'Não foi possível buscar o QR Code.'}{' '}
+                Confira o ID da instância e os tokens da Z-API.
+              </p>
+              <Button
+                size='sm'
+                variant='outline'
+                disabled={qrCode.isFetching}
+                onClick={() => qrCode.refetch()}
+              >
+                {qrCode.isFetching ? 'Tentando...' : 'Tentar de novo'}
+              </Button>
+            </>
+          ) : qrCode.data?.status === 'connected' ? (
             <p className='text-sm'>Conectado com sucesso!</p>
           ) : qrCode.data?.qrCodeBase64 ? (
-            <img
-              src={qrCode.data.qrCodeBase64}
-              alt='QR Code de conexão'
-              className='size-56'
-            />
+            <>
+              <img
+                src={qrCode.data.qrCodeBase64}
+                alt='QR Code de conexão'
+                className='size-56'
+              />
+              <p className='text-center text-muted-foreground text-xs'>
+                O código muda a cada poucos segundos. Se expirar, ele é
+                atualizado sozinho.
+              </p>
+            </>
           ) : (
             <p className='text-muted-foreground text-sm'>
               Carregando QR code...
@@ -387,6 +535,7 @@ export function WhatsappSettingsConnections({
   const connections = useWhatsAppConnections(workspaceId)
   const deleteConnection = useDeleteWhatsAppConnection(workspaceId)
   const refreshStatus = useRefreshWhatsAppConnectionStatus(workspaceId)
+  const canManage = useIsPrivileged()
 
   return (
     <div className='space-y-4'>
@@ -394,13 +543,19 @@ export function WhatsappSettingsConnections({
         <div>
           <h3 className='font-medium text-sm'>Conexões</h3>
           <p className='text-muted-foreground text-xs'>
-            Números conectados via Z-API ou Meta Cloud API
+            Números conectados pela API oficial da Meta ou pela Z-API
           </p>
         </div>
-        <div className='flex items-center gap-2'>
-          <MetaSignupButton workspaceId={workspaceId} />
-          <CreateConnectionDialog workspaceId={workspaceId} />
-        </div>
+        {canManage ? (
+          <div className='flex items-start gap-2'>
+            <MetaSignupButton workspaceId={workspaceId} />
+            <CreateConnectionDialog workspaceId={workspaceId} />
+          </div>
+        ) : (
+          <p className='max-w-56 text-right text-muted-foreground text-xs'>
+            Só administradores conectam ou removem números.
+          </p>
+        )}
       </div>
 
       <div className='grid gap-3 md:grid-cols-2'>
@@ -410,58 +565,94 @@ export function WhatsappSettingsConnections({
               <CardTitle className='flex items-center gap-2 text-sm'>
                 <SteelIcon icon={TradeMarkIcon} size={16} />
                 {connection.label}
-                <Badge variant='outline'>{connection.provider}</Badge>
+                <Badge variant='outline'>
+                  {PROVIDER_LABEL[connection.provider]}
+                </Badge>
               </CardTitle>
               <CardDescription>{connection.phoneNumber}</CardDescription>
             </CardHeader>
             <CardContent className='text-muted-foreground text-xs'>
-              Status: {connection.status}
+              Status: {STATUS_LABEL[connection.status] ?? connection.status}
+              {STATUS_HINT[connection.status] ? (
+                <p>{STATUS_HINT[connection.status]}</p>
+              ) : null}
               {connection.statusError && (
                 <p className='text-destructive'>{connection.statusError}</p>
               )}
             </CardContent>
             <CardFooter className='flex flex-wrap gap-2'>
-              {connection.provider === 'ZAPI' && (
+              {canManage && connection.provider === 'ZAPI' && (
                 <ZapiQrCodeDialog
                   workspaceId={workspaceId}
                   connectionId={connection.id}
                 />
               )}
-              {connection.provider === 'META' && (
-                <Button
-                  size='xs'
-                  variant='outline'
-                  disabled={refreshStatus.isPending}
-                  onClick={() =>
-                    refreshStatus.mutate(connection.id, {
-                      onError: (error) =>
-                        notify.error(error, 'Não foi possível verificar'),
-                    })
-                  }
-                >
-                  Atualizar status
-                </Button>
-              )}
+              {canManage &&
+                (connection.provider === 'META' ||
+                  connection.provider === 'ZAPI') && (
+                  <Button
+                    size='xs'
+                    variant='outline'
+                    disabled={refreshStatus.isPending}
+                    onClick={() =>
+                      refreshStatus.mutate(connection.id, {
+                        onSuccess: (checked) =>
+                          checked.status === 'CONNECTED'
+                            ? notify.success('Conexão funcionando')
+                            : notify.warning(
+                                checked.statusError ??
+                                  'A conexão não está ativa agora',
+                              ),
+                        onError: (error) =>
+                          notify.error(error, 'Não foi possível verificar'),
+                      })
+                    }
+                  >
+                    {connection.provider === 'META'
+                      ? 'Atualizar status'
+                      : 'Testar conexão'}
+                  </Button>
+                )}
               {connection.provider === 'META' && (
                 <ConnectionSpendCapButton
                   workspaceId={workspaceId}
                   connectionId={connection.id}
                 />
               )}
-              <Button
-                size='xs'
-                variant='destructive'
-                onClick={() => setDeletingConnection(connection)}
-              >
-                Remover
-              </Button>
+              {canManage && (
+                <Button
+                  size='xs'
+                  variant='destructive'
+                  onClick={() => setDeletingConnection(connection)}
+                >
+                  Remover
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}
-        {connections.data?.length === 0 && (
-          <p className='text-muted-foreground text-sm'>
-            Nenhuma conexão cadastrada ainda.
+        {connections.isError && (
+          <p className='text-destructive text-sm'>
+            Não foi possível carregar as conexões.{' '}
+            <Button
+              size='xs'
+              variant='outline'
+              onClick={() => connections.refetch()}
+            >
+              Tentar de novo
+            </Button>
           </p>
+        )}
+        {connections.data?.length === 0 && (
+          <div className='space-y-1 text-sm md:col-span-2'>
+            <p className='text-muted-foreground'>
+              Nenhuma conexão cadastrada ainda.
+            </p>
+            <p className='text-muted-foreground text-xs'>
+              Comece por "Conectar com a Meta" (recomendado) ou use "Adicionar
+              conexão" para ligar um número pela Z-API.
+            </p>
+          </div>
         )}
       </div>
 

@@ -78,12 +78,14 @@ describe('workflow labels', () => {
     expect(workflowNodeLabel('legacy-node')).toBe('legacy-node')
     expect(workflowTriggerLabel('legacy-trigger')).toBe('legacy-trigger')
     expect(workflowNodeLabel('delay')).toBe('Atraso')
-    expect(workflowTriggerLabel('webhook')).toBe('Webhook')
+    expect(workflowTriggerLabel('webhook')).toBe(
+      'Chamada de outro sistema (webhook)',
+    )
   })
 })
 
 describe('<WorkflowTopBar />', () => {
-  it('should label every action in pt-BR', () => {
+  it('should label every action in pt-BR', async () => {
     const handlers = {
       onBack: vi.fn(),
       onActivate: vi.fn(),
@@ -107,7 +109,13 @@ describe('<WorkflowTopBar />', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Descartar alterações' }),
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Ativar' }))
+    fireEvent.click(
+      screen
+        .getAllByRole('button', { name: 'Descartar alterações' })
+        .at(-1) as HTMLElement,
+    )
+    // The discard confirmation closes asynchronously (ConfirmAction awaits onConfirm).
+    fireEvent.click(await screen.findByRole('button', { name: 'Ativar' }))
     expect(screen.getByRole('button', { name: 'Adicionar etapa' })).toBeTruthy()
     expect(screen.getByText('Rascunho')).toBeTruthy()
 

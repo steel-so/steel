@@ -17,6 +17,18 @@ export interface SdSettingsDTO {
   whatsappConnectionId: string | null
   /** Chamado aberto pelo WhatsApp responde ao contato com o código. */
   whatsappSendAcknowledgement: boolean
+  /**
+   * Avisos ao solicitante por modelo aprovado da Meta, por evento do
+   * catálogo. Sem entrada, o evento não avisa o cliente pelo WhatsApp.
+   */
+  requesterWhatsappTemplates: Record<
+    string,
+    {
+      templateName: string
+      language: string
+      variables: ('code' | 'title' | 'headline' | 'message' | 'requester')[]
+    }
+  >
   portalEnabled: boolean
   portalTicketTypes: SdTicketTypeDTO[]
   /** Portal externo: o contato vê os chamados das empresas dele. */

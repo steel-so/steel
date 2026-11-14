@@ -78,6 +78,12 @@ function type(label: string | RegExp, value: string) {
   fireEvent.change(field(label), { target: { value } })
 }
 
+// With no leads the board shows "Novo lead" in the header and in the empty
+// state; both open the same dialog.
+function openCreateDialog() {
+  fireEvent.click(screen.getAllByText('Novo lead', { selector: 'button' })[0])
+}
+
 async function openLead(name: string) {
   fireEvent.click(await screen.findByText(name))
 }
@@ -139,21 +145,23 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     const submit = await screen.findByText('Criar lead')
 
     fireEvent.click(submit)
-    expect(notify.error).toHaveBeenLastCalledWith('Informe o nome')
+    expect(notify.error).toHaveBeenLastCalledWith('Informe o nome do lead.')
 
     type('Nome *', 'Diego Alves')
     fireEvent.click(submit)
     expect(notify.error).toHaveBeenLastCalledWith(
-      'Informe ao menos um email ou telefone',
+      'Informe o e-mail ou o telefone do lead.',
     )
 
     type('Telefone', '+55 81 99999-0000')
     fireEvent.click(submit)
-    expect(notify.error).toHaveBeenLastCalledWith('Informe a origem')
+    expect(notify.error).toHaveBeenLastCalledWith(
+      'Informe de onde veio o lead (origem).',
+    )
 
     expect(
       fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
@@ -180,10 +188,10 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     await screen.findByText('Criar lead')
     type('Nome *', '  Diego Alves ')
-    type('Email', 'diego@alves.com ')
+    type('E-mail', 'diego@alves.com ')
     type('Origem *', 'Indicação')
     fireEvent.click(screen.getByText('Criar lead'))
 
@@ -213,10 +221,10 @@ describe('<CrmLeadsBoard /> create dialog', () => {
     renderBoard()
     await screen.findByText('0 leads no funil')
 
-    fireEvent.click(screen.getByText('Novo lead', { selector: 'button' }))
+    openCreateDialog()
     await screen.findByText('Criar lead')
     type('Nome *', 'Diego')
-    type('Email', 'd@a.com')
+    type('E-mail', 'd@a.com')
     type('Origem *', 'Site')
     fireEvent.click(screen.getByText('Criar lead'))
 
@@ -269,7 +277,7 @@ describe('<CrmLeadsBoard /> stage panel', () => {
       'Informe com quem falou ou tentou falar',
     )
 
-    type('Com quem falou/tentou falar', ' Ana ')
+    type('Com quem falou/tentou falar *', ' Ana ')
     type('Observação', 'Retornar amanhã')
     fireEvent.click(
       screen.getByText('Registrar contato', { selector: 'button' }),
@@ -300,8 +308,8 @@ describe('<CrmLeadsBoard /> stage panel', () => {
       'Informe o nome e o cargo do decisor',
     )
 
-    type('Nome do decisor', 'Paula')
-    type('Cargo do decisor', 'CFO')
+    type('Nome do decisor *', 'Paula')
+    type('Cargo do decisor *', 'CFO')
     type('Previsão de fechamento', '2026-12-01')
     fireEvent.click(screen.getByText('Confirmar qualificação'))
 

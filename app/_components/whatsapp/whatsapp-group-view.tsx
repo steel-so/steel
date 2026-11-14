@@ -548,8 +548,8 @@ export function WhatsappGroupView({
       await sendText.mutateAsync(outgoing)
       setText('')
       setMentionQuery(null)
-    } catch {
-      notify.error('Erro ao enviar mensagem')
+    } catch (error) {
+      notify.error(error, 'Erro ao enviar mensagem')
     }
   }
 

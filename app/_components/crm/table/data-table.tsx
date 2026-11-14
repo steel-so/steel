@@ -49,10 +49,9 @@ import {
   useTable,
 } from '@tanstack/react-table'
 import * as React from 'react'
+import { CreateRecordDialog } from '@/app/_components/crm/table/create-record-dialog'
 import {
   buildGridColumns,
-  draftInitialValues,
-  draftPayload,
   type GridColumn,
   type WithId,
 } from '@/app/_components/crm/table/grid'
@@ -83,6 +82,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -379,15 +379,21 @@ function DraggableRow<TData extends WithId>({
               />
             ) : cell.column.id === 'actions' ? (
               canDelete ? (
-                <Button
-                  variant='ghost'
-                  size='icon-sm'
-                  className='size-7 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover/row:opacity-100'
-                  onClick={() => onDelete(row.original.id)}
-                  aria-label='Excluir'
-                >
-                  <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                </Button>
+                <ConfirmAction
+                  trigger={
+                    <Button
+                      variant='ghost'
+                      size='icon-sm'
+                      className='size-7 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover/row:opacity-100'
+                      aria-label='Excluir'
+                    >
+                      <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                    </Button>
+                  }
+                  title='Excluir este registro?'
+                  description='O registro e o que estiver ligado só a ele serão removidos. Não é possível desfazer.'
+                  onConfirm={() => onDelete(row.original.id)}
+                />
               ) : null
             ) : (
               flexRender(cell.column.columnDef.cell, cell.getContext())
@@ -644,6 +650,18 @@ const CREATE_SHORTCUT: Record<string, string> = {
   tasks: 'create.crm-task',
 }
 
+const EMPTY_TITLE = {
+  error: 'Não foi possível carregar a lista',
+  filtered: 'Nenhum registro com estes filtros',
+  empty: 'Nada por aqui ainda',
+} as const
+
+const EMPTY_HINT = {
+  error: '',
+  filtered: 'Limpe os filtros para ver todos os registros.',
+  empty: 'Crie o primeiro registro ou ajuste os filtros.',
+} as const
+
 export function newRecordLabel(title: string): string {
   return `${FEMININE_TITLES.has(title.toLowerCase()) ? 'Nova' : 'Novo'} ${title}`
 }
@@ -658,6 +676,7 @@ export function DataTable<TData extends WithId>({
   lookups,
   searchPlaceholder = 'Pesquisar…',
   isLoading = false,
+  error = null,
   refetch,
   disableInlineCreate = false,
   headerAction,
@@ -678,6 +697,8 @@ export function DataTable<TData extends WithId>({
   lookups: Lookups
   searchPlaceholder?: string
   isLoading?: boolean
+  /** Mensagem de erro do carregamento da lista (mostra "Tentar novamente"). */
+  error?: string | null
   /** Recarrega a lista do servidor (usado para resync em caso de erro). */
   refetch: () => void
   /**
@@ -745,6 +766,28 @@ export function DataTable<TData extends WithId>({
   )
   const [globalFilter, setGlobalFilter] = React.useState('')
   const [sorting, setSorting] = React.useState<SortingState>([])
+  /**
+   * Filtros e ordenação persistem por workspace + recurso. Lidos após a
+   * montagem (não no estado inicial) para não divergir do HTML do servidor.
+   */
+  const viewStateKey = `steel:crm-table-state:${workspaceId}:${resource}`
+  const viewStateLoaded = React.useRef(false)
+  React.useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(viewStateKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          filters?: ColumnFiltersState
+          sorting?: SortingState
+        }
+        if (Array.isArray(saved.filters)) setColumnFilters(saved.filters)
+        if (Array.isArray(saved.sorting)) setSorting(saved.sorting)
+      }
+    } catch {
+      // Valor corrompido ou storage indisponível: começa sem filtros.
+    }
+    viewStateLoaded.current = true
+  }, [viewStateKey])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -809,6 +852,22 @@ export function DataTable<TData extends WithId>({
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
+
+  React.useEffect(() => {
+    if (!viewStateLoaded.current) return
+    try {
+      if (columnFilters.length === 0 && sorting.length === 0) {
+        window.localStorage.removeItem(viewStateKey)
+      } else {
+        window.localStorage.setItem(
+          viewStateKey,
+          JSON.stringify({ filters: columnFilters, sorting }),
+        )
+      }
+    } catch {
+      // Ignora cota cheia / modo privado.
+    }
+  }, [columnFilters, sorting, viewStateKey])
 
   const sortableId = React.useId()
   const sensors = useSensors(
@@ -876,50 +935,32 @@ export function DataTable<TData extends WithId>({
   )
   useRecordParam(openRecordById, isRowLoaded)
 
-  /**
-   * Cria a linha já no banco (sem etapa de confirmação) e a abre em edição.
-   * O campo primário obrigatório recebe um valor padrão para passar na
-   * validação; o usuário renomeia inline em seguida (auto-save).
-   */
-  const addRow = React.useCallback(() => {
-    const payload = draftPayload(columns, draftInitialValues(columns))
-    // Toda coluna obrigatória exige um valor para passar na validação; o
-    // usuário edita inline em seguida (auto-save). Outros tipos de coluna
-    // (ex.: CNPJ, não-obrigatórias) nascem vazios.
-    for (const column of columns) {
-      if (!column.required || payload[column.key]) continue
-      if (
-        column.kind === 'text' ||
-        column.kind === 'emailhtml' ||
-        column.kind === 'richtext'
-      ) {
-        payload[column.key] = column.primary
-          ? 'Sem título'
-          : (column.placeholder ?? 'Sem título')
+  /** Create dialog: records are only created once the required fields are filled. */
+  const [createOpen, setCreateOpen] = React.useState(false)
+  const addRow = React.useCallback(() => setCreateOpen(true), [])
+
+  const createRecord = React.useCallback(
+    async (payload: Record<string, unknown>): Promise<boolean> => {
+      const res = await createCrmResource<TData>(workspaceId, resource, payload)
+      if (!res.ok || !res.data) {
+        notify.error(
+          res.message ??
+            'Não foi possível criar o registro. Confira os campos e tente de novo.',
+        )
+        return false
       }
-    }
-    void createCrmResource<TData>(workspaceId, resource, payload).then(
-      (res) => {
-        if (!res.ok || !res.data) {
-          notify.error(res.message ?? 'Não foi possível criar.')
-          return
-        }
-        const created = res.data
-        // Item recém-criado entra como o mais recente: no topo da lista e
-        // na primeira página, independente de ordenação/paginação atuais.
-        setRows((cur) => [created, ...cur])
-        setSorting([])
-        setPagination((cur) => ({ ...cur, pageIndex: 0 }))
-        if (viewMode === 'kanban') {
-          // Kanban não tem célula pra editar inline — abre o painel lateral
-          // direto, igual ao clique num card.
-          openRecordById(created.id)
-        } else {
-          setNewRowId(created.id)
-        }
-      },
-    )
-  }, [columns, workspaceId, resource, viewMode, openRecordById])
+      const created = res.data
+      // Item recém-criado entra como o mais recente: no topo da lista e
+      // na primeira página, independente de ordenação/paginação atuais.
+      setRows((cur) => [created, ...cur])
+      setSorting([])
+      setPagination((cur) => ({ ...cur, pageIndex: 0 }))
+      // Abre o painel para completar os demais campos.
+      openRecordById(created.id)
+      return true
+    },
+    [workspaceId, resource, openRecordById],
+  )
 
   // Quick action from the global search / C → O|P|E|A (`?new=1`).
   const createdFromParam = React.useRef(false)
@@ -1042,6 +1083,16 @@ export function DataTable<TData extends WithId>({
   const primaryKey = columns.find((c) => c.primary)?.key ?? null
   const hasActiveChips = columnFilters.length > 0 || sorting.length > 0
   const isEmpty = !isLoading && table.getRowModel().rows.length === 0
+  const hasActiveFilters = columnFilters.length > 0 || globalFilter !== ''
+  const emptyKind: 'error' | 'filtered' | 'empty' = error
+    ? 'error'
+    : hasActiveFilters && rows.length > 0
+      ? 'filtered'
+      : 'empty'
+  const clearFilters = () => {
+    table.resetColumnFilters()
+    setGlobalFilter('')
+  }
   const openRecord = openRecordId
     ? rows.find((row) => row.id === openRecordId)
     : undefined
@@ -1489,18 +1540,35 @@ export function DataTable<TData extends WithId>({
                         </div>
                         <div className='space-y-0.5'>
                           <p className='font-medium text-sm'>
-                            Nada por aqui ainda
+                            {EMPTY_TITLE[emptyKind]}
                           </p>
                           <p className='text-muted-foreground text-xs'>
-                            Crie o primeiro registro ou ajuste os filtros.
+                            {emptyKind === 'error'
+                              ? error
+                              : EMPTY_HINT[emptyKind]}
                           </p>
                         </div>
-                        {disableInlineCreate ? null : (
+                        {emptyKind === 'error' ? (
+                          <Button size='sm' className='mt-1' onClick={refetch}>
+                            Tentar novamente
+                          </Button>
+                        ) : null}
+                        {emptyKind === 'filtered' ? (
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            className='mt-1'
+                            onClick={clearFilters}
+                          >
+                            Limpar filtros
+                          </Button>
+                        ) : null}
+                        {emptyKind === 'empty' && !disableInlineCreate ? (
                           <Button size='sm' className='mt-1' onClick={addRow}>
                             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
                             {newRecordLabel(createTitle)}
                           </Button>
-                        )}
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1655,6 +1723,17 @@ export function DataTable<TData extends WithId>({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CreateRecordDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title={createTitle}
+        columns={columns}
+        lookups={lookups}
+        workspaceId={workspaceId}
+        slug={slug}
+        onCreate={createRecord}
+      />
 
       {/* Painel lateral de detalhes/edição do registro */}
       {openRecord ? (

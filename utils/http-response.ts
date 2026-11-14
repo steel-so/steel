@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { ERROR_CODES } from '@/src/errors/codes'
 import { annotateRequest } from '@/src/lib/analytics/request-context'
+import { fieldErrorsFromIssues } from '@/src/lib/api-field-errors'
 import type { AppError } from '@/src/errors/app-error'
 import type { ErrorCode } from '@/src/errors/codes'
+import type { FieldErrors } from '@/src/lib/api-field-errors'
 import type { ErrorResponse, SuccessResponse } from '@/types/http-response'
 import '@/src/lib/zod-locale'
 
@@ -39,6 +41,8 @@ export function successResponse<T>(
   return NextResponse.json(response, { status: statusCode, headers })
 }
 
+export const DATABASE_ERROR_MESSAGE = 'Erro interno. Tente novamente.'
+
 export type ErrorDetails = Record<string, unknown> | unknown[]
 
 export function errorResponse(
@@ -51,12 +55,18 @@ export function errorResponse(
   // mensagem é limpa/truncada no log, e é no-op fora de um `withAxiom`.
   annotateRequest({ errorCode: code, errorMessage: message })
 
+  // Validation issues also come flattened by field (`error.fieldErrors`) so
+  // the UI can say "campo: motivo" without parsing Zod.
+  const fieldErrors: FieldErrors | null =
+    code === 'VALIDATION_ERROR' ? fieldErrorsFromIssues(details) : null
+
   const response: ErrorResponse = {
     success: false,
     statusCode,
     error: {
       code,
       ...(details && { details }),
+      ...(fieldErrors && { fieldErrors }),
     },
   }
 
@@ -79,7 +89,18 @@ export function standardError(
 export function handleError(error: AppError): NextResponse<ErrorResponse> {
   const { status } = ERROR_CODES[error.code]
   const details = error.details as ErrorDetails | undefined
-  const response = errorResponse(error.code, status, error.message, details)
+  // Repositories describe database failures in English; the user gets a
+  // generic pt-BR message and the detail stays in the request log.
+  const isDatabaseError = error.code === 'DATABASE_ERROR'
+  const response = errorResponse(
+    error.code,
+    status,
+    isDatabaseError ? DATABASE_ERROR_MESSAGE : error.message,
+    isDatabaseError ? undefined : details,
+  )
+  if (isDatabaseError) {
+    annotateRequest({ errorCode: error.code, errorMessage: error.message })
+  }
 
   if (error.code === 'RATE_LIMITED') {
     const seconds = (error.details as { retryAfterSeconds?: number } | undefined)

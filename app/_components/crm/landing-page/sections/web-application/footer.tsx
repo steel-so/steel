@@ -30,43 +30,43 @@ export function footerDefaultContent(): FooterContent {
   return {
     linkGroups: [
       {
-        title: 'Company',
+        title: 'Empresa',
         links: [
-          { label: 'About us', href: '#' },
-          { label: 'Contact us', href: '#' },
-          { label: 'Careers', href: '#' },
-          { label: 'Press', href: '#' },
+          { label: 'Sobre nós', href: '#' },
+          { label: 'Fale conosco', href: '#' },
+          { label: 'Carreiras', href: '#' },
+          { label: 'Imprensa', href: '#' },
         ],
       },
       {
-        title: 'Product',
+        title: 'Produto',
         links: [
-          { label: 'Features', href: '#' },
-          { label: 'Pricing', href: '#' },
-          { label: 'News', href: '#' },
-          { label: 'Help desk', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Recursos', href: '#' },
+          { label: 'Preços', href: '#' },
+          { label: 'Novidades', href: '#' },
+          { label: 'Central de ajuda', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
       {
-        title: 'Services',
+        title: 'Serviços',
         links: [
-          { label: 'Digital Marketing', href: '#' },
-          { label: 'Content Writing', href: '#' },
-          { label: 'SEO for Business', href: '#' },
-          { label: 'UI Design', href: '#' },
+          { label: 'Marketing digital', href: '#' },
+          { label: 'Redação de conteúdo', href: '#' },
+          { label: 'SEO para empresas', href: '#' },
+          { label: 'Design de interface', href: '#' },
         ],
       },
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Return Policy', href: '#' },
+          { label: 'Política de Privacidade', href: '#' },
+          { label: 'Termos e Condições', href: '#' },
+          { label: 'Política de Devolução', href: '#' },
         ],
       },
       {
-        title: 'Contact us',
+        title: 'Fale conosco',
         links: [
           {
             label: 'contato@suaempresa.com.br',

@@ -10,6 +10,7 @@ import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogContent,
@@ -354,15 +355,18 @@ function ContractRow({
             </Button>
           ) : null}
           {canEdit ? (
-            <Button
-              type='button'
-              size='sm'
-              variant='ghost'
-              disabled={remove.isPending}
-              onClick={handleRemove}
-            >
-              Remover
-            </Button>
+            <ConfirmAction
+              trigger={
+                <Button type='button' size='sm' variant='ghost'>
+                  Remover
+                </Button>
+              }
+              title={`Remover o contrato "${contract.name}"?`}
+              description='O contrato sai da lista de renovações. Oportunidades já abertas continuam existindo. Não é possível desfazer.'
+              confirmLabel='Remover contrato'
+              pending={remove.isPending}
+              onConfirm={handleRemove}
+            />
           ) : null}
         </div>
       </div>

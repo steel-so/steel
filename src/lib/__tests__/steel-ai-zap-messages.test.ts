@@ -7,6 +7,7 @@ import { err, ok } from '@/src/lib/result'
 vi.mock('@/src/services/whatsapp-conversation.service')
 vi.mock('@/src/services/whatsapp-message.service')
 vi.mock('@/src/services/whatsapp-connection.service')
+vi.mock('@/src/services/whatsapp-template.service')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/sd-whatsapp.repository')
 vi.mock('@/src/repositories/workspace.repository')
@@ -17,10 +18,13 @@ import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import { WhatsAppConnectionService } from '@/src/services/whatsapp-connection.service'
 import { WhatsAppConversationService } from '@/src/services/whatsapp-conversation.service'
 import { WhatsAppMessageService } from '@/src/services/whatsapp-message.service'
+import { WhatsAppTemplateService } from '@/src/services/whatsapp-template.service'
 import {
   zapMessageSendTextTool as tool,
   whatsappContactOptedOut,
   whatsappSessionWindowClosed,
+  whatsappTemplateNotApproved,
+  zapTemplateSendTool,
 } from '../ai/tools/whatsapp/messages'
 import {
   connection,
@@ -28,6 +32,7 @@ import {
   ctx,
   message,
   previewOf,
+  template,
   workspace,
 } from './zap-ai-fixtures'
 
@@ -36,6 +41,7 @@ const messages = vi.mocked(WhatsAppMessageService)
 const connections = vi.mocked(WhatsAppConnectionService)
 const contacts = vi.mocked(WhatsAppContactRepository)
 const sdWhatsapp = vi.mocked(SdWhatsappRepository)
+const templates = vi.mocked(WhatsAppTemplateService)
 const workspaces = vi.mocked(WorkspaceRepository)
 
 const NOW = new Date('2026-10-06T12:00:00.000Z')
@@ -59,6 +65,7 @@ beforeEach(() => {
   contacts.findById.mockResolvedValue(ok(contactRow()))
   connections.list.mockResolvedValue(ok([connection()]))
   sdWhatsapp.lastInboundAt.mockResolvedValue(ok(null))
+  templates.list.mockResolvedValue(ok([template()]))
 })
 
 afterEach(() => {
@@ -210,5 +217,200 @@ describe('zap_message_send_text', () => {
     connections.list.mockResolvedValue(ok([connection({ provider: 'META' })]))
     expectErr(await tool.execute(ctx, args), 'WHATSAPP_SESSION_WINDOW_CLOSED')
     expect(messages.sendText).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('zap_template_send', () => {
+  const t = zapTemplateSendTool
+  const tArgs = {
+    conversationId: 'c1',
+    templateName: 'boas_vindas',
+    bodyVariables: ['Maria'],
+    headerVariables: [] as string[],
+  }
+
+  it('should be a customer-facing ACTION gated by conversations:CREATE', () => {
+    expect(t.kind).toBe('ACTION')
+    expect(t.customerFacing).toBe(true)
+    expect(t.annotations).toEqual({
+      destructiveHint: false,
+      openWorldHint: true,
+    })
+    expect(t.permission).toEqual({
+      resource: 'conversations',
+      action: 'CREATE',
+    })
+  })
+
+  it('should default the variables and validate the arguments', () => {
+    expect(
+      expectOk(t.parse({ conversationId: 'c1', templateName: 'x' })),
+    ).toMatchObject({ bodyVariables: [], headerVariables: [] })
+    expectErr(t.parse({ conversationId: 'c1' }), 'VALIDATION_ERROR')
+  })
+
+  it('should preview the rendered text, even outside the 24 h window', async () => {
+    connections.list.mockResolvedValue(ok([connection({ provider: 'META' })]))
+    sdWhatsapp.lastInboundAt.mockResolvedValue(ok(null))
+
+    const preview = expectOk(await previewOf(t)(ctx, tArgs))
+
+    expect(preview.title).toBe(
+      'Enviar modelo "boas_vindas" para Maria (+5511999990000)',
+    )
+    expect(preview.summary).toMatch(/entregue ao cliente/)
+    expect(preview.fields).toEqual([
+      { label: 'Destinatário', after: 'Maria (+5511999990000)' },
+      { label: 'Conexão', after: 'Comercial (+55 11 4000-0000)' },
+      { label: 'Modelo', after: 'boas_vindas' },
+      { label: 'Mensagem', after: 'Olá Maria' },
+    ])
+    expect(sdWhatsapp.lastInboundAt).not.toHaveBeenCalled()
+    expect(messages.sendTemplate).not.toHaveBeenCalled()
+  })
+
+  it('should send the filled components through the message service', async () => {
+    messages.sendTemplate.mockResolvedValue(
+      ok(message({ id: 'm7', direction: 'OUT', status: 'SENT' })),
+    )
+
+    const out = expectOk(await t.execute(ctx, tArgs))
+
+    expect(messages.sendTemplate).toHaveBeenCalledWith('u1', 'ws1', 'c1', {
+      templateName: 'boas_vindas',
+      language: 'pt_BR',
+      components: [
+        { type: 'body', parameters: [{ type: 'text', text: 'Maria' }] },
+      ],
+    })
+    expect(out.summary).toBe('Modelo enviado para Maria (+5511999990000)')
+    expect(out.data).toEqual({
+      messageId: 'm7',
+      conversationId: 'c1',
+      status: 'SENT',
+    })
+  })
+
+  it('should surface a send failure', async () => {
+    messages.sendTemplate.mockResolvedValue(
+      err(whatsappProviderError('(#132001) Template does not exist')),
+    )
+    expectErr(await t.execute(ctx, tArgs), 'WHATSAPP_PROVIDER_ERROR')
+  })
+
+  it('should refuse a template that is not approved', async () => {
+    templates.list.mockResolvedValue(ok([template({ status: 'PENDING' })]))
+    const error = expectErr(
+      await previewOf(t)(ctx, tArgs),
+      'WHATSAPP_TEMPLATE_NOT_APPROVED',
+    )
+    expect(error.message).toBe(whatsappTemplateNotApproved().message)
+    expect(messages.sendTemplate).not.toHaveBeenCalled()
+  })
+
+  it('should prefer the approved version when several share the name', async () => {
+    templates.list.mockResolvedValue(
+      ok([
+        template({ id: 't0', status: 'REJECTED' }),
+        template({ id: 't1', status: 'APPROVED' }),
+      ]),
+    )
+    expectOk(await previewOf(t)(ctx, tArgs))
+  })
+
+  it('should explain an unknown template or language', async () => {
+    const unknown = expectErr(
+      await previewOf(t)(ctx, { ...tArgs, templateName: 'nao_existe' }),
+      'VALIDATION_ERROR',
+    )
+    expect(unknown.message).toMatch(/nao_existe/)
+    expectErr(
+      await previewOf(t)(ctx, { ...tArgs, language: 'en_US' }),
+      'VALIDATION_ERROR',
+    )
+    templates.list.mockResolvedValueOnce(
+      ok([template({ connectionId: 'other' })]),
+    )
+    expectErr(await previewOf(t)(ctx, tArgs), 'VALIDATION_ERROR')
+  })
+
+  it('should check the number of variables of body and header', async () => {
+    const body = expectErr(
+      await previewOf(t)(ctx, { ...tArgs, bodyVariables: [] }),
+      'VALIDATION_ERROR',
+    )
+    expect(body.message).toMatch(/1 variável\(is\) no corpo e vieram 0/)
+    const header = expectErr(
+      await previewOf(t)(ctx, { ...tArgs, headerVariables: ['x'] }),
+      'VALIDATION_ERROR',
+    )
+    expect(header.message).toMatch(/0 variável\(is\) no cabeçalho e vieram 1/)
+  })
+
+  it('should fill header variables of a text header', async () => {
+    templates.list.mockResolvedValue(
+      ok([
+        template({
+          components: [
+            { type: 'HEADER', format: 'TEXT', text: 'Olá {{1}}' },
+            { type: 'BODY', text: 'Pedido {{1}}' },
+          ],
+        }),
+      ]),
+    )
+    const preview = expectOk(
+      await previewOf(t)(ctx, {
+        ...tArgs,
+        headerVariables: ['Maria'],
+        bodyVariables: ['123'],
+      }),
+    )
+    expect(preview.fields?.at(-1)).toEqual({
+      label: 'Mensagem',
+      after: 'Pedido 123',
+    })
+  })
+
+  it('should refuse templates with a dynamic URL button', async () => {
+    templates.list.mockResolvedValue(
+      ok([
+        template({
+          components: [
+            { type: 'BODY', text: 'Olá {{1}}' },
+            {
+              type: 'BUTTONS',
+              buttons: [
+                { type: 'URL', text: 'Ver', url: 'https://x.com/{{1}}' },
+              ],
+            },
+          ],
+        }),
+      ]),
+    )
+    const error = expectErr(await previewOf(t)(ctx, tArgs), 'VALIDATION_ERROR')
+    expect(error.message).toMatch(/botão de link/)
+  })
+
+  it('should refuse opted-out contacts, closed and AI-handled conversations', async () => {
+    contacts.findById.mockResolvedValueOnce(ok(contactRow(true)))
+    expectErr(await previewOf(t)(ctx, tArgs), 'WHATSAPP_CONTACT_OPTED_OUT')
+    conversations.get.mockResolvedValueOnce(
+      ok(conversation({ status: 'CLOSED' })),
+    )
+    expectErr(
+      await t.execute(ctx, tArgs),
+      'WHATSAPP_CONVERSATION_ALREADY_CLOSED',
+    )
+    conversations.get.mockResolvedValueOnce(
+      ok(conversation({ aiActive: true })),
+    )
+    expectErr(await t.execute(ctx, tArgs), 'WHATSAPP_CONVERSATION_AI_HANDLING')
+    expect(messages.sendTemplate).not.toHaveBeenCalled()
+  })
+
+  it('should surface a failure listing the templates', async () => {
+    templates.list.mockResolvedValue(err(forbidden()))
+    expectErr(await previewOf(t)(ctx, tArgs), 'FORBIDDEN')
+    expectErr(await t.execute(ctx, tArgs), 'FORBIDDEN')
   })
 })

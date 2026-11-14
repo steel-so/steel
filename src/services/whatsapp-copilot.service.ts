@@ -16,6 +16,11 @@ import {
   WHATSAPP_COPILOT_HISTORY_LIMIT,
 } from '@/src/lib/whatsapp/copilot'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
+import {
+  buildReplyKnowledgeSection,
+  customerQueryText,
+  REPLY_KNOWLEDGE_QUERY_MESSAGES,
+} from '@/src/lib/whatsapp/reply-knowledge'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { UserRepository } from '@/src/repositories/user.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
@@ -37,6 +42,7 @@ import {
   loadVisibleConversation,
   resolveConversationScope,
 } from './whatsapp-conversation-scope.service'
+import { WhatsAppReplyKnowledgeService } from './whatsapp-reply-knowledge.service'
 
 /**
  * Z7 — agent copilot. Three on-demand helpers for a human agent working a
@@ -86,6 +92,35 @@ async function loadTranscript(
   const transcript = buildTranscript(visible)
   if (!transcript) return err(whatsappCopilotNoContext())
   return ok(transcript)
+}
+
+/**
+ * KB articles and Wiki pages relevant to what the customer last said, as a
+ * prompt section ('' when none or on any failure). Searched as the agent, so
+ * it only brings what they could open themselves.
+ */
+async function suggestionKnowledge(
+  actorId: string,
+  workspaceId: string,
+  conversationId: string,
+  clearedAt: Date | null,
+  hint: string | undefined,
+): Promise<string> {
+  const history = await WhatsAppMessageRepository.listLatestByConversation(
+    conversationId,
+    REPLY_KNOWLEDGE_QUERY_MESSAGES * 3,
+  )
+  if (!history.ok) return ''
+  const visible = clearedAt
+    ? history.value.filter((message) => message.createdAt > clearedAt)
+    : history.value
+  const query = `${customerQueryText(visible, 'newest-first')} ${hint ?? ''}`
+  const entries = await WhatsAppReplyKnowledgeService.forAgent(
+    actorId,
+    workspaceId,
+    query.trim(),
+  )
+  return buildReplyKnowledgeSection(entries, 'agent')
 }
 
 async function complete(input: {
@@ -247,6 +282,13 @@ export const WhatsAppCopilotService = {
     if (!transcript.ok) return transcript
 
     const user = await UserRepository.findById(actorId)
+    const knowledge = await suggestionKnowledge(
+      actorId,
+      workspaceId,
+      conversationId,
+      conversation.value.clearedAt,
+      input.hint,
+    )
     const completion = await complete({
       actorId,
       workspaceId,
@@ -256,6 +298,7 @@ export const WhatsAppCopilotService = {
         contactName: conversation.value.contact?.name,
         agentName: user.ok ? user.value.name : null,
         hint: input.hint,
+        knowledge,
       }),
       messages: [{ role: 'user', content: transcript.value }],
     })

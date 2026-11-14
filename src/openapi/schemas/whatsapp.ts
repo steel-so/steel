@@ -141,6 +141,10 @@ export const WhatsAppConversationDTO = dto(
       description: 'Média de sentimento das mensagens (-1 a 1).',
     }),
     lastMessageAt: nullableDateTime(),
+    lastInboundAt: nullableDateTime().meta({
+      description:
+        'Última mensagem recebida do contato. Em conexões Meta, a janela de 24h para texto livre conta daqui.',
+    }),
     lastMessagePreview: z.string().nullable(),
     pinned: z.boolean(),
     archived: z.boolean(),
@@ -274,6 +278,10 @@ export const WhatsAppMessageDTO = dto(
     buttonPayload: z.string().nullable().meta({
       description:
         'Clique recebido (IN, tipo `BUTTON`): payload do botão (`stl:t:<templateId>:<botão>` ou `stl:q:<respostaId>:<botão>`) ou o id cru de um botão de fora do Steel.',
+    }),
+    failureReason: z.string().nullable().optional().meta({
+      description:
+        'Motivo da falha informado pelo provedor (status `FAILED`), no formato `código: texto`.',
     }),
     createdAt: dateTime(),
   }),
@@ -467,6 +475,10 @@ const BroadcastBase = z.object({
     description:
       'Lista com "pular números sem WhatsApp" ligado. Só pula quem já foi verificado.',
   }),
+  failureReason: z.string().nullable().meta({
+    description:
+      'Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver.',
+  }),
   createdAt: dateTime(),
   updatedAt: dateTime(),
 })
@@ -536,6 +548,24 @@ export const WhatsAppBroadcastImportResultDTO = dto(
       description: '`null` quando nenhuma linha do CSV foi aceita.',
     }),
     createdCount: z.number().int(),
+    validCount: z.number().int().optional().meta({
+      description: 'Só em `dryRun`: quantas linhas seriam agendadas.',
+    }),
+    preview: z
+      .array(
+        z.object({
+          rowNumber: z.number().int(),
+          phone: z.string(),
+          contactName: z.string().nullable(),
+          scheduledAt: dateTime(),
+          appointmentAt: dateTime(),
+        }),
+      )
+      .optional()
+      .meta({
+        description:
+          'Só em `dryRun`: as primeiras linhas com a data de envio calculada.',
+      }),
     rejectedRows: z.array(
       z.object({
         rowNumber: z.number().int().meta({ example: 3 }),

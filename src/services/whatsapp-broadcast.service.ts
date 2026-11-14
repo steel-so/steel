@@ -488,6 +488,126 @@ export const WhatsAppBroadcastService = {
     return ok(toWhatsAppBroadcastListDetailDTO(fresh.value))
   },
   /**
+   * Stops a list that is queued or running: every recipient still PENDING is
+   * skipped ("Envio cancelado"), so the jobs already in the queue become
+   * no-ops. Already-sent messages are not affected.
+   */
+  async cancel(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppBroadcastListDetailDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'broadcasts', action: 'CREATE' },
+    )
+    if (!membership.ok) return membership
+
+    const existing = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!existing.ok) return existing
+    if (!existing.value) return err(whatsappBroadcastNotFound())
+    if (
+      existing.value.status !== 'QUEUED' &&
+      existing.value.status !== 'RUNNING'
+    ) {
+      return err(
+        whatsappBroadcastLocked(
+          'Só dá para cancelar um envio que está agendado ou em andamento.',
+        ),
+      )
+    }
+
+    const cancelled =
+      await WhatsAppBroadcastRepository.cancelPendingRecipients(id)
+    if (!cancelled.ok) return cancelled
+    const closed = await WhatsAppBroadcastRepository.updateStatus(id, 'DONE')
+    if (!closed.ok) return closed
+
+    auditMutation({
+      entity: 'whatsapp_broadcast_list',
+      action: 'update',
+      actorId,
+      targetId: id,
+      meta: { status: 'DONE', cancelledRecipients: cancelled.value },
+    })
+
+    const fresh = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!fresh.ok) return fresh
+    if (!fresh.value) return err(whatsappBroadcastNotFound())
+    return ok(toWhatsAppBroadcastListDetailDTO(fresh.value))
+  },
+
+  /** Sends again to the recipients that failed (list must be finished). */
+  async retryFailed(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppBroadcastListDetailDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'broadcasts', action: 'CREATE' },
+    )
+    if (!membership.ok) return membership
+    const feature = await assertFeature(workspaceId, 'communication.broadcasts')
+    if (!feature.ok) return feature
+
+    const existing = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!existing.ok) return existing
+    if (!existing.value) return err(whatsappBroadcastNotFound())
+    if (
+      existing.value.status !== 'DONE' &&
+      existing.value.status !== 'FAILED'
+    ) {
+      return err(
+        whatsappBroadcastLocked(
+          'Espere o envio terminar para reenviar os que falharam.',
+        ),
+      )
+    }
+
+    const reset = await WhatsAppBroadcastRepository.resetFailedRecipients(id)
+    if (!reset.ok) return reset
+    if (reset.value.length === 0) {
+      return err(
+        whatsappBroadcastNoRecipients(
+          'Nenhum destinatário falhou nesta lista.',
+        ),
+      )
+    }
+
+    const queue = getWhatsappBroadcastQueue()
+    await queue.addBulk(
+      reset.value.map((recipientId, index) => ({
+        name: WhatsappBroadcastJob.SendBroadcastMessage,
+        data: { broadcastListId: id, recipientId },
+        opts: { delay: index * STAGGER_DELAY_MS },
+      })),
+    )
+    const running = await WhatsAppBroadcastRepository.updateStatus(
+      id,
+      'RUNNING',
+    )
+    if (!running.ok) return running
+
+    auditMutation({
+      entity: 'whatsapp_broadcast_list',
+      action: 'update',
+      actorId,
+      targetId: id,
+      meta: { status: 'RUNNING', retriedRecipients: reset.value.length },
+    })
+
+    const fresh = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!fresh.ok) return fresh
+    if (!fresh.value) return err(whatsappBroadcastNotFound())
+    return ok(toWhatsAppBroadcastListDetailDTO(fresh.value))
+  },
+
+  /**
    * Envia a mensagem da lista a um destinatário. Fluxo de sistema (job em
    * background, sem usuário): revalida o opt-out LGPD no momento do envio
    * (quem respondeu SAIR depois de enfileirado vira SKIPPED) e fecha a lista

@@ -55,7 +55,7 @@ export function ProductsSection({
   function addItem() {
     onChange?.({
       ...content,
-      items: [...content.items, { title: 'Novo produto', price: '$0' }],
+      items: [...content.items, { title: 'Novo produto', price: 'R$ 0' }],
     })
   }
 
@@ -124,7 +124,7 @@ export function ProductsSection({
               <GhostInput
                 value={item.price}
                 onCommit={(v) => updateItem(index, { price: v })}
-                placeholder='$0'
+                placeholder='R$ 0'
                 readOnly={readOnly}
                 className='font-semibold text-sm'
               />
@@ -134,7 +134,7 @@ export function ProductsSection({
                   onCommit={(v) =>
                     updateItem(index, { originalPrice: v || undefined })
                   }
-                  placeholder='$0'
+                  placeholder='R$ 0'
                   readOnly={readOnly}
                   className='text-muted-foreground text-xs line-through'
                 />

@@ -47,13 +47,13 @@ function pickVariant(content: StepsContent): 'video' | 'numbered' | 'showcase' {
 export function stepsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'How does it work?',
+    title: 'Como funciona?',
     subtitle:
-      'With lots of unique blocks, you can easily build a page easily without any coding.',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever nenhum código.',
     items: [
-      { title: 'Install App', description: '' },
-      { title: 'Add Team Members', description: '' },
-      { title: 'Start Rolling!', description: '' },
+      { title: 'Instale o app', description: '' },
+      { title: 'Adicione os membros da equipe', description: '' },
+      { title: 'É só começar!', description: '' },
     ],
   }
 }
@@ -61,20 +61,20 @@ export function stepsDefaultContent(): StepsContent {
 export function stepsShowcaseLeftDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Collaborate with team members.',
+    title: 'Colabore com os membros da equipe.',
     subtitle:
-      'We share common trends and strategies for improving your rental income.',
+      'Compartilhamos tendências e estratégias para melhorar os seus resultados.',
     imageUrl: `${BASE}/content-collaborate.png`,
     items: [
       {
-        title: 'Project Based Groups',
+        title: 'Grupos por projeto',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
       {
-        title: 'Unlimited Video Meetings',
+        title: 'Reuniões em vídeo ilimitadas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
     ],
   }
@@ -83,20 +83,20 @@ export function stepsShowcaseLeftDefaultContent(): StepsContent {
 export function stepsShowcaseRightDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Organize remote team fast & easily.',
+    title: 'Organize a equipe remota com rapidez e facilidade.',
     subtitle:
-      'We share common trends and strategies for creating & improving your rental income.',
+      'Compartilhamos tendências e estratégias para criar e melhorar os seus resultados.',
     imageUrl: `${BASE}/content-organize.png`,
     items: [
       {
-        title: 'Create Unlimited Teams',
+        title: 'Crie equipes ilimitadas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
       {
-        title: 'Hasslefree Chat with Everyone',
+        title: 'Converse com todos sem complicação',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
     ],
   }

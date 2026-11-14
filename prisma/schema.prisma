@@ -664,6 +664,8 @@ model Workspace {
   crmCustomerHealth         CrmCustomerHealth[]
   crmOpportunityHealth      CrmOpportunityHealth[]
   crmDealsSettings          CrmDealsSettings?
+  crmRetentionSettings      CrmRetentionSettings?
+  crmRetentionActions       CrmRetentionAction[]
   crmContracts              CrmContract[]
   crmDealRooms              CrmDealRoom[]
   aiProcedures              AiProcedure[]
@@ -1339,6 +1341,8 @@ model WhatsAppConversation {
   /// (negativo) a 1 (positivo). Nulo até a primeira classificação.
   avgSentimentScore  Float?                     @map("avg_sentiment_score")
   lastMessageAt      DateTime?                  @map("last_message_at")
+  /// Última mensagem recebida do contato (IN): base da janela de 24h da Meta.
+  lastInboundAt      DateTime?                  @map("last_inbound_at")
   pinnedAt           DateTime?                  @map("pinned_at")
   archivedAt         DateTime?                  @map("archived_at")
   deletedAt          DateTime?                  @map("deleted_at")
@@ -1967,6 +1971,8 @@ model WhatsAppMessage {
   /// pelo job de análise de sentimento (não bloqueia o envio/recebimento).
   sentiment         WhatsAppSentiment?
   sentimentScore    Float?                   @map("sentiment_score")
+  /// Motivo da falha informado pelo provedor (status FAILED), "código: texto".
+  failureReason     String?                  @map("failure_reason")
   deletedAt         DateTime?                @map("deleted_at")
   createdAt         DateTime                 @default(now()) @map("created_at")
   updatedAt         DateTime                 @updatedAt @map("updated_at")
@@ -6013,6 +6019,9 @@ model SdSettings {
   /// Chamado aberto pelo WhatsApp: responde ao contato com o código. O
   /// equivalente do e-mail é por caixa (`SdMailbox.sendAcknowledgement`).
   whatsappSendAcknowledgement Boolean        @default(true) @map("whatsapp_send_acknowledgement")
+  /// Avisos ao solicitante por modelo aprovado da Meta, por evento do catálogo:
+  /// {"ticket.resolved":{"templateName":"...","language":"pt_BR","variables":["code"]}}.
+  requesterWhatsappTemplates  Json           @default("{}") @map("requester_whatsapp_templates")
   portalEnabled               Boolean        @default(true) @map("portal_enabled")
   /// Tipos que o solicitante pode abrir pelo portal.
   portalTicketTypes           SdTicketType[] @default([INCIDENT, SERVICE_REQUEST]) @map("portal_ticket_types")
@@ -13866,4 +13875,53 @@ model WhatsAppContactBlock {
   @@index([workspaceId])
   @@index([contactId])
   @@map("whatsapp_contact_blocks")
+}
+
+// ─── ux: detractor-crm ────────────────────────────────────────────────────
+
+enum CrmRetentionSource {
+  /// NPS/CSAT answer at or below the detractor ceiling.
+  SURVEY_DETRACTOR
+  /// The churn risk of a company entered the high band or jumped.
+  HEALTH_DROP
+}
+
+/// Per-workspace switches of the retention follow-up: what a detractor answer
+/// or a customer-health drop opens for the account owner. No row = defaults.
+model CrmRetentionSettings {
+  id                String   @id @default(cuid())
+  workspaceId       String   @unique @map("workspace_id")
+  /// A detractor survey answer creates a retention task.
+  onDetractor       Boolean  @default(true) @map("on_detractor")
+  /// A customer-health drop creates a retention task.
+  onHealthDrop      Boolean  @default(true) @map("on_health_drop")
+  /// Also open a retention deal (first open stage of the default pipeline).
+  createOpportunity Boolean  @default(false) @map("create_opportunity")
+  /// Days until the retention task is due.
+  taskDueDays       Int      @default(2) @map("task_due_days")
+  updatedById       String?  @map("updated_by_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("crm_retention_settings")
+}
+
+/// Ledger that makes the retention follow-up idempotent: one row per
+/// (workspace, dedupeKey), claimed before the task is created.
+model CrmRetentionAction {
+  id            String             @id @default(cuid())
+  workspaceId   String             @map("workspace_id")
+  source        CrmRetentionSource
+  dedupeKey     String             @map("dedupe_key")
+  taskId        String?            @map("task_id")
+  opportunityId String?            @map("opportunity_id")
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, dedupeKey])
+  @@index([workspaceId, createdAt])
+  @@map("crm_retention_actions")
 }

@@ -77,10 +77,8 @@ export function CrmProductsTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmProductDTO>(
-    workspaceId,
-    'products',
-  )
+  const list = useCrmResourceList<CrmProductDTO>(workspaceId, 'products')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
 
   const columns = useMemo(() => COLUMNS, [])
@@ -95,6 +93,7 @@ export function CrmProductsTable({
       createTitle='produto'
       lookups={lookups}
       isLoading={isLoading}
+      error={error}
       searchPlaceholder='Buscar produtos…'
       refetch={refetch}
     />

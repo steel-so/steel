@@ -24,6 +24,7 @@ import {
 import { WidgetView } from '@/app/_components/crm/dashboard/widget-view'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import {
@@ -367,15 +368,22 @@ export function DashboardCanvas({
                       >
                         <SteelIcon icon={PencilEdit02Icon} strokeWidth={2} />
                       </Button>
-                      <Button
-                        variant='ghost'
-                        size='icon-xs'
-                        className='text-muted-foreground hover:text-destructive'
-                        onClick={() => handleDelete(widget)}
-                        aria-label='Remover widget'
-                      >
-                        <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                      </Button>
+                      <ConfirmAction
+                        trigger={
+                          <Button
+                            variant='ghost'
+                            size='icon-xs'
+                            className='text-muted-foreground hover:text-destructive'
+                            aria-label='Remover widget'
+                          >
+                            <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                          </Button>
+                        }
+                        title='Remover este widget?'
+                        description={`"${widgetTitle(widget)}" sai do painel. Não é possível desfazer.`}
+                        confirmLabel='Remover'
+                        onConfirm={() => handleDelete(widget)}
+                      />
                     </div>
                   ) : null}
                 </div>

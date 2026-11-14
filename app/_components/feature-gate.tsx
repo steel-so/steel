@@ -32,8 +32,9 @@ export function FeatureUnavailable({ title }: { title: string }) {
     <div className='mx-auto flex max-w-md flex-col items-center gap-1 rounded-lg border border-dashed p-8 text-center'>
       <p className='font-medium text-sm'>{title} não está disponível</p>
       <p className='text-muted-foreground text-sm'>
-        Esta funcionalidade não está liberada para este workspace. Fale com a
-        Stratus Telecom para ativá-la.
+        Esta funcionalidade não está ativada neste workspace. Peça a um
+        administrador para ativá-la em Ajustes, ou fale com a Stratus Telecom se
+        ela não aparecer por lá.
       </p>
     </div>
   )

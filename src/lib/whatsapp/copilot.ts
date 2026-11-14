@@ -91,6 +91,8 @@ export function suggestSystemPrompt(input: {
   contactName?: string | null
   agentName?: string | null
   hint?: string
+  /** Section with KB/Wiki sources (`buildReplyKnowledgeSection`), or ''. */
+  knowledge?: string
 }): string {
   const parts = [
     'Você é um copiloto que ajuda um atendente humano a responder um cliente pelo WhatsApp. Leia a conversa e escreva UMA resposta pronta para o atendente enviar, curta e útil, na voz do atendente. Responda só com o texto da mensagem.',
@@ -103,6 +105,7 @@ export function suggestSystemPrompt(input: {
       `Orientação do atendente para esta resposta (siga): ${input.hint}`,
     )
   }
+  if (input.knowledge) parts.push(input.knowledge.trim())
   return parts.join('\n')
 }
 

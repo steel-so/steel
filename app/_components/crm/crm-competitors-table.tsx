@@ -67,10 +67,8 @@ export function CrmCompetitorsTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmCompetitorDTO>(
-    workspaceId,
-    'competitors',
-  )
+  const list = useCrmResourceList<CrmCompetitorDTO>(workspaceId, 'competitors')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
   const [isSyncing, setIsSyncing] = useState(false)
@@ -131,6 +129,7 @@ export function CrmCompetitorsTable({
         createTitle='concorrente'
         lookups={lookups}
         isLoading={isLoading}
+        error={error}
         searchPlaceholder='Buscar concorrentes…'
         refetch={refetch}
         renderRecordExtra={(record) => (

@@ -62,7 +62,7 @@ describe('module-locked layouts', () => {
     const { unmount } = render(
       await CrmLayout({ children: <p>conteúdo</p>, params }),
     )
-    expect(hrefOf('E-mail e agenda')).toBe('/acme/crm/email-sync')
+    expect(hrefOf('Registro de e-mails')).toBe('/acme/crm/email-sync')
     expect(screen.queryByText('Chaves de API')).toBeNull()
     expect(guard.isWorkspacePrivileged).toHaveBeenCalledWith('acme')
     unmount()

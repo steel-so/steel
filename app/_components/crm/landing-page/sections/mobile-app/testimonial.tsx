@@ -20,7 +20,7 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'OMG! I cannot believe that I have got a brand new landing page after getting Omega. It was super easy to edit and publish.',
+      'Uau! Nem acredito que ganhei uma página nova depois de usar o Ômega. Foi superfácil de editar e publicar.',
     authorName: 'Isaac Olson',
     avatarUrl: `${BASE}/testimonial-avatar-1.png`,
     style: 'default',
@@ -31,7 +31,7 @@ export function testimonialSecondDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      "Simply the best. Better than all the rest. I'd recommend this product to beginners and advanced users who want success.",
+      'Simplesmente o melhor, bem acima dos concorrentes. Recomendo para iniciantes e para usuários avançados que querem resultado.',
     authorName: 'Barry Young',
     avatarUrl: `${BASE}/testimonial-avatar-2.png`,
     style: 'default',
@@ -42,7 +42,7 @@ export function testimonialThirdDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'Must have book for all, who want to be Product Designer or Interaction Designer.',
+      'Leitura obrigatória para quem quer ser Designer de Produto ou de Interação.',
     authorName: 'Esther Allison',
     avatarUrl: `${BASE}/testimonial-avatar-3.png`,
     style: 'default',

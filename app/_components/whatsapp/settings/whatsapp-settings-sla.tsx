@@ -6,6 +6,7 @@ import { useIsPrivileged } from '@/app/_components/workspace/workspace-permissio
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -180,10 +181,10 @@ function SlaPolicyEditor({
   }
 
   function handleRemove() {
-    remove.mutate(policy.id, {
-      onSuccess: () => notify.success('Política removida'),
-      onError: (error) => notify.error(error, 'Não foi possível remover'),
-    })
+    return remove.mutateAsync(policy.id).then(
+      () => notify.success('Política removida'),
+      (error) => notify.error(error, 'Não foi possível remover'),
+    )
   }
 
   return (
@@ -329,15 +330,23 @@ function SlaPolicyEditor({
         <Button type='submit' disabled={update.isPending}>
           {update.isPending ? 'Salvando...' : 'Salvar política'}
         </Button>
-        <Button
-          type='button'
-          variant='ghost'
-          disabled={remove.isPending}
-          onClick={handleRemove}
-        >
-          <SteelIcon icon={Delete02Icon} size={14} />
-          Remover
-        </Button>
+        <ConfirmAction
+          trigger={
+            <Button type='button' variant='ghost' disabled={remove.isPending}>
+              <SteelIcon icon={Delete02Icon} size={14} />
+              Remover
+            </Button>
+          }
+          title='Remover esta política de SLA?'
+          description={
+            policy.teamId
+              ? 'As conversas desta equipe voltam a seguir a política padrão do workspace.'
+              : 'Sem a política padrão, as conversas deixam de ter prazo de SLA até você criar outra.'
+          }
+          confirmLabel='Remover'
+          pending={remove.isPending}
+          onConfirm={handleRemove}
+        />
       </div>
     </form>
   )

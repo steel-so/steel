@@ -22,18 +22,18 @@ const PATTERN_BG =
 export function consultationAboutDefaultContent(): AboutContent {
   return {
     type: 'ABOUT',
-    title: 'Get a free consultancy from our expert right now!',
+    title: 'Receba agora uma consultoria gratuita com nossos especialistas!',
     description:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page so quickly with Albino.',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page rapidinho.',
     imageUrls: [],
     dropdowns: [
       {
-        label: 'Which service do you need?',
+        label: 'De qual serviço você precisa?',
         options: [
-          'Digital Marketing',
-          'Content Writing',
-          'Graphic Design',
-          'SEO for Business',
+          'Marketing Digital',
+          'Produção de Conteúdo',
+          'Design Gráfico',
+          'SEO para Empresas',
         ],
       },
     ],
@@ -128,9 +128,9 @@ function DropdownField({
  * `AboutContentSchema.dropdowns`.
  */
 const FORM_FIELDS = [
-  { key: 'name', label: 'Name', placeholder: 'i.e. John Doe' },
-  { key: 'email', label: 'Email', placeholder: 'i.e. john@mail.com' },
-  { key: 'phone', label: 'Phone', placeholder: 'i.e. 123-456-7890' },
+  { key: 'name', label: 'Nome', placeholder: 'Ex.: Maria Silva' },
+  { key: 'email', label: 'E-mail', placeholder: 'Ex.: maria@email.com' },
+  { key: 'phone', label: 'Telefone', placeholder: 'Ex.: (11) 99999-9999' },
 ] as const
 
 const FIELD_LABEL_CLASS =
@@ -286,12 +286,16 @@ export function ConsultationAbout({
           ))}
           {readOnly ? (
             <button type='button' disabled className={SUBMIT_CLASS}>
-              {textOf(content, 'form.submit', 'Get Free Consultancy')}
+              {textOf(content, 'form.submit', 'Quero consultoria grátis')}
             </button>
           ) : (
             <div className={`${SUBMIT_CLASS} px-4 text-center`}>
               <GhostInput
-                value={textOf(content, 'form.submit', 'Get Free Consultancy')}
+                value={textOf(
+                  content,
+                  'form.submit',
+                  'Quero consultoria grátis',
+                )}
                 onCommit={(v) =>
                   onChange?.(withText(content, 'form.submit', v))
                 }

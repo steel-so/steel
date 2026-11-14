@@ -108,10 +108,8 @@ export function CrmTasksTable({
   workspaceId: string
   slug: string
 }) {
-  const { items, isLoading, refetch } = useCrmResourceList<CrmTaskDTO>(
-    workspaceId,
-    'tasks',
-  )
+  const list = useCrmResourceList<CrmTaskDTO>(workspaceId, 'tasks')
+  const { items, isLoading, error, refetch } = list
   const { lookups } = useCrmWorkspaceLookups(workspaceId, LOOKUP_KINDS)
   const columns = useMemo(() => COLUMNS, [])
 
@@ -125,6 +123,7 @@ export function CrmTasksTable({
       createTitle='tarefa'
       lookups={lookups}
       isLoading={isLoading}
+      error={error}
       searchPlaceholder='Buscar tarefas…'
       refetch={refetch}
       kanban={{

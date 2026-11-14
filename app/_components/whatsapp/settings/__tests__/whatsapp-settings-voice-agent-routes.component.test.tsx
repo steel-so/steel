@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchBody,
@@ -157,6 +157,11 @@ describe('<WhatsappSettingsVoiceAgentRoutes />', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
     await waitFor(() =>
       expect(
         fetchSpy.mock.calls.some(
@@ -206,6 +211,11 @@ describe('<WhatsappSettingsVoiceAgentRoutes />', () => {
       ),
     )
     fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Remover',
+      }),
+    )
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith(
         expect.any(Error),

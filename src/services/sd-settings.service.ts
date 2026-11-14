@@ -63,7 +63,7 @@ export const SdSettingsService = {
         const current = await SdSettingsRepository.getOrCreate(workspaceId)
         if (!current.ok) return current
 
-        const { ticketPrefixes, ...rest } = dto
+        const { ticketPrefixes, requesterWhatsappTemplates, ...rest } = dto
         const updated = await SdSettingsRepository.update(workspaceId, {
           ...rest,
           ...(ticketPrefixes && {
@@ -71,6 +71,10 @@ export const SdSettingsService = {
               ...toSdTicketPrefixes(current.value.ticketPrefixes),
               ...ticketPrefixes,
             } as Prisma.InputJsonValue,
+          }),
+          ...(requesterWhatsappTemplates && {
+            requesterWhatsappTemplates:
+              requesterWhatsappTemplates as Prisma.InputJsonValue,
           }),
           updatedById: actorId,
         })

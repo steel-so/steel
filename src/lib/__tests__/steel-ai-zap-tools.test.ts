@@ -83,8 +83,9 @@ describe('WHATSAPP_AI_TOOLS', () => {
     }
     expect(WHATSAPP_AI_TOOLS.filter((t) => t.kind === 'ACTION')).toEqual([
       expect.objectContaining({ name: 'zap_message_send_text' }),
+      expect.objectContaining({ name: 'zap_template_send' }),
     ])
-    expect(WHATSAPP_AI_TOOLS).toHaveLength(25)
+    expect(WHATSAPP_AI_TOOLS).toHaveLength(26)
   })
 })
 

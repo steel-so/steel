@@ -21,11 +21,11 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
         logoText: 'Brainwave.io',
         navLinks: [
           { label: 'Demos', href: '#' },
-          { label: 'Pages', href: '#' },
-          { label: 'Support', href: '#' },
-          { label: 'Contact', href: '#footer' },
+          { label: 'Páginas', href: '#' },
+          { label: 'Suporte', href: '#' },
+          { label: 'Contato', href: '#footer' },
         ],
-        ctaLabel: 'Get A Free Quote',
+        ctaLabel: 'Solicitar orçamento grátis',
         ctaHref: '#footer',
       },
     },
@@ -33,11 +33,11 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       type: 'HERO',
       content: {
         type: 'HERO',
-        eyebrow: 'Interested how our software works for you?',
-        title: 'Make your business powerful with Shade.',
+        eyebrow: 'Quer saber como o nosso software funciona para você?',
+        title: 'Dê mais poder ao seu negócio com a Sua Empresa.',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next consultancy website within few minutes.',
-        ctaLabel: 'Get A Free Quote',
+          'Com vários blocos exclusivos, você monta sua página sem escrever código. Crie o site da sua consultoria em poucos minutos.',
+        ctaLabel: 'Solicitar orçamento grátis',
         ctaHref: '#footer',
         imageUrl: '/landing-page-templates/b2b/hero-portrait.png',
       },
@@ -46,9 +46,9 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       type: 'ABOUT',
       content: {
         type: 'ABOUT',
-        title: 'Experienced experts are giving advices.',
+        title: 'Especialistas experientes prontos para orientar você.',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         imageUrl: '/landing-page-templates/b2b/content01-photo.png',
         imageUrls: [],
       },
@@ -57,28 +57,28 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       type: 'SERVICES',
       content: {
         type: 'SERVICES',
-        title: 'Services we offer for you',
+        title: 'Serviços que oferecemos para você',
         subtitle:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
         items: [
           {
-            title: 'Digital Marketing',
+            title: 'Marketing Digital',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
             imageUrl:
               '/landing-page-templates/b2b/services-digital-marketing.png',
           },
           {
-            title: 'Business Growth',
+            title: 'Crescimento de Negócios',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
             imageUrl:
               '/landing-page-templates/b2b/services-business-growth.png',
           },
           {
-            title: 'Content Marketing',
+            title: 'Marketing de Conteúdo',
             description:
-              'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+              'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
             imageUrl:
               '/landing-page-templates/b2b/services-content-marketing.png',
           },
@@ -89,14 +89,14 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       type: 'FEATURES',
       content: {
         type: 'FEATURES',
-        title: 'Reasons you should choose us to grow today.',
+        title: 'Motivos para nos escolher e crescer hoje mesmo.',
         subtitle:
-          'We share common trends and strategies for improving your rental income and making sure you stay in high demand.',
+          'Compartilhamos tendências e estratégias para aumentar a sua receita e manter a sua empresa sempre em alta demanda.',
         items: [
-          { title: 'Fully Responsive', description: '' },
-          { title: 'Beautiful Layouts', description: '' },
-          { title: 'Easy to Edit', description: '' },
-          { title: 'Google Font Included', description: '' },
+          { title: 'Totalmente Responsivo', description: '' },
+          { title: 'Layouts Elegantes', description: '' },
+          { title: 'Fácil de Editar', description: '' },
+          { title: 'Fontes do Google Incluídas', description: '' },
         ],
       },
     },
@@ -105,9 +105,9 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'TESTIMONIAL',
         quote:
-          'You made it so simple. My new site is so much faster and easier to work with than my old site.',
+          'Vocês deixaram tudo muito simples. Meu novo site é bem mais rápido e fácil de usar do que o antigo.',
         authorName: 'Isabella Chavez',
-        authorRole: 'Graphic Designer',
+        authorRole: 'Designer Gráfica',
         avatarUrl: '/landing-page-templates/b2b/testimonial-avatar-1.png',
         style: 'default',
       },
@@ -117,45 +117,45 @@ export const b2bTemplate: LandingPageTemplateDefinition = {
       content: {
         type: 'FOOTER',
         logoText: 'Brainwave.io',
-        text: 'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-        ctaTitle: 'Ready to get started?',
-        ctaLabel: 'Get A Free Quote',
+        text: 'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
+        ctaTitle: 'Pronto para começar?',
+        ctaLabel: 'Solicitar orçamento grátis',
         ctaHref: '#',
         linkGroups: [
           {
-            title: 'Company',
+            title: 'Empresa',
             links: [
-              { label: 'About us', href: '#' },
-              { label: 'Contact us', href: '#' },
-              { label: 'Careers', href: '#' },
-              { label: 'Press', href: '#' },
+              { label: 'Sobre nós', href: '#' },
+              { label: 'Fale conosco', href: '#' },
+              { label: 'Carreiras', href: '#' },
+              { label: 'Imprensa', href: '#' },
             ],
           },
           {
-            title: 'Product',
+            title: 'Produto',
             links: [
-              { label: 'Features', href: '#' },
-              { label: 'Pricing', href: '#' },
-              { label: 'News', href: '#' },
-              { label: 'Help desk', href: '#' },
-              { label: 'Support', href: '#' },
+              { label: 'Recursos', href: '#' },
+              { label: 'Preços', href: '#' },
+              { label: 'Novidades', href: '#' },
+              { label: 'Central de ajuda', href: '#' },
+              { label: 'Suporte', href: '#' },
             ],
           },
           {
-            title: 'Services',
+            title: 'Serviços',
             links: [
-              { label: 'Digital Marketing', href: '#' },
-              { label: 'Content Writing', href: '#' },
-              { label: 'SEO for Business', href: '#' },
-              { label: 'UI Design', href: '#' },
+              { label: 'Marketing Digital', href: '#' },
+              { label: 'Produção de Conteúdo', href: '#' },
+              { label: 'SEO para Empresas', href: '#' },
+              { label: 'Design de Interface', href: '#' },
             ],
           },
           {
             title: 'Legal',
             links: [
-              { label: 'Privacy Policy', href: '#' },
-              { label: 'Terms & Conditions', href: '#' },
-              { label: 'Return Policy', href: '#' },
+              { label: 'Política de Privacidade', href: '#' },
+              { label: 'Termos e Condições', href: '#' },
+              { label: 'Política de Devolução', href: '#' },
             ],
           },
         ],

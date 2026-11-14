@@ -15,15 +15,15 @@ export function factsDefaultContent(): FactsContent {
     items: [
       {
         value: '1M+',
-        label: 'Customers visit Omega every month to get their service done.',
+        label: 'Clientes nos procuram todo mês para resolver suas demandas.',
       },
       {
         value: '92%',
-        label: 'Satisfaction rate comes from our awesome customers.',
+        label: 'Índice de satisfação dos nossos clientes incríveis.',
       },
       {
         value: '4.9/5.0',
-        label: 'Average customer ratings we have got all over internet.',
+        label: 'Nota média que recebemos dos clientes em toda a internet.',
       },
     ],
   }

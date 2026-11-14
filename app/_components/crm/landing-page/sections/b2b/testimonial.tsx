@@ -23,16 +23,16 @@ const BASE = '/landing-page-templates/b2b'
 const STATIC_CARDS = [
   {
     quote:
-      'Simply the best. Better than all the rest. I’d recommend this product to beginners and advanced users.',
+      'Simplesmente o melhor, muito acima dos concorrentes. Recomendo para iniciantes e para usuários avançados.',
     authorName: 'Curtis Rhodes',
-    authorRole: 'Digital Marketer',
+    authorRole: 'Profissional de Marketing Digital',
     avatarUrl: `${BASE}/testimonial-avatar-2.png`,
   },
   {
     quote:
-      'Must have book for all, who want to be Product Designer or Interaction Designer.',
+      'Leitura indispensável para quem quer ser Product Designer ou Designer de Interação.',
     authorName: 'Lucas Mann',
-    authorRole: 'Co Founder',
+    authorRole: 'Cofundador',
     avatarUrl: `${BASE}/testimonial-avatar-3.png`,
   },
 ]
@@ -41,9 +41,9 @@ export function testimonialDefaultContent(): TestimonialContent {
   return {
     type: 'TESTIMONIAL',
     quote:
-      'You made it so simple. My new site is so much faster and easier to work with than my old site.',
+      'Vocês deixaram tudo muito simples. Meu novo site é bem mais rápido e fácil de usar do que o antigo.',
     authorName: 'Isabella Chavez',
-    authorRole: 'Graphic Designer',
+    authorRole: 'Designer Gráfica',
     avatarUrl: `${BASE}/testimonial-avatar-1.png`,
     style: 'default',
   }
@@ -132,7 +132,7 @@ export function B2bTestimonial({
           value={textOf(
             content,
             'subtitle',
-            'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+            'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
           )}
           onCommit={(v) => onChange?.(withText(content, 'subtitle', v))}
           placeholder='Descrição de apoio'

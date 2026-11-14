@@ -10,6 +10,7 @@ import {
   mockFetch,
   renderWithQuery,
 } from '@/src/__tests__/component-utils'
+import type { WhatsAppConnectionDTO } from '@/types/whatsapp-connection'
 import type { WhatsAppConversationDTO } from '@/types/whatsapp-conversation'
 import type { WhatsAppMessageDTO } from '@/types/whatsapp-message'
 import { WhatsappConversationView } from '../whatsapp-conversation-view'
@@ -30,12 +31,16 @@ vi.mock('@/src/lib/auth-client', () => ({
 vi.mock('../whatsapp-composer', () => ({
   WhatsappComposer: (props: {
     disabled?: boolean
+    disabledReason?: string
+    windowClosed?: boolean
     replyTarget: WhatsAppMessageDTO | null
     contactName: string
   }) => (
     <div
       data-testid='composer'
       data-disabled={String(Boolean(props.disabled))}
+      data-reason={props.disabledReason ?? ''}
+      data-window-closed={String(Boolean(props.windowClosed))}
       data-reply={props.replyTarget?.id ?? ''}
       data-contact={props.contactName}
     />
@@ -80,6 +85,7 @@ function conversation(
     closeStatusIds: [],
     closeStatusLabels: [],
     contactSince: '2025-03-10T12:00:00.000Z',
+    lastInboundAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -591,7 +597,10 @@ describe('<WhatsappConversationView />', () => {
       screen.getByRole('button', { name: 'Iniciar chamada de vídeo' }),
     )
     await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith('Erro ao iniciar chamada'),
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.anything(),
+        'Erro ao iniciar chamada',
+      ),
     )
     expect(screen.queryByTestId('video-call')).toBeNull()
   })
@@ -1167,7 +1176,9 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ).toEqual({ assignedUserId: null }),
     )
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Conversa devolvida à fila'),
+      expect(notify.success).toHaveBeenCalledWith(
+        expect.stringContaining('Conversa devolvida à fila'),
+      ),
     )
     expect(onSelectConversation).toHaveBeenCalled()
   })
@@ -1252,7 +1263,7 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ).toEqual({ teamId: null }),
     )
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe'),
+      expect(notify.success).toHaveBeenCalledWith('Conversa sem equipe.'),
     )
   })
 
@@ -1290,7 +1301,9 @@ describe('<WhatsappConversationView /> · Equipes', () => {
       ).toEqual({ teamId: 'tm_support' }),
     )
     await waitFor(() =>
-      expect(notify.success).toHaveBeenCalledWith('Conversa movida de equipe'),
+      expect(notify.success).toHaveBeenCalledWith(
+        expect.stringContaining('Conversa movida de equipe'),
+      ),
     )
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 
@@ -1615,5 +1628,204 @@ describe('<WhatsappConversationView /> · Equipes', () => {
         screen.queryByRole('button', { name: 'Mais ações da conversa' }),
       ).toBeNull()
     })
+  })
+})
+
+describe('<WhatsappConversationView /> · usability guards', () => {
+  const connection = (
+    overrides: Partial<WhatsAppConnectionDTO> = {},
+  ): WhatsAppConnectionDTO => ({
+    id: 'conn_1',
+    workspaceId: 'ws_1',
+    provider: 'META',
+    label: 'Vendas',
+    phoneNumber: '+55 11 99999-0000',
+    status: 'CONNECTED',
+    statusError: null,
+    zapiInstanceId: null,
+    metaPhoneNumberId: 'pn_1',
+    metaWabaId: 'waba_1',
+    createdById: 'u_1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  })
+
+  it('closes the free-text window on Meta when the last inbound is older than 24h', async () => {
+    setup()
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({
+          lastInboundAt: '2020-01-01T00:00:00.000Z',
+        })}
+        connection={connection()}
+      />,
+    )
+    expect((await screen.findByTestId('composer')).dataset.windowClosed).toBe(
+      'true',
+    )
+  })
+
+  it('keeps free text open on Z-API and on a recent Meta conversation', async () => {
+    setup()
+    const { rerender } = renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({
+          lastInboundAt: '2020-01-01T00:00:00.000Z',
+        })}
+        connection={connection({ provider: 'ZAPI' })}
+      />,
+    )
+    expect((await screen.findByTestId('composer')).dataset.windowClosed).toBe(
+      'false',
+    )
+
+    rerender(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({ lastInboundAt: new Date().toISOString() })}
+        connection={connection()}
+      />,
+    )
+    expect(screen.getByTestId('composer').dataset.windowClosed).toBe('false')
+  })
+
+  it('warns agents that the number is disconnected and locks the composer', async () => {
+    setup()
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+        connection={connection({ status: 'DISCONNECTED' })}
+      />,
+    )
+    expect(await screen.findByText(/está desconectado/)).toBeTruthy()
+    const composer = screen.getByTestId('composer')
+    expect(composer.dataset.disabled).toBe('true')
+    expect(composer.dataset.reason).toContain('desconectado')
+  })
+
+  it('tells why the composer is locked on a closed conversation', async () => {
+    setup()
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({ status: 'CLOSED' })}
+      />,
+    )
+    expect((await screen.findByTestId('composer')).dataset.reason).toContain(
+      'Reabra',
+    )
+  })
+
+  it('shows who is handling the conversation', async () => {
+    setup()
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation({ assignedUserId: 'u_2' })}
+      />,
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('conversation-assignee').textContent).toContain(
+        'Com Beatriz',
+      ),
+    )
+  })
+
+  it('shows the translated reason and a way out under a failed message', async () => {
+    setup(
+      [],
+      [
+        message({
+          id: 'm9',
+          direction: 'OUT',
+          text: 'Oi de novo',
+          status: 'FAILED',
+          failureReason: '131047: Re-engagement message',
+        }),
+      ],
+    )
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    expect(await screen.findByText(/Passaram mais de 24 horas/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Usar modelo' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Reenviar' })).toBeNull()
+  })
+
+  it('resends a failed text message', async () => {
+    const fetchSpy = setup([{ method: 'POST', match: MESSAGES, data: {} }])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'Reenviar' }))
+    await waitFor(() =>
+      expect(fetchBody(fetchSpy, MESSAGES)).toEqual({ text: 'Não chegou' }),
+    )
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Mensagem reenviada'),
+    )
+  })
+
+  it('asks before deleting a message and says the customer keeps seeing it', async () => {
+    const fetchSpy = setup([
+      { method: 'DELETE', match: `${MESSAGES}/m1`, data: {} },
+    ])
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    fireEvent.contextMenu(
+      await screen.findByText('Preciso de ajuda com meu pedido'),
+    )
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Apagar mensagem' }),
+    )
+
+    expect(await screen.findByText(/continua vendo a mensagem/)).toBeTruthy()
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'DELETE'),
+    ).toBe(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apagar' }))
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.some(
+          ([url, init]) =>
+            init?.method === 'DELETE' && String(url).endsWith('/messages/m1'),
+        ),
+      ).toBe(true),
+    )
+  })
+
+  it('does not delete when the confirmation is cancelled', async () => {
+    const fetchSpy = setup()
+    renderWithQuery(
+      <WhatsappConversationView
+        workspaceId='ws_1'
+        conversation={conversation()}
+      />,
+    )
+    fireEvent.contextMenu(
+      await screen.findByText('Preciso de ajuda com meu pedido'),
+    )
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Apagar mensagem' }),
+    )
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'DELETE'),
+    ).toBe(false)
   })
 })

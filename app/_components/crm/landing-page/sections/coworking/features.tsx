@@ -33,22 +33,22 @@ const ICONS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: "Everything you'll need",
+    title: 'Tudo o que você precisa',
     items: [
       {
-        title: 'Dedicated Desk',
+        title: 'Mesa Dedicada',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'High Speed Internet',
+        title: 'Internet de Alta Velocidade',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Unlimited Coffee',
+        title: 'Café à Vontade',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
       },
     ],
   }

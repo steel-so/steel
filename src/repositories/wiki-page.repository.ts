@@ -201,6 +201,31 @@ export const WikiPageRepository = {
     }
   },
 
+  /**
+   * Of `ids`, the live pages of the workspace that have a public link — the
+   * only Wiki pages meant for people outside the workspace.
+   */
+  async listPublishedIds(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<Set<string>>> {
+    if (ids.length === 0) return ok(new Set())
+    try {
+      const rows = await prisma.wikiPage.findMany({
+        where: {
+          workspaceId,
+          id: { in: ids },
+          archivedAt: null,
+          publicToken: { not: null },
+        },
+        select: { id: true },
+      })
+      return ok(new Set(rows.map((row) => row.id)))
+    } catch (error) {
+      return err(dbError('Failed to list published wiki pages', error))
+    }
+  },
+
   /** Publishes (token + date) or unpublishes (both null) the page. */
   async setPublication(
     id: string,

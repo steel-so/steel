@@ -26,48 +26,48 @@ const SOCIAL_ICONS: Record<string, string> = {
 export function footerDefaultContent(): FooterContent {
   return {
     type: 'FOOTER',
-    logoText: 'Brainwave.io',
-    text: 'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-    ctaTitle: 'Build better landing page fast',
+    logoText: 'Sua Empresa',
+    text: 'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
+    ctaTitle: 'Crie landing pages melhores, mais rápido',
     ctaDescription:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
-    ctaLabel: 'Get it now',
+      'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
+    ctaLabel: 'Quero agora',
     ctaHref: '#footer',
     linkGroups: [
       {
-        title: 'Company',
+        title: 'Empresa',
         links: [
-          { label: 'About us', href: '#' },
-          { label: 'Contact us', href: '#' },
-          { label: 'Careers', href: '#' },
-          { label: 'Press', href: '#' },
+          { label: 'Sobre nós', href: '#' },
+          { label: 'Fale conosco', href: '#' },
+          { label: 'Carreiras', href: '#' },
+          { label: 'Imprensa', href: '#' },
         ],
       },
       {
-        title: 'Product',
+        title: 'Produto',
         links: [
-          { label: 'Features', href: '#' },
-          { label: 'Pricing', href: '#' },
-          { label: 'News', href: '#' },
-          { label: 'Help desk', href: '#' },
-          { label: 'Support', href: '#' },
+          { label: 'Recursos', href: '#' },
+          { label: 'Preços', href: '#' },
+          { label: 'Novidades', href: '#' },
+          { label: 'Central de ajuda', href: '#' },
+          { label: 'Suporte', href: '#' },
         ],
       },
       {
-        title: 'Services',
+        title: 'Serviços',
         links: [
-          { label: 'Digital Marketing', href: '#' },
-          { label: 'Content Writing', href: '#' },
-          { label: 'SEO for Business', href: '#' },
-          { label: 'UI Design', href: '#' },
+          { label: 'Marketing digital', href: '#' },
+          { label: 'Redação de conteúdo', href: '#' },
+          { label: 'SEO para empresas', href: '#' },
+          { label: 'Design de interface', href: '#' },
         ],
       },
       {
         title: 'Legal',
         links: [
-          { label: 'Privacy Policy', href: '#' },
-          { label: 'Terms & Conditions', href: '#' },
-          { label: 'Return Policy', href: '#' },
+          { label: 'Política de Privacidade', href: '#' },
+          { label: 'Termos e Condições', href: '#' },
+          { label: 'Política de Devolução', href: '#' },
         ],
       },
     ],
@@ -182,7 +182,7 @@ export function SaasSubscriptionFooter({
             className='inline-flex items-center justify-center rounded-lg bg-[#473bf0]/8 px-6 py-4 font-bold text-[#473bf0] text-[17px] tracking-[-0.6px] hover:opacity-90'
           >
             <GhostInput
-              value={textOf(content, 'cta.secondary', 'Learn more')}
+              value={textOf(content, 'cta.secondary', 'Saiba mais')}
               onCommit={(v) =>
                 onChange?.(withText(content, 'cta.secondary', v))
               }

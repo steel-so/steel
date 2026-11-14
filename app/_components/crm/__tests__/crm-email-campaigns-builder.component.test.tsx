@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import {
   fetchBody,
@@ -107,6 +107,10 @@ describe('<CrmEmailCampaignsTable /> with a visual-builder template', () => {
       target: { value: 'mkt@acme.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /enviar agora/i }))
+    const dialog = await screen.findByRole('alertdialog')
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Enviar agora' }),
+    )
     await waitFor(() =>
       expect(notify.success).toHaveBeenCalledWith('Campanha enviada'),
     )
@@ -133,10 +137,11 @@ describe('<CrmEmailCampaignsTable /> with a visual-builder template', () => {
       target: { value: 'mkt@acme.com' },
     })
     fireEvent.click(screen.getByRole('button', { name: /enviar agora/i }))
-    await waitFor(() =>
-      expect(notify.error).toHaveBeenCalledWith(
-        'O link da campanha precisa começar com https://',
-      ),
+    expect(
+      await screen.findByText('O link precisa começar com https://'),
+    ).toBeTruthy()
+    expect(notify.error).toHaveBeenCalledWith(
+      'Confira os campos marcados em vermelho.',
     )
   })
 })

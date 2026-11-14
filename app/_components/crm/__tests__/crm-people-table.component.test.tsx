@@ -67,6 +67,18 @@ function renderTable() {
   return renderWithQuery(<CrmPeopleTable workspaceId='ws1' slug='acme' />)
 }
 
+/** Fills the required field of the create dialog and submits it. */
+async function createFromDialog(label: string, value: string) {
+  const dialog = await screen.findByRole('dialog')
+  const input = within(dialog).getByLabelText(label)
+  fireEvent.change(input, { target: { value } })
+  const submit = within(dialog).getByRole('button', {
+    name: 'Criar',
+  }) as HTMLButtonElement
+  await waitFor(() => expect(submit.disabled).toBe(false))
+  fireEvent.click(submit)
+}
+
 describe('<CrmPeopleTable />', { timeout: 15_000 }, () => {
   beforeEach(() => {
     window.localStorage?.clear?.()
@@ -106,8 +118,8 @@ describe('<CrmPeopleTable />', { timeout: 15_000 }, () => {
     expect(screen.getByText('Grace Hopper')).toBeTruthy()
   })
 
-  it('creates a person with a default name for the required field', async () => {
-    const created = { ...PEOPLE[1], id: 'p3', name: 'Sem título' }
+  it('asks for the required name before creating a person', async () => {
+    const created = { ...PEOPLE[1], id: 'p3', name: 'Maria Silva' }
     const fetchSpy = mockFetch([
       ...baseRoutes([]),
       { method: 'POST', match: /\/crm\/people$/, data: created },
@@ -117,11 +129,26 @@ describe('<CrmPeopleTable />', { timeout: 15_000 }, () => {
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] pessoa$/)[0])
 
-    // New row enters inline edit mode on its primary field.
-    expect(await screen.findByDisplayValue('Sem título')).toBeTruthy()
-    expect(fetchBody(fetchSpy, /\/crm\/people$/)).toEqual({
-      name: 'Sem título',
-    })
+    // No junk record: the form opens and nothing is posted yet.
+    const dialog = await screen.findByRole('dialog')
+    const submit = within(dialog).getByRole('button', {
+      name: 'Criar',
+    }) as HTMLButtonElement
+    expect(submit.disabled).toBe(true)
+    expect(
+      within(dialog).getByText(/Preencha para continuar: Nome/),
+    ).toBeTruthy()
+    expect(
+      fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST'),
+    ).toBe(false)
+
+    await createFromDialog('Nome', 'Maria Silva')
+
+    await waitFor(() =>
+      expect(fetchBody(fetchSpy, /\/crm\/people$/)).toEqual({
+        name: 'Maria Silva',
+      }),
+    )
   })
 
   it('notifies and adds nothing when creation fails', async () => {
@@ -138,6 +165,7 @@ describe('<CrmPeopleTable />', { timeout: 15_000 }, () => {
     await screen.findByText('Nada por aqui ainda')
 
     fireEvent.click(screen.getAllByText(/^Nov[oa] pessoa$/)[0])
+    await createFromDialog('Nome', 'Maria Silva')
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('Limite de registros atingido'),
@@ -185,6 +213,8 @@ describe('<CrmPeopleTable />', { timeout: 15_000 }, () => {
     const row = cell.closest('tr') as HTMLElement
 
     fireEvent.click(within(row).getByRole('button', { name: 'Excluir' }))
+    const confirm = await screen.findByRole('alertdialog')
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Excluir' }))
 
     await waitFor(() =>
       expect(notify.error).toHaveBeenCalledWith('Sem permissão'),

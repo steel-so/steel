@@ -52,6 +52,21 @@ export const SdSettingsDTO = dto(
       description:
         'Chamado aberto pelo WhatsApp responde ao contato com o código. O equivalente do e-mail fica em cada caixa (`sendAcknowledgement`).',
     }),
+    requesterWhatsappTemplates: z
+      .record(
+        z.string(),
+        z.object({
+          templateName: z.string(),
+          language: z.string(),
+          variables: z.array(
+            z.enum(['code', 'title', 'headline', 'message', 'requester']),
+          ),
+        }),
+      )
+      .meta({
+        description:
+          'Aviso ao solicitante por modelo aprovado da Meta, por evento do catálogo aberto ao cliente (ex.: `ticket.resolved`). `variables` preenche {{1}}, {{2}}... do corpo, em ordem. Sem entrada, o evento não avisa o cliente por WhatsApp. Respeita a janela de 24 h e o descadastro (LGPD).',
+      }),
     portalEnabled: z.boolean(),
     portalTicketTypes: z.array(ticketType),
     requireSignatureOnClose: z.boolean(),

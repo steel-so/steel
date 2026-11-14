@@ -2,12 +2,20 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Muted } from '@/components/typography/text/muted'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -433,10 +441,23 @@ function NewRoutingRuleDialog({
         </FieldGroup>
         <div className='mt-4 flex justify-end gap-2'>
           <DialogClose render={<Button variant='ghost'>Cancelar</Button>} />
-          <Button onClick={handleCreate} disabled={saving || !ownerId}>
+          <Button
+            onClick={handleCreate}
+            disabled={saving || !ownerId}
+            title={
+              ownerId
+                ? undefined
+                : 'Escolha quem vai atender os leads desta regra.'
+            }
+          >
             {saving ? 'Criando...' : 'Criar regra'}
           </Button>
         </div>
+        {ownerId ? null : (
+          <p className='mt-2 text-right text-muted-foreground text-xs'>
+            Escolha um responsável para poder criar a regra.
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -463,6 +484,7 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
   const usersById = new Map(
     lookups.options.users.map((u) => [u.value, u.label]),
   )
+  const canDelete = useCan('leads', 'DELETE')
 
   async function handleDeleteScoring(id: string) {
     const result = await deleteCrmResource(
@@ -494,7 +516,14 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
     <div className='space-y-6'>
       <Card>
         <CardHeader className='flex flex-row items-center justify-between'>
-          <CardTitle>Pontuação de leads</CardTitle>
+          <div className='space-y-1'>
+            <CardTitle>Pontuação de leads</CardTitle>
+            <CardDescription>
+              A pontuação mostra quais leads estão mais quentes. Cada regra soma
+              (ou tira) pontos quando o lead bate com a condição. Exemplo:
+              “Origem é igual a Indicação” soma 20 pontos.
+            </CardDescription>
+          </div>
           <NewScoringRuleDialog
             workspaceId={workspaceId}
             onCreated={refetchScoring}
@@ -534,14 +563,25 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <Button
-                          variant='ghost'
-                          size='icon-sm'
-                          aria-label='Excluir regra'
-                          onClick={() => handleDeleteScoring(rule.id)}
-                        >
-                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                        </Button>
+                        {canDelete ? (
+                          <ConfirmAction
+                            trigger={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label='Excluir regra'
+                              >
+                                <SteelIcon
+                                  icon={Delete02Icon}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            }
+                            title='Excluir esta regra?'
+                            description='A pontuação deixa de ser aplicada a novos leads. Pontos já somados continuam como estão. Não é possível desfazer.'
+                            onConfirm={() => handleDeleteScoring(rule.id)}
+                          />
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -554,7 +594,14 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
 
       <Card>
         <CardHeader className='flex flex-row items-center justify-between'>
-          <CardTitle>Roteamento de leads</CardTitle>
+          <div className='space-y-1'>
+            <CardTitle>Roteamento de leads</CardTitle>
+            <CardDescription>
+              Define quem atende cada lead novo. Os leads que baterem com uma
+              regra vão automaticamente para o responsável escolhido. Exemplo:
+              “Origem é igual a Site” vai para a Ana.
+            </CardDescription>
+          </div>
           <NewRoutingRuleDialog
             workspaceId={workspaceId}
             onCreated={refetchRouting}
@@ -595,14 +642,25 @@ export function CrmLeadRulesSection({ workspaceId }: { workspaceId: string }) {
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <Button
-                          variant='ghost'
-                          size='icon-sm'
-                          aria-label='Excluir regra'
-                          onClick={() => handleDeleteRouting(rule.id)}
-                        >
-                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                        </Button>
+                        {canDelete ? (
+                          <ConfirmAction
+                            trigger={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label='Excluir regra'
+                              >
+                                <SteelIcon
+                                  icon={Delete02Icon}
+                                  strokeWidth={2}
+                                />
+                              </Button>
+                            }
+                            title='Excluir esta regra?'
+                            description='Novos leads deixam de ser atribuídos por esta regra. Não é possível desfazer.'
+                            onConfirm={() => handleDeleteRouting(rule.id)}
+                          />
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))}

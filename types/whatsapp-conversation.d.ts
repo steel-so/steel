@@ -23,6 +23,8 @@ export interface WhatsAppConversationDTO {
   unreadCount: number
   avgSentimentScore: number | null
   lastMessageAt: string | null
+  /** Last message received from the contact: the Meta 24h window starts here. */
+  lastInboundAt: string | null
   lastMessagePreview: string | null
   pinned: boolean
   archived: boolean

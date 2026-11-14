@@ -29,6 +29,10 @@ import {
 } from '@/src/lib/whatsapp/ai-reply-tools'
 import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
+import {
+  buildReplyKnowledgeSection,
+  customerQueryText,
+} from '@/src/lib/whatsapp/reply-knowledge'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
@@ -56,6 +60,7 @@ import {
   whatsAppAdminIds,
   whatsAppConversationPath,
 } from './whatsapp-notify'
+import { WhatsAppReplyKnowledgeService } from './whatsapp-reply-knowledge.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 
 const HISTORY_LIMIT = 20
@@ -405,7 +410,16 @@ export const WhatsAppAiReplyService = {
           : { role: 'assistant', content: content as string }
       }),
     )
-    const knowledgeBaseSection = await buildKnowledgeBaseSection(workspaceId)
+    // Own documents, plus KB articles and published Wiki pages that match
+    // what the customer just asked (unified index, public content only).
+    const sharedKnowledge =
+      await WhatsAppReplyKnowledgeService.forCustomerReply(
+        workspaceId,
+        customerQueryText(orderedHistory),
+      )
+    const knowledgeBaseSection =
+      (await buildKnowledgeBaseSection(workspaceId)) +
+      buildReplyKnowledgeSection(sharedKnowledge, 'customer')
     const zapTools = await loadZapAiTools(workspaceId)
     // A5: mandatory-step procedures (null = nothing to offer this turn).
     const procedureStart = await AiProcedureRuntime.beginTurn({

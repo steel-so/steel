@@ -527,3 +527,25 @@ export function notifyCrmDealRoomMessage(input: {
     dedupeKey: input.dedupeKey,
   })
 }
+
+// ─── ux: detractor-crm ──────────────────────────────────────────────────────
+
+/** A retention task was opened for the account owner (detractor or health drop). */
+export function notifyCrmRetentionTask(input: {
+  workspaceId: string
+  task: { id: string; title: string }
+  assigneeId: string
+  reason: string
+  dedupeKey: string
+}): Promise<number> {
+  return emitNotification({
+    workspaceId: input.workspaceId,
+    recipients: [input.assigneeId],
+    actorId: null,
+    kind: 'CRM_TASK_ASSIGNED',
+    title: `Retenção: ${input.task.title}`,
+    body: input.reason,
+    path: taskPath(input.task.id),
+    dedupeKey: `crm-retention-task:${input.dedupeKey}`,
+  })
+}

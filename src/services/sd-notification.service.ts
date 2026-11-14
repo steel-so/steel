@@ -17,6 +17,10 @@ import {
   type SdNotifyTicket,
   sdTicketNotificationHref,
 } from '@/src/lib/servicedesk/notify'
+import {
+  parseSdRequesterTemplates,
+  type SdRequesterTemplates,
+} from '@/src/lib/servicedesk/requester-whatsapp'
 import { normalizeSdWhatsappNumber } from '@/src/lib/servicedesk/whatsapp'
 import {
   sdNotificationWebhookData,
@@ -35,7 +39,9 @@ import type { SdNotificationPreferencesDTO } from '@/types/sd-notification'
 import { NotificationService } from './notification.service'
 import { SdAccess } from './sd-access'
 import { SdIntegrationDispatcher } from './sd-integration-dispatcher'
+import { SdRequesterWhatsapp } from './sd-requester-whatsapp.service'
 import { emitWebhookEvent } from './webhook-emitter'
+import { checkWhatsAppOptOut } from './whatsapp-opt-out'
 
 /**
  * Motor de notificações do ServiceDesk. Um único ponto de entrada
@@ -84,6 +90,11 @@ export interface SdNotifyOutcome {
   inApp: number
   email: number
   whatsapp: number
+  /**
+   * Destinos de WhatsApp pulados por opt-out (LGPD) ou por não ser possível
+   * confirmá-lo: o envio não acontece e o motivo vai para o log.
+   */
+  whatsappSkippedOptOut?: number
   /** Motivo de não ter avisado ninguém. */
   skipped: 'no_recipients' | null
 }
@@ -95,6 +106,7 @@ const EMPTY: Omit<SdNotifyOutcome, 'event'> = {
   inApp: 0,
   email: 0,
   whatsapp: 0,
+  whatsappSkippedOptOut: 0,
   skipped: 'no_recipients',
 }
 
@@ -160,10 +172,11 @@ async function resolveAudience(
   return ids
 }
 
-/** Conexão de WhatsApp do ServiceDesk ativa, se houver. */
-export async function activeWhatsappConnection(
-  workspaceId: string,
-): Promise<WhatsAppConnection | null> {
+/** Conexão ativa do ServiceDesk e a configuração lida junto, se houver. */
+async function activeWhatsappContext(workspaceId: string): Promise<{
+  connection: WhatsAppConnection
+  templates: SdRequesterTemplates
+} | null> {
   const settings = await SdTicketContextRepository.ensureSettings(workspaceId)
   if (!settings.ok || !settings.value.whatsappConnectionId) return null
   const connection = await WhatsAppConnectionRepository.findById(
@@ -172,13 +185,35 @@ export async function activeWhatsappConnection(
     'SERVICE_DESK',
   )
   if (!connection.ok || !connection.value) return null
-  return connection.value.status === 'CONNECTED' ? connection.value : null
+  if (connection.value.status !== 'CONNECTED') return null
+  return {
+    connection: connection.value,
+    templates: parseSdRequesterTemplates(
+      settings.value.requesterWhatsappTemplates,
+    ),
+  }
+}
+
+/** Conexão de WhatsApp do ServiceDesk ativa, se houver. */
+export async function activeWhatsappConnection(
+  workspaceId: string,
+): Promise<WhatsAppConnection | null> {
+  return (await activeWhatsappContext(workspaceId))?.connection ?? null
 }
 
 interface Delivery {
   inApp: string[]
   email: { userId: string | null; name: string; email: string }[]
-  whatsapp: { label: string; number: string }[]
+  whatsapp: {
+    label: string
+    number: string
+    /**
+     * Solicitante ou contato do chamado: vai pelo modelo aprovado, respeita
+     * a janela de 24 h e o descadastro. `textAllowed` = texto livre é um
+     * canal permitido (preferência ligada ou padrão do catálogo).
+     */
+    requester?: { textAllowed: boolean }
+  }[]
 }
 
 async function deliverInApp(
@@ -240,21 +275,51 @@ async function deliverEmail(
 async function deliverWhatsapp(
   input: SdNotifyInput,
   targets: Delivery['whatsapp'],
-): Promise<number> {
-  if (targets.length === 0) return 0
-  const connection = await activeWhatsappConnection(input.workspaceId)
-  if (!connection) {
+): Promise<{ sent: number; optedOut: number }> {
+  if (targets.length === 0) return { sent: 0, optedOut: 0 }
+  const context = await activeWhatsappContext(input.workspaceId)
+  if (!context) {
     // Workspace sem conexão do ServiceDesk: silencia, sem erro.
     logger.info('servicedesk.notify.whatsapp_unavailable', {
       workspaceId: input.workspaceId,
       event: input.event,
       targets: targets.length,
     })
-    return 0
+    return { sent: 0, optedOut: 0 }
   }
+  const { connection, templates } = context
   const text = `*${input.ticket.code}* — ${input.payload.title}\n${input.payload.body}`
   let sent = 0
+  let optedOut = 0
   for (const target of targets) {
+    if (target.requester) {
+      // Requester path: SdRequesterWhatsapp applies the opt-out check itself.
+      const outcome = await SdRequesterWhatsapp.deliver({
+        workspaceId: input.workspaceId,
+        connection,
+        templates,
+        event: input.event,
+        ticket: input.ticket,
+        payload: input.payload,
+        target: {
+          label: target.label,
+          number: target.number,
+          textAllowed: target.requester.textAllowed,
+        },
+      })
+      if (outcome === 'sent') sent += 1
+      continue
+    }
+    const optOut = await checkWhatsAppOptOut(input.workspaceId, target.number)
+    if (optOut !== 'allowed') {
+      optedOut += 1
+      logger.info('servicedesk.notify.whatsapp_opted_out', {
+        workspaceId: input.workspaceId,
+        event: input.event,
+        reason: optOut,
+      })
+      continue
+    }
     const result = await WhatsAppSend.text(connection, {
       to: target.number,
       text,
@@ -268,7 +333,7 @@ async function deliverWhatsapp(
       })
     }
   }
-  return sent
+  return { sent, optedOut }
 }
 
 /**
@@ -415,7 +480,15 @@ export async function notifySdEvent(
         for (const user of recipients.value) {
           const raw = numbers.value.get(user.id)
           const number = normalizeSdWhatsappNumber(raw)
-          if (number) delivery.whatsapp.push({ label: user.name, number })
+          if (!number) continue
+          const isRequester =
+            user.id === input.ticket.requesterId ||
+            user.id === input.ticket.contact?.userId
+          delivery.whatsapp.push({
+            label: user.name,
+            number,
+            ...(isRequester && { requester: { textAllowed: true } }),
+          })
         }
       } else {
         logger.warn('servicedesk.notify.whatsapp_numbers_failed', {
@@ -441,11 +514,17 @@ export async function notifySdEvent(
           email: channels.value.email,
         })
       }
-      if (spec.defaultChannels.includes('WHATSAPP')) {
-        const number = normalizeSdWhatsappNumber(channels.value.whatsapp)
-        if (number) {
-          delivery.whatsapp.push({ label: externalContact.name, number })
-        }
+      // Sem texto livre por padrão: o contato só recebe WhatsApp se o admin
+      // configurou um modelo aprovado para o evento (ou o catálogo liga o canal).
+      const number = normalizeSdWhatsappNumber(channels.value.whatsapp)
+      if (number) {
+        delivery.whatsapp.push({
+          label: externalContact.name,
+          number,
+          requester: {
+            textAllowed: spec.defaultChannels.includes('WHATSAPP'),
+          },
+        })
       }
     } else if (!channels.ok) {
       logger.warn('servicedesk.notify.contact_channels_failed', {
@@ -460,11 +539,13 @@ export async function notifySdEvent(
     workspace.value.slug,
     input.ticket.number,
   )
-  const [inApp, email, whatsapp] = await Promise.all([
+  const [inApp, email, whatsappResult] = await Promise.all([
     deliverInApp(input, spec, delivery.inApp, href),
     deliverEmail(input, delivery.email, workspace.value.name, href),
     deliverWhatsapp(input, delivery.whatsapp),
   ])
+
+  const whatsapp = whatsappResult.sent
 
   logger.info('servicedesk.notify.delivered', {
     workspaceId: input.workspaceId,
@@ -474,6 +555,7 @@ export async function notifySdEvent(
     inApp,
     email,
     whatsapp,
+    whatsappSkippedOptOut: whatsappResult.optedOut,
     ...input.payload.meta,
   })
 
@@ -483,6 +565,7 @@ export async function notifySdEvent(
     inApp,
     email,
     whatsapp,
+    whatsappSkippedOptOut: whatsappResult.optedOut,
     skipped: null,
   })
 }

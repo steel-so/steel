@@ -2,8 +2,10 @@
 
 import { Delete02Icon, PlusSignIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { useState } from 'react'
+import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import {
   Dialog,
   DialogClose,
@@ -48,10 +50,34 @@ const TYPES: CrmCustomFieldTypeDTO[] = [
   'SELECT',
 ]
 
+const ENTITY_LABELS: Record<CrmCustomFieldEntityDTO, string> = {
+  COMPANY: 'Empresas',
+  PERSON: 'Pessoas',
+  OPPORTUNITY: 'Oportunidades',
+  WHATSAPP_CONTACT: 'Contatos do WhatsApp',
+}
+
+const TYPE_LABELS: Record<CrmCustomFieldTypeDTO, string> = {
+  TEXT: 'Texto',
+  NUMBER: 'Número',
+  DATE: 'Data',
+  BOOLEAN: 'Sim ou não',
+  SELECT: 'Lista de opções',
+  CPF: 'CPF',
+  CNPJ: 'CNPJ',
+  EMAIL: 'E-mail',
+  PHONE: 'Telefone',
+  URL: 'Link (URL)',
+  CEP: 'CEP',
+}
+
 export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {
   const [entity, setEntity] = useState<CrmCustomFieldEntityDTO>('COMPANY')
   const { data: fields, isLoading } = useCrmCustomFields(workspaceId, entity)
   const deleteField = useDeleteCrmCustomField(workspaceId)
+  const entityLabel = ENTITY_LABELS[entity].toLowerCase()
+  const canCreate = useCan('custom-fields', 'CREATE')
+  const canDelete = useCan('custom-fields', 'DELETE')
 
   async function handleDelete(definitionId: string) {
     try {
@@ -66,7 +92,10 @@ export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {
     <div className='flex h-full min-h-0 flex-col gap-3'>
       <div className='flex items-center justify-between'>
         <Select
-          items={ENTITIES.map((e) => ({ value: e, label: e }))}
+          items={ENTITIES.map((e) => ({
+            value: e,
+            label: ENTITY_LABELS[e],
+          }))}
           value={entity}
           onValueChange={(value) => setEntity(value as CrmCustomFieldEntityDTO)}
         >
@@ -77,13 +106,18 @@ export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {
             <SelectGroup>
               {ENTITIES.map((e) => (
                 <SelectItem key={e} value={e}>
-                  {e}
+                  {ENTITY_LABELS[e]}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <CreateCrmCustomFieldDialog workspaceId={workspaceId} entity={entity} />
+        {canCreate ? (
+          <CreateCrmCustomFieldDialog
+            workspaceId={workspaceId}
+            entity={entity}
+          />
+        ) : null}
       </div>
       <div className='min-h-0 flex-1 overflow-y-auto'>
         <Table containerClassName='overflow-x-visible'>
@@ -102,7 +136,7 @@ export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {
                   colSpan={4}
                   className='text-center text-muted-foreground'
                 >
-                  Nenhum campo customizado para {entity}
+                  Nenhum campo personalizado para {entityLabel}
                 </TableCell>
               </TableRow>
             )}
@@ -110,15 +144,25 @@ export function CrmCustomFieldsPanel({ workspaceId }: { workspaceId: string }) {
               <TableRow key={field.id}>
                 <TableCell>{field.key}</TableCell>
                 <TableCell>{field.label}</TableCell>
-                <TableCell>{field.type}</TableCell>
+                <TableCell>{TYPE_LABELS[field.type]}</TableCell>
                 <TableCell>
-                  <Button
-                    variant='ghost'
-                    size='icon-xs'
-                    onClick={() => handleDelete(field.id)}
-                  >
-                    <SteelIcon icon={Delete02Icon} strokeWidth={2} />
-                  </Button>
+                  {canDelete ? (
+                    <ConfirmAction
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon-xs'
+                          aria-label={`Remover campo ${field.label}`}
+                        >
+                          <SteelIcon icon={Delete02Icon} strokeWidth={2} />
+                        </Button>
+                      }
+                      title={`Remover o campo "${field.label}"?`}
+                      description='Os valores já preenchidos neste campo deixam de aparecer nos registros. Não é possível desfazer.'
+                      confirmLabel='Remover'
+                      onConfirm={() => handleDelete(field.id)}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}
@@ -179,7 +223,7 @@ function CreateCrmCustomFieldDialog({
           <FieldGroup>
             <Field>
               <Input
-                placeholder='Chave (snake_case)'
+                placeholder='Chave (letras minúsculas e _, ex.: data_contrato)'
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 required
@@ -195,7 +239,7 @@ function CreateCrmCustomFieldDialog({
             </Field>
             <Field>
               <Select
-                items={TYPES.map((t) => ({ value: t, label: t }))}
+                items={TYPES.map((t) => ({ value: t, label: TYPE_LABELS[t] }))}
                 value={type}
                 onValueChange={(value) =>
                   setType(value as CrmCustomFieldTypeDTO)
@@ -208,7 +252,7 @@ function CreateCrmCustomFieldDialog({
                   <SelectGroup>
                     {TYPES.map((t) => (
                       <SelectItem key={t} value={t}>
-                        {t}
+                        {TYPE_LABELS[t]}
                       </SelectItem>
                     ))}
                   </SelectGroup>

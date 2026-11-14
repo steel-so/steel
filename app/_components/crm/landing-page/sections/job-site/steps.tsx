@@ -23,25 +23,25 @@ const DEFAULT_PHOTO = '/landing-page-templates/job-site/content-photo.png'
 export function stepsDefaultContent(): StepsContent {
   return {
     type: 'STEPS',
-    title: 'Find jobs with 3 easy steps',
+    title: 'Encontre vagas em 3 passos simples',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com blocos prontos, você monta sua página facilmente, sem escrever código. Crie a sua próxima página.',
     imageUrl: DEFAULT_PHOTO,
     items: [
       {
-        title: 'Search for a job',
+        title: 'Busque uma vaga',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
       {
-        title: 'Apply within our website',
+        title: 'Candidate-se pelo site',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
       {
-        title: 'Get interview call',
+        title: 'Receba o convite para entrevista',
         description:
-          'With lots of unique blocks, you can easily build a page without coding.',
+          'Com blocos prontos, você monta sua página facilmente, sem escrever código.',
       },
     ],
   }
@@ -149,7 +149,7 @@ export function JobSiteSteps({
                 value={textOf(
                   content,
                   'notice.title',
-                  'Interview invitation at Greener',
+                  'Convite para entrevista na Greener',
                 )}
                 onCommit={(v) =>
                   onChange?.(withText(content, 'notice.title', v))

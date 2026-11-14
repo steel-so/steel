@@ -18,37 +18,37 @@ const BASE = '/landing-page-templates/ecommerce'
 export function worksDefaultContent(): WorksContent {
   return {
     type: 'WORKS',
-    title: 'Shop by room',
-    subtitle: 'Category',
+    title: 'Compre por ambiente',
+    subtitle: 'Categorias',
     items: [
       {
-        title: 'Living Room',
-        category: '23 Items',
+        title: 'Sala de estar',
+        category: '23 itens',
         imageUrl: `${BASE}/category-living-room.png`,
       },
       {
-        title: 'Dining Room',
-        category: '36 Items',
+        title: 'Sala de jantar',
+        category: '36 itens',
         imageUrl: `${BASE}/category-dining-room.png`,
       },
       {
-        title: 'Bed Room',
-        category: '17 Items',
+        title: 'Quarto',
+        category: '17 itens',
         imageUrl: `${BASE}/category-bed-room.png`,
       },
       {
-        title: 'Kitchen',
-        category: '11 Items',
+        title: 'Cozinha',
+        category: '11 itens',
         imageUrl: `${BASE}/category-kitchen.png`,
       },
       {
-        title: 'Office',
-        category: '09 Items',
+        title: 'Escritório',
+        category: '09 itens',
         imageUrl: `${BASE}/category-office.png`,
       },
       {
-        title: 'Outdoor',
-        category: '45 Items',
+        title: 'Área externa',
+        category: '45 itens',
         imageUrl: `${BASE}/category-outdoor.png`,
       },
     ],

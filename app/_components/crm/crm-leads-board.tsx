@@ -9,10 +9,12 @@ import {
   FilterIcon,
   PlusSignIcon,
   Search01Icon,
+  WhatsappIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ApolloImportDialog } from '@/app/_components/crm/apollo/apollo-import-dialog'
 import { LeadCadencePanel } from '@/app/_components/crm/cadences/lead-cadence-panel'
 import {
@@ -25,7 +27,9 @@ import {
   applyNlResult,
   type CrmNlAnyResult,
 } from '@/app/_components/crm/crm-nl-search-result'
+import { CrmImportButton } from '@/app/_components/crm/import/crm-import-dialog'
 import { RecordDocumentsSection } from '@/app/_components/documents/record-documents-section'
+import { CrmOnboardingChecklist } from '@/app/_components/onboarding-checklist/crm-onboarding-checklist'
 import { useShortcut } from '@/app/_components/shortcuts/shortcuts-provider'
 import { useListShortcuts } from '@/app/_components/shortcuts/use-list-shortcuts'
 import { SteelAgentAssignSelect } from '@/app/_components/steel-agents/steel-agent-assign-select'
@@ -60,7 +64,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
-import { apiFetch } from '@/src/hooks/_fetch'
+import { apiFetch, isApiErrorCode } from '@/src/hooks/_fetch'
 import {
   useCloseCrmLeadLost,
   useCloseCrmLeadWon,
@@ -255,6 +259,7 @@ export function CrmLeadsBoard({
   const {
     items: leads,
     isLoading,
+    error,
     refetch,
   } = useCrmResourceList<CrmLeadDTO>(workspaceId, 'leads')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
@@ -500,6 +505,11 @@ export function CrmLeadsBoard({
             <SteelIcon icon={Download01Icon} strokeWidth={2} />
             Importar da Apollo
           </Button>
+          <CrmImportButton
+            workspaceId={workspaceId}
+            entity='leads'
+            onImported={refetch}
+          />
           <Button size='sm' onClick={() => setCreateOpen(true)}>
             <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
             Novo lead
@@ -551,6 +561,52 @@ export function CrmLeadsBoard({
           >
             Limpar tudo
           </Button>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          role='alert'
+          className='flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm'
+        >
+          <span className='flex-1'>
+            Não foi possível carregar os leads. {error}
+          </span>
+          <Button size='sm' variant='outline' onClick={() => void refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : null}
+
+      {!isLoading && !error && leads.length === 0 ? (
+        <div className='flex shrink-0 flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center'>
+          <div className='space-y-1'>
+            <p className='font-medium text-sm'>Você ainda não tem leads</p>
+            <p className='max-w-md text-muted-foreground text-xs'>
+              Leads são pessoas ou empresas que demonstraram interesse. Cadastre
+              o primeiro à mão ou traga uma lista pronta da Apollo. Leads que
+              chegarem por formulários e páginas do site também aparecem aqui.
+            </p>
+          </div>
+          <div className='flex flex-wrap justify-center gap-2'>
+            <Button size='sm' onClick={() => setCreateOpen(true)}>
+              <SteelIcon icon={PlusSignIcon} strokeWidth={2} />
+              Novo lead
+            </Button>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => setApolloOpen(true)}
+            >
+              <SteelIcon icon={Download01Icon} strokeWidth={2} />
+              Importar da Apollo
+            </Button>
+          </div>
+          <CrmOnboardingChecklist
+            workspaceId={workspaceId}
+            slug={slug}
+            hasLeads={false}
+          />
         </div>
       ) : null}
 
@@ -613,11 +669,6 @@ export function CrmLeadsBoard({
         ))}
       </div>
 
-      <div className='rounded-lg border bg-muted/20 p-3'>
-        <p className='mb-1.5 font-medium text-xs'>Termômetro de Interesse</p>
-        <InterestThermometer value={null} />
-      </div>
-
       <CreateLeadDialog
         workspaceId={workspaceId}
         open={createOpen}
@@ -674,7 +725,21 @@ function LeadContacts({
     openWhatsapp.mutate(phone, {
       onSuccess: (result) =>
         router.push(`/${slug}/zap?conversa=${result.conversationId}`),
-      onError: (error) => notify.error(error),
+      onError: (error) => {
+        if (isApiErrorCode(error, 'WHATSAPP_CONNECTION_NOT_FOUND')) {
+          toast.error(
+            'Nenhum número de WhatsApp conectado. Conecte um número para conversar com os leads.',
+            {
+              action: {
+                label: 'Conectar número',
+                onClick: () => router.push(`/${slug}/settings/whatsapp`),
+              },
+            },
+          )
+          return
+        }
+        notify.error(error, 'Não foi possível abrir a conversa no WhatsApp.')
+      },
     })
   }
 
@@ -703,11 +768,17 @@ function LeadContacts({
                 <button
                   key={phone}
                   type='button'
-                  title='Abrir conversa no WhatsApp'
+                  title='Abrir conversa no WhatsApp com este número'
+                  aria-label={`Abrir conversa no WhatsApp com ${toDisplayPhone(phone)}`}
                   disabled={openWhatsapp.isPending}
                   onClick={() => open(phone)}
-                  className='block text-left hover:underline disabled:opacity-60'
+                  className='flex items-center gap-1.5 text-left hover:underline disabled:opacity-60'
                 >
+                  <SteelIcon
+                    icon={WhatsappIcon}
+                    strokeWidth={2}
+                    className='size-3.5 shrink-0 text-emerald-600'
+                  />
                   {toDisplayPhone(phone)}
                 </button>
               ) : (
@@ -890,15 +961,25 @@ function ContactAttemptForm({
   const [outcome, setOutcome] = useState<'ATTEMPTED' | 'REACHED'>('ATTEMPTED')
   const [note, setNote] = useState('')
   const [history, setHistory] = useState<CrmLeadContactAttemptDTO[]>([])
+  const [historyError, setHistoryError] = useState<string | null>(null)
+  const [historyReload, setHistoryReload] = useState(0)
   const registerAttempt = useRegisterCrmLeadContactAttempt(workspaceId)
 
   useEffect(() => {
+    setHistoryError(null)
     apiFetch<CrmLeadContactAttemptDTO[]>(
       `/api/workspaces/${workspaceId}/crm/leads/${lead.id}/contact-attempts`,
     )
       .then(setHistory)
-      .catch(() => setHistory([]))
-  }, [workspaceId, lead.id])
+      .catch((error) => {
+        setHistory([])
+        setHistoryError(
+          error instanceof Error && error.message
+            ? error.message
+            : 'Não foi possível carregar o histórico de contatos.',
+        )
+      })
+  }, [workspaceId, lead.id, historyReload])
 
   async function handleSubmit() {
     if (!contactedWith.trim()) {
@@ -927,7 +1008,7 @@ function ContactAttemptForm({
       <p className='font-medium text-sm'>Registrar contato</p>
       <div className='grid gap-1.5'>
         <Label className='text-muted-foreground text-xs'>
-          Com quem falou/tentou falar
+          Com quem falou/tentou falar *
         </Label>
         <Input
           value={contactedWith}
@@ -990,6 +1071,23 @@ function ContactAttemptForm({
       >
         {registerAttempt.isPending ? 'Registrando…' : 'Registrar contato'}
       </Button>
+
+      {historyError ? (
+        <div
+          role='alert'
+          className='flex flex-col gap-1.5 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs'
+        >
+          <span className='text-destructive'>{historyError}</span>
+          <Button
+            size='xs'
+            variant='outline'
+            className='self-start'
+            onClick={() => setHistoryReload((n) => n + 1)}
+          >
+            Tentar de novo
+          </Button>
+        </div>
+      ) : null}
 
       {history.length > 0 ? (
         <div className='flex flex-col gap-1.5 border-t pt-3'>
@@ -1129,7 +1227,9 @@ function QualificationForm({
         />
       </div>
       <div className='grid gap-1.5'>
-        <Label className='text-muted-foreground text-xs'>Nome do decisor</Label>
+        <Label className='text-muted-foreground text-xs'>
+          Nome do decisor *
+        </Label>
         <Input
           value={decisionMakerName}
           onChange={(e) => setDecisionMakerName(e.target.value)}
@@ -1137,7 +1237,7 @@ function QualificationForm({
       </div>
       <div className='grid gap-1.5'>
         <Label className='text-muted-foreground text-xs'>
-          Cargo do decisor
+          Cargo do decisor *
         </Label>
         <Input
           value={decisionMakerRole}
@@ -1151,6 +1251,9 @@ function QualificationForm({
       >
         {upsertQualification.isPending ? 'Salvando…' : 'Confirmar qualificação'}
       </Button>
+      <p className='text-muted-foreground text-xs'>
+        * Obrigatório. Sem o decisor, o lead não avança para a próxima etapa.
+      </p>
     </div>
   )
 }
@@ -1316,6 +1419,11 @@ function OpportunityForms({
           variant='secondary'
           onClick={handleCreateProposal}
           disabled={createProposal.isPending || meetings.length === 0}
+          title={
+            meetings.length === 0
+              ? 'Registre ao menos uma reunião (acima) para poder criar a proposta.'
+              : undefined
+          }
         >
           {createProposal.isPending
             ? 'Criando…'
@@ -1832,6 +1940,18 @@ function CloseLostAction({
   )
 }
 
+const LEAD_SOURCE_SUGGESTIONS = [
+  'Site',
+  'Indicação',
+  'WhatsApp',
+  'Instagram',
+  'Facebook',
+  'Google Ads',
+  'Evento',
+  'Ligação',
+  'E-mail',
+]
+
 function CreateLeadDialog({
   workspaceId,
   open,
@@ -1858,15 +1978,15 @@ function CreateLeadDialog({
 
   async function handleSubmit() {
     if (!name.trim()) {
-      notify.error('Informe o nome')
+      notify.error('Informe o nome do lead.')
       return
     }
     if (!email.trim() && !phone.trim()) {
-      notify.error('Informe ao menos um email ou telefone')
+      notify.error('Informe o e-mail ou o telefone do lead.')
       return
     }
     if (!source.trim()) {
-      notify.error('Informe a origem')
+      notify.error('Informe de onde veio o lead (origem).')
       return
     }
 
@@ -1911,9 +2031,12 @@ function CreateLeadDialog({
               onChange={(e) => setName(e.target.value)}
             />
           </div>
+          <p className='-mb-2 text-muted-foreground text-xs'>
+            * Obrigatório. Informe também o e-mail ou o telefone.
+          </p>
           <div className='grid grid-cols-2 gap-3'>
             <div className='grid gap-1.5'>
-              <Label className='text-muted-foreground text-xs'>Email</Label>
+              <Label className='text-muted-foreground text-xs'>E-mail</Label>
               <Input
                 type='email'
                 value={email}
@@ -1927,7 +2050,21 @@ function CreateLeadDialog({
           </div>
           <div className='grid gap-1.5'>
             <Label className='text-muted-foreground text-xs'>Origem *</Label>
-            <Input value={source} onChange={(e) => setSource(e.target.value)} />
+            <Input
+              list='crm-lead-source-options'
+              value={source}
+              placeholder='De onde veio este lead?'
+              onChange={(e) => setSource(e.target.value)}
+            />
+            <datalist id='crm-lead-source-options'>
+              {LEAD_SOURCE_SUGGESTIONS.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+            <p className='text-muted-foreground text-[11px]'>
+              Escolha uma sugestão ou escreva a sua. Serve para saber quais
+              canais trazem mais clientes.
+            </p>
           </div>
         </div>
         <div className='flex justify-end gap-2'>

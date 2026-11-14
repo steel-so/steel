@@ -40,25 +40,25 @@ const CHEVRON_DOWN_ICON = `${BASE}/chevron-down-icon.svg`
 export function heroDefaultContent(): HeroContent {
   return {
     type: 'HERO',
-    eyebrow: 'Shared space in your town',
-    title: 'Rent desk space in a shared office environment',
-    ctaLabel: 'Search Place',
+    eyebrow: 'Espaço compartilhado na sua cidade',
+    title: 'Alugue uma mesa em um escritório compartilhado',
+    ctaLabel: 'Buscar espaço',
     ctaHref: '#locations',
     imageUrl: DEFAULT_BG,
     navLinks: [
       { label: 'Demos', href: '#' },
-      { label: 'Pages', href: '#' },
-      { label: 'Support', href: '#' },
-      { label: 'Contact', href: '#footer' },
+      { label: 'Páginas', href: '#' },
+      { label: 'Suporte', href: '#' },
+      { label: 'Contato', href: '#footer' },
     ],
     dropdowns: [
       {
-        label: 'Select Location',
-        options: ['Downtown', 'Uptown', 'Midtown', 'Riverside'],
+        label: 'Escolha o local',
+        options: ['Centro', 'Zona Norte', 'Região Central', 'Beira-rio'],
       },
       {
-        label: 'Select Date',
-        options: ['This week', 'This month', 'Next month', 'Flexible'],
+        label: 'Escolha a data',
+        options: ['Esta semana', 'Este mês', 'Próximo mês', 'Flexível'],
       },
     ],
   }
@@ -305,7 +305,11 @@ export function CoworkingHero({
               className='h-[19px] w-[19px]'
             />
             <GhostInput
-              value={textOf(content, 'tour', 'Take virtual tour of our spaces')}
+              value={textOf(
+                content,
+                'tour',
+                'Faça um tour virtual pelos nossos espaços',
+              )}
               onCommit={(v) => onChange?.(withText(content, 'tour', v))}
               placeholder='Texto do link'
               readOnly={readOnly}

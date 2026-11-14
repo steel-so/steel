@@ -26,22 +26,22 @@ const ICONS = [
 export function featuresDefaultContent(): FeaturesContent {
   return {
     type: 'FEATURES',
-    title: 'Organize your campaigns',
+    title: 'Organize suas campanhas',
     items: [
       {
-        title: 'Organize your campaigns',
+        title: 'Organize suas campanhas',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Manage customers',
+        title: 'Gerencie clientes',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
       {
-        title: 'Track progress fast',
+        title: 'Acompanhe o progresso com agilidade',
         description:
-          'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+          'Com vários blocos exclusivos, você monta uma página sem escrever código. Crie sua próxima landing page.',
       },
     ],
   }

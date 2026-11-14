@@ -125,10 +125,80 @@ describe('<WhatsappSettingsTemplates />', () => {
   })
 })
 
-describe('<CreateTemplateDialog /> (via templates settings)', () => {
-  async function openDialog() {
-    const fetchSpy = mockFetch([
+describe('<WhatsappSettingsTemplates /> rejections', () => {
+  const rejected = {
+    ...template,
+    id: 'tpl_2',
+    name: 'promo_natal',
+    status: 'REJECTED',
+    statusReason: 'INVALID_FORMAT',
+    components: [
+      { type: 'BODY', text: 'Olá {{1}}, aproveite!' },
+      { type: 'FOOTER', text: 'Stratus' },
+    ],
+  }
+
+  it('shows the translated rejection reason as visible text', async () => {
+    mockFetch([
       { match: `${API}/connections`, data: connections },
+      { match: `${API}/templates`, data: [rejected] },
+    ])
+    renderWithQuery(<WhatsappSettingsTemplates workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText(/O formato do texto não foi aceito/),
+    ).toBeTruthy()
+  })
+
+  it('opens "Corrigir e reenviar" prefilled with a new version name', async () => {
+    mockFetch([
+      { match: `${API}/connections`, data: connections },
+      { match: `${API}/templates`, data: [rejected] },
+    ])
+    renderWithQuery(<WhatsappSettingsTemplates workspaceId='ws_1' />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Corrigir e reenviar' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      (within(dialog).getByLabelText('Nome do template') as HTMLInputElement)
+        .value,
+    ).toBe('promo natal 2')
+    expect(
+      (
+        within(dialog).getByLabelText(
+          'Corpo da mensagem',
+        ) as HTMLTextAreaElement
+      ).value,
+    ).toBe('Olá {{1}}, aproveite!')
+  })
+
+  it('explains that Z-API has no templates', async () => {
+    mockFetch([
+      {
+        match: `${API}/connections`,
+        data: [connection('zapi_1', 'ZAPI', 'Z-API Suporte')],
+      },
+      { match: `${API}/templates`, data: [] },
+    ])
+    renderWithQuery(<WhatsappSettingsTemplates workspaceId='ws_1' />)
+
+    expect(
+      await screen.findByText(/Suas conexões Z-API enviam texto livre/),
+    ).toBeTruthy()
+  })
+})
+
+describe('<CreateTemplateDialog /> (via templates settings)', () => {
+  async function openDialog(withSecondMeta = false) {
+    const fetchSpy = mockFetch([
+      {
+        match: `${API}/connections`,
+        data: withSecondMeta
+          ? [...connections, connection('meta_2', 'META', 'Meta Filial')]
+          : connections,
+      },
       { method: 'POST', match: `${API}/templates`, data: template },
       { match: `${API}/templates`, data: [] },
     ])
@@ -148,13 +218,22 @@ describe('<CreateTemplateDialog /> (via templates settings)', () => {
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
   }
 
-  it('requires a Meta connection before anything else', async () => {
-    const { dialog, fetchSpy } = await openDialog()
+  it('requires a Meta connection before anything else (when there are several)', async () => {
+    const { dialog, fetchSpy } = await openDialog(true)
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Enviar para aprovação' }),
     )
     expect(notify.error).toHaveBeenCalledWith('Selecione a conexão Meta.')
     expect(fetchBody(fetchSpy, `${API}/templates`)).toBeUndefined()
+  })
+
+  it('preselects the only Meta connection', async () => {
+    const { dialog } = await openDialog()
+    await waitFor(() =>
+      expect(
+        within(dialog).getByLabelText('Conexão Meta').textContent,
+      ).toContain('Meta Oficial'),
+    )
   })
 
   it('requires name and body', async () => {
@@ -168,15 +247,16 @@ describe('<CreateTemplateDialog /> (via templates settings)', () => {
     )
   })
 
-  it('normalizes the name to snake_case and demands one example per variable', async () => {
+  it('derives the technical name from the title and demands one example per variable', async () => {
     const { dialog, fetchSpy } = await openDialog()
     await selectConnection(dialog)
 
-    const name = within(dialog).getByPlaceholderText(
-      'confirmacao_exame',
-    ) as HTMLInputElement
-    fireEvent.change(name, { target: { value: 'Confirmacao Exame' } })
-    expect(name.value).toBe('confirmacao_exame')
+    fireEvent.change(within(dialog).getByLabelText('Nome do template'), {
+      target: { value: 'Confirmação Exame' },
+    })
+    expect(
+      within(dialog).getByText('Identificador na Meta: confirmacao_exame'),
+    ).toBeTruthy()
 
     fireEvent.change(within(dialog).getByPlaceholderText(/Olá \{\{1\}\}/), {
       target: { value: 'Olá {{1}}, seu exame de {{2}} está confirmado.' },

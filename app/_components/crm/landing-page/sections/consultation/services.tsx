@@ -27,27 +27,27 @@ const TAIL = `${BASE}/services-card-tail.svg`
 export function consultationServicesDefaultContent(): ServicesContent {
   return {
     type: 'SERVICES',
-    title: 'Services we offer for you',
+    title: 'Serviços que oferecemos para você',
     subtitle:
-      'With lots of unique blocks, you can easily build a page without coding. Build your next landing page.',
+      'Com vários blocos prontos, você monta sua página sem escrever código. Crie sua próxima landing page.',
     items: [
       {
-        title: 'Digital Marketing',
+        title: 'Marketing Digital',
         description: '',
         imageUrl: `${BASE}/services-digital-marketing.png`,
       },
       {
-        title: 'Content Writing',
+        title: 'Produção de Conteúdo',
         description: '',
         imageUrl: `${BASE}/services-content-writing.png`,
       },
       {
-        title: 'Graphic Design',
+        title: 'Design Gráfico',
         description: '',
         imageUrl: `${BASE}/services-graphic-design.png`,
       },
       {
-        title: 'SEO for Business',
+        title: 'SEO para Empresas',
         description: '',
         imageUrl: `${BASE}/services-seo.png`,
       },
