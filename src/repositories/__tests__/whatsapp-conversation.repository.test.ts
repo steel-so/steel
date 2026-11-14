@@ -52,6 +52,71 @@ describe('WhatsAppConversationRepository', () => {
     })
   })
 
+  describe('create() and the 24 h window', () => {
+    it("should start a new conversation with the contact's latest inbound time on that connection", async () => {
+      const { workspace, connection, contact } = await seedFixtures()
+      const earlier = new Date('2026-11-14T10:00:00.000Z')
+      const latest = new Date('2026-11-14T12:30:00.000Z')
+      for (const at of [earlier, latest]) {
+        expectOk(
+          await WhatsAppConversationRepository.create({
+            workspaceId: workspace.id,
+            connectionId: connection.id,
+            contactId: contact.id,
+            status: 'CLOSED',
+            lastInboundAt: at,
+          }),
+        )
+      }
+
+      const fresh = expectOk(
+        await WhatsAppConversationRepository.create({
+          workspaceId: workspace.id,
+          connectionId: connection.id,
+          contactId: contact.id,
+          status: 'NEW',
+        }),
+      )
+
+      expect(fresh.lastInboundAt?.toISOString()).toBe(latest.toISOString())
+    })
+
+    it('should keep an explicit lastInboundAt and leave it empty for a contact who never wrote', async () => {
+      const { workspace, connection, contact } = await seedFixtures()
+      const explicit = new Date('2026-11-14T09:00:00.000Z')
+
+      const withValue = expectOk(
+        await WhatsAppConversationRepository.create({
+          workspaceId: workspace.id,
+          connectionId: connection.id,
+          contactId: contact.id,
+          status: 'NEW',
+          lastInboundAt: explicit,
+        }),
+      )
+      expect(withValue.lastInboundAt?.toISOString()).toBe(
+        explicit.toISOString(),
+      )
+
+      const other = await prisma.whatsAppContact.create({
+        data: {
+          workspaceId: workspace.id,
+          waId: '5511977776666',
+          name: 'João',
+        },
+      })
+      const never = expectOk(
+        await WhatsAppConversationRepository.create({
+          workspaceId: workspace.id,
+          connectionId: connection.id,
+          contactId: other.id,
+          status: 'NEW',
+        }),
+      )
+      expect(never.lastInboundAt).toBeNull()
+    })
+  })
+
   describe('findActiveByContact()', () => {
     it('should find a NEW/IN_PROGRESS conversation but ignore CLOSED ones', async () => {
       const { workspace, connection, contact } = await seedFixtures()

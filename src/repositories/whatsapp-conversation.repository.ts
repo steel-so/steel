@@ -458,7 +458,26 @@ export const WhatsAppConversationRepository = {
     data: Prisma.WhatsAppConversationUncheckedCreateInput,
   ): Promise<Result<WhatsAppConversation>> {
     try {
-      const conversation = await prisma.whatsAppConversation.create({ data })
+      // Meta's 24 h window belongs to the contact on that number, not to one
+      // conversation: a new conversation (e.g. opened from a CRM lead) starts
+      // with the contact's latest inbound message on the same connection.
+      let lastInboundAt = data.lastInboundAt
+      if (lastInboundAt === undefined && data.contactId && data.connectionId) {
+        const previous = await prisma.whatsAppConversation.findFirst({
+          where: {
+            workspaceId: data.workspaceId,
+            contactId: data.contactId,
+            connectionId: data.connectionId,
+            lastInboundAt: { not: null },
+          },
+          orderBy: { lastInboundAt: 'desc' },
+          select: { lastInboundAt: true },
+        })
+        lastInboundAt = previous?.lastInboundAt ?? undefined
+      }
+      const conversation = await prisma.whatsAppConversation.create({
+        data: { ...data, lastInboundAt },
+      })
       return ok(conversation)
     } catch (error) {
       return err(dbError('Failed to create whatsapp conversation', error))
