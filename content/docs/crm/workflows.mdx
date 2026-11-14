@@ -8,6 +8,25 @@ order: 8
 Em **Workflows**, monte automações num editor visual ligando um **gatilho** a
 uma sequência de **ações**.
 
+## Criar um workflow
+
+Clique em **Novo workflow**, dê um nome e escolha **Começar de um modelo**:
+
+| Modelo | O que faz |
+| --- | --- |
+| **Em branco** | Você monta as etapas do zero no editor |
+| **Tarefa para cada novo lead** | Quando um lead chega, cria uma tarefa para alguém entrar em contato |
+| **E-mail de boas-vindas ao novo lead** | Envia um e-mail automático de agradecimento assim que o lead é criado |
+| **Retomar contato depois de 3 dias** | Espera 3 dias depois que o lead chega e cria uma tarefa de retorno |
+| **Começar o atendimento quando o lead for ganho** | Quando um lead é marcado como ganho, cria uma tarefa para iniciar o onboarding |
+
+![Janela Novo workflow com o campo de nome e a lista de modelos para começar](/docs/crm/workflows-novo-modelos.webp)
+
+Clique em **Criar e abrir**: o workflow nasce como rascunho, com as etapas do
+modelo já montadas, e você ajusta o que quiser antes de ativar. Se o Steel criar o
+workflow mas não conseguir aplicar o modelo, avisa e abre o editor vazio para você
+montar as etapas à mão.
+
 ## Gatilhos
 
 - **Registros**: registro criado, atualizado, excluído ou criado/atualizado.
@@ -49,7 +68,9 @@ Um workflow fica **Rascunho**, **Ativo** ou **Desativado**. Na barra do editor:
 - **Adicionar etapa** abre a lista de gatilhos e ações.
 - **Testar** roda o rascunho sem gravar nada no CRM.
 - **Descartar** volta o rascunho para a última versão ativa.
-- **Ativar** publica o rascunho.
+- **Ativar** publica o rascunho. Se não der para ativar, o Steel mostra o
+  motivo (em geral, o gatilho não foi escolhido ou alguma etapa está por
+  preencher).
 - **Ver execuções** abre o **Histórico de execuções**, com a situação de cada
   execução e de cada etapa. As que pararam num **Formulário** podem ser
   retomadas ali.

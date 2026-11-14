@@ -1,25 +1,50 @@
 ---
 title: Campanhas de e-mail
-description: Campanhas para contatos e listas, envio agendado, templates, listas de e-mail e o descadastro conforme a LGPD.
+description: O envio avulso de e-mail para contatos e listas, com teste, confirmação e agendamento, os templates, as listas de e-mail e o descadastro conforme a LGPD.
 section: crm
 order: 6
 ---
 
-Tudo fica no grupo **Marketing** do menu do CRM.
+Tudo fica no grupo **Marketing** do menu do CRM. **E-mail avulso** é o envio
+simples de um e-mail (com um modelo ou em branco) para contatos, listas ou
+endereços soltos. A campanha completa, com WhatsApp, link rastreado e
+resultados até a conversão, é a de **Marketing › Campanhas** (veja
+[Campanhas](/docs/crm/campanhas)).
 
-## Criar uma campanha
+## Enviar um e-mail avulso
 
-1. Em **Campanhas**, crie uma campanha e informe **Remetente**, **Assunto** e
-   **Conteúdo**. O remetente é um endereço em um **domínio verificado** do
-   workspace (**Ajustes › Domínios de e-mail**) ou um endereço do domínio
-   do Steel (`@stratustelecom.com.br`); com outro remetente, o envio é
-   recusado e uma campanha agendada vira **Falhou**, com aviso para quem a
-   criou. Comece de um template ou do editor em branco. Com um template
-   do **editor visual**, informe o **Link da campanha** (o endereço, com UTMs,
-   para onde vão os botões) e confira a prévia com um contato de exemplo.
-2. Escolha os **Destinatários**: contatos, listas (que incluem quem for
-   adicionado depois) ou endereços avulsos.
-3. Envie com **Enviar agora** ou **Agendar envio** para uma data futura.
+1. Em **E-mail avulso**, clique em **Nova campanha**. O formulário abre ao lado
+   da lista. Os campos obrigatórios têm `*`; se algo faltar, o Steel marca em
+   vermelho o que está errado ("Informe o assunto do e-mail.", "Escolha quem
+   aparece como remetente.") e mostra tudo de uma vez.
+2. Informe o **Assunto** e o **Remetente** (escreva o começo do endereço, como
+   `marketing`, e escolha o domínio): um endereço em um **domínio
+   verificado** do workspace (**Ajustes › Domínios de e-mail**) ou do domínio do
+   Steel (`@stratustelecom.com.br`). Com outro remetente, o envio é recusado e
+   uma campanha agendada vira **Falhou**, com aviso para quem a criou.
+3. Se quiser, em **Começar a partir de um modelo (opcional)** escolha um
+   template; sem escolher, o **Conteúdo** abre no editor em branco. Com um
+   template do **editor visual**, o **Link da campanha** é **opcional**: se você
+   informar, ele precisa começar com `https://` e é o destino dos botões que
+   apontam para o link da campanha (informe-o se o modelo tem esse botão). A
+   **Pré-visualização** usa um contato de exemplo.
+4. Escolha os **Destinatários**. Por padrão o e-mail vai para todos os contatos
+   que têm e-mail; para limitar, escolha contatos, listas (que incluem quem for
+   adicionado depois) ou endereços avulsos. Quem pediu descadastro nunca recebe.
+5. Para agendar, marque **Enviar mais tarde** e informe uma data e hora no
+   futuro.
+
+![Formulário de e-mail avulso com assunto, remetente, modelo, destinatários e agendamento](/docs/crm/email-avulso-novo.webp)
+
+**Enviar teste para mim** manda o e-mail para o seu endereço, com o assunto
+começando por *[Teste]*; só está disponível quando você começou de um modelo.
+
+Ao clicar em **Enviar agora** (ou **Agendar envio**), o Steel pede a
+confirmação **Enviar a campanha agora?**, com o assunto e o número aproximado de
+pessoas, sem contar quem pediu descadastro. Depois de enviado, não dá para
+cancelar. Se você fechar o formulário com a campanha preenchida e ainda não
+enviada, o Steel pergunta **Descartar esta campanha?** para você não perder o
+trabalho.
 
 Situação: **Rascunho**, **Agendada**, **Enviando**, **Enviada** ou **Falhou**.
 Os contadores mostram enviados, falhas e descadastrados.
@@ -78,8 +103,20 @@ Templates antigos, de HTML livre, continuam abrindo no editor de blocos.
 
 ## Listas
 
-Em **Listas**, crie listas de e-mail (nome e descrição) e adicione leads pela
-busca.
+Em **Listas**, crie listas de e-mail (**Nova lista**: nome e descrição) e abra
+uma lista para adicionar membros de três jeitos:
+
+- **buscando** leads e contatos existentes;
+- **colando e-mails** na caixa **Colar e-mails ou importar CSV** (um por linha ou
+  separados por vírgula);
+- **Escolher arquivo CSV**, que também preenche a caixa.
+
+Antes de adicionar, a caixa mostra quantos e-mails são válidos, quantos já estão
+na lista ou repetidos e quantos foram ignorados por não parecerem e-mail. O Steel
+adiciona um a um e, no fim, avisa quantos entraram e quais falharam, sem esconder
+o resto. Membros descadastrados aparecem com o selo **Descadastrado** e a lista
+informa quantos não recebem campanhas. Remover um membro pede confirmação: ele
+deixa de receber as campanhas da lista, mas o contato continua no CRM.
 
 ## Descadastro (LGPD)
 

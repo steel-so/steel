@@ -17,6 +17,70 @@ Uma empresa tem nome, CNPJ, domínio, endereço (com busca pelo CEP), número de
 funcionários, LinkedIn e o **responsável pela conta**. Crie em **Empresas** (ou{' '}
 <Kbd>C</Kbd> <Kbd>E</Kbd>).
 
+## Criar, importar e excluir
+
+Em todas as listas do CRM (pessoas, empresas, oportunidades, produtos, tarefas,
+notas…), **Nova pessoa**, **Nova empresa** e os botões equivalentes abrem uma
+janela **Criar pessoa** com só o essencial: o campo principal e os obrigatórios,
+marcados com `*`. O botão **Criar** fica desabilitado, com a lista do que falta
+("Preencha para continuar: Nome."), até tudo estar preenchido. Nada é gravado
+antes disso, então a lista não fica com registros "Sem título". Ao criar, a ficha
+do registro abre para você completar o resto.
+
+![Janela Criar pessoa pedindo o nome, com o botão Criar desabilitado e o aviso do que falta](/docs/crm/criar-pessoa.webp)
+
+**Importar CSV** (ao lado de **Colunas**) traz uma planilha de pessoas ou de
+empresas, com prévia, confirmação de LGPD e resumo das linhas recusadas; o passo a
+passo está em [Leads](/docs/crm/leads#importar-uma-planilha-csv). Em empresas,
+quem já tem o mesmo CNPJ ou site cadastrado é recusado; em pessoas, o mesmo
+e-mail ou telefone.
+
+O ícone de lixeira de cada linha pede confirmação, **Excluir este registro?**:
+o registro e o que estiver ligado só a ele são removidos, e não dá para desfazer.
+Na ficha, **Excluir** muda para **Confirmar exclusão** e exige um segundo clique.
+Só quem tem permissão de excluir vê a ação.
+
+## Filtros, ordem e erros de carregamento
+
+Os filtros por coluna e a ordenação ficam guardados **por workspace e por lista,
+neste navegador**: ao voltar à lista, ela abre como você deixou. Quando os
+filtros escondem tudo, a lista diz **Nenhum registro com estes filtros** e oferece
+**Limpar filtros**. Se a lista não carregar, aparece **Não foi possível carregar
+a lista**, o motivo e **Tentar novamente**, sem confundir com uma lista vazia
+(**Nada por aqui ainda**).
+
+![Lista de pessoas sem resultados para o filtro aplicado, com o botão Limpar filtros](/docs/crm/pessoas-sem-resultado.webp)
+
+## Visão 360, WhatsApp e Ligar
+
+Abra a ficha de uma pessoa ou de uma empresa: no alto ficam os botões
+**WhatsApp** e **Ligar**, e logo abaixo a **Visão 360**, que reúne num lugar só o
+que o Steel sabe sobre aquele cliente nos três módulos (o cadastro é único: o
+mesmo cliente do CRM, do ServiceDesk e da Comunicação é reconhecido pelo
+telefone, e-mail ou CNPJ).
+
+- **WhatsApp** abre a conversa com o telefone do cadastro na **Comunicação**;
+  **Ligar** faz a ligação pelo telefone web ou pelo seu ramal. Os dois só
+  aparecem com a **Comunicação** ligada e ficam desabilitados, com a razão ao
+  passar o mouse, quando o cadastro não tem telefone ou você não pode iniciar
+  conversas. Para ligar, é preciso ter ramal e device no seu perfil. As
+  oportunidades têm os mesmos botões.
+- A **Visão 360** mostra o resumo (faixa de saúde do cliente, receita anual,
+  responsável pela conta e telefones) e os blocos **Oportunidades**, **Leads
+  abertos**, **Chamados** (com o SLA e a satisfação, se o ServiceDesk está ligado),
+  **Conversas no WhatsApp**, **Ligações** (Comunicação) e **Documentos**. Um
+  bloco que você não pode ver, por módulo desligado ou falta de permissão, some em
+  vez de mostrar erro. Quando o cadastro foi achado só pelo nome, o Steel avisa
+  para você conferir se é a mesma empresa.
+
+![Ficha de uma pessoa com os botões WhatsApp e Ligar e o bloco Visão 360 com oportunidades, chamados e conversas](/docs/crm/pessoa-visao-360.webp)
+
+Com o ServiceDesk ligado, a linha do tempo de uma pessoa ou oportunidade também
+tem **Criar chamado**: o chamado nasce ligado ao registro, como descrito em
+[Leads](/docs/crm/leads#whatsapp-e-chamados-no-painel-do-lead). No chamado, o
+card do CRM mostra o dono da conta e o contato e leva para o cadastro com
+**Abrir no CRM**.
+
 ### Enriquecimento pelo CNPJ
 
 Ao digitar o CNPJ de uma empresa, o Steel consulta a Receita Federal e preenche

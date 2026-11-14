@@ -9,31 +9,84 @@ order: 11
   As configurações do CRM são alteradas pelo dono e pelos administradores.
 </Callout>
 
-**CRM › Configurações** reúne, em ordem:
+**CRM › Configurações** tem uma tela para cada seção, agrupadas no menu da
+própria página:
 
-- **Membros**: os membros do workspace com o perfil de acesso de cada um no CRM.
-- **Pipelines**: os funis das oportunidades.
+**Funil de vendas**
+
+- **Pipelines**: os funis das oportunidades e as etapas de cada um (veja
+  [Oportunidades e funis](/docs/crm/oportunidades-e-funis#funis-pipelines)).
+- **Regras de leads**: **Pontuação de leads** e **Roteamento de leads** (veja
+  [Leads](/docs/crm/leads#pontuação-e-roteamento)).
+- **Funil**: a etapa para onde volta um lead perdido reaberto, a validade padrão
+  das propostas e o aviso por e-mail ao responsável quando uma proposta expira.
+- **Negócios e propostas**: cobrança por Pix ou boleto na proposta, o aviso sobre
+  contratos que vencem e a criação automática da oportunidade de renovação.
+- **Retenção**: as tarefas automáticas de [retenção](#retenção-de-clientes).
+
+**Dados**
+
 - **Campos customizados**.
-- **Pontuação de leads** e **Roteamento de leads** (veja [Leads](/docs/crm/leads)).
-- **Funil e propostas**: a etapa para onde volta um lead reaberto, a validade
-  padrão das propostas e o aviso por e-mail quando uma proposta expira.
 - **Perfis de acesso**: crie perfis com a matriz recurso × Ver, Criar, Editar e
   Excluir e atribua a membros. O padrão de cada pessoa é o do seu papel.
-- **Log de auditoria**: quem fez o quê.
+
+**Governança**
+
 - **Privacidade**: consentimento de cookies de análise.
-- **Conexões sociais**.
+- **Auditoria**: quem fez o quê, incluindo as importações de CSV.
+
+**Integrações**
+
+- **Redes sociais**: as conexões com Facebook, Instagram, TikTok, YouTube e
+  Google.
+
+Os **membros** e seus perfis ficam em **Ajustes › Membros**, e não aparecem nas
+configurações do CRM.
+
+## Retenção de clientes
+
+Em **Configurações › Retenção** (só o dono e os administradores alteram; os
+demais veem as regras), o Steel pode abrir **uma tarefa de acompanhamento** quando
+um cliente esfria. Cada regra é um interruptor:
+
+| Regra | Quando dispara | Padrão |
+| --- | --- | --- |
+| **Criar tarefa quando o cliente der nota baixa (NPS ou CSAT)** | Uma resposta de pesquisa de satisfação dentro da faixa de detrator: NPS de 0 a 6, CSAT de 1 a 2 e CES de 1 a 3, ou o limite que a pesquisa define | Ligada |
+| **Criar tarefa quando a saúde do cliente cair** | A empresa entra no risco alto ou o risco sobe 20 pontos ou mais ([Saúde do cliente](/docs/crm/saude-do-cliente-e-do-negocio#avisos)) | Ligada |
+| **Criar tarefa quando um chamado do cliente estourar o SLA** | Um chamado do ServiceDesk viola o SLA e o cliente é achado como empresa do CRM (pelo CNPJ ou, sem CNPJ, pelo nome igual) | Desligada |
+| **Abrir também uma oportunidade de retenção** | Junto com a tarefa, abre uma oportunidade na primeira etapa aberta do funil padrão | Desligada |
+
+![Tela Retenção com os interruptores de nota baixa, queda de saúde, SLA estourado e oportunidade de retenção e o prazo da tarefa](/docs/crm/retencao-configuracao.webp)
+
+O **Prazo da tarefa** vai de 1 a 30 dias (padrão: 2). A tarefa vai para o
+**responsável pela conta** da empresa do cliente, ou para um administrador se não
+houver, e cada resposta, chamado ou queda gera no máximo uma tarefa (a queda de
+saúde, no máximo uma por empresa por dia). Sem um cadastro do CRM que corresponda
+ao cliente, nada é criado. A tarefa aparece em **Tarefas** com o contexto no texto
+(por exemplo, "Retenção: ligar para Maria (nota 3)" ou "SLA violado: código do chamado de
+nome da empresa").
 
 ## Chaves de API
 
-Para receber leads de outro sistema (um site, uma ferramenta de automação), um
-administrador cria uma chave em **Chaves de API**, no menu lateral do CRM, logo
-acima de **Configurações**. A entrada só aparece para o dono e os
-administradores do workspace.
+Para receber leads de outro sistema (um site, o Zapier, o Make, uma ferramenta
+de automação), um administrador cria uma chave em **Chaves de API**, no menu
+lateral do CRM, logo acima de **Configurações**. A entrada só aparece para o dono
+e os administradores do workspace. Crie **uma chave por sistema**, para poder
+revogar só a que não for mais usada.
 
-1. Clique em **Criar chave** e dê um nome (por exemplo, "Site").
-2. Copie a chave na hora: ela **não é mostrada de novo**.
+1. Clique em **Nova chave**, dê um nome (por exemplo, "Zapier" ou "Site") e
+   confirme em **Criar chave**.
+2. Copie a chave na hora, com o botão **Copiar**: ela **não é mostrada de
+   novo**, e a janela não fecha com um clique fora enquanto a chave está na tela,
+   para você não perdê-la. Depois, **Concluir**.
 3. Entregue a chave à equipe técnica que fará a integração.
 
+![Janela Nova chave com o campo de nome e o botão Criar chave](/docs/crm/chaves-de-api-nova-chave.webp)
+
+A lista mostra o nome, o **início da chave** (para reconhecê-la) e se está
+**Ativa** ou **Revogada**. **Revogar chave** pede confirmação: qualquer sistema
+que use a chave deixa de funcionar na hora, e não dá para desfazer.
+
 Leads recebidos pela API passam pelas mesmas regras da criação manual:
-bloqueio de duplicados, pontuação e roteamento. Uma chave pode ser revogada a
-qualquer momento.
+bloqueio de duplicados, pontuação e roteamento. Para a equipe técnica, os
+endpoints ficam na [referência da API](/dev/api).
