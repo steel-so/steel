@@ -964,6 +964,34 @@ const CONTACT_CHANNELS = [
   { value: 'OTHER', label: 'Outro' },
 ] as const
 
+const CONTACT_OUTCOMES = [
+  { value: 'ATTEMPTED', label: 'Tentativa (sem resposta)' },
+  { value: 'REACHED', label: 'Contato efetivo (conversou)' },
+] as const
+
+const MEETING_FORMATS = [
+  { value: 'IN_PERSON', label: 'Presencial' },
+  { value: 'ONLINE', label: 'Online' },
+] as const
+
+const PRESENTATION_FORMATS = [
+  ...MEETING_FORMATS,
+  { value: 'EMAIL', label: 'E-mail' },
+  { value: 'OTHER', label: 'Outro' },
+] as const
+
+const BILLING_TYPES = [
+  { value: 'ONE_TIME', label: 'Pagamento único' },
+  { value: 'MONTHLY', label: 'Mensal' },
+  { value: 'YEARLY', label: 'Anual' },
+] as const
+
+/** The Select shows the raw value unless it is given the item's label. */
+const labelOf = (
+  options: readonly { value: string; label: string }[],
+  value: string,
+) => options.find((option) => option.value === value)?.label ?? value
+
 function ContactAttemptForm({
   workspaceId,
   lead,
@@ -1043,7 +1071,7 @@ function ContactAttemptForm({
             onValueChange={(v) => setChannel(v as typeof channel)}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>{labelOf(CONTACT_CHANNELS, channel)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {CONTACT_CHANNELS.map((c) => (
@@ -1061,15 +1089,14 @@ function ContactAttemptForm({
             onValueChange={(v) => setOutcome(v as typeof outcome)}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>{labelOf(CONTACT_OUTCOMES, outcome)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='ATTEMPTED'>
-                Tentativa (sem resposta)
-              </SelectItem>
-              <SelectItem value='REACHED'>
-                Contato efetivo (conversou)
-              </SelectItem>
+              {CONTACT_OUTCOMES.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -1366,11 +1393,14 @@ function OpportunityForms({
             onValueChange={(v) => setFormat(v as typeof format)}
           >
             <SelectTrigger className='w-full'>
-              <SelectValue />
+              <SelectValue>{labelOf(MEETING_FORMATS, format)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='IN_PERSON'>Presencial</SelectItem>
-              <SelectItem value='ONLINE'>Online</SelectItem>
+              {MEETING_FORMATS.map((f) => (
+                <SelectItem key={f.value} value={f.value}>
+                  {f.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -1590,13 +1620,16 @@ function ProposalStageForms({
               onValueChange={(v) => setFormat(v as typeof format)}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>
+                  {labelOf(PRESENTATION_FORMATS, format)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='IN_PERSON'>Presencial</SelectItem>
-                <SelectItem value='ONLINE'>Online</SelectItem>
-                <SelectItem value='EMAIL'>E-mail</SelectItem>
-                <SelectItem value='OTHER'>Outro</SelectItem>
+                {PRESENTATION_FORMATS.map((f) => (
+                  <SelectItem key={f.value} value={f.value}>
+                    {f.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1679,12 +1712,14 @@ function ProposalStageForms({
               onValueChange={(v) => setBillingType(v as typeof billingType)}
             >
               <SelectTrigger className='w-full'>
-                <SelectValue />
+                <SelectValue>{labelOf(BILLING_TYPES, billingType)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='ONE_TIME'>Pagamento único</SelectItem>
-                <SelectItem value='MONTHLY'>Mensal</SelectItem>
-                <SelectItem value='YEARLY'>Anual</SelectItem>
+                {BILLING_TYPES.map((b) => (
+                  <SelectItem key={b.value} value={b.value}>
+                    {b.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
