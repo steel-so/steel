@@ -18,7 +18,7 @@ export const ticketTour: TourDefinition = {
     {
       target: 'sd-ticket-meta',
       title: 'Prioridade, SLA e risco',
-      body: 'Mostra a prioridade, o tempo que falta para o SLA e, quando existe, o risco previsto pela IA de o prazo estourar.',
+      body: 'Mostra a prioridade, o tempo que falta para o SLA e, quando existe, o risco de o prazo estourar.',
       placement: 'bottom',
     },
     {

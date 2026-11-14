@@ -1295,11 +1295,7 @@ export function DataTable<TData extends WithId>({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button
-                variant='outline'
-                size='sm'
-                data-tour='crm-table-columns'
-              >
+              <Button variant='outline' size='sm' data-tour='crm-table-columns'>
                 Colunas
                 <SteelIcon icon={ArrowDown01Icon} strokeWidth={2} />
               </Button>
