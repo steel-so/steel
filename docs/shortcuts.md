@@ -54,6 +54,44 @@ de tooltip/menu e na paleta `Ctrl+K` sai do mesmo lugar.
    item de menu, `<ShortcutHint id='…' />` no tooltip.
 5. Atalhos que um componente trata sozinho (editor, composer) entram no
    escopo `editor`: aparecem no cheat sheet e nunca são despachados.
+   Os editores visuais (Sites, e-mail e Documentos, o Canvas) usam o escopo
+   irmão `editor.canvas`, descrito abaixo.
+
+## Escopo `editor.canvas` (editores visuais)
+
+Os atalhos do Canvas ficam no grupo **Editor** do cheat sheet. Como os do
+escopo `editor`, são só documentação (`documentationOnly`): o registro não os
+despacha, quem trata o teclado é `app/_components/canvas/use-shortcuts.ts`
+(na página e dentro do iframe do canvas), e a barra superior lê as dicas do
+registro (`canvas.*`). Por isso não entram na checagem de teclas repetidas
+entre escopos.
+
+| Id | Teclas | Ação |
+| -- | ------ | ---- |
+| `canvas.save` | `Ctrl+S` | Salvar agora |
+| `canvas.undo` / `canvas.redo` | `Ctrl+Z` / `Ctrl+Shift+Z` ou `Ctrl+Y` | Desfazer / refazer |
+| `canvas.copy`, `canvas.cut`, `canvas.paste` | `Ctrl+C`, `Ctrl+X`, `Ctrl+V` | Copiar, recortar e colar o elemento |
+| `canvas.duplicate` | `Ctrl+D` | Duplicar o elemento |
+| `canvas.delete` | `Delete` ou `Backspace` | Excluir o elemento |
+| `canvas.select-parent` | `Esc` | Selecionar o elemento que contém este |
+| `canvas.select-sibling` | `↑` / `↓` | Selecionar o anterior / seguinte |
+| `canvas.select-outer` / `canvas.select-inner` | `←` / `→` | Selecionar o pai / o primeiro filho |
+| `canvas.move` | `Alt+↑` / `Alt+↓` | Mover o elemento para cima ou para baixo |
+| `canvas.edit-text` | `Enter` | Editar o texto do elemento |
+| `canvas.zoom-in` / `canvas.zoom-out` / `canvas.zoom-fit` | `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom |
+
+- `canvas.duplicate` tem `overridesBrowser: true`: `Ctrl+D` é "favoritar" no
+  navegador e o editor toma a tecla de propósito. A flag existe só para isto e
+  isenta a combinação da checagem de teclas reservadas
+  (`conflicts.ts`); não use para mascarar um conflito de verdade.
+- Também tratados em `use-shortcuts.ts`, **sem entrada no registro** (não
+  aparecem no cheat sheet): `Ctrl+A` seleciona todos os irmãos do elemento
+  (ou o primeiro nível da página, sem seleção) e, num elemento em posição
+  livre, as setas sem modificador movem **1 px** (`Shift`: 10 px) em vez de
+  trocar a seleção.
+- O `Ctrl+A` e o passo de 1/10 px nas setas ainda não têm id próprio; se forem
+  para o cheat sheet, acrescente `canvas.select-all` e `canvas.nudge` em
+  `registry.ts`.
 
 Fora do escopo desta entrega (backlog P3 e remapeamento por usuário): veja a
 proposta da fatia `keyboard-shortcuts`.

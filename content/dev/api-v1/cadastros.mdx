@@ -32,6 +32,11 @@ Os corpos e as respostas seguem os da tela; o formato exato de cada campo está
 na [Referência da API v1](/dev/api/v1). Todo `DELETE` responde
 `{ "id": "..." }`.
 
+A [CLI](/dev/cli) e o [SDK](/dev/sdk) ainda não têm comandos próprios para
+estes recursos: use `steel api` (por exemplo,
+`steel api GET /crm/companies -q icp=true`) ou `steel.request` no SDK (sem tipos),
+que chamam qualquer rota da v1 com o token do perfil.
+
 ## Eventos de webhook
 
 Cada escrita dispara um [evento de webhook](/dev/webhooks/eventos), seja ela

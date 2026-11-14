@@ -57,6 +57,39 @@ Negócio recém-criado conta os dias desde a criação, não desde "sempre": nin
 - O nível anterior fica na própria linha, então um retry do job não avisa de novo. Empresa sem responsável pela conta não gera aviso (a nota continua visível).
 - O primeiro cálculo de um registro só avisa se já nasce na faixa alta; abrir um painel pela primeira vez nunca avisa.
 
+## Retenção: tarefa automática de follow-up
+
+Além do aviso, três sinais podem abrir uma **tarefa de retenção** para o
+responsável da conta (migração `20261113120000_detractor_crm_retention`, com
+`SLA_BREACH` acrescentado em `20261113130000_ux_followups`). Serviço:
+`CrmRetentionService` (`src/services/crm-retention.service.ts`).
+
+| Sinal | Quando | Padrão | Chave de idempotência |
+| --- | --- | --- | --- |
+| `SURVEY_DETRACTOR` | Resposta de pesquisa (NPS, CSAT ou CES) na faixa de detrator. A pessoa do CRM é achada pelo telefone (chave DDD + 8 dígitos) e, na falta, pelo e-mail do destinatário | Ligado (`onDetractor`) | `survey:<id da pesquisa>` |
+| `HEALTH_DROP` | O mesmo evento que gera `CRM_CUSTOMER_HEALTH_DROP` | Ligado (`onHealthDrop`) | `health:<empresa>:<dia>` |
+| `SLA_BREACH` | Chamado do ServiceDesk que violou o SLA, casado com a empresa do CRM por CNPJ e, na falta, por nome exato | **Desligado** (`onSlaBreach`) | `sla:<chamado>` |
+
+- **Configuração** por workspace em **CRM > Ajustes > Retenção**
+  (`crm_retention_settings`; sem linha vale o padrão): os três interruptores,
+  `createOpportunity` (padrão desligado) e `taskDueDays` (1 a 30, padrão 2).
+  API `GET`/`PATCH /api/workspaces/{id}/crm/retention`: qualquer membro do CRM
+  lê, só administrador do módulo altera; `PATCH` exige ao menos um campo.
+- **Idempotência**: a chave é reivindicada em `crm_retention_actions`
+  (única por workspace e chave) antes de criar a tarefa; se a criação falha, a
+  chave é devolvida e o próximo sinal tenta de novo. Repetir o mesmo sinal
+  responde `duplicate` e não cria nada.
+- **Responsável**: o dono da conta da empresa; sem dono, o primeiro OWNER ou
+  ADMIN do workspace. Sem ninguém, nada é criado (`no_assignee`). Sem registro
+  no CRM para ligar, o sinal é ignorado (`no_record`) e logado.
+- **Negócio** (`createOpportunity`): reaproveita uma oportunidade aberta da
+  empresa; se não há, cria "Retenção - <empresa>" na primeira etapa aberta do
+  pipeline padrão. Falhar aqui não impede a tarefa.
+- **Aviso**: o responsável recebe uma notificação `CRM_TASK_ASSIGNED` ("Retenção:
+  ..."); o alerta de detrator aos administradores (`WHATSAPP_SURVEY_DETRACTOR`)
+  continua separado e com chave própria. A falha de qualquer parte da retenção
+  nunca derruba a resposta da pesquisa, o cálculo de saúde nem o tick de SLA.
+
 ## Operação
 
 - O ciclo percorre, por workspace com CRM ligado, até 500 negócios e 300 empresas por rodada, das nunca calculadas para as mais antigas; uma base maior é coberta em rodadas sucessivas.

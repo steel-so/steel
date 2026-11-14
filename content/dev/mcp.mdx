@@ -186,6 +186,8 @@ Autopilot do assistente do Steel. Desligado, a conexão continua só leitura, e
 uma ferramenta de escrita chamada mesmo assim responde como desconhecida
 (`-32602`).
 
+![Cartão Recursos do Steel AI em Ajustes, Steel IA, com o interruptor Permitir escrita via MCP desligado, que é o padrão](/docs/dev/mcp-permitir-escrita.webp)
+
 - **Ações internas** (criar tarefa, registrar nota, mover etapa, atribuir)
   executam na hora, com o usuário que conectou, e voltam
   `status: "executed"` com `actionId`, `target` e o `href` do registro.
@@ -278,6 +280,34 @@ Atenção, Informativo), `title`, `body`, `facts` (rótulo e valor) e `href`
 (caminho no app, com o slug). O mesmo conteúdo está em
 `GET /api/workspaces/{id}/ai/insights`.
 
+### Wiki, Documentos e modelos do WhatsApp
+
+Três grupos de ferramentas chegaram ao assistente e ao MCP. Todas rodam com o
+usuário da conexão, pelos mesmos serviços do aplicativo, então valem as mesmas
+permissões e travas.
+
+| Ferramenta | Tipo | O que faz |
+| --- | --- | --- |
+| `wiki_pages_list` | Leitura | Lista as páginas da Wiki (título, página-mãe, se está publicada, última edição); `query` filtra pelo título |
+| `wiki_page_get` | Leitura | Lê uma página: título e texto simples, cortado em cerca de 8 mil caracteres, com o `href` |
+| `wiki_page_create` | Escrita interna | Cria uma página com `title`, `parentId` e `text` (uma linha por parágrafo). Nasce interna, sem link público |
+| `documents_list` | Leitura | Lista os documentos de CRM > Documentos (qualquer tipo e status) com total, validade, visualizações e vínculos; `templates: true` lista os modelos |
+| `document_get` | Leitura | Detalha um documento: tipo, status, vínculos, destinatários (nome e papel, sem contato), aceite ou recusa. Não devolve o conteúdo |
+| `document_create` | Escrita interna | Cria um **rascunho** (`title`, `kind`, `templateId` e vínculos opcionais). Nada é enviado; o conteúdo e o envio são feitos no aplicativo, pelo `href` devolvido |
+| `zap_template_send` | Escrita com cliente final | Envia um **modelo aprovado pela Meta** numa conversa aberta, a forma de falar com o cliente fora da janela de 24 horas |
+
+- As da Wiki dependem de a Wiki estar ligada no workspace e respeitam página
+  bloqueada e arquivada. As de Documentos exigem o módulo CRM.
+- `zap_template_send` recebe `conversationId`, `templateName` (de
+  `zap_templates_list`) e, se o modelo tiver variáveis, `bodyVariables` e
+  `headerVariables` na ordem. Como entrega algo a um cliente final, **não
+  executa pela chamada**: volta `pending_confirmation` com um `confirmUrl`
+  (veja [Escrita, confirmação e idempotência](/dev/mcp/escrita)). Recusa
+  conversa encerrada, conversa sob resposta automática da IA, contato que pediu
+  descadastro (LGPD) e modelo que não está aprovado.
+- Para perguntas do tipo "como fazemos...", prefira `steel_search`, que
+  consulta Wiki, base de conhecimento e as demais fontes de uma vez.
+
 ### Quando há muitas ferramentas
 
 Se o acesso concedido expõe mais de 40 ferramentas, o `tools/list` vem enxuto:
@@ -293,6 +323,12 @@ ferramentas extras:
 
 Uma ferramenta fora da lista também pode ser chamada direto pelo nome em
 `tools/call`. Ocultar muda só a lista, nunca o que o acesso permite.
+
+No assistente do Steel (dentro do aplicativo) vale uma regra parecida para
+as ferramentas de plataforma **sob demanda**, como as da Wiki: elas não entram
+em toda rodada, para sobrar espaço às ferramentas dos módulos. Entram quando a
+mensagem fala do assunto, quando foram usadas há pouco ou quando o
+`steel_find_tools` as encontra.
 
 ## Resources e prompts
 

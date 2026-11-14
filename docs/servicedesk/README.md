@@ -320,6 +320,114 @@ descadastro respeitados; sem modelo, só com texto livre se o catálogo o
 liga (não liga). Variáveis de modelo: `code`, `title`, `headline`,
 `message`, `requester`.
 
+## Integração com CRM e WhatsApp (ondas ux2 e ux1)
+
+Contratos de como o ServiceDesk conversa com os outros módulos. Nenhum deles
+é obrigatório: com o CRM ou a Comunicação desligados, os campos ficam nulos e
+o módulo funciona como antes.
+
+### Cadastro único (ADR 0066)
+
+`SdCustomer.crmCompanyId` e `SdContact.crmPersonId` ligam o cliente e o contato
+do ServiceDesk ao cadastro do CRM (FK opcional, `ON DELETE SET NULL`);
+`WhatsAppContact.crmPersonId` faz o mesmo para o zap. Migração
+`20261113150000_cadastro_unico`: cria as colunas e **preenche** só o que é
+inequívoco (cliente por CNPJ de 14 dígitos; contato por e-mail e depois por
+chave de telefone). Casamento ambíguo não grava nada.
+
+- `CustomerLinkService` (`src/services/customer-link.service.ts`) é o único
+  resolvedor. `resolve` devolve empresa, pessoa e cadastros dos três módulos,
+  cada um com `origin`: `link` (FK gravada) ou `fallback` (casamento por
+  texto). O vínculo gravado sempre vence.
+- Rotas (`app/api/workspaces/[id]/crm/customer-links/`):
+  `GET suggestions?kind&id` (vínculo atual e candidatos, cada um com o motivo
+  em pt-BR), `GET resolve?companyId|personId|sdCustomerId|cnpj|phone`,
+  `POST` `{ kind, id, targetId }` e `DELETE ?kind&id`. `kind` é
+  `sd-customer | sd-contact | whatsapp-contact`. Vincular exige edição no CRM
+  e acesso de agente ao módulo de origem; o `resolve` só devolve as partes
+  que o usuário pode ver. Toda alteração é auditada (`customer_link`).
+- UI: painel **Cadastro no CRM** (`CustomerLinkPanel`) nas telas de cliente e
+  de contato do ServiceDesk, com "Vincular" e "Desvincular". Desvincular não
+  impede o casamento por texto se CNPJ, e-mail ou telefone ainda coincidem.
+  O painel do contato do WhatsApp existe como componente, mas **não está
+  montado** na tela de contatos do zap.
+- Os DTOs de cliente e contato da API v1 **não** expõem `crmCompanyId` nem
+  `crmPersonId`: o vínculo é gerido só pelo aplicativo.
+
+### Visão 360 e o cartão do CRM no chamado
+
+`GET /api/workspaces/{id}/customer-360?personId|companyId|phone|ticketId|conversationId`
+(`Customer360Service`, `types/customer-360.d.ts`) devolve num só pedido:
+`match` (como achou: `person`, `company`, `phone`, `email`, `cnpj`, `name` ou
+`none`), `available` (`crm`, `servicedesk`, `whatsapp`: o que o usuário pode
+ver), pessoa, empresa (com ARR e dono da conta), saúde, oportunidades, leads
+abertos, chamados (com SLA e CSAT), `openTickets`, conversas, ligações e
+documentos. A rota exige CRM com `people` VIEW; o bloco de um módulo
+desligado ou sem permissão vem vazio e `available` diz por quê, sem derrubar a
+resposta. `POST customer-360/whatsapp` (`personId | companyId | opportunityId`,
+`phone` opcional) abre ou reaproveita a conversa do primeiro número válido, na
+conexão padrão de leads; sem telefone responde 422.
+
+Três telas usam o mesmo dado: a seção **Visão 360** da pessoa e da empresa no
+CRM, o cartão **Cliente no CRM** na lateral do chamado (dono da conta, ARR,
+saúde e até 3 negócios abertos) e o painel de contexto da conversa do zap,
+com os botões de WhatsApp e Ligar.
+
+> Hoje a Visão 360 ainda acha o cliente por **texto** (chave de telefone,
+> CNPJ, e-mail, nome exato, em `Customer360Repository.resolveIdentity`) e não
+> lê os vínculos gravados pelo cadastro único. O ADR 0066 prevê a troca; até
+> lá, desvincular no painel não muda o que a Visão 360 mostra.
+
+### Ações entre motores (`CrossEngineActions`)
+
+`src/services/cross-engine-actions.service.ts` é chamado pelo workflow do CRM,
+pela automação do ServiceDesk e pelo chatbot do zap. Cada ação confere se o
+módulo de destino está ligado, grava como sistema (sem ator humano, com a
+origem na auditoria) e **nunca lança**: o que não deve acontecer vira
+`skipped` com motivo em pt-BR, e o fluxo de origem segue.
+
+| Motor | Ações novas |
+| --- | --- |
+| ServiceDesk (regra de automação) | `send_whatsapp_template` (conexão, modelo, `variables` entre `code`, `title`, `requester`, `phase`, ou `text`), `create_crm_task` (título e descrição com `{{code}}`, `{{title}}`, `{{requester}}`, `{{phase}}`; responsável e prazo em minutos opcionais) e `create_crm_lead` (`origin`, padrão `ServiceDesk`) |
+| CRM (workflow) | nós `send-whatsapp-template` e `create-ticket` |
+| Zap (chatbot) | blocos `create-lead` e `open-ticket` ([chatbot](../whatsapp-chatbot.md)) |
+
+Regras do envio de WhatsApp (`decideCrossEngineSend`): o descadastro LGPD
+sempre vale, e descadastro que não pôde ser lido também bloqueia. Na Meta, modelo
+aprovado vai a qualquer hora e texto livre só dentro da janela de 24 h; na
+Z-API não há modelo nem janela, só texto. Sem destino possível a ação vira
+`skipped` (`opted_out`, `opt_out_unverified`, `no_message`,
+`template_unavailable`, `window_closed`). Na automação do ServiceDesk o
+resultado aparece na linha do tempo do chamado: `automation.skipped` (com o
+motivo), `crm_task.created`, `crm_lead.created` ou `crm_lead.reused` (o lead é
+deduplicado por telefone ou e-mail). Chamado sem contato com telefone (ou, para
+o lead, sem telefone nem e-mail) pula a ação com `no_phone` ou `no_contact`.
+
+### Avisos ao solicitante por modelo do WhatsApp
+
+`SdSettings.requesterWhatsappTemplates` (migração
+`20261113120000_sd_requester_whatsapp_templates`, JSON, padrão `{}`) liga cada
+evento do catálogo **aberto ao cliente** (audiência `requester` ou `contact`,
+como `ticket.created`) a um modelo aprovado: `{ templateName, language,
+variables }`, com `variables` na ordem de `{{1}}`, `{{2}}`... entre `code`,
+`title`, `headline`, `message` e `requester`. Configura-se em **Configurações do
+ServiceDesk > WhatsApp > Avisos ao solicitante** ou por
+`PATCH /api/workspaces/{id}/servicedesk/settings` (administrador; o campo
+**substitui o mapa inteiro**). Evento que não é aberto ao cliente é recusado
+(422); entradas malformadas no JSON são descartadas na leitura. O envio
+(`SdRequesterWhatsapp.deliver`) só vai por modelo `APPROVED` na conexão do
+módulo; texto livre só dentro da janela de 24 h e quando o catálogo liga o
+canal; contato descadastrado nunca recebe; falha do repositório pula o envio
+em vez de arriscar.
+
+### Chamado que quebra o SLA vira tarefa de retenção no CRM
+
+Ao violar o SLA, o monitor (`sd-sla-monitor.service.ts`) chama
+`CrmRetentionService.onSlaBreach`: se o workspace ligou `onSlaBreach` (desligado
+por padrão), abre uma tarefa para o dono da conta da empresa do CRM que casa
+com o cliente do chamado (CNPJ; senão nome exato), uma por chamado. Detalhes e
+os outros gatilhos em [Saúde do cliente](../crm-saude.md#retenção-tarefa-automática-de-follow-up).
+
 ## Painel IA vs. técnico (S9)
 
 Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e

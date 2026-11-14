@@ -171,6 +171,40 @@ OWNER/ADMIN; `WhatsAppSettings`):
   com o tipo certo na Meta e na Z-API (`src/lib/whatsapp/broadcast-media.ts`).
   Áudio não tem legenda: a mensagem segue como texto logo depois.
 
+## Os módulos se falam: cadastro único, Visão 360 e ações entre motores
+
+Desde a onda de 13/11/2026 os três módulos compartilham um cliente sem
+deixarem de funcionar sozinhos (CRM ou Comunicação desligados deixam os campos
+nulos e nada quebra).
+
+- **Cadastro único** ([ADR 0066](../adr/0066-cadastro-unico-entre-crm-servicedesk-e-whatsapp.md)).
+  Três FKs opcionais, `ON DELETE SET NULL`: `SdCustomer.crmCompanyId`,
+  `SdContact.crmPersonId` e `WhatsAppContact.crmPersonId`. O
+  `CustomerLinkService` resolve tudo num lugar (o vínculo gravado vence o
+  casamento por texto) e o usuário corrige em "Cadastro no CRM". Detalhes em
+  [ServiceDesk](../servicedesk/README.md#cadastro-único-adr-0066).
+- **Visão 360**. `GET /api/workspaces/{id}/customer-360` junta CRM, ServiceDesk
+  e WhatsApp num pedido só, respeitando a permissão do usuário em cada
+  módulo. Aparece na pessoa e na empresa do CRM, no cartão "Cliente no CRM" do
+  chamado e no painel de contexto da conversa do zap. Ainda casa por texto.
+- **Chamado a partir da origem**. `SdTicketSourceService` abre um chamado de
+  uma conversa do zap ou de um lead, pessoa ou oportunidade do CRM e liga os
+  dois lados (colunas `crm_lead_id`, `crm_person_id`, `crm_opportunity_id` em
+  `sd_tickets`).
+- **Ações entre motores**. `CrossEngineActions` é o único caminho pelo qual o
+  workflow do CRM, a automação do ServiceDesk e o chatbot do zap enviam
+  WhatsApp, criam chamado, lead ou tarefa em outro módulo, com descadastro LGPD
+  e janela de 24 h aplicados num só lugar.
+- **Retenção**. Detrator de pesquisa, queda de saúde e (opcional) quebra de SLA
+  abrem uma tarefa para o responsável da conta —
+  [Saúde do cliente](../crm-saude.md#retenção-tarefa-automática-de-follow-up).
+- **API e eventos**. Pessoas, empresas, documentos, clientes e contatos do
+  ServiceDesk e artigos da base têm rotas na API v1 e 23 tipos de webhook
+  (`servicedesk.customer.*`, `servicedesk.contact.*`, `servicedesk.kb_article.*`,
+  `crm.person.*`, `crm.company.*`, `crm.document.*`), emitidos por um ponto
+  único (`src/services/webhook-entity-events.ts`), seja a escrita feita pela
+  API, pela tela, por importação ou por automação.
+
 ## Integrações do workspace (Slack, GitHub, GitLab)
 
 Desde a [ADR 0024](../adr/0024-workspace-level-integrations.md) as conexões
@@ -506,3 +540,9 @@ se verde, `cd.yml` no runner self-hosted do servidor
 build + Trivy + push da imagem → `docker compose pull && up -d` em
 `/var/www/steel` → tag CalVer + GitHub Release
 ([ADR 0003](../adr/0003-calver-versioning.md)) → aviso no Slack.
+
+Quando várias fatias são construídas em paralelo, cada uma tem a sua branch
+`feat/<fatia>` e um PR menor, mas o CI roda **só** num PR de junção
+(`integration/<leva>` → `main`): as fatias entram nela assim que terminam e os
+PRs menores são fechados ([ADR 0067](../adr/0067-branch-unica-de-juncao-para-fatias-em-paralelo.md),
+que refina o [ADR 0010](../adr/0010-short-lived-prs-for-parallel-slices.md)).

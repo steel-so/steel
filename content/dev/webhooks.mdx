@@ -135,6 +135,8 @@ workspace: um `POST` JSON assinado com HMAC-SHA256, a cada evento que a URL
 assina. O dono ou um administrador cadastra a URL em **Ajustes ›
 Webhooks**, escolhe os eventos e recebe um segredo de assinatura (`whsec_...`).
 
+![Janela Novo webhook em Ajustes, Webhooks, com o campo da URL, a opção Todos os eventos e a lista de eventos por módulo, incluindo os de cliente, contato e artigo da base do ServiceDesk](/docs/dev/webhooks-novo-endpoint-eventos.webp)
+
 | Para | Veja |
 | --- | --- |
 | Cadastrar, conferir a assinatura (Node, Python, PHP), tratar repetições, tentativas, desativação, log e teste local | [Receber os webhooks do Steel](/dev/webhooks/receber) |
@@ -145,8 +147,11 @@ O essencial:
 
 - **Eventos:** chamados (aberto, alterado, atribuído, mensagem, resolvido,
   reaberto, escalonado, CSAT, SLA em risco e violado, aprovações), CRM (lead
-  criado, oportunidade mudou de etapa, negócio ganho e perdido), mensagem de
-  WhatsApp recebida e aprovações dos Steel Agents. `*` assina todos.
+  criado, oportunidade mudou de etapa, negócio ganho e perdido), cadastros
+  (pessoas, empresas e documentos do CRM; clientes, contatos e artigos da base
+  do ServiceDesk: criado, alterado e excluído, mais publicado e enviado/aceito/
+  recusado onde se aplica), mensagem de WhatsApp recebida e aprovações dos Steel
+  Agents. `*` assina todos.
 - **Cabeçalhos:** `Steel-Webhook-Id` (o id do evento, igual em todas as
   tentativas), `Steel-Webhook-Timestamp` e `Steel-Signature: v1=<hex>`.
 - **Entrega:** só `2xx` em até 10 segundos confirma. Até 6 tentativas, com 1,
