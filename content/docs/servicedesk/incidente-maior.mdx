@@ -110,3 +110,10 @@ muda o estado geral da página.
   já confirmado: inclua apenas contatos que aceitaram receber os avisos. O envio
   usa a conexão de WhatsApp do ServiceDesk; sem ela, os avisos por WhatsApp
   são contados como falha.
+- **Quem pediu para sair não recebe.** Se o número respondeu `SAIR`, `PARAR`,
+  `STOP` ou `DESCADASTRAR` em alguma conversa do workspace, ele é pulado, tanto
+  nos avisos de incidente quanto nos de manutenção, e não conta como enviado
+  nem como falha. O mesmo vale quando o Steel não consegue confirmar a situação
+  do número. O assinante continua na lista, e o e-mail não é afetado. Para
+  reinscrever o contato, veja
+  [Descadastro e reinscrição](/docs/comunicacao/contatos-e-grupos#descadastro-e-reinscrição).

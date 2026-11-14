@@ -155,6 +155,22 @@ chamado, fechar lead como ganho); falso para o que só acrescenta (criar,
 vincular, nota) e para mudança de estado que outra ferramenta desfaz
 (atribuir, mover etapa, encerrar ou reabrir conversa).
 
+### Ferramentas de Wiki, documentos e modelo (ux2)
+
+`wiki_pages_list`, `wiki_page_get` e `wiki_page_create` (`src/lib/ai/tools/wiki.ts`,
+`module: null`, `onDemand: true`): chamam `WikiPageService` com o usuário do
+grant (Wiki ligada, bloqueios e arquivadas valem); a página criada nasce interna,
+sem link público. `documents_list`, `document_get` e `document_create`
+(`tools/documents.ts`, módulo `CRM`): o documento nasce em rascunho; enviar
+documento a cliente **não** é ferramenta. `zap_template_send`
+(`tools/whatsapp/messages.ts`, `COMMUNICATION`, `customerFacing`): modelo
+aprovado numa conversa aberta; recusa conversa encerrada, sob resposta
+automática da IA, contato descadastrado e modelo não aprovado. Pelo MCP vira
+pendência com `confirmUrl`; as de criar executam na hora (e ficam no log de
+ações). `onDemand` significa que a ferramenta fica de fora do `tools/list`
+curto e das rodadas do assistente até a mensagem citar o tema, ela ter sido
+usada ou `steel_find_tools` achá-la (`selection.ts`).
+
 `validateToolRegistry` recusa (e o app não sobe): leitura destrutiva ou
 `customerFacing`; escrita sem `destructiveHint` declarado; `DELETE` não
 destrutiva; `CREATE` destrutiva; `customerFacing` sem `openWorldHint: true`;

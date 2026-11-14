@@ -320,6 +320,50 @@ descadastro respeitados; sem modelo, só com texto livre se o catálogo o
 liga (não liga). Variáveis de modelo: `code`, `title`, `headline`,
 `message`, `requester`.
 
+## Cadastro único e "Cliente no CRM" (ux2, ADR 0066)
+
+- **Vínculos opcionais** (`ON DELETE SET NULL`): `SdCustomer.crmCompanyId`,
+  `SdContact.crmPersonId` e `WhatsAppContact.crmPersonId`. Sem CRM, ficam nulos.
+  O `CustomerLinkService` (`src/services/customer-link.service.ts`) resolve:
+  o vínculo gravado (`origin: link`) vence o casamento por texto
+  (`fallback`: CNPJ, nome exato, e-mail, chave de telefone DDD + 8 dígitos).
+- **Painel "Cadastro no CRM"** (`app/_components/customer-link/customer-link-panel.tsx`)
+  na aba Dados da ficha do cliente e do contato: vínculo atual, sugestões com
+  motivo (`Mesmo CNPJ`, `Mesmo nome`, `Mesmo e-mail`, `Mesmo telefone`),
+  Vincular e Desvincular (com confirmação). Some para quem não vê o CRM
+  (403/404). Rotas em `app/api/workspaces/[id]/crm/customer-links/`. Desvincular
+  não impede o `fallback`. O painel do contato do WhatsApp existe
+  (`kind="whatsapp-contact"`) mas ainda não está montado em nenhuma tela do zap.
+- **Cartão "Cliente no CRM"** na lateral do chamado (`CrmCustomerSection` em
+  `sd-ticket-sidebar.tsx`, corpo em `customer-360/ticket-crm-card.tsx`): dono da
+  conta, ARR, saúde, contato e até 3 oportunidades abertas, a partir da Visão
+  360. Não renderiza sem CRM, sem permissão ou sem cadastro correspondente.
+
+## Ações entre motores nas automações (ux2)
+
+Ações novas em `SdAutomationAction` (`src/services/sd-automation-engine.ts`,
+executadas por `crossEngine()`): `send_whatsapp_template`, `create_crm_task` e
+`create_crm_lead`. O destinatário é o contato do chamado
+(`CrossEngineWhatsappRepository.ticketRecipient`). Regras de envio em
+`src/lib/whatsapp/cross-engine-send.ts`: descadastro (e descadastro não
+verificado) sempre bloqueia; Meta envia modelo aprovado a qualquer hora e texto
+só com a janela de 24 h aberta; Z-API só texto. Quando a etapa não pode rodar
+(`no_phone`, `no_contact`, motivos de `CrossEngineSkipReason`), `skipRecord`
+grava o evento `automation.skipped` (`toValue` = mensagem em pt-BR, `meta` com
+`ruleId`, `action`, `reason`) e a regra segue. `create_crm_task` grava
+`crm_task.created`; `create_crm_lead` grava `crm_lead.created` ou
+`crm_lead.reused`. Obs.: `sd-ticket-events.ts` ainda mostra `automation.skipped`
+como "automação aplicada" (sem o motivo) na aba Rastreabilidade.
+
+## Tarefa de retenção por SLA violado (ux2)
+
+`CrmRetentionService.onSlaBreach` é chamado pelo monitor de SLA
+(`sd-sla-monitor.service.ts`, via `runRetentionSafely`, nunca falha o tick).
+Desligado por padrão (`onSlaBreach` nas configurações de retenção do CRM). Acha a
+empresa do CRM por CNPJ e, sem CNPJ, por nome exato (`findCompanyByIdentity`; não
+usa o vínculo do cadastro único), uma tarefa por chamado (`dedupeKey sla:<id>`),
+para o dono da conta, com prazo `taskDueDays`.
+
 ## Painel IA vs. técnico (S9)
 
 Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e
@@ -930,7 +974,10 @@ serviço. Manual do usuário: `content/docs/servicedesk/incidente-maior.mdx`.
   fila `servicedesk-mail`. O worker reivindica a atualização (`notifiedAt`)
   antes de enviar: no máximo uma vez, sem reenvio em retry. E-mail pelo Resend e
   WhatsApp pela conexão do ServiceDesk (texto livre; fora da janela de 24 h a
-  Meta pode recusar e o envio conta como falha).
+  Meta pode recusar e o envio conta como falha). Antes de cada envio por
+  WhatsApp, `checkWhatsAppOptOut` (`whatsapp-opt-out.ts`): número descadastrado
+  (ou cuja leitura falhou) é pulado, sem contar como enviado nem como falha;
+  vale também para as manutenções (`sd-status-maintenance-notify.service.ts`).
 - **Página pública**: `/status-page/<slug>` e `/api/status-page/**`, sem sessão
   (`proxy.ts`); `status-page` é slug reservado de workspace. Inscrição só por
   e-mail, com confirmação em duas etapas; confirmar e cancelar são POST (o

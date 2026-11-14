@@ -31,6 +31,62 @@ com o motivo.
 - Contatos: nome, cargo, e-mail, telefone, WhatsApp, observações e
   `documento_cliente` (o CPF/CNPJ do cliente a que o contato pertence).
 
+## Cadastro único com o CRM
+
+O mesmo cliente costuma existir em três lugares: no ServiceDesk (cliente e
+contato), no CRM (empresa e pessoa) e na Comunicação (contato do WhatsApp). O
+**cadastro único** liga esses registros de forma **opcional**, sem juntar nem
+apagar nada:
+
+| No ServiceDesk | Liga-se a |
+| --- | --- |
+| Cliente (empresa) | **Empresa** do CRM |
+| Contato | **Pessoa** do CRM |
+
+Com o CRM desligado, o vínculo simplesmente não aparece e tudo funciona como
+antes.
+
+### O painel Cadastro no CRM
+
+Na ficha de um **cliente** ou de um **contato** (aba **Dados**), o painel
+**Cadastro no CRM** mostra com qual empresa ou pessoa do CRM o registro está
+ligado:
+
+- **Sem vínculo**: o painel lista **Sugestões** com o motivo de cada uma
+  (*Mesmo CNPJ*, *Mesmo nome*, *Mesmo e-mail* ou *Mesmo telefone*). Clique em
+  **Vincular** na certa.
+- **Com vínculo**: aparece o nome do cadastro do CRM e o botão
+  **Desvincular**, que pede confirmação. Outras opções continuam listadas.
+
+![Painel Cadastro no CRM na ficha de um cliente, sem vínculo, com a sugestão Mesmo CNPJ e o botão Vincular](/docs/servicedesk/sd-cadastro-crm-sugestao.webp)
+
+![Painel Cadastro no CRM depois de vincular, com o nome da empresa do CRM e o botão Desvincular](/docs/servicedesk/sd-cadastro-crm-vinculado.webp)
+
+Na ficha de um contato o painel funciona igual, com a pessoa do CRM como alvo:
+
+![Painel Cadastro no CRM na ficha de um contato, com a sugestão Mesmo telefone e o botão Vincular](/docs/servicedesk/sd-cadastro-crm-contato.webp)
+
+O painel só aparece para quem pode ver o CRM. Para vincular ou desvincular é
+preciso poder editar empresas ou pessoas no CRM e ser agente do ServiceDesk, e
+toda alteração fica na auditoria.
+
+### Quando não há vínculo
+
+Quem nunca foi vinculado continua sendo relacionado pelos dados: o **CNPJ** (para
+empresas), o **telefone** e o **e-mail** (para pessoas). O vínculo gravado
+sempre tem prioridade sobre esse casamento automático.
+
+- Na atualização que trouxe o cadastro único, o Steel preencheu sozinho só os vínculos **inequívocos**
+  (CNPJ de 14 dígitos, e-mail ou telefone que casam com um único cadastro).
+  Quando mais de um cadastro do CRM serve, nada é gravado: a dúvida vira
+  sugestão no painel.
+- **Desvincular não impede o casamento automático.** Se o CNPJ, o e-mail ou o
+  telefone ainda coincidem, os dois cadastros voltam a ser relacionados nas telas
+  que usam o casamento (por exemplo, o cartão
+  [Cliente no CRM](/docs/servicedesk/chamados#cliente-no-crm) do chamado). O
+  próprio aviso de confirmação lembra disso. Para separar de verdade, ajuste o
+  dado que coincide.
+
 ## Itens de configuração (CMDB)
 
 Em **Itens de configuração** ficam os equipamentos, sistemas e serviços que
