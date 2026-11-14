@@ -98,6 +98,11 @@ const ACTIVITY_TITLES: Record<string, string> = {
   'approval.rejected': 'reprovou',
   'approval.responded': 'respondeu a aprovação',
   'signature.created': 'coletou a assinatura',
+  'crm_task.created': 'criou uma tarefa no CRM',
+  'crm_lead.created': 'criou um lead no CRM',
+  'crm_lead.reused': 'reaproveitou um lead do CRM',
+  'whatsapp.linked': 'vinculou a conversa do WhatsApp',
+  'crm.linked': 'vinculou o chamado ao CRM',
   'kb.linked': 'vinculou um artigo',
   'kb.unlinked': 'desvinculou um artigo',
   'time.started': 'iniciou o cronômetro',
@@ -184,6 +189,16 @@ export function sdDescribeEvent(event: SdTicketEventDTO): SdEventDescription {
   }
   if (action.startsWith('automation.')) {
     const rule = meta(event, 'ruleName') ?? meta(event, 'rule')
+    const ruleName = typeof rule === 'string' ? rule : null
+    if (action === 'automation.skipped') {
+      // `to` carries the pt-BR reason (e.g. the contact has no phone).
+      return {
+        ...base,
+        kind: 'system',
+        title: 'automação pulou uma etapa',
+        detail: [ruleName, to].filter(Boolean).join(': ') || null,
+      }
+    }
     return {
       ...base,
       kind: 'system',
@@ -191,13 +206,13 @@ export function sdDescribeEvent(event: SdTicketEventDTO): SdEventDescription {
         action === 'automation.failed'
           ? 'automação falhou'
           : 'automação aplicada',
-      detail: typeof rule === 'string' ? rule : null,
+      detail: ruleName,
     }
   }
   const activity = ACTIVITY_TITLES[action]
   if (
     activity ||
-    /^(message|note|task|cost|part|attachment|approval|signature|kb|whatsapp)\./.test(
+    /^(message|note|task|cost|part|attachment|approval|signature|kb|whatsapp|crm_task|crm_lead|crm)[._]/.test(
       action,
     )
   ) {
