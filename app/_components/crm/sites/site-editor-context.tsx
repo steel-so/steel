@@ -32,6 +32,11 @@ export interface SiteEditorContextValue {
   api: CrmSitesApi
   /** Switches the canvas to a page/global (after saving the current one). */
   open: (target: SiteEditorTarget) => Promise<void>
+  /** Remembers a block to select once the next opened document mounts
+   * (the canvas remounts per target, so the caller cannot do it). */
+  queueSelection: (nodeId: string) => void
+  /** Returns and clears the block queued by `queueSelection`. */
+  takeSelection: () => string | null
   setTheme: (theme: SiteTheme) => void
   /** Saves pending theme edits now (before publishing). */
   flushTheme: () => Promise<boolean>

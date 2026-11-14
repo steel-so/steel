@@ -35,6 +35,7 @@ import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { SiteChangeItem, SiteChangesDTO } from '@/types/site-studio'
 import { ExperimentPublishNotice } from './experiments/publish-notice'
 import { useSiteEditor } from './site-editor-context'
+import { revealNode } from './reveal-node'
 import { useOpenTarget } from './use-open-target'
 
 type Phase =
@@ -141,9 +142,18 @@ export function PublishDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { site, api, flushTheme, setSite, workspaceId, globals } =
-    useSiteEditor()
-  const { save } = useCanvasEditor()
+  const {
+    site,
+    api,
+    flushTheme,
+    setSite,
+    workspaceId,
+    globals,
+    target,
+    queueSelection,
+    takeSelection,
+  } = useSiteEditor()
+  const { save, store, frame } = useCanvasEditor()
   const openTarget = useOpenTarget()
   const queryClient = useQueryClient()
   const [phase, setPhase] = useState<Phase>({ step: 'loading' })
@@ -162,13 +172,19 @@ export function PublishDialog({
   const blocked = checks.some((item) => item.level === 'error')
 
   async function openCheck(item: PublishCheckItem) {
-    const id = item.documentId
+    // A block-only item refers to the page being edited.
+    const id = item.documentId ?? (item.nodeId ? target.id : undefined)
     if (!id) return
+    const kind = globals.some((global) => global.id === id) ? 'global' : 'page'
+    const sameDocument = kind === target.kind && id === target.id
     onOpenChange(false)
-    await openTarget({
-      kind: globals.some((global) => global.id === id) ? 'global' : 'page',
-      id,
-    })
+    // The canvas remounts on the target page (taking this dialog with it):
+    // the editor applies the queued selection once the new document is up.
+    if (item.nodeId && !sameDocument) queueSelection(item.nodeId)
+    const opened = await openTarget({ kind, id })
+    if (!item.nodeId) return
+    if (!opened) takeSelection()
+    else if (sameDocument) revealNode(store, frame, item.nodeId)
   }
 
   useEffect(() => {

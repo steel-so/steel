@@ -574,6 +574,7 @@ export function SiteEditor({
     initialPageId ? { kind: 'page', id: initialPageId } : null,
   )
   const [epoch, setEpoch] = useState(0)
+  const pendingSelection = useRef<string | null>(null)
   const lastPageId = useRef<string | null>(initialPageId ?? null)
   if (target?.kind === 'page') lastPageId.current = target.id
   const [theme, setThemeState] = useState<SiteTheme | null>(null)
@@ -664,6 +665,14 @@ export function SiteEditor({
       open: async (next) => {
         if (next.kind === target.kind && next.id === target.id) return
         setTarget(next)
+      },
+      queueSelection: (nodeId) => {
+        pendingSelection.current = nodeId
+      },
+      takeSelection: () => {
+        const nodeId = pendingSelection.current
+        pendingSelection.current = null
+        return nodeId
       },
       setTheme: (next) => {
         setThemeState(next)
