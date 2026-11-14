@@ -12,14 +12,14 @@ import { SaveStatus } from '../save-status'
 describe('SaveStatus', () => {
   it('renders nothing when idle', () => {
     const { container } = render(<SaveStatus status='idle' />)
-    expect(container).toBeEmptyDOMElement()
+    expect(container.innerHTML).toBe('')
   })
 
   it('shows saving and saved labels', () => {
     const { rerender } = render(<SaveStatus status='saving' />)
-    expect(screen.getByText('Salvando…')).toBeInTheDocument()
+    expect(screen.getByText('Salvando…')).toBeTruthy()
     rerender(<SaveStatus status='saved' />)
-    expect(screen.getByText('Salvo')).toBeInTheDocument()
+    expect(screen.getByText('Salvo')).toBeTruthy()
   })
 
   it('offers a retry on error', () => {

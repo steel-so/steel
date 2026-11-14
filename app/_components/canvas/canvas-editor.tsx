@@ -40,7 +40,7 @@ import { useCompactLayout } from './lib/use-compact-layout'
 import { CanvasSidebar } from './sidebar/sidebar'
 import { CanvasTopBar } from './top-bar'
 import type { CanvasEditorProps } from './types'
-import { CanvasStoreProvider } from './use-canvas'
+import { CanvasStoreProvider, useCanvasStore } from './use-canvas'
 import { useCanvasShortcuts } from './use-shortcuts'
 
 /** Autosave delay after the last change. */

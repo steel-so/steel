@@ -18,6 +18,7 @@ export function createFakeSdContact(
     userId: null,
     notes: null,
     customFields: {},
+    crmPersonId: null,
     active: true,
     createdById: createId(),
     createdAt: now,

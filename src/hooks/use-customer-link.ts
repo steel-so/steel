@@ -42,7 +42,7 @@ export function useChangeCustomerLink(
   return useMutation({
     mutationFn: (targetId: string | null) =>
       targetId
-        ? apiFetch<{ linked: true }>(
+        ? apiFetch<{ linked: boolean }>(
             base(workspaceId),
             {
               method: 'POST',
@@ -51,7 +51,7 @@ export function useChangeCustomerLink(
             },
             'Não foi possível vincular ao CRM',
           )
-        : apiFetch<{ linked: false }>(
+        : apiFetch<{ linked: boolean }>(
             `${base(workspaceId)}?kind=${kind}&id=${encodeURIComponent(id)}`,
             { method: 'DELETE' },
             'Não foi possível desfazer o vínculo',
