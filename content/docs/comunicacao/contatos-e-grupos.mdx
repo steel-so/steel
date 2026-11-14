@@ -99,7 +99,9 @@ não existe (a Meta não oferece essa consulta), então nada é consultado nela.
 ### Descadastro e reinscrição
 
 Um contato sai das transmissões quando manda **SAIR**, **PARAR**, **STOP** ou
-**DESCADASTRAR** (veja [Transmissões](/docs/comunicacao/transmissoes)).
+**DESCADASTRAR** (veja [Transmissões](/docs/comunicacao/transmissoes)). O
+descadastro vale também para as campanhas do CRM, os avisos de chamados e os
+demais envios automáticos por WhatsApp.
 
 <Callout type='admin'>
   O dono e os administradores também podem **Descadastrar das transmissões** um
@@ -117,7 +119,13 @@ lista. Veja como bloquear e desbloquear em
 
 ## Grupos
 
-Os grupos funcionam com conexões **Z-API**.
+Os grupos funcionam **só com um número conectado pela Z-API**: a API oficial da
+Meta não tem grupos. Em **Grupos**, a lista mostra os grupos dos números Z-API
+conectados. Sem nenhum número Z-API, a tela explica isso (*"Grupos só funcionam
+com um número conectado pela Z-API"*) e oferece **Abrir conexões**; com a Z-API
+conectada e nenhum grupo ainda, o aviso é *"Nenhum grupo ainda"*, e o botão
+**+** cria o primeiro. Veja como conectar em
+[Conexões](/docs/comunicacao/conexoes).
 
 - **Novo grupo**: escolha a conexão, o nome e os participantes.
 - No grupo, mande mensagens e mencione participantes com <Kbd>@</Kbd>.

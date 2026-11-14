@@ -1,20 +1,53 @@
 ---
 title: Conexões (Meta e Z-API)
-description: Como conectar um número de WhatsApp pela Meta Cloud API ou pela Z-API, incluindo o Client-Token e o QR Code.
+description: Como conectar um número de WhatsApp pela Meta Cloud API ou pela Z-API, testar a conexão, ler o QR Code e entender a situação de cada número.
 section: comunicacao
 order: 1
 ---
 
 <Callout type='admin'>
-  Conexões são criadas, editadas e removidas pelo dono e pelos administradores,
-  em **Comunicação › Configurações › Conexões**.
+  Conexões são criadas, testadas e removidas pelo dono e pelos administradores,
+  em **Ajustes › WhatsApp**. Quem está em **Comunicação › Configurações** chega
+  ao mesmo lugar por **Conexões do WhatsApp**. Os demais membros veem a tela,
+  mas só administradores conectam ou removem números.
 </Callout>
 
-Clique em **Adicionar conexão**. Em todos os casos, informe:
+![Tela Ajustes › WhatsApp com quatro cartões de conexão (Z-API e Meta), cada um com situação e botões como QR Code, Testar conexão, Atualizar status e Limite de gasto](/docs/comunicacao/conexoes-lista.webp)
 
-- **Provedor**: Z-API ou Meta Cloud API.
-- **Nome**: para a equipe reconhecer o número (ex.: Suporte, Vendas).
-- **Número**: com DDI e DDD, só números.
+## Meta ou Z-API: qual escolher
+
+Clique em **Adicionar conexão**. A janela **Nova conexão do WhatsApp** compara
+os dois caminhos:
+
+![Janela Nova conexão do WhatsApp com os cartões Meta (API oficial), marcado como Recomendado, e Z-API (QR Code), cada um com três pontos de comparação](/docs/comunicacao/nova-conexao-meta-zapi.webp)
+
+| | **Meta (API oficial)** | **Z-API (QR Code)** |
+| --- | --- | --- |
+| Como conecta | Pelas credenciais da sua conta do WhatsApp Business | Lendo um QR Code, como no WhatsApp Web |
+| Risco | Número oficial, sem risco de bloqueio | Não é oficial: há risco de o número ser bloqueado |
+| Texto livre | Só até 24 horas depois da última mensagem do cliente; depois disso, só [template](/docs/comunicacao/templates) aprovado | A qualquer momento, sem templates |
+| Templates e envio em massa | Sim | Não usa templates |
+| Grupos | Não | Sim ([Contatos e grupos](/docs/comunicacao/contatos-e-grupos#grupos)) |
+
+Em todos os casos informe o **Nome** (para a equipe reconhecer o número, como
+Suporte ou Vendas) e o **Número**, com DDD.
+
+## Meta Cloud API
+
+O caminho mais simples é o botão **Conectar com a Meta**, na tela de conexões:
+você entra na sua conta da Meta e o Steel configura o número sozinho. Em
+**Adicionar conexão**, a opção **Avançado: informar os dados manualmente** pede:
+
+- **Phone Number ID**.
+- **WhatsApp Business Account ID**.
+- **Access Token**.
+
+Ao salvar, o Steel confere o número na Meta. Se a Meta recusar (token inválido,
+por exemplo), a conexão fica **Com problema** e o cartão mostra o motivo em
+vermelho. Não há QR Code na Meta.
+
+Para atender um número que já está no aplicativo WhatsApp Business, veja
+[Coexistência](/docs/comunicacao/coexistencia).
 
 ## Z-API
 
@@ -22,22 +55,50 @@ Preencha com os dados do painel da Z-API:
 
 - **ID da instância** e **Token** da instância.
 - **Client-Token**: o token de segurança da conta, que fica no painel da Z-API
-  em **Segurança**. Ele é obrigatório quando a conta exige; sem ele a Z-API
-  recusa as chamadas e o QR Code não aparece.
+  em **Segurança**. É obrigatório quando a conta exige; sem ele a Z-API recusa
+  as chamadas e o QR Code não aparece.
 
 Depois de salvar, clique em **QR Code** no cartão da conexão. No celular, abra o
-WhatsApp, vá em **Aparelhos conectados** e escaneie o código. Ao terminar,
-aparece *"Conectado com sucesso!"*.
+WhatsApp, vá em **Aparelhos conectados** e escaneie o código. O código muda a
+cada poucos segundos e se atualiza sozinho. Ao terminar, aparece *"Conectado com
+sucesso!"*.
 
-## Meta Cloud API
+Se não for possível buscar o QR Code (instância errada, token recusado, Z-API
+fora do ar), a janela mostra o motivo e o botão **Tentar de novo**:
 
-Preencha com os dados da sua conta do WhatsApp Business na Meta:
+![Janela Conectar via QR Code mostrando a mensagem A Z-API recusou a chamada (400) e o botão Tentar de novo](/docs/comunicacao/qr-code-erro-tentar-de-novo.webp)
 
-- **Phone Number ID**.
-- **WhatsApp Business Account ID**.
-- **Access Token**.
+<Callout type='nota'>
+  A janela continua consultando a Z-API a cada poucos segundos enquanto está
+  aberta. Se aparecer *"Muitas tentativas. Tente de novo em N segundos"*, espere
+  esse tempo e clique em **Tentar de novo**. Confira o ID da instância e os
+  tokens antes de insistir.
+</Callout>
 
-Não há QR Code: a conexão é feita pelas credenciais.
+## Situação e testes
+
+O cartão de cada conexão mostra a situação e, quando há, o último erro:
+
+| Situação | Significa |
+| --- | --- |
+| **Conectado** | Enviando e recebendo normalmente |
+| **Conectando** | Ainda não terminou de conectar (na Z-API, leia o QR Code com o celular) |
+| **Desconectado** | O número não recebe nem envia mensagens agora: reconecte |
+| **Com problema** | A conexão falhou; o cartão mostra o motivo |
+
+Para conferir na hora, use o botão do cartão: **Testar conexão** (Z-API) ou
+**Atualizar status** (Meta). Ele consulta o provedor e avisa *"Conexão
+funcionando"* ou o motivo da falha, por exemplo *"A Z-API recusou a chamada
+(400): Instance not found"*.
+
+Quando um número cai (**Desconectado** ou **Com problema**), a Comunicação avisa
+a equipe: a lista de conversas mostra *"O número … está desconectado"*, a
+conversa daquele número mostra uma faixa vermelha e o campo de mensagem fica
+travado até reconectar. Só dono e administradores veem o link **Reconectar**.
+Veja [Conversas](/docs/comunicacao/conversas#aviso-de-número-desconectado).
+
+Nas conexões Meta, o botão **Limite de gasto** define o teto mensal de envios
+pagos do número: veja [Custos](/docs/comunicacao/custos).
 
 ## Recebimento de mensagens
 
@@ -47,11 +108,13 @@ normalmente pela equipe técnica:
 
 | Provedor | Endereço |
 | --- | --- |
-| Z-API | `https://<endereço do Steel>/api/whatsapp/webhook/zapi` |
+| Z-API | `https://<endereço do Steel>/api/whatsapp/webhook/zapi?secret=<segredo da conexão>` |
 | Meta | `https://<endereço do Steel>/api/whatsapp/webhook/meta` |
 
-## Situação e remoção
+Na Z-API, o parâmetro `secret` é o segredo de webhook da conexão: sem ele (ou
+com um valor diferente) o Steel recusa o evento.
 
-O cartão de cada conexão mostra a situação e o último erro, quando houver. Ao
-**Remover conexão**, as conversas antigas continuam no Steel, mas o número para
-de enviar e receber.
+## Remoção
+
+Ao **Remover** uma conexão, o Steel pede confirmação. As conversas e mensagens
+antigas continuam no Steel, mas o número deixa de enviar e receber.

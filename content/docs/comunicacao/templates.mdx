@@ -17,25 +17,56 @@ transmissões por planilha. Só existem em conexões **Meta**.
 ## Sincronizar
 
 Em **Templates**, escolha a conexão Meta e clique em **Sincronizar agora**. A
-tabela mostra nome, categoria, idioma e situação de cada template.
+tabela mostra nome, idioma, categoria, situação e botões de cada template. Sem
+sincronizar, a lista do Steel fica vazia e as conversas mostram *"Nenhum
+template sincronizado"* no seletor.
 
 ## Criar
 
 Clique em **Novo template** e preencha:
 
-- **Nome**, em letras minúsculas com sublinhado (ex.: `lembrete_consulta`).
-- **Categoria**: Marketing, Utilidade (lembretes, confirmações) ou
-  Autenticação.
+- **Conexão Meta**: o número em que o template será criado.
+- **Nome do template**: escreva um título normal, como *Confirmação de exame*. O
+  Steel cria sozinho o identificador que a Meta exige (letras minúsculas, sem
+  acento, com sublinhado: `confirmacao_de_exame`) e mostra *"Identificador na
+  Meta: …"* embaixo do campo.
 - **Idioma**.
-- **Cabeçalho** (opcional), **Corpo da mensagem** e **Rodapé** (opcional). O
-  corpo aceita variáveis como `{{1}}`, cada uma com um valor de exemplo.
-- **Botões** (opcional): resposta rápida, link ou telefone.
+- **Categoria**: Utilidade (lembretes, confirmações), Marketing ou Autenticação.
+  A ajuda embaixo do campo explica cada uma e mostra o custo aproximado por
+  mensagem. Se o texto parecer promoção, a Meta pode trocar a categoria para
+  Marketing.
+- **Cabeçalho** (opcional: texto, imagem, vídeo ou documento), **Corpo da
+  mensagem** e **Rodapé** (opcional). O corpo aceita variáveis como `{{1}}`, e a
+  Meta exige um valor de exemplo para cada uma.
+- **Botões** (opcional, até 2): resposta rápida (com ações ao clicar) ou link.
 
-Clique em **Enviar para aprovação**. A Meta analisa e a situação muda depois da
-sincronização.
+A **Prévia de como o cliente vai receber** acompanha o que você digita.
+
+![Janela Novo template com o título Confirmação de exame, o identificador criado a partir dele, a categoria Utilidade, o corpo com a variável 1 e a prévia da mensagem](/docs/comunicacao/template-novo-nome-pelo-titulo.webp)
+
+Clique em **Enviar para aprovação**. A Meta analisa (costuma levar de minutos a
+algumas horas) e a situação muda depois da sincronização.
+
+## Template rejeitado
+
+Quando a Meta rejeita, a coluna **Status** mostra o motivo, traduzido para o
+português quando o Steel o reconhece: formato das variáveis, texto abusivo ou
+suspeito de golpe, conteúdo que não combina com a categoria. Motivos que o Steel
+não reconhece aparecem como a Meta os escreveu.
+
+Clique em **Corrigir e reenviar** na linha do template rejeitado. A janela abre
+com o conteúdo do template e o título ganha um ` 2` no fim, para o corrigido
+sair com um nome diferente do rejeitado (ele é enviado como um template novo).
+Ajuste o texto conforme o motivo e envie de novo; se preferir outro nome,
+edite o título.
+
+Os mesmos motivos aparecem para a equipe no seletor de templates da conversa
+(*"Rejeitado pela Meta: …"*), para ninguém tentar usar um modelo que não passou.
 
 ## Usar
 
-Na conversa, o botão **Template** lista os templates aprovados. Nas
+Na conversa, o botão **Template** (ou **Escolher modelo**, quando a janela de 24
+horas fechou) lista os templates aprovados: veja
+[Conversas](/docs/comunicacao/conversas#janela-de-24-horas-meta). Nas
 [transmissões por planilha](/docs/comunicacao/transmissoes#importar-planilha-csv),
 o template é obrigatório.

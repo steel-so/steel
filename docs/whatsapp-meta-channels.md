@@ -85,7 +85,7 @@ Esses pontos mudam com frequência; este guia não os fixa.
 
 ### 4. Ligar no Steel
 
-1. **Comunicação › Configurações › Conexões** › cartão *Coexistência*: ligue a
+1. **Ajustes › WhatsApp** (em Comunicação › Configurações, *Conexões do WhatsApp*) › cartão *Coexistência*: ligue a
    chave.
 2. Clique em **Conectar número em uso no aplicativo**; no popup, o cliente confirma
    no celular e escolhe se compartilha o histórico.
