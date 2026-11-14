@@ -82,11 +82,13 @@ export interface CanvasStore {
 
   /** Applies an op and records one undo step. Consecutive `update`s on the
    * same node+paths within 500 ms coalesce into one step (typing, sliders);
-   * pass `coalesce: false` to force a new step. An op that changes nothing
+   * pass `coalesce: false` to force a new step. `gesture` groups the updates
+   * of one drag into a single step however long the pointer rests between
+   * moves (same node and paths, no time limit). An op that changes nothing
    * records no step. Returns false (and sets `lastError`) when refused. */
   dispatch(
     op: CanvasOp,
-    options?: { label?: string; coalesce?: boolean },
+    options?: { label?: string; coalesce?: boolean; gesture?: string },
   ): boolean
   /** Undo/redo write a prop path or meta key back only when it still holds
    * what this user's step left there (compare-and-set): a field someone else
@@ -160,10 +162,11 @@ interface HistoryEntry {
 
 function coalesceKeyOf(
   op: CanvasOp,
-  options?: { coalesce?: boolean },
+  options?: { coalesce?: boolean; gesture?: string },
 ): string | null {
   if (op.kind !== 'update' || options?.coalesce === false) return null
-  return [op.id, ...Object.keys(op.set).sort()].join('\u0000')
+  const key = [op.id, ...Object.keys(op.set).sort()].join('\u0000')
+  return options?.gesture ? `gesture:${options.gesture}\u0000${key}` : key
 }
 
 function sameIds(a: CanvasNodeId[], b: CanvasNodeId[]): boolean {
@@ -247,7 +250,7 @@ export function createCanvasStore(
 
   function dispatch(
     op: CanvasOp,
-    options?: { label?: string; coalesce?: boolean },
+    options?: { label?: string; coalesce?: boolean; gesture?: string },
   ): boolean {
     const result = applyOp(state.doc, op, catalog)
     if (!result.ok) {
@@ -267,7 +270,7 @@ export function createCanvasStore(
       top !== undefined &&
       top === coalesceTarget &&
       top.coalesceKey === key &&
-      now - top.at <= COALESCE_MS
+      (key.startsWith('gesture:') || now - top.at <= COALESCE_MS)
     ) {
       // Same paths: the latest op alone describes the change; the first
       // inverse still restores the values from before the burst.

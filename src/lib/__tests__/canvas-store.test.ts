@@ -187,6 +187,44 @@ describe('coalescing', () => {
     expect(store.getState().doc.nodes.t1.props.text).toBe('Oi!')
   })
 
+  it('keeps one drag in a single step however long the pointer rests', () => {
+    const { store } = setup()
+    store.dispatch(
+      { kind: 'update', id: 't1', set: { text: 'a' } },
+      { gesture: 'drag-1' },
+    )
+    vi.advanceTimersByTime(COALESCE_MS * 4)
+    store.dispatch(
+      { kind: 'update', id: 't1', set: { text: 'ab' } },
+      { gesture: 'drag-1' },
+    )
+    vi.advanceTimersByTime(COALESCE_MS * 4)
+    store.dispatch(
+      { kind: 'update', id: 't1', set: { text: 'abc' } },
+      { gesture: 'drag-1' },
+    )
+    store.undo()
+    expect(store.getState().doc.nodes.t1.props.text).toBe('Olá')
+    expect(store.getState().canUndo).toBe(false)
+    store.redo()
+    expect(store.getState().doc.nodes.t1.props.text).toBe('abc')
+  })
+
+  it('starts a new step for another gesture', () => {
+    const { store } = setup()
+    store.dispatch(
+      { kind: 'update', id: 't1', set: { text: 'a' } },
+      { gesture: 'drag-1' },
+    )
+    store.dispatch(
+      { kind: 'update', id: 't1', set: { text: 'b' } },
+      { gesture: 'drag-2' },
+    )
+    store.undo()
+    expect(store.getState().doc.nodes.t1.props.text).toBe('a')
+    expect(store.getState().canUndo).toBe(true)
+  })
+
   it('starts a new step after the window, on other paths or when asked', () => {
     const { store } = setup()
     store.dispatch({ kind: 'update', id: 't1', set: { text: 'a' } })

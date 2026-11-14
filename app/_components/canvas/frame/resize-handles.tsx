@@ -110,6 +110,7 @@ export function ResizeHandles({
 }) {
   const { frame, store, catalog } = useCanvasEditor()
   const session = useRef<ResizeSession | null>(null)
+  const gestureId = useRef('')
   const [guides, setGuides] = useState<Guides | null>(null)
   const [active, setActive] = useState(false)
 
@@ -177,9 +178,15 @@ export function ResizeHandles({
       )
     }
     if (Object.keys(set).length > 0) {
+      // One drag is one undo step, however long the pointer rests.
+      if (first) {
+        gestureId.current = `resize-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 6)}`
+      }
       store.dispatch(
         { kind: 'update', id, set },
-        { label: 'resize', coalesce: first ? false : undefined },
+        { label: 'resize', gesture: gestureId.current },
       )
     }
     if (free && (handle.includes('w') || handle.includes('n'))) {
