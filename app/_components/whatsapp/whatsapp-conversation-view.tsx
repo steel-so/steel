@@ -731,6 +731,7 @@ export function WhatsappConversationView({
               <Button
                 variant='outline'
                 size='xs'
+                data-tour='zap-conversation-close'
                 onClick={() => setCloseOpen(true)}
               >
                 <SteelIcon icon={CheckmarkCircle02Icon} size={14} />
@@ -920,6 +921,7 @@ export function WhatsappConversationView({
                   variant='ghost'
                   size='icon-sm'
                   aria-label='Transferir conversa'
+                  data-tour='zap-conversation-transfer'
                 >
                   <SteelIcon icon={UserSwitchIcon} size={18} />
                 </Button>

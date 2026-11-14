@@ -370,7 +370,7 @@ export function WhatsappTeamsPage({ workspaceId }: { workspaceId: string }) {
   return (
     <div className='space-y-4'>
       <div className='flex flex-wrap items-start justify-between gap-3'>
-        <div className='min-w-0'>
+        <div className='min-w-0' data-tour='zap-teams-intro'>
           <h3 className='font-medium text-sm'>Equipes de atendimento</h3>
           <p className='max-w-2xl text-muted-foreground text-xs'>
             Cada pessoa vê as conversas atribuídas a ela e a fila da sua equipe.
@@ -380,7 +380,11 @@ export function WhatsappTeamsPage({ workspaceId }: { workspaceId: string }) {
           </p>
         </div>
         {canManage ? (
-          <Button size='sm' onClick={() => setEditing(null)}>
+          <Button
+            size='sm'
+            data-tour='zap-teams-new'
+            onClick={() => setEditing(null)}
+          >
             Nova equipe
           </Button>
         ) : null}
@@ -415,7 +419,10 @@ export function WhatsappTeamsPage({ workspaceId }: { workspaceId: string }) {
           ) : null}
         </div>
       ) : (
-        <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+        <div
+          className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'
+          data-tour='zap-teams-list'
+        >
           {sorted.map((team) => {
             const leaders = team.members.filter((m) => m.role === 'LEADER')
             const agents = team.members.filter((m) => m.role === 'AGENT')

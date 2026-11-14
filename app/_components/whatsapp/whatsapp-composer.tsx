@@ -522,7 +522,7 @@ export function WhatsappComposer({
   }
 
   return (
-    <div className='border-t p-2'>
+    <div className='border-t p-2' data-tour='zap-conversation-composer'>
       {disabled && disabledReason ? (
         <p
           role='status'
