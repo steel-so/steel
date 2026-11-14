@@ -34,6 +34,12 @@ de tooltip/menu e na paleta `Ctrl+K` sai do mesmo lugar.
 - A preferência **Atalhos de uma tecla** (`user_preferences.single_key_shortcuts`)
   desliga teclas simples e sequências (WCAG 2.1.4); os com modificador seguem.
 - Nenhum atalho é o único caminho para uma ação.
+- Nos editores visuais (Canvas: Sites, E-mail e Documentos, escopo
+  `editor.canvas`, tratado por `app/_components/canvas/use-shortcuts.ts`),
+  `Ctrl+A` seleciona todos os elementos do mesmo nível e as setas deslocam o
+  elemento posicionado livremente em 1 px (`Shift`: 10 px). Nos demais
+  elementos as setas continuam mudando a seleção, por isso `canvas.nudge`
+  declara `shadows` sobre `canvas.select-*`.
 
 ## Como adicionar um atalho
 

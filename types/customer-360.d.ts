@@ -2,6 +2,7 @@ import type { CrmHealthLevelDTO } from './crm-health'
 
 /** How the 360 view found the customer (shown as a hint, never trusted blindly). */
 export type Customer360MatchDTO =
+  | 'link'
   | 'person'
   | 'company'
   | 'phone'

@@ -320,6 +320,19 @@ descadastro respeitados; sem modelo, só com texto livre se o catálogo o
 liga (não liga). Variáveis de modelo: `code`, `title`, `headline`,
 `message`, `requester`.
 
+## Visão 360 e cadastro único (ADR 0066)
+
+A Visão 360 (`Customer360Repository.resolveIdentity`) identifica o cliente
+**primeiro pelo vínculo gravado** (`SdCustomer.crmCompanyId`,
+`SdContact.crmPersonId`, `WhatsAppContact.crmPersonId`; origem `link` na dica
+da tela) e só então pelo casamento por texto (telefone, e-mail, CNPJ, nome
+exato), como o `CustomerLinkService.resolve`. Um vínculo vence um casamento
+por texto que aponte para outro cadastro, e um cliente ou contato vinculado a
+outra empresa ou pessoa não entra na visão por coincidência de texto. Desvincular
+devolve o registro ao casamento por texto. O vínculo do contato do WhatsApp se
+vê e se corrige em Comunicação > Contatos > Editar (painel "Cadastro no CRM",
+para quem edita pessoas do CRM).
+
 ## Painel IA vs. técnico (S9)
 
 Compara o que a IA sugeriu com o que o técnico fez, para medir a precisão e

@@ -4,6 +4,7 @@ import { RefreshIcon } from '@hugeicons-pro/core-stroke-rounded'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { type FormEvent, useEffect, useState } from 'react'
+import { CustomerLinkPanel } from '@/app/_components/customer-link/customer-link-panel'
 import {
   contactRecordPhone,
   contactRecordTitle,
@@ -224,6 +225,13 @@ function CreateContactDialog({ workspaceId }: { workspaceId: string }) {
             </Button>
           </DialogFooter>
         </form>
+        {canLinkCrm ? (
+          <CustomerLinkPanel
+            workspaceId={workspaceId}
+            kind='whatsapp-contact'
+            id={contact.id}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   )
@@ -256,6 +264,8 @@ function EditContactDialog({
     setCustomReady(true)
   }, [fields, contact.customFields, customReady])
   const updateContact = useUpdateWhatsAppContact(workspaceId, contact.id)
+  // Linking to a CRM person edits the CRM side too (ADR 0066).
+  const canLinkCrm = useCan('people', 'EDIT')
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()

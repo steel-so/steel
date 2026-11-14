@@ -19,6 +19,7 @@ import {
 } from './customer-360-parts'
 
 const MATCH_HINT: Record<Customer360MatchDTO, string | null> = {
+  link: null,
   person: null,
   company: null,
   phone: 'Cadastro encontrado pelo telefone',
