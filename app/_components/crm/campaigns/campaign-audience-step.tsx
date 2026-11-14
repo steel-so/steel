@@ -211,8 +211,8 @@ export function CampaignAudienceStep({
             </SelectContent>
           </Select>
           <p className='text-muted-foreground text-xs'>
-            Por que você pode falar com estas pessoas. Vale para todos os
-            canais da campanha e fica registrada com quem confirmou e quando.
+            Por que você pode falar com estas pessoas. Vale para todos os canais
+            da campanha e fica registrada com quem confirmou e quando.
           </p>
         </div>
       </div>

@@ -24,8 +24,10 @@ export const crmDocumentsEditorTour: TourDefinition = {
       placement: 'bottom',
     },
     {
+      target: 'canvas-sidebar',
       title: 'Blocos e propriedades',
       body: 'À esquerda ficam os blocos (textos, imagens, tabelas, aceite) e as camadas. Ao selecionar um bloco, suas propriedades aparecem na coluna da direita.',
+      placement: 'right',
     },
     {
       title: 'Variáveis',
