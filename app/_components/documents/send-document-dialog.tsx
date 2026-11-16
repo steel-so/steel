@@ -38,6 +38,7 @@ import {
 } from '@/src/hooks/use-documents'
 import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import { SendDocumentSchema } from '@/src/schemas/document.schema'
+import type { CrmLeadDTO } from '@/types/crm-lead'
 import type { CrmPersonDTO } from '@/types/crm-person'
 import type {
   DocumentDeliveryDTO,
@@ -76,16 +77,72 @@ function normalize(value: string): string {
   return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 
-/** A CRM person as a recipient: e-mail when there is one, else WhatsApp (never both). */
-function rowFromPerson(person: CrmPersonDTO, key: number): RecipientRow {
-  const email = person.emails[0] ?? ''
-  const phone = email ? '' : (person.phones[0] ?? '')
+/** A CRM person or lead the sender can pick as a recipient. */
+type Contact = {
+  /** Unique across kinds (`person:<id>` / `lead:<id>`). */
+  key: string
+  /** Only people link back to the CRM record of the recipient. */
+  personId?: string
+  kind: 'person' | 'lead'
+  name: string
+  emails: string[]
+  phones: string[]
+  company: string | null
+}
+
+function contactFromPerson(person: CrmPersonDTO): Contact {
+  return {
+    key: `person:${person.id}`,
+    personId: person.id,
+    kind: 'person',
+    name: person.name,
+    emails: person.emails,
+    phones: person.phones,
+    company: null,
+  }
+}
+
+function contactFromLead(lead: CrmLeadDTO): Contact {
+  return {
+    key: `lead:${lead.id}`,
+    kind: 'lead',
+    name: lead.name,
+    emails: lead.emails ?? [],
+    phones: lead.phones ?? [],
+    company: lead.company ?? null,
+  }
+}
+
+function digitsOf(value: string): string {
+  return value.replace(/\D/g, '')
+}
+
+function matchesContact(contact: Contact, query: string): boolean {
+  const needle = normalize(query)
+  const digits = digitsOf(query)
+  if (normalize(contact.name).includes(needle)) return true
+  if (contact.company && normalize(contact.company).includes(needle)) {
+    return true
+  }
+  if (contact.emails.some((email) => normalize(email).includes(needle))) {
+    return true
+  }
+  return (
+    digits.length >= 3 &&
+    contact.phones.some((phone) => digitsOf(phone).includes(digits))
+  )
+}
+
+/** E-mail when there is one, else WhatsApp (never both). */
+function rowFromContact(contact: Contact, key: number): RecipientRow {
+  const email = contact.emails[0] ?? ''
+  const phone = email ? '' : (contact.phones[0] ?? '')
   return {
     key,
-    name: person.name,
+    name: contact.name,
     email,
     phone,
-    personId: person.id,
+    personId: contact.personId,
     role: 'APPROVER',
   }
 }
@@ -107,31 +164,33 @@ function PersonPicker({
 }: {
   workspaceId: string
   exclude: Set<string>
-  onPick: (person: CrmPersonDTO) => void
+  onPick: (contact: Contact) => void
 }) {
   const id = useId()
-  const { items, isLoading } = useCrmResourceList<CrmPersonDTO>(
-    workspaceId,
-    'people',
-  )
+  const people = useCrmResourceList<CrmPersonDTO>(workspaceId, 'people')
+  const leads = useCrmResourceList<CrmLeadDTO>(workspaceId, 'leads')
+  const isLoading = people.isLoading || leads.isLoading
   const [query, setQuery] = useState('')
+  const contacts = useMemo(
+    () => [
+      ...people.items.map(contactFromPerson),
+      ...leads.items.map(contactFromLead),
+    ],
+    [people.items, leads.items],
+  )
   const matches = useMemo(() => {
-    const needle = normalize(query.trim())
-    if (!needle) return []
-    return items
-      .filter((person) => !exclude.has(person.id))
-      .filter(
-        (person) =>
-          normalize(person.name).includes(needle) ||
-          person.emails.some((email) => normalize(email).includes(needle)),
-      )
+    const trimmed = query.trim()
+    if (!trimmed) return []
+    return contacts
+      .filter((contact) => !contact.personId || !exclude.has(contact.personId))
+      .filter((contact) => matchesContact(contact, trimmed))
       .slice(0, MAX_MATCHES)
-  }, [items, query, exclude])
+  }, [contacts, query, exclude])
 
   return (
     <div className='relative'>
       <Label htmlFor={`${id}-q`} className='sr-only'>
-        Buscar pessoa do CRM
+        Buscar pessoa ou lead do CRM
       </Label>
       <SteelIcon
         icon={Search01Icon}
@@ -144,13 +203,13 @@ function PersonPicker({
         autoComplete='off'
         onChange={(event) => setQuery(event.target.value)}
         placeholder={
-          isLoading ? 'Carregando pessoas…' : 'Buscar pessoa do CRM…'
+          isLoading ? 'Carregando contatos…' : 'Buscar pessoa ou lead do CRM…'
         }
         className='pl-8'
       />
       {query.trim() ? (
         <ul
-          aria-label='Pessoas encontradas'
+          aria-label='Contatos encontrados'
           className='absolute inset-x-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md'
         >
           {matches.length === 0 ? (
@@ -158,21 +217,23 @@ function PersonPicker({
               Ninguém encontrado. Adicione manualmente abaixo.
             </li>
           ) : (
-            matches.map((person) => (
-              <li key={person.id}>
+            matches.map((contact) => (
+              <li key={contact.key}>
                 <button
                   type='button'
                   onClick={() => {
-                    onPick(person)
+                    onPick(contact)
                     setQuery('')
                   }}
                   className='flex w-full min-w-0 flex-col rounded-md px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted focus-visible:outline-none'
                 >
                   <span className='truncate font-medium text-sm'>
-                    {person.name}
+                    {contact.name}
+                    {contact.kind === 'lead' ? ' · Lead' : ''}
                   </span>
                   <span className='truncate text-muted-foreground text-xs'>
-                    {person.emails[0] ?? person.phones[0] ?? 'Sem contato'}
+                    {contact.emails[0] ?? contact.phones[0] ?? 'Sem contato'}
+                    {contact.company ? ` · ${contact.company}` : ''}
                   </span>
                 </button>
               </li>
@@ -503,10 +564,10 @@ export function SendDocumentDialog({
               <PersonPicker
                 workspaceId={workspaceId}
                 exclude={picked}
-                onPick={(person) =>
+                onPick={(contact) =>
                   setRows((current) => [
                     ...current,
-                    rowFromPerson(person, nextKey.current++),
+                    rowFromContact(contact, nextKey.current++),
                   ])
                 }
               />

@@ -27,6 +27,16 @@ const PEOPLE = [
   { id: 'p3', name: 'Beatriz Ramos', emails: [], phones: ['11988887777'] },
 ]
 
+const LEADS = [
+  {
+    id: 'l1',
+    name: 'Fernanda Lima',
+    emails: [],
+    phones: ['(11) 97777-6666'],
+    company: 'Lima Gráfica',
+  },
+]
+
 const SENT = fakeDocument({
   recipients: [
     fakeRecipient(),
@@ -44,6 +54,7 @@ function setup(document: DocumentDTO, beforeSend?: () => Promise<boolean>) {
   const onSent = vi.fn()
   const spy = mockFetch([
     { match: '/crm/people', data: PEOPLE },
+    { match: '/crm/leads', data: LEADS },
     { method: 'POST', match: `${BASE}/doc_1/send`, data: SENT },
   ])
   renderWithQuery(
@@ -64,6 +75,28 @@ beforeEach(() => {
 })
 
 describe('<SendDocumentDialog />', () => {
+  it('finds a lead by name, company or phone digits', async () => {
+    const draft = fakeDocument({
+      status: 'DRAFT',
+      currentVersion: null,
+      person: null,
+      recipients: [],
+    })
+    setup(draft)
+    const search = await screen.findByLabelText('Buscar pessoa ou lead do CRM')
+    for (const term of ['fernanda', 'gráfica', '97777']) {
+      fireEvent.change(search, { target: { value: term } })
+      expect(
+        await screen.findByRole('button', { name: /Fernanda Lima/ }),
+      ).toBeTruthy()
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Fernanda Lima/ }))
+    const row = screen.getByTestId('send-recipient')
+    expect((within(row).getByLabelText('Nome') as HTMLInputElement).value).toBe(
+      'Fernanda Lima',
+    )
+  })
+
   it('sends to a CRM person and shows the links', async () => {
     const draft = fakeDocument({
       status: 'DRAFT',
@@ -77,7 +110,7 @@ describe('<SendDocumentDialog />', () => {
       await screen.findByRole('heading', { name: 'Enviar documento' }),
     ).toBeTruthy()
 
-    fireEvent.change(screen.getByLabelText('Buscar pessoa do CRM'), {
+    fireEvent.change(screen.getByLabelText('Buscar pessoa ou lead do CRM'), {
       target: { value: 'carl' },
     })
     fireEvent.click(await screen.findByRole('button', { name: /Carlos/ }))
