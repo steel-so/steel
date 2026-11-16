@@ -135,6 +135,36 @@ jobs:
             type=raw,value=${{ needs.version.outputs.version }}
             type=raw,value=sha-${{ needs.version.outputs.short_sha }}
 
+      # Only the dependency layer (pnpm install) is worth caching: every other
+      # layer changes with each commit, and exporting them cost ~95 s per run.
+      # The cache is keyed by the hash of the manifests, so it is rebuilt (once)
+      # only when a dependency changes. The CI `Docker Image Build` job reads it.
+      - name: Hash dependency manifests
+        id: deps
+        run: |
+          hash="$(sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | sha256sum | cut -c1-16)"
+          echo "ref=${REGISTRY}/${IMAGE_NAME}:deps-${hash}" >> "$GITHUB_OUTPUT"
+
+      - name: Check the dependency layer cache
+        id: deps_cache
+        run: |
+          if docker buildx imagetools inspect "${{ steps.deps.outputs.ref }}" >/dev/null 2>&1; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the dependency layer cache
+        if: steps.deps_cache.outputs.hit != 'true'
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          target: deps
+          push: false
+          cache-to: type=registry,ref=${{ steps.deps.outputs.ref }},mode=max
+          secrets: |
+            hugeicons_token=${{ secrets.HUGEICONS_TOKEN }}
+
       - name: Build image for scanning
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
@@ -143,8 +173,7 @@ jobs:
           load: true
           tags: ${{ env.IMAGE_NAME }}:scan
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ steps.deps.outputs.ref }}
           build-args: |
             NODE_BUILD_MEMORY=6144
             NEXT_BUILD_LOW_MEMORY=false

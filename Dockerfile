@@ -17,7 +17,6 @@ RUN --mount=type=secret,id=hugeicons_token \
 
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -98,11 +97,18 @@ ENV NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_MEMORY}"
 ARG NEXT_BUILD_LOW_MEMORY=true
 ENV NEXT_BUILD_LOW_MEMORY=$NEXT_BUILD_LOW_MEMORY
 
+# `pnpm build` runs `prisma generate` itself.
 # Server Actions encryption key (ADR 0038): one key for every build, so the
 # replicas of a deploy and the deploys after it decrypt the same closures.
 # Secret mount, not a build-arg, so it never lands in the image history. No
 # secret = Next generates a key per build, as before.
-RUN --mount=type=secret,id=sentry_auth_token \
+# node_modules comes from the `deps` stage as a writable bind mount instead of
+# a COPY: it is ~30 s of copying a layer that is only read here. Writes (the
+# Prisma client, build caches) are discarded when the step ends; what the
+# runner needs is already traced into .next/standalone by `next build`, and
+# playwright-core is copied from `deps` below.
+RUN --mount=type=bind,from=deps,source=/app/node_modules,target=/app/node_modules,rw \
+    --mount=type=secret,id=sentry_auth_token \
     --mount=type=secret,id=server_actions_encryption_key \
     corepack enable pnpm && \
     if [ -f /run/secrets/sentry_auth_token ]; then \
@@ -111,7 +117,6 @@ RUN --mount=type=secret,id=sentry_auth_token \
     if [ -s /run/secrets/server_actions_encryption_key ]; then \
       export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="$(cat /run/secrets/server_actions_encryption_key)"; \
     fi && \
-    pnpm prisma:generate && \
     pnpm build && \
     pnpm worker:build && \
     pnpm realtime:build
@@ -158,7 +163,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
 # playwright-core drives the Chromium above. It stays outside the worker
 # bundle (esbuild `--external`) because it loads its own files at runtime; it
 # has no dependencies, so copying the package folder is enough.
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/playwright-core ./node_modules/playwright-core
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/playwright-core ./node_modules/playwright-core
 
 USER nextjs
 EXPOSE 3000

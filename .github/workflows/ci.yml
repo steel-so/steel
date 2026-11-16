@@ -781,13 +781,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Same key the CD uses (hash of the dependency manifests); a miss only
+      # means `pnpm install` runs in this build.
+      - name: Hash dependency manifests
+        id: deps
+        run: |
+          hash="$(sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | sha256sum | cut -c1-16)"
+          echo "ref=ghcr.io/${{ github.repository }}:deps-${hash}" >> "$GITHUB_OUTPUT"
+
       - name: Build image (no push)
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: .
           push: false
           tags: steel-ci:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
+          cache-from: type=registry,ref=${{ steps.deps.outputs.ref }}
           build-args: |
             NODE_BUILD_MEMORY=6144
             NEXT_BUILD_LOW_MEMORY=false

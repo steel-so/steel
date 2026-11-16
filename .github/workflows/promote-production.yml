@@ -124,6 +124,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Dependency layer cache published by the CD, keyed by the manifests.
+      - name: Hash dependency manifests
+        id: deps
+        run: |
+          hash="$(sha256sum package.json pnpm-lock.yaml pnpm-workspace.yaml | sha256sum | cut -c1-16)"
+          echo "ref=${REGISTRY}/${IMAGE_NAME}:deps-${hash}" >> "$GITHUB_OUTPUT"
+
       - name: Build image for scanning
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
@@ -131,7 +138,7 @@ jobs:
           push: false
           load: true
           tags: ${{ env.IMAGE_NAME }}:scan-production
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-from: type=registry,ref=${{ steps.deps.outputs.ref }}
           build-args: |
             NEXT_PUBLIC_URL=${{ vars.PRODUCTION_URL }}
             NEXT_PUBLIC_AXIOM_TOKEN=${{ secrets.PRODUCTION_NEXT_PUBLIC_AXIOM_TOKEN || secrets.NEXT_PUBLIC_AXIOM_TOKEN }}
