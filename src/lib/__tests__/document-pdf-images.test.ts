@@ -86,9 +86,8 @@ describe('extractPdfImages()', () => {
       page.drawImage(image, { x: 0, y: 0, width: 600, height: 800 }),
     )
     const [found] = await extractPdfImages(pdf)
-    expect(
-      found && found.placements[0] && isFullPage(found.placements[0]),
-    ).toBe(true)
+    const placement = found?.placements[0]
+    expect(placement ? isFullPage(placement) : false).toBe(true)
     expect(describeImages(found ? [found] : [], 1)).toContain('background')
   })
 
