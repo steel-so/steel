@@ -66,6 +66,8 @@ export type CnpjLookup = {
   /** Melhor nome de exibição: nome fantasia, ou razão social como fallback. */
   name?: string
   address: CrmCompanyAddressInput | null
+  /** Registry data and contacts, ready to autofill the matching columns. */
+  registry?: Record<string, unknown>
 }
 
 export class CnpjNotFoundError extends Error {

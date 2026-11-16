@@ -28,19 +28,36 @@ export interface CrmCnpjProfileDTO {
   shareCapital: number | null
   partners: CrmCnpjPartnerDTO[]
   address: CrmCompanyAddress | null
+  /** Contacts the sources returned (deduplicated, e-mails lowercase). */
+  emails: string[]
+  /** Phones as `(11) 2395-8400`. */
+  phones: string[]
 }
 
-/** Stored profile; the address lives on the company itself. */
+/** Stored profile; address, e-mails and phones live on the company itself. */
 export interface CrmCompanyEnrichmentDTO
-  extends Omit<CrmCnpjProfileDTO, 'address'> {
+  extends Omit<CrmCnpjProfileDTO, 'address' | 'emails' | 'phones'> {
   id: string
   companyId: string
   source: string
   fetchedAt: string
 }
 
-/** Company fields the enrichment wrote (`name`, `address`). */
-export type CrmCnpjAppliedField = 'name' | 'address'
+/** Company fields the enrichment wrote. */
+export type CrmCnpjAppliedField =
+  | 'name'
+  | 'address'
+  | 'legalName'
+  | 'tradeName'
+  | 'emails'
+  | 'phones'
+  | 'domain'
+  | 'cnae'
+  | 'size'
+  | 'legalNature'
+  | 'registrationStatus'
+  | 'openedAt'
+  | 'shareCapital'
 
 export interface CrmCompanyEnrichResultDTO {
   company: CrmCompanyDTO

@@ -31779,7 +31779,7 @@
         "tags": ["CRM · Pessoas e empresas"],
         "summary": "Criar empresa",
         "operationId": "postWorkspacesByIdCrmCompanies",
-        "description": "Domínio e CNPJ são únicos por workspace.\n\n`customFields` é um mapa `definitionId → valor` (não `cf_<id>`); chaves que não correspondem a definições ativas da entidade são ignoradas. Os valores são convertidos pelo tipo da definição (`NUMBER`, `DATE` → ISO, `BOOLEAN`, `SELECT` precisa estar em `options`). A resposta traz os valores achatados em `customFields` (`cf_<definitionId>`).\n\nRegistra a atividade na linha do tempo e dispara os workflows com gatilho de registro correspondente.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `companies` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Domínio e CNPJ são únicos por workspace.\n\nCom um CNPJ válido, a criação consulta a Receita e preenche o que ficou em branco (razão social, fantasia, CNAE, porte, natureza jurídica, situação, abertura, capital, endereço, e-mails, telefones e domínio); o que foi enviado sempre prevalece. Se a consulta falhar, a empresa é criada normalmente só com os dados enviados. Campos de registro (`legalName`, `tradeName`, `emails`, `phones`, `cnaeCode`, `cnaeDescription`, `size`, `legalNature`, `registrationStatus`, `openedAt`, `shareCapital`) também podem ser enviados.\n\n`customFields` é um mapa `definitionId → valor` (não `cf_<id>`); chaves que não correspondem a definições ativas da entidade são ignoradas. Os valores são convertidos pelo tipo da definição (`NUMBER`, `DATE` → ISO, `BOOLEAN`, `SELECT` precisa estar em `options`). A resposta traz os valores achatados em `customFields` (`cf_<definitionId>`).\n\nRegistra a atividade na linha do tempo e dispara os workflows com gatilho de registro correspondente.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `companies` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -31859,6 +31859,59 @@
                     "default": false,
                     "type": "boolean"
                   },
+                  "legalName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "tradeName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "emails": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "format": "email"
+                    }
+                  },
+                  "phones": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 30
+                    }
+                  },
+                  "cnaeCode": {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  "cnaeDescription": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "size": {
+                    "type": "string",
+                    "enum": ["ME", "EPP", "DEMAIS"]
+                  },
+                  "legalNature": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "registrationStatus": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "openedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "shareCapital": {
+                    "type": "number",
+                    "minimum": 0
+                  },
                   "accountOwnerId": {
                     "type": "string"
                   },
@@ -31879,7 +31932,11 @@
                   "city": "São Paulo",
                   "state": "SP",
                   "country": "Brasil"
-                }
+                },
+                "emails": ["contato@empresa.com.br"],
+                "phones": ["(11) 2395-8400"],
+                "size": "EPP",
+                "openedAt": "2015-03-02"
               }
             }
           }
@@ -32665,6 +32722,122 @@
                   },
                   "icp": {
                     "type": "boolean"
+                  },
+                  "legalName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tradeName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "emails": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "format": "email"
+                    }
+                  },
+                  "phones": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 30
+                    }
+                  },
+                  "cnaeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cnaeDescription": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "size": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["ME", "EPP", "DEMAIS"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "legalNature": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 150
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "registrationStatus": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "openedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "shareCapital": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "accountOwnerId": {
                     "anyOf": [
@@ -211413,6 +211586,118 @@
             "type": "boolean",
             "description": "Empresa dentro do perfil de cliente ideal."
           },
+          "legalName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Razão social (Receita)."
+          },
+          "tradeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Nome fantasia (Receita)."
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "E-mails da empresa (união do que foi digitado e da Receita)."
+          },
+          "phones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Telefones da empresa, ex.: `(11) 2395-8400`."
+          },
+          "cnaeCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "4711302"
+          },
+          "cnaeDescription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["ME", "EPP", "DEMAIS"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Porte conforme a Receita."
+          },
+          "legalNature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrationStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Situação cadastral, ex.: `ATIVA`."
+          },
+          "openedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Início das atividades (`AAAA-MM-DD`)."
+          },
+          "shareCapital": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capital social."
+          },
           "workspaceId": {
             "type": "string"
           },
@@ -211471,6 +211756,17 @@
           "address",
           "arr",
           "icp",
+          "legalName",
+          "tradeName",
+          "emails",
+          "phones",
+          "cnaeCode",
+          "cnaeDescription",
+          "size",
+          "legalNature",
+          "registrationStatus",
+          "openedAt",
+          "shareCapital",
           "workspaceId",
           "createdById",
           "accountOwnerId",

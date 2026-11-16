@@ -114,3 +114,65 @@ describe('UpdateCrmCompanySchema — clearing optional fields', () => {
     expect(result.data).not.toHaveProperty('cnpj')
   })
 })
+
+describe('registry fields', () => {
+  it('accepts a full registry payload on create', () => {
+    const r = CreateCrmCompanySchema.safeParse({
+      name: 'Acme',
+      legalName: 'ACME LTDA',
+      tradeName: 'Acme',
+      emails: ['a@acme.com'],
+      phones: ['(11) 2395-8400'],
+      cnaeCode: '4711302',
+      cnaeDescription: 'Comércio',
+      size: 'EPP',
+      legalNature: 'Ltda',
+      registrationStatus: 'ATIVA',
+      openedAt: '2015-03-02',
+      shareCapital: 0,
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it.each([
+    ['emails', ['nao-e-email']],
+    ['emails', Array.from({ length: 21 }, (_, i) => `a${i}@x.com`)],
+    ['phones', Array.from({ length: 21 }, () => '1')],
+    ['size', 'GRANDE'],
+    ['openedAt', '02/03/2015'],
+    ['openedAt', '2015-13-45'],
+    ['shareCapital', -1],
+    ['cnaeCode', '12345678901'],
+    ['legalName', 'x'.repeat(201)],
+  ])('rejects invalid %s on create', (field, value) => {
+    expect(
+      CreateCrmCompanySchema.safeParse({ name: 'A', [field]: value }).success,
+    ).toBe(false)
+  })
+
+  it('lets update clear registry fields with null or empty string', () => {
+    const r = UpdateCrmCompanySchema.safeParse({
+      legalName: '',
+      tradeName: null,
+      cnaeCode: null,
+      size: null,
+      openedAt: '',
+      shareCapital: null,
+    })
+    expect(r.success).toBe(true)
+    expect(r.data).toMatchObject({
+      legalName: null,
+      openedAt: null,
+      size: null,
+    })
+  })
+
+  it('rejects invalid values on update', () => {
+    expect(UpdateCrmCompanySchema.safeParse({ emails: ['x'] }).success).toBe(
+      false,
+    )
+    expect(
+      UpdateCrmCompanySchema.safeParse({ openedAt: 'ontem' }).success,
+    ).toBe(false)
+  })
+})

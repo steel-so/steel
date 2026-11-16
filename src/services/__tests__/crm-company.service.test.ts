@@ -1,16 +1,23 @@
-import type { CrmCustomFieldDefinition, Role } from '@prisma/client'
+import type { CrmCompany, CrmCustomFieldDefinition, Role } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeCrmCompany } from '@/src/__tests__/factories/crm-company.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, notFound } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
+import { toCrmCompanyDTO } from '@/src/mappers/crm-company.mapper'
 
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-company.repository')
 vi.mock('@/src/repositories/crm-activity.repository')
 vi.mock('@/src/repositories/crm-custom-field.repository')
+vi.mock('@/lib/axiom/logger', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
+vi.mock('../crm-cnpj-enrichment.service', () => ({
+  enrichCompany: vi.fn(),
+}))
 vi.mock('../crm-workflow-dispatcher', () => ({
   dispatchCrmWorkflowRecordEvent: vi.fn(async () => undefined),
 }))
@@ -24,6 +31,7 @@ import {
 } from '@/src/repositories/crm-custom-field.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
+import { enrichCompany } from '../crm-cnpj-enrichment.service'
 import { CrmCompanyService } from '../crm-company.service'
 import { dispatchCrmWorkflowRecordEvent } from '../crm-workflow-dispatcher'
 
@@ -66,6 +74,7 @@ function textDefinition(
 const createDto = { name: 'Acme', icp: false }
 
 beforeEach(() => {
+  vi.mocked(enrichCompany).mockReset()
   mockedCustomFieldValueRepo.listByRecords.mockResolvedValue(ok([]))
   mockedCustomFieldValueRepo.applyForRecord.mockResolvedValue(ok(undefined))
   mockedCustomFieldDefRepo.listByWorkspace.mockResolvedValue(
@@ -317,6 +326,186 @@ describe('CrmCompanyService', () => {
           action: 'create',
           outcome: 'failure',
           reason: 'DATABASE_ERROR',
+        }),
+      )
+    })
+  })
+
+  describe('CNPJ enrichment', () => {
+    const CNPJ = '11.222.333/0001-81'
+    const mockedEnrich = vi.mocked(enrichCompany)
+    const enrichedResult = (company: CrmCompany) =>
+      ok({
+        company: toCrmCompanyDTO(company),
+        enrichment: {} as never,
+        applied: ['legalName' as const],
+      })
+
+    it('enriches a new company with a valid CNPJ (overwrite=false) and uses the complete record in events', async () => {
+      asRole('MEMBER')
+      const created = createFakeCrmCompany({ id: 'c1', cnpj: CNPJ })
+      mockedCompanyRepo.create.mockResolvedValue(ok(created))
+      mockedEnrich.mockResolvedValue(
+        enrichedResult({ ...created, legalName: 'ACME LTDA' }),
+      )
+
+      const dto = expectOk(
+        await CrmCompanyService.create('u1', 'ws1', {
+          ...createDto,
+          cnpj: CNPJ,
+        }),
+      )
+
+      expect(mockedEnrich).toHaveBeenCalledWith(
+        expect.objectContaining({ overwrite: false, company: created }),
+      )
+      expect(dto.legalName).toBe('ACME LTDA')
+      expect(mockedDispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          record: expect.objectContaining({ legalName: 'ACME LTDA' }),
+        }),
+      )
+    })
+
+    it('passes the registry fields to the repository', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.create.mockResolvedValue(ok(createFakeCrmCompany()))
+      expectOk(
+        await CrmCompanyService.create('u1', 'ws1', {
+          ...createDto,
+          emails: ['a@b.com'],
+          size: 'ME',
+          openedAt: '2020-01-02',
+          shareCapital: 10,
+        }),
+      )
+      expect(mockedCompanyRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          emails: ['a@b.com'],
+          size: 'ME',
+          openedAt: '2020-01-02',
+          shareCapital: 10,
+        }),
+      )
+    })
+
+    it('keeps the plain record when the lookup fails', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.create.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1', cnpj: CNPJ })),
+      )
+      mockedEnrich.mockResolvedValue(err(databaseError('boom')))
+
+      const dto = expectOk(
+        await CrmCompanyService.create('u1', 'ws1', {
+          ...createDto,
+          cnpj: CNPJ,
+        }),
+      )
+      expect(dto.id).toBe('c1')
+    })
+
+    it('keeps the plain record when the lookup throws', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.create.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1', cnpj: CNPJ })),
+      )
+      mockedEnrich.mockRejectedValue(new Error('network'))
+
+      expectOk(
+        await CrmCompanyService.create('u1', 'ws1', {
+          ...createDto,
+          cnpj: CNPJ,
+        }),
+      )
+    })
+
+    it.each([
+      ['an invalid CNPJ', { cnpj: '12345678000100' }, undefined],
+      ['no CNPJ', {}, undefined],
+      ['enrich: false', { cnpj: CNPJ }, { enrich: false }],
+    ])('does not look up with %s', async (_n, extra, options) => {
+      asRole('MEMBER')
+      mockedCompanyRepo.create.mockResolvedValue(ok(createFakeCrmCompany()))
+      expectOk(
+        await CrmCompanyService.create(
+          'u1',
+          'ws1',
+          { ...createDto, ...extra },
+          options,
+        ),
+      )
+      expect(mockedEnrich).not.toHaveBeenCalled()
+    })
+
+    it('does not look up when the insert fails', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.create.mockResolvedValue(err(databaseError('x')))
+      expectErr(
+        await CrmCompanyService.create('u1', 'ws1', {
+          ...createDto,
+          cnpj: CNPJ,
+        }),
+        'DATABASE_ERROR',
+      )
+      expect(mockedEnrich).not.toHaveBeenCalled()
+    })
+
+    it('enriches on update when the CNPJ changes to another valid one', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.findById.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1', cnpj: null })),
+      )
+      const updated = createFakeCrmCompany({ id: 'c1', cnpj: CNPJ })
+      mockedCompanyRepo.update.mockResolvedValue(ok(updated))
+      mockedEnrich.mockResolvedValue(
+        enrichedResult({ ...updated, tradeName: 'Acme' }),
+      )
+
+      const dto = expectOk(
+        await CrmCompanyService.update('u1', 'ws1', 'c1', { cnpj: CNPJ }),
+      )
+      expect(mockedEnrich).toHaveBeenCalledWith(
+        expect.objectContaining({ overwrite: false }),
+      )
+      expect(dto.tradeName).toBe('Acme')
+    })
+
+    it('does not enrich on update when the CNPJ is unchanged, invalid or cleared', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.findById.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1', cnpj: '11222333000181' })),
+      )
+      mockedCompanyRepo.update.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1' })),
+      )
+      for (const cnpj of [CNPJ, '123', null]) {
+        expectOk(await CrmCompanyService.update('u1', 'ws1', 'c1', { cnpj }))
+      }
+      expect(mockedEnrich).not.toHaveBeenCalled()
+    })
+
+    it('passes registry fields on update', async () => {
+      asRole('MEMBER')
+      mockedCompanyRepo.findById.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1' })),
+      )
+      mockedCompanyRepo.update.mockResolvedValue(
+        ok(createFakeCrmCompany({ id: 'c1' })),
+      )
+      expectOk(
+        await CrmCompanyService.update('u1', 'ws1', 'c1', {
+          legalName: null,
+          openedAt: null,
+          phones: ['(11) 2395-8400'],
+        }),
+      )
+      expect(mockedCompanyRepo.update).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({
+          legalName: null,
+          openedAt: null,
+          phones: ['(11) 2395-8400'],
         }),
       )
     })

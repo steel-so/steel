@@ -1,5 +1,7 @@
-import type { Prisma } from '@prisma/client'
+import type { CrmCompany, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
+import { logger } from '@/lib/axiom/logger'
+import { isValidCnpj, normalizeCnpj } from '@/src/lib/crm-cnpj'
 import { ok, type Result } from '@/src/lib/result'
 import { indexSearchDocument } from '@/src/lib/search/index-hooks'
 import { toCrmCompanyDTO } from '@/src/mappers/crm-company.mapper'
@@ -20,6 +22,56 @@ import {
 import { CrmDuplicateService } from './crm-duplicate.service'
 import { dispatchCrmWorkflowRecordEvent } from './crm-workflow-dispatcher'
 import { emitEntityWebhook } from './webhook-entity-events'
+
+/**
+ * Fills everything blank from the Receita right after a write. Never fails
+ * the caller: an unavailable lookup just keeps the plain record.
+ */
+async function tryEnrich(
+  actorId: string,
+  workspaceId: string,
+  company: CrmCompany,
+): Promise<CrmCompanyDTO | null> {
+  try {
+    // Lazy: the enrichment service pulls the queue/Redis modules, which the
+    // many callers of this service should not load unless a lookup happens.
+    const { enrichCompany } = await import('./crm-cnpj-enrichment.service')
+    const enriched = await enrichCompany({
+      workspaceId,
+      actorId,
+      company,
+      overwrite: false,
+    })
+    if (enriched.ok) return enriched.value.company
+    logger.warn('crm.company.enrich_skipped', {
+      companyId: company.id,
+      code: enriched.error.code,
+    })
+  } catch (error) {
+    logger.warn('crm.company.enrich_skipped', {
+      companyId: company.id,
+      cause: error instanceof Error ? error.message : String(error),
+    })
+  }
+  return null
+}
+
+/** Registry columns shared by create and update (undefined = untouched). */
+function registryFields(dto: CreateCrmCompanyDTO | UpdateCrmCompanyDTO) {
+  return {
+    legalName: dto.legalName,
+    tradeName: dto.tradeName,
+    emails: dto.emails,
+    phones: dto.phones,
+    cnaeCode: dto.cnaeCode,
+    cnaeDescription: dto.cnaeDescription,
+    size: dto.size,
+    legalNature: dto.legalNature,
+    registrationStatus: dto.registrationStatus,
+    openedAt: dto.openedAt,
+    shareCapital: dto.shareCapital,
+  }
+}
 
 export const CrmCompanyService = {
   async list(
@@ -62,6 +114,7 @@ export const CrmCompanyService = {
     actorId: string,
     workspaceId: string,
     dto: CreateCrmCompanyDTO,
+    options: { enrich?: boolean } = {},
   ): Promise<Result<CrmCompanyDTO>> {
     const membership = await assertModuleMember(actorId, workspaceId, 'CRM', {
       resource: 'companies',
@@ -81,6 +134,7 @@ export const CrmCompanyService = {
       arr: dto.arr,
       icp: dto.icp,
       accountOwnerId: dto.accountOwnerId,
+      ...registryFields(dto as CreateCrmCompanyDTO),
     })
 
     if (!result.ok) {
@@ -111,7 +165,15 @@ export const CrmCompanyService = {
       if (!applied.ok) return applied
     }
 
-    const merged = await withCustomFields(toCrmCompanyDTO(result.value))
+    // Complete the record from the CNPJ (values the caller sent always win).
+    const enriched =
+      (options.enrich ?? true) && dto.cnpj && isValidCnpj(dto.cnpj)
+        ? await tryEnrich(actorId, workspaceId, result.value)
+        : null
+
+    const merged = await withCustomFields(
+      enriched ?? toCrmCompanyDTO(result.value),
+    )
     if (!merged.ok) return merged
 
     void recordCrmActivity({
@@ -169,6 +231,7 @@ export const CrmCompanyService = {
       arr: dto.arr,
       icp: dto.icp,
       accountOwnerId: dto.accountOwnerId,
+      ...registryFields(dto),
       updatedById: actorId,
     })
 
@@ -203,7 +266,18 @@ export const CrmCompanyService = {
       if (!applied.ok) return applied
     }
 
-    const merged = await withCustomFields(toCrmCompanyDTO(result.value))
+    // A new valid CNPJ fills what is still blank from the Receita.
+    const cnpjChanged =
+      typeof dto.cnpj === 'string' &&
+      isValidCnpj(dto.cnpj) &&
+      normalizeCnpj(dto.cnpj) !== normalizeCnpj(existing.value.cnpj ?? '')
+    const enriched = cnpjChanged
+      ? await tryEnrich(actorId, workspaceId, result.value)
+      : null
+
+    const merged = await withCustomFields(
+      enriched ?? toCrmCompanyDTO(result.value),
+    )
     if (!merged.ok) return merged
 
     void recordCrmActivity({

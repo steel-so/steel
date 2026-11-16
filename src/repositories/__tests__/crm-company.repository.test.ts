@@ -130,6 +130,70 @@ describe('CrmCompanyRepository', () => {
     })
   })
 
+  describe('registry fields', () => {
+    it('should persist and clear the registry columns', async () => {
+      const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
+      const created = expectOk(
+        await CrmCompanyRepository.create({
+          workspaceId: workspace.id,
+          createdById: user.id,
+          name: 'Reg',
+          legalName: 'REG LTDA',
+          emails: ['a@reg.com'],
+          phones: ['(11) 2395-8400'],
+          size: 'EPP',
+          openedAt: '2015-03-02',
+          shareCapital: 1234.5,
+        }),
+      )
+      expect(created.emails).toEqual(['a@reg.com'])
+      expect(created.openedAt?.toISOString()).toBe('2015-03-02T00:00:00.000Z')
+      expect(Number(created.shareCapital)).toBe(1234.5)
+
+      const cleared = expectOk(
+        await CrmCompanyRepository.update(created.id, {
+          openedAt: null,
+          shareCapital: null,
+          legalName: null,
+          emails: [],
+        }),
+      )
+      expect(cleared.openedAt).toBeNull()
+      expect(cleared.shareCapital).toBeNull()
+      expect(cleared.legalName).toBeNull()
+      expect(cleared.emails).toEqual([])
+      expect(cleared.size).toBe('EPP')
+    })
+  })
+
+  describe('domainTaken()', () => {
+    it('should detect a live company with the domain, ignoring the given id', async () => {
+      const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])
+      const seeded = await seedCrmCompany(workspace.id, user.id, {
+        domain: 'acme.com',
+      })
+      expect(
+        expectOk(
+          await CrmCompanyRepository.domainTaken(workspace.id, 'acme.com'),
+        ),
+      ).toBe(true)
+      expect(
+        expectOk(
+          await CrmCompanyRepository.domainTaken(
+            workspace.id,
+            'acme.com',
+            seeded.id,
+          ),
+        ),
+      ).toBe(false)
+      expect(
+        expectOk(
+          await CrmCompanyRepository.domainTaken(workspace.id, 'other.com'),
+        ),
+      ).toBe(false)
+    })
+  })
+
   describe('update()', () => {
     it('should clear optional fields and the address when given null', async () => {
       const [workspace, user] = await Promise.all([seedWorkspace(), seedUser()])

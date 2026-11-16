@@ -271,7 +271,7 @@ export function registerV1RegistersPaths(registry: OpenApiRegistry): void {
     listQuery: ListV1CrmCompaniesSchema,
     listSchema: v1Page('CrmCompany', CrmCompanyDTO),
     listDescription:
-      'Empresas do CRM (as excluídas ficam de fora), na ordem manual do app. `icp=true` limita ao perfil de cliente ideal.',
+      'Empresas do CRM (as excluídas ficam de fora), na ordem manual do app. `icp=true` limita ao perfil de cliente ideal. Cada empresa traz os dados cadastrais da Receita (razão social, fantasia, CNAE, porte, situação, abertura, capital, e-mails e telefones). Ao criar (ou trocar o CNPJ) com um CNPJ válido, o que está em branco é preenchido pela Receita; o que foi enviado prevalece e uma consulta que falha não impede a gravação.',
     detailSchema: CrmCompanyDTO,
     itemSchema: CrmCompanyDTO,
     createBody: CreateCrmCompanySchema,

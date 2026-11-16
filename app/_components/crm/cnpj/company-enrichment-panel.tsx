@@ -16,47 +16,14 @@ import { isValidCnpj } from '@/src/lib/crm-cnpj'
 import type { CrmCompanyEnrichmentDTO } from '@/types/crm-cnpj'
 import {
   appliedSummary,
-  formatBrl,
   formatCnae,
   formatIsoDate,
   formatMoment,
-  SIZE_LABELS,
 } from './cnpj-labels'
-
-function Field({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null
-  return (
-    <div className='flex min-w-0 flex-col gap-0.5'>
-      <dt className='text-muted-foreground text-xs'>{label}</dt>
-      <dd className='break-words text-sm'>{value}</dd>
-    </div>
-  )
-}
 
 function Profile({ data }: { data: CrmCompanyEnrichmentDTO }) {
   return (
     <div className='flex flex-col gap-3'>
-      <dl className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-        <Field label='Razão social' value={data.legalName} />
-        <Field label='Nome fantasia' value={data.tradeName} />
-        <Field label='Situação cadastral' value={data.registrationStatus} />
-        <Field label='Abertura' value={formatIsoDate(data.openedAt)} />
-        <Field
-          label='Porte'
-          value={data.size ? SIZE_LABELS[data.size] : null}
-        />
-        <Field label='Natureza jurídica' value={data.legalNature} />
-        <Field label='Capital social' value={formatBrl(data.shareCapital)} />
-        <Field
-          label='CNAE principal'
-          value={
-            data.cnaeCode
-              ? `${formatCnae(data.cnaeCode)}${data.cnaeDescription ? ` · ${data.cnaeDescription}` : ''}`
-              : null
-          }
-        />
-      </dl>
-
       {data.secondaryCnaes.length > 0 ? (
         <details className='text-sm'>
           <summary className='cursor-pointer text-muted-foreground text-xs'>
@@ -109,8 +76,8 @@ function Profile({ data }: { data: CrmCompanyEnrichmentDTO }) {
 }
 
 /**
- * "Dados da Receita" in the company side panel: razão social, CNAE, porte,
- * sócios, and the button that fetches (or refreshes) them from the CNPJ.
+ * "Dados da Receita" in the company side panel: sócios, secondary CNAEs
+ * and the button that fetches (or refreshes) them from the CNPJ.
  */
 export function CompanyEnrichmentPanel({
   workspaceId,
@@ -123,7 +90,7 @@ export function CompanyEnrichmentPanel({
   companyId: string
   cnpj: string | null
   canEdit: boolean
-  /** Reloads the list: the enrichment may have filled name/address. */
+  /** Reloads the list: the enrichment may have filled the company fields. */
   onApplied: () => void
 }) {
   const enrichment = useCrmCompanyEnrichment(workspaceId, companyId)
@@ -169,7 +136,7 @@ export function CompanyEnrichmentPanel({
         <p className='text-muted-foreground text-sm'>
           {cnpj
             ? 'O CNPJ desta empresa é inválido. Corrija-o para buscar os dados na Receita.'
-            : 'Informe o CNPJ da empresa para preencher razão social, CNAE, porte e sócios.'}
+            : 'Informe o CNPJ da empresa para preencher os dados da empresa e os sócios.'}
         </p>
       ) : enrichment.isLoading ? (
         <div className='flex flex-col gap-2'>
@@ -184,8 +151,8 @@ export function CompanyEnrichmentPanel({
         <Profile data={enrichment.data} />
       ) : (
         <p className='text-muted-foreground text-sm'>
-          Ainda não consultado. Busque o CNPJ na Receita para preencher razão
-          social, CNAE, porte e sócios.
+          Ainda não consultado. Busque o CNPJ na Receita para preencher os dados
+          da empresa e os sócios.
         </p>
       )}
 
@@ -200,7 +167,7 @@ export function CompanyEnrichmentPanel({
             htmlFor={`cnpj-overwrite-${companyId}`}
             className='font-normal text-muted-foreground text-xs'
           >
-            Substituir nome e endereço já preenchidos
+            Substituir dados já preenchidos
           </Label>
         </div>
       ) : null}

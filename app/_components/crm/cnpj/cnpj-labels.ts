@@ -15,6 +15,17 @@ export const SIZE_LABELS: Record<CrmCnpjSizeDTO, string> = {
 export const APPLIED_LABELS: Record<CrmCnpjAppliedField, string> = {
   name: 'nome',
   address: 'endereço',
+  legalName: 'razão social',
+  tradeName: 'nome fantasia',
+  emails: 'e-mails',
+  phones: 'telefones',
+  domain: 'domínio',
+  cnae: 'CNAE',
+  size: 'porte',
+  legalNature: 'natureza jurídica',
+  registrationStatus: 'situação cadastral',
+  openedAt: 'data de abertura',
+  shareCapital: 'capital social',
 }
 
 export const RUN_STATUS_LABELS: Record<CrmCnpjRunStatusDTO, string> = {
@@ -69,12 +80,19 @@ export function formatBrl(value: number | null): string {
   }).format(value)
 }
 
+/** `a`, `a e b`, `a, b e c`. */
+function joinList(items: string[]): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`
+}
+
 /** One-line summary of what a single enrichment changed. */
 export function appliedSummary(applied: CrmCnpjAppliedField[]): string {
   if (applied.length === 0) {
-    return 'Dados da Receita atualizados — nome e endereço já estavam preenchidos'
+    return 'Dados da Receita atualizados — os campos já estavam preenchidos'
   }
-  return `Dados da Receita atualizados — ${applied
-    .map((field) => APPLIED_LABELS[field])
-    .join(' e ')} preenchido`
+  const labels = applied.map((field) => APPLIED_LABELS[field])
+  return `Dados da Receita atualizados — ${joinList(labels)} ${
+    applied.length === 1 ? 'preenchido' : 'preenchidos'
+  }`
 }

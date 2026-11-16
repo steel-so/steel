@@ -9,6 +9,7 @@ import { formatCep } from '@/src/lib/crm-cep'
 import { isValidCnpj, normalizeCnpj } from '@/src/lib/crm-cnpj'
 import { err, ok, type Result } from '@/src/lib/result'
 import type { CrmCompanyAddress } from '@/types/crm-company'
+import { uniqueEmails, uniquePhones } from './contacts'
 import { mergeCnpjProfiles } from './merge'
 
 /** Company size as the Receita classifies it (`porte`). */
@@ -40,6 +41,10 @@ export type CnpjProfile = {
   shareCapital: number | null
   partners: CnpjPartner[]
   address: CrmCompanyAddress | null
+  /** Deduplicated, lowercase. Absent in profiles cached before this field. */
+  emails: string[]
+  /** Formatted `(11) 2395-8400`. */
+  phones: string[]
 }
 
 /**
@@ -81,6 +86,13 @@ type BrasilApiCnpj = {
   bairro?: string
   municipio?: string
   uf?: string
+  email?: string | null
+  /** Digits with the area code: `1123958400`. */
+  ddd_telefone_1?: string | null
+  ddd_telefone_2?: string | null
+  /** Extra contacts from sources that list more than one (already raw). */
+  extra_emails?: string[]
+  extra_phones?: string[]
 }
 
 const BRASILAPI_URL = 'https://brasilapi.com.br/api/cnpj/v1'
@@ -162,6 +174,12 @@ export function toCnpjProfile(cnpj: string, data: BrasilApiCnpj): CnpjProfile {
         : []
     }),
     address: toAddress(data),
+    emails: uniqueEmails([data.email, ...(data.extra_emails ?? [])]),
+    phones: uniquePhones([
+      data.ddd_telefone_1,
+      data.ddd_telefone_2,
+      ...(data.extra_phones ?? []),
+    ]),
   }
 }
 
@@ -182,6 +200,11 @@ type CnpjWsResponse = {
   }>
   estabelecimento?: {
     nome_fantasia?: string
+    email?: string | null
+    ddd1?: string | null
+    telefone1?: string | null
+    ddd2?: string | null
+    telefone2?: string | null
     situacao_cadastral?: string
     data_inicio_atividade?: string
     tipo_logradouro?: string
@@ -195,6 +218,14 @@ type CnpjWsResponse = {
     atividade_principal?: CnpjWsActivity
     atividades_secundarias?: CnpjWsActivity[]
   }
+}
+
+function wsPhone(
+  ddd: string | null | undefined,
+  number: string | null | undefined,
+): string | undefined {
+  const n = text(number)
+  return n ? `${text(ddd) ?? ''}${n}` : undefined
 }
 
 /** The shape BrasilAPI uses, so one mapper (`toCnpjProfile`) serves all. */
@@ -231,6 +262,9 @@ function cnpjWsToBrasilApi(data: CnpjWsResponse): BrasilApiCnpj {
     bairro: e.bairro,
     municipio: e.cidade?.nome,
     uf: e.estado?.sigla,
+    email: e.email,
+    ddd_telefone_1: wsPhone(e.ddd1, e.telefone1),
+    ddd_telefone_2: wsPhone(e.ddd2, e.telefone2),
   }
 }
 
@@ -263,6 +297,8 @@ type CnpjaResponse = {
     state?: string
     zip?: string
   }
+  emails?: Array<{ address?: string }>
+  phones?: Array<{ area?: string; number?: string }>
   mainActivity?: CnpjaActivity
   sideActivities?: CnpjaActivity[]
 }
@@ -295,6 +331,10 @@ function cnpjaToBrasilApi(data: CnpjaResponse): BrasilApiCnpj {
     bairro: a.district,
     municipio: a.city,
     uf: a.state,
+    extra_emails: (data.emails ?? []).map((e) => e.address ?? ''),
+    extra_phones: (data.phones ?? []).map(
+      (p) => `${p.area ?? ''}${p.number ?? ''}`,
+    ),
   }
 }
 
@@ -323,6 +363,8 @@ type ReceitaWsResponse = {
   municipio?: string
   uf?: string
   cep?: string
+  email?: string
+  telefone?: string
 }
 
 /** `06/05/1970` → `1970-05-06`. */
@@ -365,6 +407,8 @@ function receitaWsToBrasilApi(data: ReceitaWsResponse): BrasilApiCnpj {
     bairro: data.bairro,
     municipio: data.municipio,
     uf: data.uf,
+    email: data.email,
+    extra_phones: [data.telefone ?? ''],
   }
 }
 
@@ -475,7 +519,14 @@ export const BrasilApiCnpjProvider: CnpjProvider = {
     if (!isValidCnpj(cnpj)) return err(crmCnpjInvalid())
 
     const cached = await CrmCnpjCache.get(cnpj)
-    if (cached) return ok(cached)
+    // Entries cached before `emails`/`phones` existed must not crash callers.
+    if (cached) {
+      return ok({
+        ...cached,
+        emails: cached.emails ?? [],
+        phones: cached.phones ?? [],
+      })
+    }
 
     const outcomes = await Promise.all(
       ENDPOINTS.map((endpoint) => fetchFrom(endpoint, cnpj, signal)),

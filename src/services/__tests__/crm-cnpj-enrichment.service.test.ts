@@ -1,4 +1,4 @@
-import type { Role } from '@prisma/client'
+import { Prisma, type Role } from '@prisma/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeCrmCompany } from '@/src/__tests__/factories/crm-company.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
@@ -63,12 +63,29 @@ function asRole(role: Role) {
   )
 }
 
+/** Registry columns already matching the fake profile (nothing to fill). */
+const FILLED_REGISTRY = {
+  legalName: 'ACME COMERCIO DE ALIMENTOS LTDA',
+  tradeName: 'Acme Mercado',
+  cnaeCode: '4711302',
+  cnaeDescription: 'Comércio varejista de mercadorias em geral',
+  size: 'EPP',
+  legalNature: 'Sociedade Empresária Limitada',
+  registrationStatus: 'ATIVA',
+  openedAt: new Date('2015-03-02T00:00:00Z'),
+  shareCapital: new Prisma.Decimal(50000),
+  emails: ['contato@acme.com.br'],
+  phones: ['(11) 2395-8400'],
+  domain: 'acme.com.br',
+}
+
 const company = (over: Parameters<typeof createFakeCrmCompany>[0] = {}) =>
   createFakeCrmCompany({
     id: 'c1',
     workspaceId: WS,
     cnpj: VALID_CNPJ,
     name: 'Empresa 11.222.333/0001-81',
+    ...FILLED_REGISTRY,
     ...over,
   })
 
@@ -83,12 +100,17 @@ beforeEach(() => {
   enrichments.upsert.mockImplementation(async (companyId, workspaceId) =>
     ok(createFakeCompanyEnrichment({ companyId, workspaceId })),
   )
+  companies.domainTaken.mockResolvedValue(ok(false))
   companies.update.mockImplementation(async (id, data) =>
     ok(
       company({
         id,
         name: (data.name as string | undefined) ?? 'Empresa 11.222.333/0001-81',
         address: (data.address as never) ?? null,
+        ...(data.emails ? { emails: data.emails } : {}),
+        ...(data.phones ? { phones: data.phones } : {}),
+        ...(data.domain ? { domain: data.domain } : {}),
+        ...(data.legalName ? { legalName: data.legalName } : {}),
       }),
     ),
   )
@@ -340,6 +362,107 @@ describe('CrmCnpjEnrichmentService', () => {
         }),
       )
       expect(result.applied).toEqual(['address'])
+    })
+
+    describe('registry fields', () => {
+      const blank = {
+        legalName: null,
+        tradeName: null,
+        cnaeCode: null,
+        cnaeDescription: null,
+        size: null,
+        legalNature: null,
+        registrationStatus: null,
+        openedAt: null,
+        shareCapital: null,
+        emails: [],
+        phones: [],
+        domain: null,
+      }
+
+      it('fills every blank registry field, contacts and the domain', async () => {
+        companies.findById.mockResolvedValue(
+          ok(company({ ...blank, name: 'Boa', address: { city: 'Rio' } })),
+        )
+        const result = expectOk(
+          await CrmCnpjEnrichmentService.enrich(ACTOR, WS, 'c1', {
+            overwrite: false,
+          }),
+        )
+        expect(result.applied).toEqual([
+          'legalName',
+          'tradeName',
+          'cnae',
+          'size',
+          'legalNature',
+          'registrationStatus',
+          'openedAt',
+          'shareCapital',
+          'emails',
+          'phones',
+          'domain',
+        ])
+        expect(companies.update).toHaveBeenCalledWith(
+          'c1',
+          expect.objectContaining({
+            legalName: 'ACME COMERCIO DE ALIMENTOS LTDA',
+            cnaeCode: '4711302',
+            size: 'EPP',
+            openedAt: '2015-03-02',
+            shareCapital: 50000,
+            emails: ['contato@acme.com.br'],
+            phones: ['(11) 2395-8400'],
+            domain: 'acme.com.br',
+          }),
+        )
+        expect(enrichments.upsert).toHaveBeenCalled()
+      })
+
+      it('skips the domain silently when another company already has it', async () => {
+        companies.findById.mockResolvedValue(
+          ok(company({ domain: null, name: 'Boa', address: { city: 'Rio' } })),
+        )
+        companies.domainTaken.mockResolvedValue(ok(true))
+        const result = expectOk(
+          await CrmCnpjEnrichmentService.enrich(ACTOR, WS, 'c1', {
+            overwrite: false,
+          }),
+        )
+        expect(result.applied).not.toContain('domain')
+        expect(companies.update).not.toHaveBeenCalled()
+      })
+
+      it('skips the domain when the availability check fails', async () => {
+        companies.findById.mockResolvedValue(
+          ok(company({ domain: null, name: 'Boa', address: { city: 'Rio' } })),
+        )
+        companies.domainTaken.mockResolvedValue(err(databaseError('x')))
+        const result = expectOk(
+          await CrmCnpjEnrichmentService.enrich(ACTOR, WS, 'c1', {
+            overwrite: false,
+          }),
+        )
+        expect(result.applied).toEqual([])
+      })
+
+      it('never overwrites manual values without overwrite', async () => {
+        companies.findById.mockResolvedValue(
+          ok(
+            company({
+              legalName: 'Minha razão',
+              size: 'ME',
+              name: 'Boa',
+              address: { city: 'Rio' },
+            }),
+          ),
+        )
+        const result = expectOk(
+          await CrmCnpjEnrichmentService.enrich(ACTOR, WS, 'c1', {
+            overwrite: false,
+          }),
+        )
+        expect(result.applied).toEqual([])
+      })
     })
 
     it('does not touch the name when the registry has none', async () => {

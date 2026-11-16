@@ -78,6 +78,40 @@ export const CrmCompanyDTO = dto(
       icp: z
         .boolean()
         .meta({ description: 'Empresa dentro do perfil de cliente ideal.' }),
+      legalName: z
+        .string()
+        .nullable()
+        .meta({ description: 'Razão social (Receita).' }),
+      tradeName: z
+        .string()
+        .nullable()
+        .meta({ description: 'Nome fantasia (Receita).' }),
+      emails: z.array(z.string()).meta({
+        description:
+          'E-mails da empresa (união do que foi digitado e da Receita).',
+      }),
+      phones: z.array(z.string()).meta({
+        description: 'Telefones da empresa, ex.: `(11) 2395-8400`.',
+      }),
+      cnaeCode: z.string().nullable().meta({ example: '4711302' }),
+      cnaeDescription: z.string().nullable(),
+      size: z
+        .enum(['ME', 'EPP', 'DEMAIS'])
+        .nullable()
+        .meta({ description: 'Porte conforme a Receita.' }),
+      legalNature: z.string().nullable(),
+      registrationStatus: z
+        .string()
+        .nullable()
+        .meta({ description: 'Situação cadastral, ex.: `ATIVA`.' }),
+      openedAt: z
+        .string()
+        .nullable()
+        .meta({ description: 'Início das atividades (`AAAA-MM-DD`).' }),
+      shareCapital: z
+        .number()
+        .nullable()
+        .meta({ description: 'Capital social.' }),
       workspaceId: z.string(),
       createdById: z.string(),
       accountOwnerId: z

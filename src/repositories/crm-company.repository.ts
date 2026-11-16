@@ -4,7 +4,35 @@ import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
 
+type CompanySize = 'ME' | 'EPP' | 'DEMAIS'
+
+function toUtcDate(iso: string): Date {
+  return new Date(`${iso}T00:00:00Z`)
+}
+
 export const CrmCompanyRepository = {
+  /** Whether another live company of the workspace already uses the domain. */
+  async domainTaken(
+    workspaceId: string,
+    domain: string,
+    exceptId?: string,
+  ): Promise<Result<boolean>> {
+    try {
+      const found = await prisma.crmCompany.findFirst({
+        where: {
+          workspaceId,
+          domain,
+          deletedAt: null,
+          ...(exceptId ? { id: { not: exceptId } } : {}),
+        },
+        select: { id: true },
+      })
+      return ok(found !== null)
+    } catch (error) {
+      return err(dbError('Failed to check CRM company domain', error))
+    }
+  },
+
   async listByWorkspace(
     workspaceId: string,
     filters?: { icp?: boolean },
@@ -63,14 +91,30 @@ export const CrmCompanyRepository = {
     arr?: number
     icp?: boolean
     accountOwnerId?: string
+    legalName?: string
+    tradeName?: string
+    emails?: string[]
+    phones?: string[]
+    cnaeCode?: string
+    cnaeDescription?: string
+    size?: CompanySize
+    legalNature?: string
+    registrationStatus?: string
+    openedAt?: string
+    shareCapital?: number
   }): Promise<Result<CrmCompany>> {
     try {
       const position = await prisma.crmCompany.count({
         where: { workspaceId: data.workspaceId, deletedAt: null },
       })
 
+      const { openedAt, ...rest } = data
       const company = await prisma.crmCompany.create({
-        data: { ...data, position },
+        data: {
+          ...rest,
+          ...(openedAt ? { openedAt: toUtcDate(openedAt) } : {}),
+          position,
+        },
       })
       return ok(company)
     } catch (error) {
@@ -93,15 +137,30 @@ export const CrmCompanyRepository = {
       arr?: number | null
       icp?: boolean
       accountOwnerId?: string | null
+      legalName?: string | null
+      tradeName?: string | null
+      emails?: string[]
+      phones?: string[]
+      cnaeCode?: string | null
+      cnaeDescription?: string | null
+      size?: CompanySize | null
+      legalNature?: string | null
+      registrationStatus?: string | null
+      /** ISO date (`YYYY-MM-DD`); null clears. */
+      openedAt?: string | null
+      shareCapital?: number | null
       updatedById?: string
     },
   ): Promise<Result<CrmCompany>> {
     try {
-      const { address, ...rest } = data
+      const { address, openedAt, ...rest } = data
       const company = await prisma.crmCompany.update({
         where: { id },
         data: {
           ...rest,
+          ...(openedAt === undefined
+            ? {}
+            : { openedAt: openedAt === null ? null : toUtcDate(openedAt) }),
           // null limpa o endereço (coluna Json exige o sentinela DbNull).
           ...(address === undefined
             ? {}

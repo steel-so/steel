@@ -42,4 +42,32 @@ describe('toCrmCompanyDTO()', () => {
     expect(dto.address).toBeNull()
     expect(dto.arr).toBeNull()
   })
+
+  it('should map the registry fields', () => {
+    const dto = toCrmCompanyDTO(
+      createFakeCrmCompany({
+        legalName: 'ACME LTDA',
+        emails: ['a@acme.com'],
+        phones: ['(11) 2395-8400'],
+        size: 'EPP',
+        openedAt: new Date('2015-03-02T00:00:00Z'),
+        shareCapital: new Prisma.Decimal('50000.5'),
+      }),
+    )
+    expect(dto.legalName).toBe('ACME LTDA')
+    expect(dto.emails).toEqual(['a@acme.com'])
+    expect(dto.phones).toEqual(['(11) 2395-8400'])
+    expect(dto.size).toBe('EPP')
+    expect(dto.openedAt).toBe('2015-03-02')
+    expect(dto.shareCapital).toBe(50000.5)
+  })
+
+  it('should default registry fields to null/empty', () => {
+    const dto = toCrmCompanyDTO(createFakeCrmCompany())
+    expect(dto.openedAt).toBeNull()
+    expect(dto.shareCapital).toBeNull()
+    expect(dto.size).toBeNull()
+    expect(dto.emails).toEqual([])
+    expect(dto.phones).toEqual([])
+  })
 })

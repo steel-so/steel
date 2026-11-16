@@ -2,6 +2,7 @@ import type { CrmCompany, Prisma } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { crmCnpjInvalid, crmCnpjRunActive } from '@/src/errors'
+import { companyPatchFromProfile } from '@/src/lib/cnpj/company-patch'
 import { getCnpjProvider } from '@/src/lib/cnpj/provider'
 import { isValidCnpj, normalizeCnpj } from '@/src/lib/crm-cnpj'
 import { CrmCnpjEnrichmentJob } from '@/src/lib/queue/jobs'
@@ -31,24 +32,7 @@ import type {
   CrmCompanyEnrichmentDTO,
   CrmCompanyEnrichResultDTO,
 } from '@/types/crm-cnpj'
-import type { CrmCompanyAddress } from '@/types/crm-company'
 import { assertModuleMember, assertModulePrivileged } from './authz'
-
-/** Names the grid fills in when the CNPJ lookup failed at creation time. */
-const PLACEHOLDER_NAME = /^Empresa [\d./-]+$/
-
-function isBlankName(name: string): boolean {
-  const t = name.trim()
-  return t === '' || PLACEHOLDER_NAME.test(t)
-}
-
-function hasAddress(address: unknown): boolean {
-  return (
-    typeof address === 'object' &&
-    address !== null &&
-    Object.values(address).some((v) => typeof v === 'string' && v.trim() !== '')
-  )
-}
 
 type EnrichInput = {
   workspaceId: string
@@ -77,26 +61,30 @@ export async function enrichCompany(
   )
   if (!saved.ok) return saved
 
-  const applied: CrmCnpjAppliedField[] = []
-  const patch: { name?: string; address?: CrmCompanyAddress } = {}
+  const patch = companyPatchFromProfile(company, profile.value, overwrite)
+  const applied: CrmCnpjAppliedField[] = [...patch.applied]
+  let domain: string | undefined
 
-  const name = profile.value.tradeName ?? profile.value.legalName
-  if (name && (overwrite || isBlankName(company.name))) {
-    patch.name = name
-    applied.push('name')
-  }
-  if (profile.value.address && (overwrite || !hasAddress(company.address))) {
-    patch.address = profile.value.address
-    applied.push('address')
+  if (patch.domainCandidate) {
+    // A taken domain (or a failed check) skips the field silently.
+    const taken = await CrmCompanyRepository.domainTaken(
+      workspaceId,
+      patch.domainCandidate,
+      company.id,
+    )
+    if (taken.ok && !taken.value) {
+      domain = patch.domainCandidate
+      applied.push('domain')
+    }
   }
 
   let current = company
   if (applied.length > 0) {
+    const { address, ...rest } = patch.data
     const updated = await CrmCompanyRepository.update(company.id, {
-      ...(patch.name ? { name: patch.name } : {}),
-      ...(patch.address
-        ? { address: patch.address as Prisma.InputJsonValue }
-        : {}),
+      ...rest,
+      ...(address ? { address: address as Prisma.InputJsonValue } : {}),
+      ...(domain ? { domain } : {}),
       updatedById: actorId,
     })
     if (!updated.ok) return updated

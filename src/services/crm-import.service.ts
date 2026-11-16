@@ -185,6 +185,7 @@ async function importPerson(
     actorId,
     workspaceId,
     parsed.data,
+    { enrich: false },
   )
   if (!result.ok) return rejectedRow(reasonOf(result.error))
   return { created: true }
@@ -216,6 +217,8 @@ async function importCompany(
     actorId,
     workspaceId,
     parsed.data,
+    // Bulk rows must not each hit the Receita; the base run enriches later.
+    { enrich: false },
   )
   if (!result.ok) return rejectedRow(reasonOf(result.error))
   return { created: true }

@@ -2536,6 +2536,20 @@ model CrmCompany {
   address        Json?
   arr            Decimal?  @db.Decimal(14, 2)
   icp            Boolean   @default(false)
+  // Registry data (Receita), filled at creation and by the enrichment when
+  // blank; the user can edit all of it. Partners and secondary CNAEs stay in
+  // the enrichment snapshot (crm_company_enrichments).
+  legalName          String?   @map("legal_name")
+  tradeName          String?   @map("trade_name")
+  emails             String[]  @default([])
+  phones             String[]  @default([])
+  cnaeCode           String?   @map("cnae_code")
+  cnaeDescription    String?   @map("cnae_description")
+  size               String?
+  legalNature        String?   @map("legal_nature")
+  registrationStatus String?   @map("registration_status")
+  openedAt           DateTime? @map("opened_at") @db.Date
+  shareCapital       Decimal?  @map("share_capital") @db.Decimal(16, 2)
   workspaceId    String    @map("workspace_id")
   createdById    String    @map("created_by_id")
   accountOwnerId String?   @map("account_owner_id")

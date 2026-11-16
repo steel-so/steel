@@ -48,6 +48,9 @@ const FULL = {
   bairro: 'CENTRO',
   municipio: 'SAO PAULO',
   uf: 'sp',
+  email: ' Contato@Acme.com.br ',
+  ddd_telefone_1: '1123958400',
+  ddd_telefone_2: '11999990000',
 }
 
 afterEach(() => {
@@ -114,6 +117,16 @@ describe('toCnpjProfile', () => {
     })
   })
 
+  it('drops junk contacts', () => {
+    const profile = toCnpjProfile(CNPJ, {
+      email: 'sem email',
+      ddd_telefone_1: '1100000000',
+      ddd_telefone_2: '123',
+    })
+    expect(profile.emails).toEqual([])
+    expect(profile.phones).toEqual([])
+  })
+
   it('handles an empty payload', () => {
     const profile = toCnpjProfile(CNPJ, {})
     expect(profile).toMatchObject({
@@ -125,6 +138,8 @@ describe('toCnpjProfile', () => {
       address: null,
       secondaryCnaes: [],
       partners: [],
+      emails: [],
+      phones: [],
     })
   })
 
@@ -160,6 +175,11 @@ const WS = {
   ],
   estabelecimento: {
     nome_fantasia: null,
+    email: 'contato@acme.com.br',
+    ddd1: '11',
+    telefone1: '23958400',
+    ddd2: null,
+    telefone2: null,
     situacao_cadastral: 'Ativa',
     data_inicio_atividade: '2015-03-02',
     tipo_logradouro: 'RUA',
@@ -200,6 +220,14 @@ const CNPJA = {
     state: 'SP',
     zip: '01001000',
   },
+  emails: [
+    {
+      address: 'googlebrasil@google.com',
+      domain: 'google.com',
+      ownership: 'CORPORATE',
+    },
+  ],
+  phones: [{ type: 'LANDLINE', area: '11', number: '23958400' }],
   mainActivity: { id: 4711302, text: 'Comércio varejista' },
   sideActivities: [{ id: 4712100, text: 'Minimercados' }],
 }
@@ -222,6 +250,8 @@ const RECEITAWS = {
   municipio: 'SAO PAULO',
   uf: 'SP',
   cep: '01.001-000',
+  email: 'CONTATO@acme.com.br',
+  telefone: '(11) 2395-8400 / (11) 2395-8401',
 }
 
 describe('BrasilApiCnpjProvider', () => {
@@ -316,8 +346,66 @@ describe('BrasilApiCnpjProvider', () => {
     const fetchMock = sources({})
     const cached = toCnpjProfile(CNPJ, FULL)
     cache.get.mockResolvedValue(cached)
-    expect(expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))).toBe(cached)
+    expect(expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))).toEqual(cached)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('tolerates a cached profile without emails/phones', async () => {
+    const { emails: _e, phones: _p, ...old } = toCnpjProfile(CNPJ, FULL)
+    cache.get.mockResolvedValue(old)
+    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+    expect(profile.emails).toEqual([])
+    expect(profile.phones).toEqual([])
+  })
+
+  it('extracts contacts from each source', async () => {
+    const cases: Array<[string, unknown, string[], string[]]> = [
+      [HOSTS.cnpja, CNPJA, ['googlebrasil@google.com'], ['(11) 2395-8400']],
+      [HOSTS.cnpjws, WS, ['contato@acme.com.br'], ['(11) 2395-8400']],
+      [
+        HOSTS.receitaws,
+        RECEITAWS,
+        ['contato@acme.com.br'],
+        ['(11) 2395-8400', '(11) 2395-8401'],
+      ],
+      [
+        HOSTS.brasilapi,
+        FULL,
+        ['contato@acme.com.br'],
+        ['(11) 2395-8400', '(11) 99999-0000'],
+      ],
+      [
+        HOSTS.mirror,
+        FULL,
+        ['contato@acme.com.br'],
+        ['(11) 2395-8400', '(11) 99999-0000'],
+      ],
+    ]
+    for (const [host, body, emails, phones] of cases) {
+      sources({ [host]: { status: 200, body } })
+      const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+      expect(profile.emails, host).toEqual(emails)
+      expect(profile.phones, host).toEqual(phones)
+    }
+  })
+
+  it('unions contacts across sources without duplicates', async () => {
+    sources({
+      [HOSTS.cnpja]: { status: 200, body: CNPJA },
+      [HOSTS.cnpjws]: { status: 200, body: WS },
+      [HOSTS.receitaws]: { status: 200, body: RECEITAWS },
+      [HOSTS.brasilapi]: { status: 200, body: FULL },
+    })
+    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+    expect(profile.emails).toEqual([
+      'googlebrasil@google.com',
+      'contato@acme.com.br',
+    ])
+    expect(profile.phones).toEqual([
+      '(11) 2395-8400',
+      '(11) 99999-0000',
+      '(11) 2395-8401',
+    ])
   })
 
   it('says not found when an authoritative source does and nobody has it', async () => {

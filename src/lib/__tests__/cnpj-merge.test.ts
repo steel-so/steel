@@ -16,6 +16,8 @@ const EMPTY: CnpjProfile = {
   shareCapital: null,
   partners: [],
   address: null,
+  emails: [],
+  phones: [],
 }
 
 const profile = (patch: Partial<CnpjProfile>): CnpjProfile => ({
@@ -133,5 +135,20 @@ describe('mergeCnpjProfiles()', () => {
       }),
     ])
     expect(merged.address).toMatchObject({ street: 'Rua B', state: 'RJ' })
+  })
+
+  it('unions emails and phones, deduplicating by normalized value', () => {
+    const merged = mergeCnpjProfiles([
+      profile({
+        emails: ['a@x.com', 'b@x.com'],
+        phones: ['(11) 2395-8400'],
+      }),
+      profile({
+        emails: ['A@x.com', 'c@x.com'],
+        phones: ['1123958400', '(11) 99999-0000'],
+      }),
+    ])
+    expect(merged.emails).toEqual(['a@x.com', 'b@x.com', 'c@x.com'])
+    expect(merged.phones).toEqual(['(11) 2395-8400', '(11) 99999-0000'])
   })
 })

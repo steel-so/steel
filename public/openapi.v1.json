@@ -187,7 +187,7 @@
         "tags": ["CRM"],
         "summary": "Listar empresas",
         "operationId": "listCrmCompanies",
-        "description": "Empresas do CRM (as excluídas ficam de fora), na ordem manual do app. `icp=true` limita ao perfil de cliente ideal. Paginação por cursor: `limit` (padrão 25, máximo 100) e `cursor` (o `nextCursor` da página anterior). Escopo `api:read` (todo token tem). Roda com as permissões do dono do token.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Empresas do CRM (as excluídas ficam de fora), na ordem manual do app. `icp=true` limita ao perfil de cliente ideal. Cada empresa traz os dados cadastrais da Receita (razão social, fantasia, CNAE, porte, situação, abertura, capital, e-mails e telefones). Ao criar (ou trocar o CNPJ) com um CNPJ válido, o que está em branco é preenchido pela Receita; o que foi enviado prevalece e uma consulta que falha não impede a gravação. Paginação por cursor: `limit` (padrão 25, máximo 100) e `cursor` (o `nextCursor` da página anterior). Escopo `api:read` (todo token tem). Roda com as permissões do dono do token.\n\nRate limit por token e por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "limit",
@@ -342,6 +342,59 @@
                   "icp": {
                     "default": false,
                     "type": "boolean"
+                  },
+                  "legalName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "tradeName": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "emails": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "format": "email"
+                    }
+                  },
+                  "phones": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 30
+                    }
+                  },
+                  "cnaeCode": {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  "cnaeDescription": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "size": {
+                    "type": "string",
+                    "enum": ["ME", "EPP", "DEMAIS"]
+                  },
+                  "legalNature": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "registrationStatus": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "openedAt": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "shareCapital": {
+                    "type": "number",
+                    "minimum": 0
                   },
                   "accountOwnerId": {
                     "type": "string"
@@ -591,6 +644,122 @@
                   },
                   "icp": {
                     "type": "boolean"
+                  },
+                  "legalName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tradeName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "emails": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 200,
+                      "format": "email"
+                    }
+                  },
+                  "phones": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 30
+                    }
+                  },
+                  "cnaeCode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 10
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "cnaeDescription": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "size": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["ME", "EPP", "DEMAIS"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "legalNature": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 150
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "registrationStatus": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "openedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "shareCapital": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "accountOwnerId": {
                     "anyOf": [
@@ -9792,6 +9961,118 @@
             "type": "boolean",
             "description": "Empresa dentro do perfil de cliente ideal."
           },
+          "legalName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Razão social (Receita)."
+          },
+          "tradeName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Nome fantasia (Receita)."
+          },
+          "emails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "E-mails da empresa (união do que foi digitado e da Receita)."
+          },
+          "phones": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Telefones da empresa, ex.: `(11) 2395-8400`."
+          },
+          "cnaeCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "4711302"
+          },
+          "cnaeDescription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["ME", "EPP", "DEMAIS"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Porte conforme a Receita."
+          },
+          "legalNature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrationStatus": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Situação cadastral, ex.: `ATIVA`."
+          },
+          "openedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Início das atividades (`AAAA-MM-DD`)."
+          },
+          "shareCapital": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Capital social."
+          },
           "workspaceId": {
             "type": "string"
           },
@@ -9850,6 +10131,17 @@
           "address",
           "arr",
           "icp",
+          "legalName",
+          "tradeName",
+          "emails",
+          "phones",
+          "cnaeCode",
+          "cnaeDescription",
+          "size",
+          "legalNature",
+          "registrationStatus",
+          "openedAt",
+          "shareCapital",
           "workspaceId",
           "createdById",
           "accountOwnerId",

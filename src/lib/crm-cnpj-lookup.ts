@@ -38,8 +38,27 @@ export async function lookupCnpj(
 
   const razaoSocial = profile.legalName ?? undefined
   const nomeFantasia = profile.tradeName ?? undefined
+  const registry: Record<string, unknown> = {}
+  const scalars = {
+    legalName: profile.legalName,
+    tradeName: profile.tradeName,
+    cnaeCode: profile.cnaeCode,
+    cnaeDescription: profile.cnaeDescription,
+    size: profile.size,
+    legalNature: profile.legalNature,
+    registrationStatus: profile.registrationStatus,
+    openedAt: profile.openedAt,
+    shareCapital: profile.shareCapital,
+  }
+  for (const [key, value] of Object.entries(scalars)) {
+    if (value !== null && value !== undefined) registry[key] = value
+  }
+  if (profile.emails?.length) registry.emails = profile.emails
+  if (profile.phones?.length) registry.phones = profile.phones
+
   return {
     cnpj: formatCnpj(cnpj),
+    registry,
     razaoSocial,
     nomeFantasia,
     name: nomeFantasia ?? razaoSocial,

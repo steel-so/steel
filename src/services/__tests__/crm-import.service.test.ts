@@ -9,7 +9,9 @@ vi.mock('@/src/repositories/crm-person.repository')
 vi.mock('../authz', () => ({ assertModuleMember: vi.fn() }))
 vi.mock('../crm-lead.service')
 vi.mock('../crm-person.service')
-vi.mock('../crm-company.service')
+vi.mock('../crm-company.service', () => ({
+  CrmCompanyService: { create: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { CrmCompanyRepository } from '@/src/repositories/crm-company.repository'
@@ -265,6 +267,8 @@ describe('CrmImportService.import', () => {
       })
       expect(createCompany.mock.calls[2][2].address).toBeUndefined()
       expect(createCompany.mock.calls[2][2].domain).toBeUndefined()
+      // bulk rows never hit the Receita
+      expect(createCompany.mock.calls[0][3]).toEqual({ enrich: false })
       expect(audit).toHaveBeenCalledWith(
         expect.objectContaining({ entity: 'crm_company', action: 'import' }),
       )

@@ -6,7 +6,7 @@ import { createKeyedCache } from './_cache'
  * o mesmo CNPJ não volta às APIs públicas (que limitam por IP) por 24 h.
  */
 export const CrmCnpjCache = createKeyedCache<CnpjProfile>({
-  prefix: 'crm:cnpj:',
+  prefix: 'crm:cnpj:v2:',
   ttl: 24 * 60 * 60,
   name: 'crm_cnpj',
 })

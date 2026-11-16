@@ -106,15 +106,24 @@ describe('cnpj labels', () => {
 
   it('summarizes what an enrichment applied', () => {
     expect(appliedSummary([])).toContain('já estavam preenchidos')
-    expect(appliedSummary(['name', 'address'])).toContain('nome e endereço')
+    expect(appliedSummary(['name', 'address'])).toBe(
+      'Dados da Receita atualizados — nome e endereço preenchidos',
+    )
+    expect(appliedSummary(['legalName'])).toBe(
+      'Dados da Receita atualizados — razão social preenchido',
+    )
+    expect(appliedSummary(['legalName', 'emails', 'phones'])).toBe(
+      'Dados da Receita atualizados — razão social, e-mails e telefones preenchidos',
+    )
   })
 })
 
 describe('<CompanyEnrichmentPanel />', () => {
   it('shows the Receita profile', () => {
     panel()
-    expect(screen.getByText('ACME LTDA')).toBeTruthy()
-    expect(screen.getByText(/4711-3\/02/)).toBeTruthy()
+    // Scalar registry data lives in the company fields, not here anymore.
+    expect(screen.queryByText('ACME LTDA')).toBeNull()
+    expect(screen.getByText(/Consultado em/)).toBeTruthy()
     expect(screen.getByText('MARIA DA SILVA')).toBeTruthy()
     expect(screen.getByText(/CNAEs secundários \(1\)/)).toBeTruthy()
     expect(

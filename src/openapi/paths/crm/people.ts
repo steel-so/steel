@@ -219,6 +219,7 @@ export const crmPeopleRoutes: RouteConfig[] = [
     summary: 'Criar empresa',
     description: describe(
       'Domínio e CNPJ são únicos por workspace.',
+      'Com um CNPJ válido, a criação consulta a Receita e preenche o que ficou em branco (razão social, fantasia, CNAE, porte, natureza jurídica, situação, abertura, capital, endereço, e-mails, telefones e domínio); o que foi enviado sempre prevalece. Se a consulta falhar, a empresa é criada normalmente só com os dados enviados. Campos de registro (`legalName`, `tradeName`, `emails`, `phones`, `cnaeCode`, `cnaeDescription`, `size`, `legalNature`, `registrationStatus`, `openedAt`, `shareCapital`) também podem ser enviados.',
       CUSTOM_FIELDS_NOTE,
       SIDE_EFFECTS_NOTE,
       crmAccess('companies', 'CREATE'),
@@ -233,6 +234,10 @@ export const crmPeopleRoutes: RouteConfig[] = [
         employees: 120,
         icp: true,
         address: { city: 'São Paulo', state: 'SP', country: 'Brasil' },
+        emails: ['contato@empresa.com.br'],
+        phones: ['(11) 2395-8400'],
+        size: 'EPP',
+        openedAt: '2015-03-02',
       },
     },
     responses: {

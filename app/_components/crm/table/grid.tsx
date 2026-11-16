@@ -95,6 +95,8 @@ export type GridColumn = {
   relationKind?: RelationKind
   /** select/relation podem ser limpos (— nenhum —). */
   clearable?: boolean
+  /** date: valor `YYYY-MM-DD` sem horário (ex.: abertura na Receita). */
+  dateOnly?: boolean
   /** Apenas exibição (ex.: created by / updated by). */
   readonly?: boolean
   /** primary: adiciona um ícone que linka para `/{slug}/{resource}/{id}`. */
@@ -313,6 +315,16 @@ function BoolToggle({
   )
 }
 
+/** `YYYY-MM-DD` is read as a local calendar day (no UTC shift). */
+function parseDateValue(value: unknown, dateOnly?: boolean): Date | undefined {
+  if (typeof value !== 'string' || !value) return undefined
+  if (dateOnly) {
+    const [y, m, d] = value.slice(0, 10).split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return new Date(value)
+}
+
 function DateEditor({
   col,
   value,
@@ -323,7 +335,7 @@ function DateEditor({
   commit: (next: unknown) => void
 }) {
   const [open, setOpen] = React.useState(false)
-  const date = typeof value === 'string' && value ? new Date(value) : undefined
+  const date = parseDateValue(value, col.dateOnly)
 
   if (col.kind === 'readonly-date') {
     return (
@@ -357,9 +369,15 @@ function DateEditor({
           selected={date}
           onSelect={(next) => {
             if (next) {
-              const d = new Date(next)
-              d.setHours(12, 0, 0, 0)
-              commit(d.toISOString())
+              if (col.dateOnly) {
+                const mm = String(next.getMonth() + 1).padStart(2, '0')
+                const dd = String(next.getDate()).padStart(2, '0')
+                commit(`${next.getFullYear()}-${mm}-${dd}`)
+              } else {
+                const d = new Date(next)
+                d.setHours(12, 0, 0, 0)
+                commit(d.toISOString())
+              }
             }
             setOpen(false)
           }}
@@ -396,7 +414,10 @@ function SelectEditor({
   const style = col.optionStyles?.[current]
 
   return (
-    <Select value={current} onValueChange={(v) => commit(v)}>
+    <Select
+      value={current}
+      onValueChange={(v) => commit(v === NONE ? null : v)}
+    >
       <SelectTrigger
         size='sm'
         className='w-full border-transparent bg-transparent px-1.5 shadow-none hover:bg-muted/50'
@@ -412,6 +433,9 @@ function SelectEditor({
         )}
       </SelectTrigger>
       <SelectContent>
+        {col.clearable ? (
+          <SelectItem value={NONE}>— nenhum —</SelectItem>
+        ) : null}
         {(col.options ?? []).map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
             {opt.label}
@@ -802,6 +826,7 @@ function CnpjEditor({
         const fields: Record<string, unknown> = {}
         if (result.name) fields.name = result.name
         if (result.address) fields.address = result.address
+        Object.assign(fields, result.registry)
         if (Object.keys(fields).length > 0) {
           autofill(fields)
           notify.success('Empresa preenchida pelo CNPJ')
@@ -1231,8 +1256,21 @@ function EditableCell<T extends WithId>({
         ? { customFields: { [col.customFieldId]: next } }
         : { [col.key]: next },
     )
-  const autofill = (fields: Record<string, unknown>) =>
-    grid.patch(row.original.id, fields)
+  // Receita data only fills blanks of the registry columns; name and address
+  // keep their historical overwrite behaviour.
+  const autofill = (fields: Record<string, unknown>) => {
+    const current = row.original as Record<string, unknown>
+    const next: Record<string, unknown> = {}
+    for (const [key, val] of Object.entries(fields)) {
+      const existing = current[key]
+      const blank =
+        existing == null ||
+        existing === '' ||
+        (Array.isArray(existing) && existing.length === 0)
+      if (key === 'name' || key === 'address' || blank) next[key] = val
+    }
+    if (Object.keys(next).length > 0) grid.patch(row.original.id, next)
+  }
 
   const editor = (
     <CellEditor

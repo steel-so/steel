@@ -28,6 +28,8 @@ export function createFakeCnpjProfile(
         enteredAt: '2015-03-02',
       },
     ],
+    emails: ['contato@acme.com.br'],
+    phones: ['(11) 2395-8400'],
     address: {
       street: 'RUA DAS FLORES',
       number: '100',

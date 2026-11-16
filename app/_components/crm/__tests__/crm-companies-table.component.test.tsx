@@ -27,6 +27,17 @@ const COMPANY = {
   id: 'c1',
   cnpj: null,
   name: 'Acme Ltda',
+  legalName: null,
+  tradeName: null,
+  emails: [],
+  phones: [],
+  cnaeCode: null,
+  cnaeDescription: null,
+  size: null,
+  legalNature: null,
+  registrationStatus: null,
+  openedAt: null,
+  shareCapital: null,
   domain: 'acme.com',
   employees: 120,
   linkedin: null,
@@ -183,7 +194,9 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
     expect(patches).toContainEqual(
       expect.objectContaining({ name: 'Acme Store' }),
     )
-    expect(await within(row).findByText('Acme Store')).toBeTruthy()
+    expect(
+      (await within(row).findAllByText('Acme Store')).length,
+    ).toBeGreaterThan(0)
   })
 
   it('warns when the CNPJ is not registered at Receita', async () => {
@@ -256,6 +269,131 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
           ([u, init]) => /\/crm\/companies$/.test(String(u)) && !init?.method,
         ).length,
       ).toBeGreaterThan(listCallsBefore),
+    )
+  })
+
+  it('shows every registry column in the grid', async () => {
+    mockFetch(baseRoutes())
+    renderTable()
+    await rowOf('Acme Ltda')
+    for (const header of [
+      'Razão social',
+      'Nome fantasia',
+      'E-mails',
+      'Telefones',
+      'CNAE',
+      'Atividade principal',
+      'Porte',
+      'Natureza jurídica',
+      'Situação cadastral',
+      'Abertura',
+      'Capital social',
+    ]) {
+      expect(screen.getAllByText(header).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('renders an enriched company with date-only opening and capital', async () => {
+    mockFetch(
+      baseRoutes([
+        {
+          ...COMPANY,
+          cnpj: VALID_CNPJ,
+          legalName: 'ACME COMERCIO LTDA',
+          tradeName: 'Acme Store',
+          emails: ['contato@acme.com'],
+          phones: ['(11) 2395-8400'],
+          cnaeCode: '4711302',
+          cnaeDescription: 'Comércio varejista',
+          size: 'EPP',
+          legalNature: 'Sociedade Limitada',
+          registrationStatus: 'ATIVA',
+          openedAt: '2015-03-02',
+          shareCapital: 50000,
+        },
+      ]),
+    )
+    renderTable()
+    const row = await rowOf('Acme Ltda')
+    expect(within(row).getByText('ACME COMERCIO LTDA')).toBeTruthy()
+    expect(within(row).getByText('contato@acme.com')).toBeTruthy()
+    expect(within(row).getByText('(11) 2395-8400')).toBeTruthy()
+    expect(within(row).getByText('Empresa de pequeno porte')).toBeTruthy()
+    expect(within(row).getByText(/2 de mar/)).toBeTruthy()
+    expect(within(row).getByText(/R\$\s?50\.000/)).toBeTruthy()
+  })
+
+  it('saves e-mails as an array through PATCH', async () => {
+    const fetchSpy = mockFetch([
+      ...baseRoutes(),
+      {
+        method: 'PATCH',
+        match: '/crm/companies/c1',
+        handler: () => ({ ...COMPANY, emails: ['a@acme.com', 'b@acme.com'] }),
+      },
+    ])
+    renderTable()
+    const row = await rowOf('Acme Ltda')
+    const cell = within(row).getAllByText('—')[0]
+    expect(cell).toBeTruthy()
+    const emailsIndex = Array.from(
+      document.querySelectorAll('thead th'),
+    ).findIndex((th) => th.textContent?.includes('E-mails'))
+    const td = row.querySelectorAll('td')[emailsIndex] as HTMLElement
+    fireEvent.click(td.querySelector('button, span, div') as HTMLElement)
+    const input = td.querySelector('input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'a@acme.com, b@acme.com' } })
+    fireEvent.blur(input)
+    await waitFor(() =>
+      expect(fetchBody(fetchSpy, '/crm/companies/c1', 'PATCH')).toEqual({
+        emails: ['a@acme.com', 'b@acme.com'],
+      }),
+    )
+  })
+
+  it('autofills the registry columns from the Receita lookup', async () => {
+    const fetchSpy = mockFetch([
+      ...baseRoutes(),
+      {
+        method: 'PATCH',
+        match: '/crm/companies/c1',
+        handler: () => ({ ...COMPANY, cnpj: VALID_CNPJ }),
+      },
+      {
+        method: 'POST',
+        match: '/crm/companies/cnpj-lookup',
+        handler: () => ({
+          cnpj: VALID_CNPJ,
+          legalName: 'ACME COMERCIO LTDA',
+          tradeName: 'Acme Store',
+          emails: ['contato@acme.com'],
+          phones: ['(11) 2395-8400'],
+          size: 'ME',
+          openedAt: '2015-03-02',
+          shareCapital: 1000,
+          address: null,
+        }),
+      },
+    ])
+    renderTable()
+    const row = await rowOf('Acme Ltda')
+    fireEvent.click(within(row).getByText('00.000.000/0000-00'))
+    const input = within(row).getByPlaceholderText('00.000.000/0000-00')
+    fireEvent.change(input, { target: { value: VALID_CNPJ } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(await within(row).findByText('contato@acme.com')).toBeTruthy()
+    expect(within(row).getByText('ACME COMERCIO LTDA')).toBeTruthy()
+    const patches = fetchSpy.mock.calls
+      .filter(([, init]) => init?.method === 'PATCH')
+      .map(([, init]) => JSON.parse(String(init?.body)))
+    expect(patches).toContainEqual(
+      expect.objectContaining({
+        emails: ['contato@acme.com'],
+        phones: ['(11) 2395-8400'],
+        openedAt: '2015-03-02',
+        shareCapital: 1000,
+      }),
     )
   })
 })

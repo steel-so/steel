@@ -5,13 +5,33 @@ Preenche e guarda o perfil da Receita Federal de cada `CrmCompany`.
 ## Como funciona
 
 - **Fonte**: interface `CnpjProvider` (`src/lib/cnpj/provider.ts`). O padrão é a BrasilAPI (base pública da Receita, sem chave, limitada por IP). Trocar por um provedor pago é implementar a interface e alterar `getCnpjProvider()`.
-- **Dados**: tabela `crm_company_enrichments` (1:1 com a empresa, atualizada no lugar): razão social, fantasia, CNAE principal e secundários, porte (ME/EPP/DEMAIS), natureza jurídica, situação, abertura, capital e sócios (nome, qualificação, entrada; nenhum CPF). Nome e endereço da própria empresa só são preenchidos quando vazios (ou com `overwrite`); o nome provisório `Empresa 00.000.000/0000-00` conta como vazio.
+- **Dados**: tabela `crm_company_enrichments` (1:1 com a empresa, atualizada no lugar): razão social, fantasia, CNAE principal e secundários, porte (ME/EPP/DEMAIS), natureza jurídica, situação, abertura, capital e sócios (nome, qualificação, entrada; nenhum CPF). O nome provisório `Empresa 00.000.000/0000-00` conta como vazio.
 - **Uma empresa**: `POST /api/workspaces/{id}/crm/companies/{companyId}/enrichment` (permissão `companies` x `EDIT`). Prévia sem gravar: `POST .../companies/cnpj-lookup`.
 - **Base inteira**: `POST .../companies/enrichment-runs` (OWNER/ADMIN) cria uma linha em `crm_cnpj_enrichment_runs` e enfileira `crm-cnpj-enrichment` (`attempts: 1`). O worker (`CrmCnpjEnrichmentRunner`) percorre as empresas com CNPJ em páginas de 25, uma chamada a cada 400 ms, recua 30 s x tentativa em 429 (até 3 vezes) e grava os contadores a cada página. Uma execução ativa por workspace.
 - **Cancelar** (`nov_ai_crm_followups`): `POST .../companies/enrichment-runs/{runId}/cancel` (OWNER/ADMIN). Cancelamento **cooperativo**: uma execução `QUEUED` vira `CANCELED` na hora; uma `RUNNING` só recebe `cancel_requested_at` (a API expõe `cancelRequested`) e o runner lê o flag **entre duas empresas** (`isCancelRequested`), termina a que está em curso, grava os contadores e fecha como `CANCELED`. Uma execução já terminada responde `CRM_CNPJ_RUN_NOT_CANCELABLE` (409). O que foi enriquecido antes do cancelamento fica guardado. A tela tem o botão **Cancelar** na linha da execução ativa.
 - **Aviso no fim**: `CRM_CNPJ_ENRICHMENT_FINISHED` (`src/services/crm-cnpj-notifications.ts`) para quem iniciou a execução, ao concluir, cancelar ou falhar (resumo com consultadas, atualizadas, sem registro e falhas; link `/<slug>/crm/companies`; `dedupeKey crm-cnpj-run:<id>`).
 - **Busca em linguagem natural**: a pergunta "empresas de alimentos…" usa `enriched` e `activityContains` (CNAE da Receita) — ver `docs/crm-busca-natural-e-conectar-ia.md`.
 - **Auditoria**: entidade `crm_cnpj_enrichment` (por empresa e por execução; `cancel` ao cancelar).
+
+## Dados gravados na própria empresa
+
+Além do snapshot (sócios, CNAEs secundários), a empresa (`crm_companies`) guarda os campos mais usados: `legalName` (razão social), `tradeName` (fantasia), `emails[]`, `phones[]`, `cnaeCode` + `cnaeDescription`, `size` (ME/EPP/DEMAIS), `legalNature`, `registrationStatus`, `openedAt` (data), `shareCapital`, além de `name`, `address` e `domain`. Todos podem ser enviados na criação e editados/limpos depois (`PATCH`, `null` ou `''` apaga).
+
+Regras de preenchimento (`src/lib/cnpj/company-patch.ts`, função pura):
+
+- **Sem `overwrite`**: só preenche o que está vazio (nulo ou em branco). Valor digitado à mão nunca é trocado. `name` é preenchido quando vazio ou provisório (`Empresa 00.000.000/0000-00`); `address` quando a empresa não tem nenhum campo.
+- **Com `overwrite`**: troca pelo valor da Receita quando for diferente.
+- **E-mails e telefones**: união com o que a empresa já tem, sem duplicar (e-mail sem diferenciar maiúsculas; telefone pelos dígitos). Com `overwrite`, a lista da Receita substitui (se a Receita não trouxe nada, a lista atual fica).
+- **Domínio**: se a empresa não tem, é derivado do primeiro e-mail que não seja de provedor genérico (gmail, hotmail, outlook, live, yahoo, uol, bol, terra, icloud, msn, ig, globo, protonmail...). Se outra empresa do workspace já usa esse domínio, ele é ignorado em silêncio.
+- A lista `applied` devolvida só traz o que mudou de fato (`name`, `address`, `legalName`, `tradeName`, `cnae`, `size`, `legalNature`, `registrationStatus`, `openedAt`, `shareCapital`, `emails`, `phones`, `domain`).
+
+## Criação completa
+
+`CrmCompanyService.create` (tela, API, IA) com um CNPJ válido consulta a Receita logo após gravar e preenche tudo o que ficou em branco (sem `overwrite`; o que o usuário enviou sempre vence) e guarda o snapshot. Atividade, webhook e workflows já recebem o registro completo. A consulta nunca bloqueia a criação: se falhar ou estiver indisponível, a empresa fica só com os dados enviados (aviso no log `crm.company.enrich_skipped`) e pode ser atualizada depois por "Atualizar da Receita". Ao editar, trocar o CNPJ por outro válido faz o mesmo. A **importação CSV não consulta por linha** (`{ enrich: false }`); para completar a base use a execução em massa.
+
+## Ainda não fornecido
+
+Site e número de funcionários: a Receita/BrasilAPI não informam; continuam manuais (`domain` só é inferido pelo e-mail).
 
 ## Operação
 

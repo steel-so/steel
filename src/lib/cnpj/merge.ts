@@ -1,4 +1,5 @@
 import type { CrmCompanyAddress } from '@/types/crm-company'
+import { uniqueEmails, uniquePhones } from './contacts'
 import type { CnpjPartner, CnpjProfile, CnpjSecondaryCnae } from './provider'
 
 /**
@@ -125,5 +126,7 @@ export function mergeCnpjProfiles(profiles: CnpjProfile[]): CnpjProfile {
     shareCapital: capital(profiles),
     partners: mergePartners(profiles),
     address: mergeAddress(profiles),
+    emails: uniqueEmails(profiles.flatMap((p) => p.emails ?? [])),
+    phones: uniquePhones(profiles.flatMap((p) => p.phones ?? [])),
   }
 }
