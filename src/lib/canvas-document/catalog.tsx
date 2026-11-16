@@ -49,6 +49,7 @@ import { err, ok, type Result } from '@/src/lib/result'
 import { contentDefinitions } from './components/content'
 import { functionalDefinitions } from './components/functional'
 import { layoutDefinitions } from './components/layout'
+import { ScreenBandView } from './components/screen-band'
 import { toDocCtx } from './components/shared'
 import {
   DOCUMENT_CATALOG_ID,
@@ -57,6 +58,7 @@ import {
   DOCUMENT_SECTION_TYPE,
 } from './constants'
 import type { DocumentRenderContext } from './context'
+import { screenBand } from './page-furniture'
 import { documentCss, documentRootClass } from './styles'
 import { parseDocumentTheme } from './theme'
 
@@ -147,6 +149,15 @@ export function buildDocumentCatalog(
     ...functionalDefinitions(docCtx),
   ]
   const rootClass = documentRootClass(docCtx.mode, docCtx.settings)
+  // The PDF prints the bands per page (Chromium templates); screens show
+  // them once, around the document.
+  const showBands = docCtx.mode !== 'print'
+  const screenHeader = showBands
+    ? screenBand(docCtx.settings.header, docCtx.values)
+    : null
+  const screenFooter = showBands
+    ? screenBand(docCtx.settings.footer, docCtx.values)
+    : null
   const editorCss =
     docCtx.mode === 'editor'
       ? documentCss(parseDocumentTheme(ctx?.theme), {
@@ -172,7 +183,13 @@ export function buildDocumentCatalog(
             dangerouslySetInnerHTML={{ __html: editorCss }}
           />
         ) : null}
+        {screenHeader ? (
+          <ScreenBandView kind='header' band={screenHeader} />
+        ) : null}
         {children}
+        {screenFooter ? (
+          <ScreenBandView kind='footer' band={screenFooter} />
+        ) : null}
       </div>
     ),
   })

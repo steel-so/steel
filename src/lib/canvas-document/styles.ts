@@ -1,5 +1,6 @@
 import type { DocumentSettingsDTO } from '@/src/schemas/document.schema'
 import type { DocumentRenderMode } from './context'
+import { printMargins, watermarkCss } from './page-furniture'
 import {
   DOCUMENT_COLOR_IDS,
   type DocumentTheme,
@@ -19,7 +20,13 @@ import {
 
 export type DocumentLayoutSettings = Pick<
   DocumentSettingsDTO,
-  'layout' | 'pageSize' | 'orientation'
+  | 'layout'
+  | 'pageSize'
+  | 'orientation'
+  | 'header'
+  | 'footer'
+  | 'pageNumbers'
+  | 'watermark'
 >
 
 export interface DocumentCssOptions {
@@ -398,14 +405,20 @@ function pagedCss(page: { width: number; height: number }): string {
 function printCss(
   page: { width: number; height: number },
   margin: number,
+  margins: { top: number; bottom: number },
   coverFirst: boolean,
 ): string {
+  // `margin:18mm` unless a running header or footer needs a taller band.
+  const pageMargin =
+    margins.top === margin && margins.bottom === margin
+      ? `${margin}mm`
+      : `${margins.top}mm ${margin}mm ${margins.bottom}mm`
   const first = coverFirst ? '@page :first{margin:0}' : ''
   const firstCover = coverFirst
     ? `.d-mode-print .d-section--cover:first-child{height:${page.height}mm;min-height:0;padding:${margin}mm;overflow:hidden;break-before:auto}`
     : ''
   return `
-@page{size:${page.width}mm ${page.height}mm;margin:${margin}mm}
+@page{size:${page.width}mm ${page.height}mm;margin:${pageMargin}}
 ${first}
 html,body{margin:0;padding:0;background:#fff}
 .d-mode-print{background:var(--canvas-surface)}
@@ -414,13 +427,33 @@ html,body{margin:0;padding:0;background:#fff}
 .d-mode-print .d-section{padding-left:0;padding-right:0}
 .d-mode-print .d-section-inner{max-width:none}
 .d-mode-print .d-section--highlight,.d-mode-print .d-section--styled{padding-left:7mm;padding-right:7mm;border-radius:var(--d-radius)}
-.d-mode-print .d-section--cover{min-height:calc(${page.height}mm - ${margin * 2}mm);padding:14mm;border-radius:0;break-before:page;break-after:page}
+.d-mode-print .d-section--cover{min-height:calc(${page.height}mm - ${margins.top + margins.bottom}mm);padding:14mm;border-radius:0;break-before:page;break-after:page}
 ${firstCover}
 .d-mode-print [data-page-break-before]{break-before:page}
 .d-mode-print .d-pagebreak{display:block;height:0;margin:0;border:0;break-after:page}
 .d-mode-print .d-h{break-after:avoid}
 .d-mode-print .d-table-wrap{overflow:visible}
 .d-mode-print .d-pricing-table{overflow:visible}
+`
+}
+
+/** Header and footer shown once on screen (the PDF prints them per page). */
+function furnitureCss(
+  page: { width: number; height: number },
+  paged: boolean,
+): string {
+  const sheet = paged
+    ? `.d-layout-paged .d-hf{width:${page.width}mm;max-width:100%;margin-left:auto;margin-right:auto}`
+    : ''
+  return `
+.d-root .d-hf{box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:12px var(--d-margin,24px);font-size:12px;line-height:1.4;color:var(--d-muted,var(--canvas-muted));background:var(--canvas-surface);user-select:none}
+.d-root .d-hf--header{border-bottom:1px solid var(--canvas-border)}
+.d-root .d-hf--footer{border-top:1px solid var(--canvas-border)}
+.d-root .d-hf--left{justify-content:flex-start;text-align:left}
+.d-root .d-hf--center{justify-content:center;text-align:center}
+.d-root .d-hf--right{justify-content:flex-end;text-align:right}
+.d-root .d-hf img{height:28px;max-width:140px;object-fit:contain}
+${sheet}
 `
 }
 
@@ -438,9 +471,24 @@ export function documentCss(
   ]
   if (options.mode === 'editor') parts.push(EDITOR_CSS)
   if (options.mode === 'print') {
-    parts.push(printCss(page, theme.pageMargin, options.coverFirst === true))
+    parts.push(
+      printCss(
+        page,
+        theme.pageMargin,
+        printMargins(theme.pageMargin, options.settings),
+        options.coverFirst === true,
+      ),
+    )
   } else if (paged) {
     parts.push(pagedCss(page))
   }
+  if (options.mode !== 'print') parts.push(furnitureCss(page, paged))
+  parts.push(
+    watermarkCss(options.settings.watermark, {
+      paged,
+      print: options.mode === 'print',
+      page,
+    }),
+  )
   return parts.join('\n')
 }

@@ -67,6 +67,49 @@ export const DocumentThemeSchema = z
     message: 'O tema é grande demais',
   })
 
+export const DOCUMENT_ALIGNMENTS = ['left', 'center', 'right'] as const
+export type DocumentAlignment = (typeof DOCUMENT_ALIGNMENTS)[number]
+
+/** http(s) only: the value ends up in CSS and in a headless fetch. */
+const HttpUrlSchema = z
+  .string()
+  .trim()
+  .max(2000)
+  .regex(/^https?:\/\//i, 'Informe um endereço http(s)')
+
+/**
+ * Running header or footer. In the PDF it repeats on every page (the
+ * cover, when it is the first section, is printed edge to edge without
+ * it); on screen it shows once at the top or bottom of the document.
+ * `text` accepts the document variables and `{{titulo}}`.
+ */
+export const DocumentHeaderFooterSchema = z.object({
+  text: z.string().trim().max(200).default(''),
+  imageUrl: HttpUrlSchema.optional(),
+  align: z.enum(DOCUMENT_ALIGNMENTS).default('left'),
+})
+export type DocumentHeaderFooterDTO = z.infer<typeof DocumentHeaderFooterSchema>
+
+/** `{n}` is the page number and `{total}` the page count (PDF only). */
+export const DEFAULT_PAGE_NUMBER_FORMAT = 'Página {n} de {total}'
+
+export const DocumentPageNumbersSchema = z.object({
+  enabled: z.boolean().default(true),
+  format: z.string().trim().min(1).max(60).default(DEFAULT_PAGE_NUMBER_FORMAT),
+  align: z.enum(DOCUMENT_ALIGNMENTS).default('center'),
+  position: z.enum(['header', 'footer']).default('footer'),
+})
+export type DocumentPageNumbersDTO = z.infer<typeof DocumentPageNumbersSchema>
+
+/** Text or image repeated on every page, over the content, translucent. */
+export const DocumentWatermarkSchema = z.object({
+  text: z.string().trim().max(60).default(''),
+  imageUrl: HttpUrlSchema.optional(),
+  opacity: z.number().min(0.02).max(0.6).default(0.12),
+  angle: z.number().int().min(-90).max(90).default(-30),
+})
+export type DocumentWatermarkDTO = z.infer<typeof DocumentWatermarkSchema>
+
 export const DocumentSettingsSchema = z.object({
   /** `web`: continuous scroll, responsive. `paged`: sheets with page breaks. */
   layout: z.enum(['web', 'paged']).default('web'),
@@ -82,6 +125,11 @@ export const DocumentSettingsSchema = z.object({
   notifyOnView: z.boolean().default(true),
   /** Text of the accept checkbox ("Li e concordo..."). */
   acceptTerms: z.string().trim().max(500).optional(),
+  /** `null` clears a piece of page furniture (a PATCH cannot send undefined). */
+  header: DocumentHeaderFooterSchema.nullish(),
+  footer: DocumentHeaderFooterSchema.nullish(),
+  pageNumbers: DocumentPageNumbersSchema.nullish(),
+  watermark: DocumentWatermarkSchema.nullish(),
 })
 export type DocumentSettingsDTO = z.infer<typeof DocumentSettingsSchema>
 

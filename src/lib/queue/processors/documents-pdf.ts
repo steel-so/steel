@@ -8,7 +8,12 @@ import {
   MINIO_PUBLIC_URL,
 } from '@/lib/env/server'
 import type { CanvasDocument } from '@/src/lib/canvas/types'
+import {
+  type PrintTemplates,
+  printTemplates,
+} from '@/src/lib/canvas-document/page-furniture'
 import { renderDocumentHtml } from '@/src/lib/canvas-document/render'
+import { parseDocumentTheme } from '@/src/lib/canvas-document/theme'
 import {
   hostOf,
   isAllowedPrintRequest,
@@ -101,6 +106,8 @@ export function trustedPrintHosts(): string[] {
 export interface PrintPageOptions {
   format: 'A4' | 'Letter'
   landscape: boolean
+  /** Running header/footer and page numbers (Chromium templates). */
+  templates?: PrintTemplates
 }
 
 /** Fallback page when the HTML has no `@page` (`preferCSSPageSize` wins). */
@@ -110,6 +117,32 @@ export function printPageOptions(
   return {
     format: settings.pageSize === 'LETTER' ? 'Letter' : 'A4',
     landscape: settings.orientation === 'landscape',
+  }
+}
+
+const BAND_IMAGE_MAX_BYTES = 1024 * 1024
+const BAND_IMAGE_TYPES = /^image\/(png|jpe?g|webp|gif)$/i
+
+/**
+ * A header/footer image as a `data:` URI: Chromium's templates cannot load
+ * remote files. Best effort: any problem prints the band without the image.
+ */
+export async function bandImageDataUri(
+  url: string | undefined,
+  trustedHosts: readonly string[],
+): Promise<string | undefined> {
+  if (!url || !isAllowedPrintRequest(url, trustedHosts)) return undefined
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    const type = response.headers.get('content-type')?.split(';')[0] ?? ''
+    if (!response.ok || !BAND_IMAGE_TYPES.test(type)) return undefined
+    const bytes = Buffer.from(await response.arrayBuffer())
+    if (bytes.length === 0 || bytes.length > BAND_IMAGE_MAX_BYTES) {
+      return undefined
+    }
+    return `data:${type};base64,${bytes.toString('base64')}`
+  } catch {
+    return undefined
   }
 }
 
@@ -134,6 +167,11 @@ async function printInBrowser(
     preferCSSPageSize: true,
     format: page.format,
     landscape: page.landscape,
+    ...(page.templates?.displayHeaderFooter && {
+      displayHeaderFooter: true,
+      headerTemplate: page.templates.headerTemplate,
+      footerTemplate: page.templates.footerTemplate,
+    }),
   })
   return Buffer.from(pdf)
 }
@@ -216,10 +254,21 @@ export async function renderDocumentExport(
       },
     })
 
+    const trusted = trustedPrintHosts()
+    const theme = parseDocumentTheme(asRecord(source.theme))
+    const templates = printTemplates({
+      settings,
+      variables,
+      sideMarginMm: theme.pageMargin,
+      images: {
+        header: await bandImageDataUri(settings.header?.imageUrl, trusted),
+        footer: await bandImageDataUri(settings.footer?.imageUrl, trusted),
+      },
+    })
     const pdf = await printHtmlToPdf(
       html,
-      printPageOptions(settings),
-      trustedPrintHosts(),
+      { ...printPageOptions(settings), templates },
+      trusted,
       deps.launchBrowser,
     )
     const pageCount = (await PDFDocument.load(pdf)).getPageCount()

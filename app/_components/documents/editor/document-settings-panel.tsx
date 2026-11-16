@@ -1,15 +1,22 @@
 'use client'
 
-import { type ReactNode, useId } from 'react'
+import { type ReactNode, useId, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
+import { uploadCrmEmailImage } from '@/src/hooks/use-crm-email-builder'
 import {
+  DEFAULT_PAGE_NUMBER_FORMAT,
   DOCUMENT_KINDS,
+  type DocumentAlignment,
+  type DocumentHeaderFooterDTO,
   type DocumentKindDTO,
   type DocumentSettingsDTO,
+  DocumentWatermarkSchema,
 } from '@/src/schemas/document.schema'
 import {
   fromDateInputValue,
@@ -120,6 +127,143 @@ function Toggle({
   )
 }
 
+const ALIGN_OPTIONS: Array<{ value: DocumentAlignment; label: string }> = [
+  { value: 'left', label: 'Esquerda' },
+  { value: 'center', label: 'Centro' },
+  { value: 'right', label: 'Direita' },
+]
+
+/** Address of an image: typed, pasted or uploaded to the workspace library. */
+function ImageUrlField({
+  label,
+  value,
+  workspaceId,
+  disabled,
+  onChange,
+}: {
+  label: string
+  value: string | undefined
+  workspaceId: string
+  disabled: boolean
+  onChange: (url: string | undefined) => void
+}) {
+  const id = useId()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const { url } = await uploadCrmEmailImage(workspaceId, file)
+      onChange(url)
+    } catch (error) {
+      notify.error(error, 'Não foi possível enviar a imagem')
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  return (
+    <div className='grid gap-1.5'>
+      <Label htmlFor={id}>{label}</Label>
+      <div className='flex gap-2'>
+        <Input
+          id={id}
+          key={value ?? ''}
+          type='url'
+          inputMode='url'
+          placeholder='https://…'
+          defaultValue={value ?? ''}
+          disabled={disabled}
+          maxLength={2000}
+          onBlur={(event) => {
+            const next = event.target.value.trim()
+            if (next !== (value ?? '')) onChange(next || undefined)
+          }}
+        />
+        <Button
+          type='button'
+          variant='outline'
+          disabled={disabled || uploading}
+          onClick={() => fileRef.current?.click()}
+        >
+          {uploading ? 'Enviando…' : 'Enviar'}
+        </Button>
+        <input
+          ref={fileRef}
+          type='file'
+          accept='image/png,image/jpeg,image/webp'
+          className='sr-only'
+          tabIndex={-1}
+          aria-label={`Escolher arquivo: ${label}`}
+          onChange={(event) => upload(event.target.files?.[0])}
+        />
+      </div>
+    </div>
+  )
+}
+
+/** Running header or footer: text (accepts variables), logo and alignment. */
+function BandFields({
+  title,
+  hint,
+  value,
+  workspaceId,
+  disabled,
+  onChange,
+}: {
+  title: string
+  hint: string
+  value: DocumentHeaderFooterDTO | null | undefined
+  workspaceId: string
+  disabled: boolean
+  onChange: (next: DocumentHeaderFooterDTO | null) => void
+}) {
+  const id = useId()
+  const band: DocumentHeaderFooterDTO = value ?? { text: '', align: 'left' }
+  const update = (patch: Partial<DocumentHeaderFooterDTO>) => {
+    const next = { ...band, ...patch }
+    onChange(next.text.trim() || next.imageUrl ? next : null)
+  }
+  return (
+    <Section title={title}>
+      <div className='grid gap-1.5'>
+        <Label htmlFor={`${id}-text`}>Texto</Label>
+        <Input
+          id={`${id}-text`}
+          key={band.text}
+          defaultValue={band.text}
+          maxLength={200}
+          disabled={disabled}
+          placeholder='Ex.: {{empresa.nome}} · Proposta comercial'
+          onBlur={(event) => {
+            if (event.target.value !== band.text) {
+              update({ text: event.target.value })
+            }
+          }}
+        />
+        <span className='text-muted-foreground text-xs'>{hint}</span>
+      </div>
+      <ImageUrlField
+        label='Logo ou imagem'
+        value={band.imageUrl}
+        workspaceId={workspaceId}
+        disabled={disabled}
+        onChange={(imageUrl) => update({ imageUrl })}
+      />
+      <Segmented
+        label='Alinhamento'
+        value={band.align}
+        disabled={disabled}
+        options={ALIGN_OPTIONS}
+        onChange={(align) => update({ align })}
+      />
+    </Section>
+  )
+}
+
 /**
  * Inspector content when nothing is selected: document data (tipo,
  * validade), layout (web or paged, page size, orientation), reading
@@ -136,6 +280,7 @@ export function DocumentSettingsPanel() {
     updateSettings,
     updateTheme,
     updateMeta,
+    workspaceId,
   } = useDocumentEditor()
   const editable = readEditableTheme(theme)
   const disabled = !canEdit
@@ -143,6 +288,16 @@ export function DocumentSettingsPanel() {
     key: K,
     value: DocumentSettingsDTO[K],
   ) => updateSettings({ [key]: value } as Partial<DocumentSettingsDTO>)
+
+  const setWatermark = (
+    patch: Partial<NonNullable<typeof settings.watermark>>,
+  ) => {
+    const next = DocumentWatermarkSchema.parse({
+      ...settings.watermark,
+      ...patch,
+    })
+    set('watermark', next.text || next.imageUrl ? next : null)
+  }
 
   return (
     <div data-testid='document-settings' className='grid'>
@@ -218,6 +373,154 @@ export function DocumentSettingsPanel() {
             retrato.
           </p>
         )}
+      </Section>
+
+      <BandFields
+        title='Cabeçalho'
+        hint='Repete em todas as páginas do PDF e aparece uma vez no topo do link. Aceita variáveis, como {{empresa.nome}}.'
+        value={settings.header}
+        workspaceId={workspaceId}
+        disabled={disabled}
+        onChange={(next) => set('header', next)}
+      />
+      <BandFields
+        title='Rodapé'
+        hint='Repete em todas as páginas do PDF e aparece uma vez no fim do link.'
+        value={settings.footer}
+        workspaceId={workspaceId}
+        disabled={disabled}
+        onChange={(next) => set('footer', next)}
+      />
+
+      <Section title='Numeração de páginas'>
+        <Toggle
+          label='Numerar as páginas'
+          hint='Aparece no PDF. A capa, quando é a primeira seção, fica sem número.'
+          checked={Boolean(settings.pageNumbers?.enabled)}
+          disabled={disabled}
+          onChange={(enabled) =>
+            set('pageNumbers', {
+              enabled,
+              format:
+                settings.pageNumbers?.format ?? DEFAULT_PAGE_NUMBER_FORMAT,
+              align: settings.pageNumbers?.align ?? 'center',
+              position: settings.pageNumbers?.position ?? 'footer',
+            })
+          }
+        />
+        {settings.pageNumbers?.enabled ? (
+          <>
+            <div className='grid gap-1.5'>
+              <Label htmlFor={`${id}-pn-format`}>Formato</Label>
+              <Input
+                id={`${id}-pn-format`}
+                key={settings.pageNumbers.format}
+                defaultValue={settings.pageNumbers.format}
+                maxLength={60}
+                disabled={disabled}
+                onBlur={(event) => {
+                  const format = event.target.value.trim()
+                  if (format && format !== settings.pageNumbers?.format) {
+                    set('pageNumbers', { ...settings.pageNumbers, format })
+                  }
+                }}
+              />
+              <span className='text-muted-foreground text-xs'>
+                Use {'{n}'} para a página e {'{total}'} para o total.
+              </span>
+            </div>
+            <Segmented
+              label='Posição'
+              value={settings.pageNumbers.position}
+              disabled={disabled}
+              options={[
+                { value: 'footer', label: 'Rodapé' },
+                { value: 'header', label: 'Cabeçalho' },
+              ]}
+              onChange={(position) =>
+                set('pageNumbers', { ...settings.pageNumbers, position })
+              }
+            />
+            <Segmented
+              label='Alinhamento'
+              value={settings.pageNumbers.align}
+              disabled={disabled}
+              options={ALIGN_OPTIONS}
+              onChange={(align) =>
+                set('pageNumbers', { ...settings.pageNumbers, align })
+              }
+            />
+          </>
+        ) : null}
+      </Section>
+
+      <Section title="Marca d'água">
+        <div className='grid gap-1.5'>
+          <Label htmlFor={`${id}-wm-text`}>Texto</Label>
+          <Input
+            id={`${id}-wm-text`}
+            key={settings.watermark?.text ?? ''}
+            defaultValue={settings.watermark?.text ?? ''}
+            maxLength={60}
+            disabled={disabled}
+            placeholder='Ex.: CONFIDENCIAL'
+            onBlur={(event) => {
+              const text = event.target.value.trim()
+              if (text !== (settings.watermark?.text ?? '')) {
+                setWatermark({ text })
+              }
+            }}
+          />
+        </div>
+        <ImageUrlField
+          label='Ou uma imagem'
+          value={settings.watermark?.imageUrl}
+          workspaceId={workspaceId}
+          disabled={disabled}
+          onChange={(imageUrl) => setWatermark({ imageUrl })}
+        />
+        {settings.watermark ? (
+          <>
+            <div className='grid gap-1.5'>
+              <Label htmlFor={`${id}-wm-opacity`}>
+                Transparência ({Math.round(settings.watermark.opacity * 100)}%)
+              </Label>
+              <input
+                id={`${id}-wm-opacity`}
+                type='range'
+                min={2}
+                max={60}
+                step={1}
+                disabled={disabled}
+                value={Math.round(settings.watermark.opacity * 100)}
+                onChange={(event) =>
+                  setWatermark({ opacity: Number(event.target.value) / 100 })
+                }
+              />
+            </div>
+            <div className='grid gap-1.5'>
+              <Label htmlFor={`${id}-wm-angle`}>
+                Inclinação do texto ({settings.watermark.angle}°)
+              </Label>
+              <input
+                id={`${id}-wm-angle`}
+                type='range'
+                min={-90}
+                max={90}
+                step={5}
+                disabled={disabled}
+                value={settings.watermark.angle}
+                onChange={(event) =>
+                  setWatermark({ angle: Number(event.target.value) })
+                }
+              />
+            </div>
+          </>
+        ) : null}
+        <p className='text-muted-foreground text-xs'>
+          Repete em todas as páginas do PDF. No link, o texto repete a cada
+          folha e a imagem fica centralizada.
+        </p>
       </Section>
 
       <Section title='Leitura'>
