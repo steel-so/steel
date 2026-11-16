@@ -11,7 +11,12 @@ import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { documentLinkUrl } from '@/src/mappers/document.mapper'
 import { DocumentLookupRepository } from '@/src/repositories/document-lookup.repository'
 import { DocumentRecipientRepository } from '@/src/repositories/document-recipient.repository'
+import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import type { DocumentDeliveryDTO } from '@/types/document'
+import {
+  ensureConversation,
+  recordOutboundMessage,
+} from './whatsapp-automation-send.service'
 import {
   checkWhatsAppOptOut,
   WHATSAPP_OPT_OUT_UNVERIFIED_MESSAGE,
@@ -127,9 +132,10 @@ async function sendWhatsApp(
           : WHATSAPP_OPT_OUT_UNVERIFIED_MESSAGE,
     }
   }
+  const text = whatsappText(ctx, recipient)
   const sent = await WhatsAppSend.text(
     connection,
-    { to: waId, text: whatsappText(ctx, recipient) },
+    { to: waId, text },
     { cost: { source: 'OTHER' } },
   )
   if (!sent.ok) {
@@ -140,7 +146,53 @@ async function sendWhatsApp(
     })
     return { channel: 'LINK', delivered: false, message: WHATSAPP_FAILED }
   }
+  await fileInConversation(ctx, recipient, connection, waId, text, {
+    providerMessageId: sent.value.providerMessageId,
+  })
   return { channel: 'WHATSAPP', delivered: true, message: null }
+}
+
+/**
+ * Files the sent message in the contact's Comunicação conversation, so the
+ * team sees it there. The customer already got it: a failure here is only
+ * logged, never turned into a failed delivery.
+ */
+async function fileInConversation(
+  ctx: DocumentDeliveryContext,
+  recipient: DocumentRecipient,
+  connection: WhatsAppConnection,
+  waId: string,
+  text: string,
+  sent: { providerMessageId: string },
+): Promise<void> {
+  try {
+    const contact = await WhatsAppContactRepository.upsertByWaId({
+      workspaceId: ctx.workspaceId,
+      waId,
+      name: recipient.name,
+    })
+    if (!contact.ok) throw new Error(contact.error.code)
+    const conversationId = await ensureConversation(
+      ctx.workspaceId,
+      connection,
+      contact.value,
+    )
+    if (!conversationId.ok) throw new Error(conversationId.error.code)
+    const recorded = await recordOutboundMessage({
+      workspaceId: ctx.workspaceId,
+      conversationId: conversationId.value,
+      type: 'TEXT',
+      text,
+      providerMessageId: sent.providerMessageId,
+    })
+    if (!recorded.ok) throw new Error(recorded.error.code)
+  } catch (error) {
+    logger.warn('documents.delivery.record_failed', {
+      documentId: ctx.documentId,
+      recipientId: recipient.id,
+      message: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 export async function deliverDocument(
