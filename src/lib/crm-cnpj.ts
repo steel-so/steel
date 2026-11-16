@@ -1,11 +1,8 @@
 /**
- * Consulta de CNPJ (client-side) via BrasilAPI (`/api/cnpj/v1/{cnpj}`), que
- * espelha a base pública da Receita Federal. Usado para preencher os dados
- * de uma CrmCompany (razão social, nome fantasia, endereço) a partir do
- * CNPJ digitado.
+ * CNPJ: normalização, máscara, validação dos dígitos e os tipos do resultado
+ * da consulta (a consulta em si roda no servidor — `crm-cnpj-lookup.ts` pelo
+ * navegador, `src/lib/cnpj/provider.ts` no worker).
  */
-
-import { formatCep } from '@/src/lib/crm-cep'
 
 /** Mantém apenas os dígitos do CNPJ (máx. 14). */
 export function normalizeCnpj(value: string): string {
@@ -71,74 +68,9 @@ export type CnpjLookup = {
   address: CrmCompanyAddressInput | null
 }
 
-/** Subconjunto da resposta da BrasilAPI que consumimos. */
-type BrasilApiCnpjResponse = {
-  razao_social?: string
-  nome_fantasia?: string
-  cep?: string
-  logradouro?: string
-  numero?: string
-  complemento?: string
-  bairro?: string
-  municipio?: string
-  uf?: string
-  message?: string
-}
-
 export class CnpjNotFoundError extends Error {
   constructor() {
     super('CNPJ não encontrado')
     this.name = 'CnpjNotFoundError'
-  }
-}
-
-/** Normaliza um texto da Receita (pode vir vazio) em campo opcional. */
-function text(value: string | undefined): string | undefined {
-  const t = value?.trim()
-  return t ? t : undefined
-}
-
-/** Monta o endereço a partir da resposta; `null` se nada útil veio. */
-function toAddress(data: BrasilApiCnpjResponse): CrmCompanyAddressInput | null {
-  const address: CrmCompanyAddressInput = {
-    zipCode: data.cep ? formatCep(data.cep) : undefined,
-    street: text(data.logradouro),
-    number: text(data.numero),
-    complement: text(data.complemento),
-    neighborhood: text(data.bairro),
-    city: text(data.municipio),
-    state: text(data.uf)?.toUpperCase(),
-  }
-  const hasValue = Object.values(address).some((v) => v !== undefined)
-  return hasValue ? address : null
-}
-
-/**
- * Resolve um CNPJ nos dados da empresa. Lança `CnpjNotFoundError` quando o
- * CNPJ não existe na base e `Error` genérico em falha de rede.
- */
-export async function lookupCnpj(
-  rawCnpj: string,
-  signal?: AbortSignal,
-): Promise<CnpjLookup> {
-  const cnpj = normalizeCnpj(rawCnpj)
-  if (cnpj.length !== 14) throw new CnpjNotFoundError()
-
-  const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
-    signal,
-  })
-  if (res.status === 404) throw new CnpjNotFoundError()
-  if (!res.ok) throw new Error('Falha ao consultar o CNPJ')
-
-  const data = (await res.json()) as BrasilApiCnpjResponse
-  const razaoSocial = text(data.razao_social)
-  const nomeFantasia = text(data.nome_fantasia)
-
-  return {
-    cnpj: formatCnpj(cnpj),
-    razaoSocial,
-    nomeFantasia,
-    name: nomeFantasia ?? razaoSocial,
-    address: toAddress(data),
   }
 }

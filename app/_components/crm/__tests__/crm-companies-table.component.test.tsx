@@ -141,7 +141,7 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
     expect(fetchBody(fetchSpy, '/crm/companies/c1', 'PATCH')).toBeUndefined()
   })
 
-  it('formats a valid CNPJ, saves it and autofills from BrasilAPI', async () => {
+  it('formats a valid CNPJ, saves it and autofills from the Receita lookup', async () => {
     const fetchSpy = mockFetch([
       ...baseRoutes(),
       {
@@ -150,15 +150,14 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
         handler: () => ({ ...COMPANY, cnpj: VALID_CNPJ }),
       },
       {
-        match: 'brasilapi.com.br',
-        handler: () =>
-          new Response(
-            JSON.stringify({
-              razao_social: 'ACME COMERCIO LTDA',
-              nome_fantasia: 'Acme Store',
-            }),
-            { status: 200 },
-          ),
+        method: 'POST',
+        match: '/crm/companies/cnpj-lookup',
+        handler: () => ({
+          cnpj: '11222333000181',
+          legalName: 'ACME COMERCIO LTDA',
+          tradeName: 'Acme Store',
+          address: null,
+        }),
       },
     ])
     renderTable()
@@ -196,8 +195,20 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
         handler: () => ({ ...COMPANY, cnpj: VALID_CNPJ }),
       },
       {
-        match: 'brasilapi.com.br',
-        handler: () => new Response('{}', { status: 404 }),
+        method: 'POST',
+        match: '/crm/companies/cnpj-lookup',
+        handler: () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              statusCode: 404,
+              error: {
+                code: 'CRM_CNPJ_NOT_FOUND',
+                message: 'CNPJ não encontrado',
+              },
+            }),
+            { status: 404, headers: { 'Content-Type': 'application/json' } },
+          ),
       },
     ])
     renderTable()

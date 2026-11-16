@@ -205,9 +205,27 @@ export const BrasilApiCnpjProvider: CnpjProvider = {
     const cnpj = normalizeCnpj(rawCnpj)
     if (!isValidCnpj(cnpj)) return err(crmCnpjInvalid())
 
-    for (const endpoint of ENDPOINTS) {
+    let primaryAnswered = true
+    for (const [index, endpoint] of ENDPOINTS.entries()) {
       const result = await fetchFrom(endpoint, cnpj, signal)
-      if (result) return result
+      if (!result) {
+        if (index === 0) primaryAnswered = false
+        continue
+      }
+      // A mirror's "not found" is only definitive when the primary source
+      // answered too: with BrasilAPI down, the mirror may simply lag behind
+      // a recent CNPJ, and "try again later" is the honest answer.
+      if (
+        !result.ok &&
+        !primaryAnswered &&
+        result.error.code === 'CRM_CNPJ_NOT_FOUND'
+      ) {
+        logger.warn('crm.cnpj.mirror_not_found_primary_down', {
+          provider: endpoint.name,
+        })
+        continue
+      }
+      return result
     }
     return err(crmCnpjLookupFailed())
   },

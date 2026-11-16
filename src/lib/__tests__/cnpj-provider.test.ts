@@ -167,6 +167,19 @@ describe('BrasilApiCnpjProvider', () => {
     expect(fetchMock.mock.calls[1][0]).toBe(`https://minhareceita.org/${CNPJ}`)
   })
 
+  it('does not trust a mirror 404 while BrasilAPI is down', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: false, status: 404 })
+    vi.stubGlobal('fetch', fetchMock)
+    expectErr(
+      await BrasilApiCnpjProvider.lookup(CNPJ),
+      'CRM_CNPJ_LOOKUP_FAILED',
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('maps a network failure to a lookup error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     expectErr(

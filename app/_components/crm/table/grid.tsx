@@ -44,9 +44,9 @@ import {
   formatCnpj,
   isCompleteCnpj,
   isValidCnpj,
-  lookupCnpj,
   normalizeCnpj,
 } from '@/src/lib/crm-cnpj'
+import { lookupCnpj } from '@/src/lib/crm-cnpj-lookup'
 
 export type WithId = { id: string }
 
@@ -760,10 +760,11 @@ function AddressCell({
 
 /**
  * Editor de CNPJ: formata enquanto digita e, ao confirmar um CNPJ válido,
- * consulta a BrasilAPI e preenche os demais campos da empresa (nome e
+ * consulta a Receita (pelo servidor) e preenche os demais campos da empresa (nome e
  * endereço) via `autofill`.
  */
 function CnpjEditor({
+  workspaceId,
   col,
   value,
   commit,
@@ -771,10 +772,11 @@ function CnpjEditor({
   startEditing,
   onPrimaryEnter,
 }: {
+  workspaceId: string
   col: GridColumn
   value: unknown
   commit: (next: unknown) => void
-  /** Preenche campos irmãos (name, address) com o retorno da BrasilAPI. */
+  /** Preenche campos irmãos (name, address) com o retorno da Receita. */
   autofill?: (fields: Record<string, unknown>) => void
   startEditing: boolean
   onPrimaryEnter?: () => void
@@ -796,7 +798,7 @@ function CnpjEditor({
       lastLookup.current = cnpj
       setLoading(true)
       try {
-        const result = await lookupCnpj(cnpj)
+        const result = await lookupCnpj(workspaceId, cnpj)
         const fields: Record<string, unknown> = {}
         if (result.name) fields.name = result.name
         if (result.address) fields.address = result.address
@@ -817,7 +819,7 @@ function CnpjEditor({
         setLoading(false)
       }
     },
-    [autofill],
+    [autofill, workspaceId],
   )
 
   function save() {
@@ -952,7 +954,7 @@ function CompanyNamePickerEditor({
     }
     setLoading(true)
     try {
-      const lookup = await lookupCnpj(digits).catch((error) => {
+      const lookup = await lookupCnpj(workspaceId, digits).catch((error) => {
         if (!(error instanceof CnpjNotFoundError)) {
           notify.error('Não foi possível consultar o CNPJ')
         }
@@ -1167,6 +1169,7 @@ export function CellEditor({
     case 'cnpj':
       return (
         <CnpjEditor
+          workspaceId={workspaceId}
           col={col}
           value={value}
           commit={commit}
