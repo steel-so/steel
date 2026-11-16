@@ -148,11 +148,23 @@ describe('BrasilApiCnpjProvider', () => {
 
   it.each([
     [404, 'CRM_CNPJ_NOT_FOUND'],
-    [429, 'CRM_CNPJ_RATE_LIMITED'],
+    [429, 'CRM_CNPJ_LOOKUP_FAILED'],
     [500, 'CRM_CNPJ_LOOKUP_FAILED'],
   ] as const)('maps HTTP %s to %s', async (status, code) => {
     respond(status)
     expectErr(await BrasilApiCnpjProvider.lookup(CNPJ), code)
+  })
+
+  it('falls back to Minha Receita when BrasilAPI is rate limited', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 429 })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => FULL })
+    vi.stubGlobal('fetch', fetchMock)
+    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+    expect(profile.cnpj).toBe(CNPJ)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1][0]).toBe(`https://minhareceita.org/${CNPJ}`)
   })
 
   it('maps a network failure to a lookup error', async () => {

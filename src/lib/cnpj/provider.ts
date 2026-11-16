@@ -3,7 +3,6 @@ import {
   crmCnpjInvalid,
   crmCnpjLookupFailed,
   crmCnpjNotFound,
-  crmCnpjRateLimited,
 } from '@/src/errors'
 import { formatCep } from '@/src/lib/crm-cep'
 import { isValidCnpj, normalizeCnpj } from '@/src/lib/crm-cnpj'
@@ -83,6 +82,7 @@ type BrasilApiCnpj = {
 }
 
 const BRASILAPI_URL = 'https://brasilapi.com.br/api/cnpj/v1'
+const MINHA_RECEITA_URL = 'https://minhareceita.org'
 const REQUEST_TIMEOUT_MS = 10_000
 
 function text(value: string | number | null | undefined): string | null {
@@ -160,7 +160,44 @@ export function toCnpjProfile(cnpj: string, data: BrasilApiCnpj): CnpjProfile {
   }
 }
 
-/** BrasilAPI-backed provider (no key, rate limited per client IP). */
+type Endpoint = { name: string; url: (cnpj: string) => string }
+
+/** Both mirrors serve the same payload shape. */
+const ENDPOINTS: Endpoint[] = [
+  { name: 'brasilapi', url: (c) => `${BRASILAPI_URL}/${c}` },
+  { name: 'minhareceita', url: (c) => `${MINHA_RECEITA_URL}/${c}` },
+]
+
+/** Definitive answers are never retried on the fallback mirror. */
+async function fetchFrom(
+  endpoint: Endpoint,
+  cnpj: string,
+  signal?: AbortSignal,
+): Promise<Result<CnpjProfile> | null> {
+  try {
+    const res = await fetch(endpoint.url(cnpj), {
+      signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: { accept: 'application/json' },
+    })
+    if (res.status === 404) return err(crmCnpjNotFound())
+    if (!res.ok) {
+      logger.warn('crm.cnpj.provider_failed', {
+        provider: endpoint.name,
+        status: res.status,
+      })
+      return null
+    }
+    return ok(toCnpjProfile(cnpj, (await res.json()) as BrasilApiCnpj))
+  } catch (error) {
+    logger.warn('crm.cnpj.provider_failed', {
+      provider: endpoint.name,
+      cause: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
+/** BrasilAPI-backed provider with a Minha Receita fallback (no key). */
 export const BrasilApiCnpjProvider: CnpjProvider = {
   source: 'brasilapi',
 
@@ -168,28 +205,11 @@ export const BrasilApiCnpjProvider: CnpjProvider = {
     const cnpj = normalizeCnpj(rawCnpj)
     if (!isValidCnpj(cnpj)) return err(crmCnpjInvalid())
 
-    try {
-      const res = await fetch(`${BRASILAPI_URL}/${cnpj}`, {
-        signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        headers: { accept: 'application/json' },
-      })
-      if (res.status === 404) return err(crmCnpjNotFound())
-      if (res.status === 429) return err(crmCnpjRateLimited())
-      if (!res.ok) {
-        logger.warn('crm.cnpj.provider_failed', {
-          provider: 'brasilapi',
-          status: res.status,
-        })
-        return err(crmCnpjLookupFailed())
-      }
-      return ok(toCnpjProfile(cnpj, (await res.json()) as BrasilApiCnpj))
-    } catch (error) {
-      logger.warn('crm.cnpj.provider_failed', {
-        provider: 'brasilapi',
-        cause: error instanceof Error ? error.message : String(error),
-      })
-      return err(crmCnpjLookupFailed())
+    for (const endpoint of ENDPOINTS) {
+      const result = await fetchFrom(endpoint, cnpj, signal)
+      if (result) return result
     }
+    return err(crmCnpjLookupFailed())
   },
 }
 
