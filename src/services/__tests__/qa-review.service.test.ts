@@ -593,33 +593,29 @@ describe('QaReviewService.run', () => {
     [
       'no_attendant_reply',
       () =>
-        vi
-          .mocked(Source.loadConversation)
-          .mockResolvedValue(
-            ok(
-              conversationSource({
-                messages: [
-                  msg('IN', 'a'),
-                  msg('IN', 'b'),
-                  msg('IN', 'c'),
-                  msg('IN', 'd'),
-                ],
-              }) as never,
-            ),
+        vi.mocked(Source.loadConversation).mockResolvedValue(
+          ok(
+            conversationSource({
+              messages: [
+                msg('IN', 'a'),
+                msg('IN', 'b'),
+                msg('IN', 'c'),
+                msg('IN', 'd'),
+              ],
+            }) as never,
           ),
+        ),
     ],
     [
       'too_short',
       () =>
-        vi
-          .mocked(Source.loadConversation)
-          .mockResolvedValue(
-            ok(
-              conversationSource({
-                messages: [msg('IN', 'a'), msg('OUT', 'b', 'u1')],
-              }) as never,
-            ),
+        vi.mocked(Source.loadConversation).mockResolvedValue(
+          ok(
+            conversationSource({
+              messages: [msg('IN', 'a'), msg('OUT', 'b', 'u1')],
+            }) as never,
           ),
+        ),
     ],
     [
       'bots_excluded',

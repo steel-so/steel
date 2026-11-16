@@ -65,7 +65,11 @@ const sends = [
   [
     'media',
     () =>
-      WhatsAppSend.media(zapi, { to: TO, mediaUrl: 'https://x', type: 'image' }),
+      WhatsAppSend.media(zapi, {
+        to: TO,
+        mediaUrl: 'https://x',
+        type: 'image',
+      }),
   ],
   [
     'template',

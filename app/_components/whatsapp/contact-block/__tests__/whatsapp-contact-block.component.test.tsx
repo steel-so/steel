@@ -85,7 +85,11 @@ describe('contact block format', () => {
     ).toContain('A Meta recusou o bloqueio: Lista cheia.')
     expect(
       blockStatusHint(
-        block({ providerStatus: 'FAILED', provider: 'ZAPI', providerError: null }),
+        block({
+          providerStatus: 'FAILED',
+          provider: 'ZAPI',
+          providerError: null,
+        }),
       ),
     ).toContain('A Z-API recusou o bloqueio.')
   })
@@ -124,9 +128,7 @@ describe('contact block format', () => {
     )
     expect(
       syncSummary({
-        connections: [
-          { ...result.connections[0], imported: 3, applied: 2 },
-        ],
+        connections: [{ ...result.connections[0], imported: 3, applied: 2 }],
       }),
     ).toBe('Sincronizado: 3 bloqueios importados, 2 aplicados no provedor.')
   })
@@ -136,7 +138,10 @@ describe('<WhatsappContactBlockStatusBadge />', () => {
   it('shows the failure reason', () => {
     renderWithQuery(
       <WhatsappContactBlockStatusBadge
-        block={block({ providerStatus: 'FAILED', providerError: 'Lista cheia' })}
+        block={block({
+          providerStatus: 'FAILED',
+          providerError: 'Lista cheia',
+        })}
       />,
     )
     expect(screen.getByText('Falhou: Lista cheia')).toBeTruthy()
@@ -270,7 +275,9 @@ describe('<WhatsappBlockContactDialog />', () => {
     )
     expect(screen.getByText(/aparelho conectado pela Z-API/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Bloquear contato' }))
-    await waitFor(() => expect(notify.success).toHaveBeenCalledWith('Bloqueado.'))
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Bloqueado.'),
+    )
     expect(fetchBody(fetchSpy, API)).toEqual({
       connectionId: 'conn1',
       contactId: 'ct1',
@@ -280,7 +287,12 @@ describe('<WhatsappBlockContactDialog />', () => {
 
   it('shows the API error and keeps the dialog open', async () => {
     mockFetch([
-      { method: 'POST', match: API, status: 404, error: 'Conversa não encontrada' },
+      {
+        method: 'POST',
+        match: API,
+        status: 404,
+        error: 'Conversa não encontrada',
+      },
     ])
     const onOpenChange = vi.fn()
     renderWithQuery(
@@ -396,7 +408,9 @@ describe('<WhatsappBlockedContactsSettings />', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Desbloquear' }))
 
     await waitFor(() =>
-      expect(notify.warning).toHaveBeenCalledWith('Desbloqueado no Steel, mas...'),
+      expect(notify.warning).toHaveBeenCalledWith(
+        'Desbloqueado no Steel, mas...',
+      ),
     )
     expect(
       fetchSpy.mock.calls.some(

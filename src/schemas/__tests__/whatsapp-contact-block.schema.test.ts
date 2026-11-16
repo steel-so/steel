@@ -25,8 +25,8 @@ describe('CreateWhatsAppContactBlockSchema', () => {
       }),
     ).toEqual({ connectionId: 'conn1', contactId: 'ct1', reason: null })
     expect(
-      CreateWhatsAppContactBlockSchema.parse({ conversationId: 'cv1' }).reason ??
-        null,
+      CreateWhatsAppContactBlockSchema.parse({ conversationId: 'cv1' })
+        .reason ?? null,
     ).toBeNull()
     expect(
       CreateWhatsAppContactBlockSchema.parse({

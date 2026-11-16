@@ -594,9 +594,9 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
       err(appError('DATABASE_ERROR', 'db')),
     )
 
-    expect(
-      (await WhatsAppAiCampaignService.sendNext('cp1', 'tok')).ok,
-    ).toBe(false)
+    expect((await WhatsAppAiCampaignService.sendNext('cp1', 'tok')).ok).toBe(
+      false,
+    )
     expect(send.template).not.toHaveBeenCalled()
   })
 

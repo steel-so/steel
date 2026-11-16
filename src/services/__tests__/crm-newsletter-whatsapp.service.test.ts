@@ -16,9 +16,9 @@ import {
   forbidden,
   moduleDisabled,
   rateLimited,
+  whatsappContactBlocked,
   whatsappMessageLimitReached,
   whatsappProviderError,
-  whatsappContactBlocked,
   whatsappSpendCapReached,
 } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'

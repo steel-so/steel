@@ -70,9 +70,7 @@ beforeEach(() => {
 
 describe('sendToRecipient() with a blocked contact (zap-block-contacts)', () => {
   it('skips the blocked recipient with the reason and keeps the list going', async () => {
-    blocks.findActive.mockResolvedValueOnce(
-      ok({ id: 'blk1' } as never),
-    )
+    blocks.findActive.mockResolvedValueOnce(ok({ id: 'blk1' } as never))
     const outcome = expectOk(
       await WhatsAppBroadcastService.sendToRecipient('list1', 'r1'),
     )

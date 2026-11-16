@@ -34,8 +34,8 @@ import {
 import type { PublishCheckItem } from '@/src/lib/canvas/checklist'
 import type { SiteChangeItem, SiteChangesDTO } from '@/types/site-studio'
 import { ExperimentPublishNotice } from './experiments/publish-notice'
-import { useSiteEditor } from './site-editor-context'
 import { revealNode } from './reveal-node'
+import { useSiteEditor } from './site-editor-context'
 import { useOpenTarget } from './use-open-target'
 
 type Phase =

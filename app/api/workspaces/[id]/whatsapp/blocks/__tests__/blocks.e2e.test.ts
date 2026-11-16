@@ -97,9 +97,9 @@ describe('/api/workspaces/[id]/whatsapp/blocks', () => {
     })
 
     const list = await getJson(`${base}/blocks`, user.cookie)
-    expect((await list.json()).data.map((row: { id: string }) => row.id)).toEqual(
-      [data.block.id],
-    )
+    expect(
+      (await list.json()).data.map((row: { id: string }) => row.id),
+    ).toEqual([data.block.id])
     const contacts = await getJson(`${base}/contacts`, user.cookie)
     const listed = (await contacts.json()).data.find(
       (row: { id: string }) => row.id === contact.id,
@@ -185,9 +185,9 @@ describe('/api/workspaces/[id]/whatsapp/blocks', () => {
     expect(
       (await deleteJson(`${base}/blocks/${blockId}`, agent.cookie)).status,
     ).toBe(403)
-    expect((await postJson(`${base}/blocks/sync`, {}, agent.cookie)).status).toBe(
-      403,
-    )
+    expect(
+      (await postJson(`${base}/blocks/sync`, {}, agent.cookie)).status,
+    ).toBe(403)
   })
 
   it('should validate the body and hide other workspaces', async () => {

@@ -203,10 +203,10 @@ describe('WhatsAppContactBlockRepository', () => {
     expect(onMeta).toHaveLength(1)
 
     const blocked = expectOk(
-      await WhatsAppContactBlockRepository.listBlockedContactIds(
-        workspace.id,
-        [contact.id, other.contact.id],
-      ),
+      await WhatsAppContactBlockRepository.listBlockedContactIds(workspace.id, [
+        contact.id,
+        other.contact.id,
+      ]),
     )
     expect([...blocked]).toEqual([contact.id])
     expect(
@@ -279,7 +279,9 @@ describe('WhatsAppContactBlockRepository', () => {
     await WhatsAppContactBlockRepository.create(
       input(base, { waId: '5511900000006' }),
     )
-    expect(expectOk(await WhatsAppContactBlockRepository.createMany([]))).toBe(0)
+    expect(expectOk(await WhatsAppContactBlockRepository.createMany([]))).toBe(
+      0,
+    )
     const count = expectOk(
       await WhatsAppContactBlockRepository.createMany([
         input(base, { waId: '5511900000006', origin: 'PROVIDER' }),

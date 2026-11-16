@@ -28,7 +28,9 @@ export function WhatsappContactBlockStatusBadge({
     )
   }
   return (
-    <Badge variant={block.providerStatus === 'APPLIED' ? 'secondary' : 'outline'}>
+    <Badge
+      variant={block.providerStatus === 'APPLIED' ? 'secondary' : 'outline'}
+    >
       {label}
     </Badge>
   )

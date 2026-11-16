@@ -16,9 +16,10 @@ const blockInclude = {
   contact: { select: { id: true, name: true } },
 } satisfies Prisma.WhatsAppContactBlockInclude
 
-export type WhatsAppContactBlockWithRefs = Prisma.WhatsAppContactBlockGetPayload<{
-  include: typeof blockInclude
-}>
+export type WhatsAppContactBlockWithRefs =
+  Prisma.WhatsAppContactBlockGetPayload<{
+    include: typeof blockInclude
+  }>
 
 export interface CreateContactBlockInput {
   workspaceId: string

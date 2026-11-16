@@ -52,7 +52,10 @@ export function syncSummary(result: WhatsAppContactBlockSyncDTO): string {
   if (result.connections.length === 0) {
     return 'Nenhum número do WhatsApp conectado para sincronizar.'
   }
-  const imported = result.connections.reduce((sum, row) => sum + row.imported, 0)
+  const imported = result.connections.reduce(
+    (sum, row) => sum + row.imported,
+    0,
+  )
   const applied = result.connections.reduce((sum, row) => sum + row.applied, 0)
   const parts = [
     imported === 1
@@ -241,7 +244,9 @@ export function WhatsappBlockedContactsSettings({
             onClick={() => void handleSync()}
           >
             <SteelIcon icon={Refresh01Icon} size={14} />
-            {sync.isPending ? 'Sincronizando...' : 'Sincronizar com a Meta/Z-API'}
+            {sync.isPending
+              ? 'Sincronizando...'
+              : 'Sincronizar com a Meta/Z-API'}
           </Button>
         </div>
       </div>
@@ -287,9 +292,9 @@ export function WhatsappBlockedContactsSettings({
                 : 'Desbloquear contato?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              As mensagens dessa pessoa voltam a chegar e os envios a ela
-              voltam a sair por este número. Se ela estiver bloqueada na Meta
-              ou no aparelho da Z-API, o desbloqueio é feito lá também.
+              As mensagens dessa pessoa voltam a chegar e os envios a ela voltam
+              a sair por este número. Se ela estiver bloqueada na Meta ou no
+              aparelho da Z-API, o desbloqueio é feito lá também.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

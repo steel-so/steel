@@ -535,7 +535,9 @@ describe('WhatsAppContactBlockService.unblock()', () => {
   })
 
   it('skips the provider for a block that never reached it', async () => {
-    blocks.findById.mockResolvedValue(ok(blockRow({ providerStatus: 'PENDING' })))
+    blocks.findById.mockResolvedValue(
+      ok(blockRow({ providerStatus: 'PENDING' })),
+    )
     expectOk(await WhatsAppContactBlockService.unblock(ACTOR, WS, 'blk1'))
     expect(client.unblock).not.toHaveBeenCalled()
     expect(blocks.delete).toHaveBeenCalled()
@@ -562,7 +564,9 @@ describe('WhatsAppContactBlockService.unblock()', () => {
     const result = expectOk(
       await WhatsAppContactBlockService.unblock(ACTOR, WS, 'blk1'),
     )
-    expect(result.providerWarning).toContain('a Meta recusou: erro desconhecido')
+    expect(result.providerWarning).toContain(
+      'a Meta recusou: erro desconhecido',
+    )
   })
 
   it('warns when the line has no credentials or vanished', async () => {
@@ -642,7 +646,10 @@ describe('WhatsAppContactBlockService.list()', () => {
     expectErr(await WhatsAppContactBlockService.list(ACTOR, WS), 'FORBIDDEN')
     asRole('OWNER')
     blocks.listByWorkspace.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.list(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.list(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -672,7 +679,11 @@ describe('WhatsAppContactBlockService.conversationState()', () => {
     const agent = expectOk(
       await WhatsAppContactBlockService.conversationState(ACTOR, WS, 'cv1'),
     )
-    expect(agent).toMatchObject({ block: null, canBlock: true, canUnblock: false })
+    expect(agent).toMatchObject({
+      block: null,
+      canBlock: true,
+      canUnblock: false,
+    })
 
     asRole('VIEWER')
     const viewer = expectOk(
@@ -809,7 +820,11 @@ describe('WhatsAppContactBlockService.sync()', () => {
     blocks.listUnapplied.mockResolvedValue(
       ok([
         blockRow({ id: 'p0', waId: '551155554444', providerStatus: 'PENDING' }),
-        blockRow({ id: 'p1', waId: '5511911112222', providerStatus: 'PENDING' }),
+        blockRow({
+          id: 'p1',
+          waId: '5511911112222',
+          providerStatus: 'PENDING',
+        }),
         blockRow({ id: 'p2', waId: '5511933334444', providerStatus: 'FAILED' }),
       ]),
     )
@@ -872,10 +887,16 @@ describe('WhatsAppContactBlockService.sync()', () => {
     )
 
     blocks.listBlockableConnections.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
 
     blocks.listWaIds.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
 
     resolveClient.mockResolvedValue(
       fakeClient({
@@ -886,19 +907,31 @@ describe('WhatsAppContactBlockService.sync()', () => {
       }),
     )
     contacts.findManyByWaIds.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
 
     blocks.createMany.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
 
     blocks.listUnapplied.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
 
     blocks.listUnapplied.mockResolvedValueOnce(
       ok([blockRow({ providerStatus: 'FAILED' })]),
     )
     blocks.updateProviderStatus.mockResolvedValueOnce(err(databaseError()))
-    expectErr(await WhatsAppContactBlockService.sync(ACTOR, WS), 'DATABASE_ERROR')
+    expectErr(
+      await WhatsAppContactBlockService.sync(ACTOR, WS),
+      'DATABASE_ERROR',
+    )
   })
 })
 
@@ -908,7 +941,10 @@ describe('WhatsAppContactBlockService hot paths', () => {
   it('assertCanSend refuses a blocked recipient on a Comunicação line', async () => {
     blocks.findActive.mockResolvedValueOnce(ok(pending))
     expectErr(
-      await WhatsAppContactBlockService.assertCanSend(meta, '+55 11 98888-7777'),
+      await WhatsAppContactBlockService.assertCanSend(
+        meta,
+        '+55 11 98888-7777',
+      ),
       'WHATSAPP_CONTACT_BLOCKED',
     )
     expect(blocks.findActive).toHaveBeenCalledWith(meta.id, [
@@ -916,13 +952,17 @@ describe('WhatsAppContactBlockService hot paths', () => {
       '551188887777',
     ])
 
-    expectOk(await WhatsAppContactBlockService.assertCanSend(meta, '5511900001111'))
+    expectOk(
+      await WhatsAppContactBlockService.assertCanSend(meta, '5511900001111'),
+    )
   })
 
   it('assertCanSend never checks ServiceDesk lines, the widget or an empty recipient', async () => {
     const sd = createFakeWhatsAppConnection({ module: 'SERVICE_DESK' })
     const widget = createFakeWhatsAppConnection({ provider: 'WIDGET' })
-    expectOk(await WhatsAppContactBlockService.assertCanSend(sd, '5511988887777'))
+    expectOk(
+      await WhatsAppContactBlockService.assertCanSend(sd, '5511988887777'),
+    )
     expectOk(
       await WhatsAppContactBlockService.assertCanSend(widget, '5511988887777'),
     )

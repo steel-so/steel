@@ -162,9 +162,7 @@ async function metaBlockCall(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
   )
-  const body = (await response
-    .json()
-    .catch(() => null)) as MetaBlockBody | null
+  const body = (await response.json().catch(() => null)) as MetaBlockBody | null
   if (!response.ok) {
     logger.warn('whatsapp.contact_block.meta_failed', {
       method,

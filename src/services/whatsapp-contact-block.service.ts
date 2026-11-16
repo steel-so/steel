@@ -391,10 +391,7 @@ export const WhatsAppContactBlockService = {
    * Shared send layer (`WhatsAppSend`): refuses a recipient blocked on the
    * number. Lines outside the Comunicação phone lines are never checked.
    */
-  async assertCanSend(
-    connection: LineRef,
-    to: string,
-  ): Promise<Result<void>> {
+  async assertCanSend(connection: LineRef, to: string): Promise<Result<void>> {
     if (!isBlockableLine(connection) || !to) return ok(undefined)
     const found = await WhatsAppContactBlockRepository.findActive(
       connection.id,
