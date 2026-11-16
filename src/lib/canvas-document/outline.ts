@@ -5,7 +5,10 @@ import {
   type CanvasProps,
   ROOT_ID,
 } from '@/src/lib/canvas/types'
-import { DocumentKindSchema } from '@/src/schemas/document.schema'
+import {
+  DocumentKindSchema,
+  type DocumentSettingsDTO,
+} from '@/src/schemas/document.schema'
 import {
   DOCUMENT_CATALOG_ID,
   DOCUMENT_CATALOG_VERSION,
@@ -138,16 +141,34 @@ export const DocumentOutlineSectionSchema = z.object({
   name: z.string().min(1).max(120),
   variant: z.enum(['cover', 'default', 'highlight']).optional(),
   pageBreakBefore: z.boolean().optional(),
+  /** Picture behind the section (a cover photo), as a URL. */
+  backgroundImage: UrlText.optional(),
   blocks: z.array(DocumentOutlineBlockSchema).max(80),
 })
 export type DocumentOutlineSection = z.infer<
   typeof DocumentOutlineSectionSchema
 >
 
+/**
+ * Page furniture seen in an imported file: the running header/footer, page
+ * numbers and a watermark (they become document settings, not blocks).
+ */
+export const DocumentOutlinePageSchema = z.object({
+  headerText: ShortText.optional(),
+  headerImage: UrlText.optional(),
+  footerText: ShortText.optional(),
+  footerImage: UrlText.optional(),
+  pageNumbers: z.boolean().optional(),
+  watermarkText: z.string().max(60).optional(),
+  watermarkImage: UrlText.optional(),
+})
+export type DocumentOutlinePage = z.infer<typeof DocumentOutlinePageSchema>
+
 export const DocumentOutlineSchema = z.object({
   title: z.string().min(1).max(200),
   kind: DocumentKindSchema,
   sections: z.array(DocumentOutlineSectionSchema).min(1).max(60),
+  page: DocumentOutlinePageSchema.optional(),
   theme: z
     .object({
       primaryColor: z
@@ -458,6 +479,15 @@ export function outlineToDocument(
       props.variant = section.variant
     }
     if (section.pageBreakBefore) props.pageBreakBefore = true
+    if (section.backgroundImage) {
+      props.background = {
+        kind: 'image',
+        url: section.backgroundImage,
+        position: 'center',
+        size: 'cover',
+        repeat: false,
+      }
+    }
     return b.add(DOCUMENT_SECTION_TYPE, props, children, section.name)
   })
   b.nodes[ROOT_ID] = {
@@ -473,4 +503,43 @@ export function outlineToDocument(
     nodes: b.nodes,
   }
   return { content, theme: outlineTheme(outline.theme) }
+}
+
+/** The document settings an outline's `page` asks for (nothing → `{}`). */
+export function outlineSettings(
+  page: DocumentOutlinePage | undefined,
+): Partial<DocumentSettingsDTO> {
+  if (!page) return {}
+  const settings: Partial<DocumentSettingsDTO> = {}
+  if (page.headerText || page.headerImage) {
+    settings.header = {
+      text: page.headerText ?? '',
+      imageUrl: page.headerImage,
+      align: 'left',
+    }
+  }
+  if (page.footerText || page.footerImage) {
+    settings.footer = {
+      text: page.footerText ?? '',
+      imageUrl: page.footerImage,
+      align: 'left',
+    }
+  }
+  if (page.pageNumbers) {
+    settings.pageNumbers = {
+      enabled: true,
+      format: 'Página {n} de {total}',
+      align: 'center',
+      position: 'footer',
+    }
+  }
+  if (page.watermarkText || page.watermarkImage) {
+    settings.watermark = {
+      text: page.watermarkText ?? '',
+      imageUrl: page.watermarkImage,
+      opacity: 0.1,
+      angle: -30,
+    }
+  }
+  return settings
 }

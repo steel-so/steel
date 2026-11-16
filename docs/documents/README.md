@@ -162,6 +162,37 @@ LGPD: IP só com hash; visitante identificado por um id anônimo do navegador.
 - Guarda: 7 dias. Todo dia às 03:45 o worker apaga arquivo e registro das
   exportações vencidas e das que ficaram presas ou falharam.
 
+## Cabeçalho, rodapé, numeração e marca d'água
+
+Quatro chaves opcionais em `documents.settings` (JSON, sem migração; `null` limpa):
+`header`, `footer` (`{ text, imageUrl?, align }`, o texto aceita variáveis),
+`pageNumbers` (`{ enabled, format, align, position }`, com `{n}` e `{total}`) e
+`watermark` (`{ text, imageUrl?, opacity, angle }`). Código em
+`src/lib/canvas-document/page-furniture.ts`.
+
+- **PDF:** cabeçalho, rodapé e numeração vão pelos templates de header/footer do
+  Chromium (repetem em todas as páginas; a imagem vira `data:` no worker, até
+  1 MB). A margem de cima/baixo cresce até 16 mm quando há faixa. A capa, se for
+  a primeira seção, sai de ponta a ponta e sem faixa. A marca d'água é uma camada
+  `position: fixed` (`.d-doc::after`), que o Chromium repete por página.
+- **Tela (editor e link):** cabeçalho e rodapé aparecem uma vez, em volta do
+  documento; a numeração só existe no PDF (precisa do total de páginas). O texto
+  da marca d'água repete a cada folha no layout paginado; a imagem fica centrada
+  e fixa. A inclinação vale só para o texto.
+
+## Imagens na importação de PDF
+
+`src/lib/document-ai/images.ts` percorre o conteúdo de cada página (inclusive
+formulários aninhados), acha as imagens desenhadas e a posição de cada uma.
+JPEG é mantido; pixels crus com máscara suave viram PNG; CMYK, máscaras e ícones
+(< 24 px) são ignorados. Até 40 imagens, 5 MB cada, 30 MB no total. As imagens
+vão para a biblioteca do workspace (`crm-email-images`) e o modelo recebe uma
+lista (`img-1`…, página, posição, se cobre a página ou se repete). Na resposta,
+`imageId` no bloco de imagem, `backgroundImageId` na seção (foto atrás da capa) e
+o objeto `page` (cabeçalho/rodapé/marca d'água vistos no arquivo, que viram
+`settings`). Imagens que o modelo não usou são apagadas ao fim; se a importação
+falha, todas são. PDF sem imagens ou ilegível importa como antes.
+
 ## IA
 
 - Entrada: PDF ou DOCX até 20 MB e 60 páginas, ou um pedido em texto.

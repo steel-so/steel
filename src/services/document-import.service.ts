@@ -20,6 +20,7 @@ import type { AiContentPart, AiUsageTokens } from '@/src/lib/ai/types'
 import { validateDocumentContent } from '@/src/lib/canvas-document/catalog'
 import {
   type DocumentOutline,
+  outlineSettings,
   outlineToDocument,
 } from '@/src/lib/canvas-document/outline'
 import {
@@ -78,6 +79,13 @@ import type { DocumentImportDTO } from '@/types/document'
 import type { DocumentImportContextDTO } from '@/types/document-import'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
 import { assertModuleMember } from './authz'
+import {
+  dropImportImages,
+  NO_IMPORT_IMAGES,
+  type StoredImportImages,
+  storeImportImages,
+  unusedImageUrls,
+} from './document-import-images'
 import { assertFeature } from './feature-flag.service'
 import { PlatformAiSettingsService } from './platform-ai-settings.service'
 
@@ -247,6 +255,8 @@ interface ModelInput {
   fallback: (() => Promise<Result<string, string>>) | null
   native: boolean
   truncated: boolean
+  /** Pictures of the PDF, stored and described (none for other inputs). */
+  images: StoredImportImages
 }
 
 async function readPdfText(
@@ -276,6 +286,7 @@ async function buildModelInput(
       fallback: null,
       native: false,
       truncated: false,
+      images: NO_IMPORT_IMAGES,
     })
   }
 
@@ -289,8 +300,23 @@ async function buildModelInput(
     return err(READ_FAILED)
   }
   const fileName = row.fileName ?? 'arquivo'
+  const images =
+    row.mode === 'PDF'
+      ? await storeImportImages({
+          workspaceId: row.workspaceId,
+          importId: row.id,
+          buffer,
+          pageCount: row.pageCount,
+        })
+      : NO_IMPORT_IMAGES
   const asText = (text: string) =>
-    textImportContent({ text, fileName, kind, title })
+    textImportContent({
+      text,
+      fileName,
+      kind,
+      title,
+      images: images.description,
+    })
 
   if (row.mode === 'DOCX') {
     const text = await extractDocxText(buffer)
@@ -302,6 +328,7 @@ async function buildModelInput(
       fallback: null,
       native: false,
       truncated: bounded.truncated,
+      images,
     })
   }
 
@@ -313,6 +340,7 @@ async function buildModelInput(
         fileName,
         kind,
         title,
+        images: images.description,
       }),
       fallback: async () => {
         const text = await readPdfText(buffer)
@@ -320,16 +348,21 @@ async function buildModelInput(
       },
       native: true,
       truncated: false,
+      images,
     })
   }
   const text = await readPdfText(buffer)
-  if (!text.ok) return text
+  if (!text.ok) {
+    await dropImportImages(Object.values(images.urls))
+    return text
+  }
   return ok({
     system: buildImportSystem(),
     content: asText(text.value.text),
     fallback: null,
     native: false,
     truncated: text.value.truncated,
+    images,
   })
 }
 
@@ -646,6 +679,7 @@ export const DocumentImportService = {
     const input = await buildModelInput(row, call.value, options.title)
     if (!input.ok) return ok(await fail(row, input.error, null))
 
+    const imageUrls = Object.values(input.value.images.urls)
     row = await saveProgress(row, progressOf('structure', prompt), {
       model: call.value.model.key,
     })
@@ -672,6 +706,7 @@ export const DocumentImportService = {
         maxTokens: outlineMaxTokens(call.value.model),
         onUsage: meter.onUsage,
         onProgress,
+        images: input.value.images.urls,
       })
 
     let answer = await ask(input.value.content)
@@ -690,6 +725,7 @@ export const DocumentImportService = {
       const text = await input.value.fallback()
       if (!text.ok) {
         await saving
+        await dropImportImages(imageUrls)
         return ok(await fail(row, text.error, meter.cost()))
       }
       answer = await ask(text.value)
@@ -706,6 +742,7 @@ export const DocumentImportService = {
         attempts: answer.attempts,
         problems: answer.problems.slice(0, 3),
       })
+      await dropImportImages(imageUrls)
       return ok(await fail(row, failureMessage(answer.reason), meter.cost()))
     }
 
@@ -718,6 +755,7 @@ export const DocumentImportService = {
         importId: row.id,
         message: assembled.error,
       })
+      await dropImportImages(imageUrls)
       return ok(
         await fail(
           row,
@@ -744,6 +782,8 @@ export const DocumentImportService = {
           ...DEFAULT_DOCUMENT_SETTINGS,
           // A file keeps its pages; a written document reads as a web page.
           layout: prompt ? 'web' : 'paged',
+          // Header, footer, page numbers and watermark seen in the file.
+          ...outlineSettings(answer.outline.page),
         },
         publicToken: randomBytes(18).toString('base64url'),
         ownerId: row.createdById,
@@ -761,9 +801,18 @@ export const DocumentImportService = {
       },
     )
     if (!completed.ok) {
+      await dropImportImages(imageUrls)
       await fail(row, documentImportFailed().message, meter.cost())
       return completed
     }
+
+    // Pictures the model left out would only clutter the image library.
+    await dropImportImages(
+      unusedImageUrls(imageUrls, [
+        assembled.value.content,
+        completed.value.document.settings,
+      ]),
+    )
 
     await publishDocumentImport(toDocumentImportDTO(completed.value.import))
     await dropSourceFile(row)

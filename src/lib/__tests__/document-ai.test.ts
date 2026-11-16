@@ -73,6 +73,7 @@ describe('DOCUMENT_OUTLINE_JSON_SCHEMA', () => {
       'title',
       'kind',
       'primaryColor',
+      'page',
       'sections',
     ])
     for (const leaf of schema.$defs.leaf.anyOf) {

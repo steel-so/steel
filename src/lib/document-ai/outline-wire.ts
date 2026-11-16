@@ -66,7 +66,11 @@ const LEAF_BLOCKS: JsonSchema[] = [
     header: nullable(strings()),
     rows: { type: 'array', items: strings() },
   }),
-  block('image', { alt: NULLABLE_STRING, caption: NULLABLE_STRING }),
+  block('image', {
+    alt: NULLABLE_STRING,
+    caption: NULLABLE_STRING,
+    imageId: NULLABLE_STRING,
+  }),
   block('divider'),
   block('page-break'),
   block('pricing', {
@@ -106,12 +110,24 @@ export const DOCUMENT_OUTLINE_JSON_SCHEMA: JsonSchema = {
     title: STRING,
     kind: choice(DOCUMENT_KINDS),
     primaryColor: NULLABLE_STRING,
+    page: nullable(
+      object({
+        headerText: NULLABLE_STRING,
+        headerImageId: NULLABLE_STRING,
+        footerText: NULLABLE_STRING,
+        footerImageId: NULLABLE_STRING,
+        pageNumbers: NULLABLE_BOOLEAN,
+        watermarkText: NULLABLE_STRING,
+        watermarkImageId: NULLABLE_STRING,
+      }),
+    ),
     sections: {
       type: 'array',
       items: object({
         name: STRING,
         variant: nullable(choice(['cover', 'default', 'highlight'])),
         pageBreakBefore: NULLABLE_BOOLEAN,
+        backgroundImageId: NULLABLE_STRING,
         blocks: {
           type: 'array',
           items: {
@@ -185,8 +201,20 @@ function tableRow(row: unknown): unknown[] {
   return list(row).slice(0, MAX_TABLE_COLUMNS)
 }
 
-function normalizeLeaf(raw: Raw, ids: () => string): Raw {
+/** Picture ids the model may use, as the URLs they were stored at. */
+export type ImageUrls = Readonly<Record<string, string>>
+
+const urlOf = (images: ImageUrls, id: unknown): string | undefined =>
+  typeof id === 'string' && Object.hasOwn(images, id) ? images[id] : undefined
+
+function normalizeLeaf(raw: Raw, ids: () => string, images: ImageUrls): Raw {
   switch (raw.type) {
+    case 'image': {
+      // An unknown id stays a placeholder the user fills in.
+      const { imageId, ...rest } = raw
+      const src = urlOf(images, imageId)
+      return src ? { ...rest, src } : rest
+    }
     case 'text':
       return { ...raw, html: sanitizeInlineHtml(String(raw.html ?? '')) }
     case 'table': {
@@ -207,21 +235,50 @@ function normalizeLeaf(raw: Raw, ids: () => string): Raw {
 }
 
 /** A block, or — for columns with a single column — its blocks inline. */
-function normalizeBlock(raw: Raw, ids: () => string): Raw[] {
-  if (raw.type !== 'columns') return [normalizeLeaf(raw, ids)]
+function normalizeBlock(raw: Raw, ids: () => string, images: ImageUrls): Raw[] {
+  if (raw.type !== 'columns') return [normalizeLeaf(raw, ids, images)]
   const leaves = (column: unknown) =>
-    (list(column) as Raw[]).map((leaf) => normalizeLeaf(leaf, ids))
+    (list(column) as Raw[]).map((leaf) => normalizeLeaf(leaf, ids, images))
   const columns = list(raw.columns).slice(0, MAX_COLUMNS).map(leaves)
   if (columns.length < 2) return columns.flat()
   return [{ ...raw, columns }]
 }
 
-function normalizeSection(section: Raw, ids: () => string): Raw {
+function normalizeSection(
+  section: Raw,
+  ids: () => string,
+  images: ImageUrls,
+): Raw {
   const blocks = list(section.blocks) as Raw[]
+  const { backgroundImageId, ...rest } = section
+  const background = urlOf(images, backgroundImageId)
   return {
-    ...section,
-    blocks: blocks.flatMap((item) => normalizeBlock(item, ids)),
+    ...rest,
+    ...(background && { backgroundImage: background }),
+    blocks: blocks.flatMap((item) => normalizeBlock(item, ids, images)),
   }
+}
+
+/** The `page` object of the answer: ids → URLs, nothing → absent. */
+function normalizePage(page: unknown, images: ImageUrls): Raw | undefined {
+  if (!page || typeof page !== 'object' || Array.isArray(page)) return undefined
+  const raw = page as Raw
+  const out: Raw = {}
+  const copy = (from: string, to: string) => {
+    if (typeof raw[from] === 'string' && raw[from]) out[to] = raw[from]
+  }
+  const image = (from: string, to: string) => {
+    const url = urlOf(images, raw[from])
+    if (url) out[to] = url
+  }
+  copy('headerText', 'headerText')
+  image('headerImageId', 'headerImage')
+  copy('footerText', 'footerText')
+  image('footerImageId', 'footerImage')
+  copy('watermarkText', 'watermarkText')
+  image('watermarkImageId', 'watermarkImage')
+  if (raw.pageNumbers === true) out.pageNumbers = true
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 /** Sections past the block limit continue in a new section. */
@@ -235,6 +292,7 @@ function splitSections(sections: Raw[]): Raw[] {
         name: `${String(section.name)} (continuação)`,
         variant: 'default',
         pageBreakBefore: false,
+        backgroundImage: undefined,
       }
       parts.push({
         ...section,
@@ -247,7 +305,10 @@ function splitSections(sections: Raw[]): Raw[] {
 }
 
 /** The model's answer (already parsed JSON) as an outline candidate. */
-export function wireToOutlineInput(answer: unknown): unknown {
+export function wireToOutlineInput(
+  answer: unknown,
+  images: ImageUrls = {},
+): unknown {
   const value = stripNulls(answer)
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return value
@@ -257,18 +318,26 @@ export function wireToOutlineInput(answer: unknown): unknown {
   const ids = () => `item-${++next}`
   const sections = list(raw.sections) as Raw[]
   const color = typeof raw.primaryColor === 'string' ? raw.primaryColor : ''
-  const { primaryColor: _color, ...rest } = raw
+  const { primaryColor: _color, page: rawPage, ...rest } = raw
+  const page = normalizePage(rawPage, images)
   return {
     ...rest,
     ...(HEX.test(color) && { theme: { primaryColor: color } }),
+    ...(page && { page }),
     sections: splitSections(
-      sections.map((section) => normalizeSection(section, ids)),
+      sections.map((section) => normalizeSection(section, ids, images)),
     ).slice(0, MAX_SECTIONS),
   }
 }
 
 /** Schema of the answer: wire → normalized → the outline contract. */
-export const DocumentOutlineAnswerSchema: z.ZodType<DocumentOutline> = z
-  .unknown()
-  .transform(wireToOutlineInput)
-  .pipe(DocumentOutlineSchema)
+export function outlineAnswerSchema(
+  images: ImageUrls = {},
+): z.ZodType<DocumentOutline> {
+  return z
+    .unknown()
+    .transform((answer) => wireToOutlineInput(answer, images))
+    .pipe(DocumentOutlineSchema)
+}
+
+export const DocumentOutlineAnswerSchema = outlineAnswerSchema()

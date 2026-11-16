@@ -10,7 +10,8 @@ import { describeIssues, parseModelJson } from '@/src/lib/site-ai/run'
 import { DOCUMENT_AI_MAX_ATTEMPTS } from './constants'
 import {
   DOCUMENT_OUTLINE_JSON_SCHEMA,
-  DocumentOutlineAnswerSchema,
+  type ImageUrls,
+  outlineAnswerSchema,
 } from './outline-wire'
 
 /**
@@ -31,6 +32,8 @@ export interface OutlineCallInput {
   /** Characters of the answer received so far (throttle on the caller). */
   onProgress?: (receivedChars: number) => void
   maxAttempts?: number
+  /** Pictures of the file by id (`img-1`…), as the URLs they were stored at. */
+  images?: ImageUrls
 }
 
 export type OutlineCallResult =
@@ -85,6 +88,7 @@ export async function outlineCall(
 ): Promise<OutlineCallResult> {
   const messages: AiMessage[] = [{ role: 'user', content: input.content }]
   const maxAttempts = input.maxAttempts ?? DOCUMENT_AI_MAX_ATTEMPTS
+  const answerSchema = outlineAnswerSchema(input.images)
   let problems: string[] = []
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let response: AiChatResponse
@@ -117,7 +121,7 @@ export async function outlineCall(
           : 'The answer was not valid JSON',
       ]
     } else {
-      const parsed = DocumentOutlineAnswerSchema.safeParse(raw)
+      const parsed = answerSchema.safeParse(raw)
       if (parsed.success) {
         return { ok: true, outline: parsed.data, attempts: attempt }
       }

@@ -23,7 +23,8 @@ const SHARED_RULES = [
   'Form fields: whenever the text has a blank for the reader to fill — "Nome: ____", "Data: ___/___/____", "CPF: ________", "CNPJ:", "E-mail:", "Telefone:", "Endereço:", checkboxes "( ) Sim ( ) Não" — emit a field block instead of the blank: field-text for names and free text, field-date for dates, field-cpf, field-cnpj, field-email, field-phone, field-number, field-textarea for long answers, field-select or field-checkbox for choices (with options). Use the label printed in the source.',
   'Signature lines ("Assinatura: ____", "_______ Contratante", "De acordo") become ONE accept block at the end of the document (there is no signature element). Put the text the reader agrees with in `terms` and keep any names/roles printed under the line as text.',
   'Prices: a list of products or services with quantity and price becomes a pricing block (numbers as plain numbers in BRL, quantity 1 when absent; `optional` true for items marked optional; `recurrence` monthly/yearly when the price is per month/year). Any other tabular data becomes a table block.',
-  'Images, logos, signatures as images and charts cannot be copied: emit an image block (alt describing what was there) where they appear — the user replaces it.',
+  'Images: when the message lists "Images extracted from the file", those pictures are available — put each one where it appears in the source: an image block with its `imageId` (and `alt`/`caption`), or, for a photo or art that sits BEHIND the text of a cover or highlighted section, `backgroundImageId` on that section instead (cover sections with a background image keep their title as white text). A logo at the top of a page goes first in its section as an image block. Use only the listed ids, each at most once; `imageId` and `backgroundImageId` are null when there is no picture. Pictures that are not listed (charts, signature scans, anything without an id) and every image when none is listed become an image block without `imageId` (alt describing what was there) — the user replaces it.',
+  'Page furniture: a picture or line that repeats on many pages is not content. Do not put it in the sections; fill the `page` object instead — `headerText`/`headerImageId` for what repeats at the top, `footerText`/`footerImageId` at the bottom (wording as printed, without the page number), `pageNumbers` true when pages are numbered, `watermarkText`/`watermarkImageId` for a faint mark behind the text. `page` is null when the source has none of these.',
   `Variables: where the source has a placeholder for the recipient's or the company's data ("[NOME DO CLIENTE]", "<empresa>", "XX/XX/XXXX" as the date of today), write the matching variable instead: ${VARIABLES}. Never replace real names or values that are written in the source.`,
   'kind: the type of document (PROPOSAL proposta comercial, CONTRACT contrato, QUOTE orçamento, PRESENTATION apresentação, TERMS termo/política/regulamento, REPORT relatório, OTHER).',
   'primaryColor: the main brand color of the document as #RRGGBB when it is evident, else null. Optional fields you do not need are null.',
@@ -64,6 +65,8 @@ export function pdfImportContent(input: {
   fileName: string
   kind: DocumentKindDTO
   title?: string
+  /** Listing of the pictures extracted from the file (`describeImages`). */
+  images?: string
 }): AiContentPart[] {
   return [
     {
@@ -77,6 +80,7 @@ export function pdfImportContent(input: {
       text: [
         `Convert the attached file "${input.fileName}" into the document JSON.`,
         ...hints(input.kind, input.title),
+        ...(input.images ? ['', input.images] : []),
       ].join('\n'),
     },
   ]
@@ -99,10 +103,12 @@ export function textImportContent(input: {
   fileName: string
   kind: DocumentKindDTO
   title?: string
+  images?: string
 }): string {
   return [
     `Convert the text extracted from the file "${input.fileName}" into the document JSON.`,
     ...hints(input.kind, input.title),
+    ...(input.images ? ['', input.images] : []),
     '',
     // Third-party text: fenced so the guardrails scan it and the model
     // treats it as data (ADR 0041).
