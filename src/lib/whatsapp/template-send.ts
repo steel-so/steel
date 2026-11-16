@@ -121,3 +121,33 @@ export function applyTemplateSendExtras(
 
   return { components: result, buttons: toMessageButtons(buttons) }
 }
+
+interface ParameterComponent {
+  type?: string
+  parameters?: { type?: string; text?: string }[]
+}
+
+/**
+ * What the contact reads: the template body with the sent parameters filled
+ * in (the timeline shows this instead of the template name). Falls back to
+ * the name when the template has no body text.
+ */
+export function templateSentText(
+  template: Pick<WhatsAppTemplate, 'components' | 'name'> | null | undefined,
+  name: string,
+  components: unknown[] | undefined,
+): string {
+  const stored = Array.isArray(template?.components)
+    ? (template.components as { type?: string; text?: string }[])
+    : []
+  const body = stored.find((c) => c?.type?.toUpperCase() === 'BODY')?.text
+  if (!body) return name
+  const sent = ((components ?? []) as ParameterComponent[]).find(
+    (c) => c?.type?.toLowerCase() === 'body',
+  )
+  const values = (sent?.parameters ?? []).map((p) => p?.text ?? '')
+  return body.replace(/\{\{(\d+)\}\}/g, (match, n: string) => {
+    const value = values[Number(n) - 1]
+    return value ? value : match
+  })
+}

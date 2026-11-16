@@ -159,7 +159,7 @@ describe('WhatsAppMessageService.sendFlow()', () => {
       }),
     )
     expect(messageRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'TEMPLATE', text: 'cadastro' }),
+      expect.objectContaining({ type: 'TEMPLATE', text: 'x' }),
     )
   })
 

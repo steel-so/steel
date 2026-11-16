@@ -4,6 +4,7 @@ import {
   applyTemplateSendExtras,
   templateButtons,
   templateHeaderMedia,
+  templateSentText,
 } from '../whatsapp/template-send'
 
 const buttonsBlock = {
@@ -173,5 +174,30 @@ describe('applyTemplateSendExtras', () => {
       components: [],
       buttons: [],
     })
+  })
+})
+
+describe('templateSentText', () => {
+  const template = {
+    name: 'boas_vindas',
+    components: [{ type: 'BODY', text: 'Olá {{1}}, seu pedido {{2}} saiu.' }],
+  }
+
+  it('fills the body with the sent parameters', () => {
+    expect(
+      templateSentText(template, 'boas_vindas', [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: 'Ana' },
+            { type: 'text', text: '42' },
+          ],
+        },
+      ]),
+    ).toBe('Olá Ana, seu pedido 42 saiu.')
+  })
+
+  it('falls back to the template name without a stored body', () => {
+    expect(templateSentText(null, 'boas_vindas', [])).toBe('boas_vindas')
   })
 })

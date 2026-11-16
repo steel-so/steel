@@ -14,7 +14,10 @@ import { agentCost } from '@/src/lib/whatsapp/cost'
 import { flowPrefillData } from '@/src/lib/whatsapp/flows/prefill'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
-import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
+import {
+  applyTemplateSendExtras,
+  templateSentText,
+} from '@/src/lib/whatsapp/template-send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
@@ -396,7 +399,11 @@ export const WhatsAppMessageService = {
       conversationId,
       actorId,
       type: 'TEMPLATE',
-      text: dto.templateName,
+      text: templateSentText(
+        template.ok ? template.value : null,
+        dto.templateName,
+        dto.components,
+      ),
       providerMessageId: sendResult.value.providerMessageId,
       buttons: extras.buttons,
     })
@@ -512,7 +519,7 @@ export const WhatsAppMessageService = {
       conversationId,
       actorId,
       type: 'TEMPLATE',
-      text: input.templateName,
+      text: templateSentText(template.value, input.templateName, undefined),
       providerMessageId: sent.value.providerMessageId,
     })
     if (!message.ok) return message
