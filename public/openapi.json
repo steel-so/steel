@@ -38178,6 +38178,126 @@
                       "acceptTerms": {
                         "type": "string",
                         "maxLength": 500
+                      },
+                      "header": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "default": "",
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "pattern": "^https?:\\/\\/"
+                              },
+                              "align": {
+                                "default": "left",
+                                "type": "string",
+                                "enum": ["left", "center", "right"]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "footer": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "default": "",
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "pattern": "^https?:\\/\\/"
+                              },
+                              "align": {
+                                "default": "left",
+                                "type": "string",
+                                "enum": ["left", "center", "right"]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "pageNumbers": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "enabled": {
+                                "default": true,
+                                "type": "boolean"
+                              },
+                              "format": {
+                                "default": "Página {n} de {total}",
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 60
+                              },
+                              "align": {
+                                "default": "center",
+                                "type": "string",
+                                "enum": ["left", "center", "right"]
+                              },
+                              "position": {
+                                "default": "footer",
+                                "type": "string",
+                                "enum": ["header", "footer"]
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "watermark": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "default": "",
+                                "type": "string",
+                                "maxLength": 60
+                              },
+                              "imageUrl": {
+                                "type": "string",
+                                "maxLength": 2000,
+                                "pattern": "^https?:\\/\\/"
+                              },
+                              "opacity": {
+                                "default": 0.12,
+                                "type": "number",
+                                "minimum": 0.02,
+                                "maximum": 0.6
+                              },
+                              "angle": {
+                                "default": -30,
+                                "type": "integer",
+                                "minimum": -90,
+                                "maximum": 90
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
                       }
                     }
                   },
@@ -228444,6 +228564,130 @@
               "acceptTerms": {
                 "type": "string",
                 "maxLength": 500
+              },
+              "header": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "align": {
+                        "default": "left",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      }
+                    },
+                    "required": ["text", "align"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "footer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "align": {
+                        "default": "left",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      }
+                    },
+                    "required": ["text", "align"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "pageNumbers": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "format": {
+                        "default": "Página {n} de {total}",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      },
+                      "align": {
+                        "default": "center",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      },
+                      "position": {
+                        "default": "footer",
+                        "type": "string",
+                        "enum": ["header", "footer"]
+                      }
+                    },
+                    "required": ["enabled", "format", "align", "position"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "watermark": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "opacity": {
+                        "default": 0.12,
+                        "type": "number",
+                        "minimum": 0.02,
+                        "maximum": 0.6
+                      },
+                      "angle": {
+                        "default": -30,
+                        "type": "integer",
+                        "minimum": -90,
+                        "maximum": 90
+                      }
+                    },
+                    "required": ["text", "opacity", "angle"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -229574,6 +229818,130 @@
                   "acceptTerms": {
                     "type": "string",
                     "maxLength": 500
+                  },
+                  "header": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "default": "",
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "maxLength": 2000,
+                            "pattern": "^https?:\\/\\/"
+                          },
+                          "align": {
+                            "default": "left",
+                            "type": "string",
+                            "enum": ["left", "center", "right"]
+                          }
+                        },
+                        "required": ["text", "align"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "footer": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "default": "",
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "maxLength": 2000,
+                            "pattern": "^https?:\\/\\/"
+                          },
+                          "align": {
+                            "default": "left",
+                            "type": "string",
+                            "enum": ["left", "center", "right"]
+                          }
+                        },
+                        "required": ["text", "align"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "pageNumbers": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "enabled": {
+                            "default": true,
+                            "type": "boolean"
+                          },
+                          "format": {
+                            "default": "Página {n} de {total}",
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          },
+                          "align": {
+                            "default": "center",
+                            "type": "string",
+                            "enum": ["left", "center", "right"]
+                          },
+                          "position": {
+                            "default": "footer",
+                            "type": "string",
+                            "enum": ["header", "footer"]
+                          }
+                        },
+                        "required": ["enabled", "format", "align", "position"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "watermark": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "default": "",
+                            "type": "string",
+                            "maxLength": 60
+                          },
+                          "imageUrl": {
+                            "type": "string",
+                            "maxLength": 2000,
+                            "pattern": "^https?:\\/\\/"
+                          },
+                          "opacity": {
+                            "default": 0.12,
+                            "type": "number",
+                            "minimum": 0.02,
+                            "maximum": 0.6
+                          },
+                          "angle": {
+                            "default": -30,
+                            "type": "integer",
+                            "minimum": -90,
+                            "maximum": 90
+                          }
+                        },
+                        "required": ["text", "opacity", "angle"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -230322,6 +230690,130 @@
               "acceptTerms": {
                 "type": "string",
                 "maxLength": 500
+              },
+              "header": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "align": {
+                        "default": "left",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      }
+                    },
+                    "required": ["text", "align"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "footer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "align": {
+                        "default": "left",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      }
+                    },
+                    "required": ["text", "align"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "pageNumbers": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "format": {
+                        "default": "Página {n} de {total}",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      },
+                      "align": {
+                        "default": "center",
+                        "type": "string",
+                        "enum": ["left", "center", "right"]
+                      },
+                      "position": {
+                        "default": "footer",
+                        "type": "string",
+                        "enum": ["header", "footer"]
+                      }
+                    },
+                    "required": ["enabled", "format", "align", "position"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "watermark": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
+                        "default": "",
+                        "type": "string",
+                        "maxLength": 60
+                      },
+                      "imageUrl": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "opacity": {
+                        "default": 0.12,
+                        "type": "number",
+                        "minimum": 0.02,
+                        "maximum": 0.6
+                      },
+                      "angle": {
+                        "default": -30,
+                        "type": "integer",
+                        "minimum": -90,
+                        "maximum": 90
+                      }
+                    },
+                    "required": ["text", "opacity", "angle"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [

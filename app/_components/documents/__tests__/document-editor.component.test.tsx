@@ -149,8 +149,9 @@ describe('<DocumentEditor />', () => {
   it('saves settings, kind and title through the row', async () => {
     const spy = setup()
     const settings = await screen.findByTestId('document-settings')
-    // First toggle of "Leitura": Mostrar sumário.
-    fireEvent.click(within(settings).getAllByRole('switch')[0])
+    fireEvent.click(
+      within(settings).getByRole('switch', { name: 'Mostrar sumário' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Folhas' }))
     const title = screen.getByTestId('document-editor-title')
     fireEvent.change(title, { target: { value: 'Proposta revisada' } })

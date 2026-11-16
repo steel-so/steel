@@ -10,11 +10,11 @@ import { notify } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 import { uploadCrmEmailImage } from '@/src/hooks/use-crm-email-builder'
 import {
-  DEFAULT_PAGE_NUMBER_FORMAT,
   DOCUMENT_KINDS,
   type DocumentAlignment,
   type DocumentHeaderFooterDTO,
   type DocumentKindDTO,
+  DocumentPageNumbersSchema,
   type DocumentSettingsDTO,
   DocumentWatermarkSchema,
 } from '@/src/schemas/document.schema'
@@ -289,6 +289,13 @@ export function DocumentSettingsPanel() {
     value: DocumentSettingsDTO[K],
   ) => updateSettings({ [key]: value } as Partial<DocumentSettingsDTO>)
 
+  const setNumbers = (
+    patch: Partial<NonNullable<typeof settings.pageNumbers>>,
+  ) =>
+    set(
+      'pageNumbers',
+      DocumentPageNumbersSchema.parse({ ...settings.pageNumbers, ...patch }),
+    )
   const setWatermark = (
     patch: Partial<NonNullable<typeof settings.watermark>>,
   ) => {
@@ -398,15 +405,7 @@ export function DocumentSettingsPanel() {
           hint='Aparece no PDF. A capa, quando é a primeira seção, fica sem número.'
           checked={Boolean(settings.pageNumbers?.enabled)}
           disabled={disabled}
-          onChange={(enabled) =>
-            set('pageNumbers', {
-              enabled,
-              format:
-                settings.pageNumbers?.format ?? DEFAULT_PAGE_NUMBER_FORMAT,
-              align: settings.pageNumbers?.align ?? 'center',
-              position: settings.pageNumbers?.position ?? 'footer',
-            })
-          }
+          onChange={(enabled) => setNumbers({ enabled })}
         />
         {settings.pageNumbers?.enabled ? (
           <>
@@ -421,7 +420,7 @@ export function DocumentSettingsPanel() {
                 onBlur={(event) => {
                   const format = event.target.value.trim()
                   if (format && format !== settings.pageNumbers?.format) {
-                    set('pageNumbers', { ...settings.pageNumbers, format })
+                    setNumbers({ format })
                   }
                 }}
               />
@@ -437,18 +436,14 @@ export function DocumentSettingsPanel() {
                 { value: 'footer', label: 'Rodapé' },
                 { value: 'header', label: 'Cabeçalho' },
               ]}
-              onChange={(position) =>
-                set('pageNumbers', { ...settings.pageNumbers, position })
-              }
+              onChange={(position) => setNumbers({ position })}
             />
             <Segmented
               label='Alinhamento'
               value={settings.pageNumbers.align}
               disabled={disabled}
               options={ALIGN_OPTIONS}
-              onChange={(align) =>
-                set('pageNumbers', { ...settings.pageNumbers, align })
-              }
+              onChange={(align) => setNumbers({ align })}
             />
           </>
         ) : null}
