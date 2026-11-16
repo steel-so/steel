@@ -185,7 +185,6 @@ async function importPerson(
     actorId,
     workspaceId,
     parsed.data,
-    { enrich: false },
   )
   if (!result.ok) return rejectedRow(reasonOf(result.error))
   return { created: true }

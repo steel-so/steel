@@ -57,20 +57,27 @@ async function tryEnrich(
 }
 
 /** Registry columns shared by create and update (undefined = untouched). */
-function registryFields(dto: CreateCrmCompanyDTO | UpdateCrmCompanyDTO) {
-  return {
-    legalName: dto.legalName,
-    tradeName: dto.tradeName,
-    emails: dto.emails,
-    phones: dto.phones,
-    cnaeCode: dto.cnaeCode,
-    cnaeDescription: dto.cnaeDescription,
-    size: dto.size,
-    legalNature: dto.legalNature,
-    registrationStatus: dto.registrationStatus,
-    openedAt: dto.openedAt,
-    shareCapital: dto.shareCapital,
-  }
+const REGISTRY_KEYS = [
+  'legalName',
+  'tradeName',
+  'emails',
+  'phones',
+  'cnaeCode',
+  'cnaeDescription',
+  'size',
+  'legalNature',
+  'registrationStatus',
+  'openedAt',
+  'shareCapital',
+] as const
+
+/** The registry fields of a create or update DTO, typed like the DTO. */
+function registryFields<T extends CreateCrmCompanyDTO | UpdateCrmCompanyDTO>(
+  dto: T,
+): Pick<T, (typeof REGISTRY_KEYS)[number]> {
+  return Object.fromEntries(
+    REGISTRY_KEYS.map((key) => [key, dto[key]]),
+  ) as unknown as Pick<T, (typeof REGISTRY_KEYS)[number]>
 }
 
 export const CrmCompanyService = {
@@ -134,7 +141,7 @@ export const CrmCompanyService = {
       arr: dto.arr,
       icp: dto.icp,
       accountOwnerId: dto.accountOwnerId,
-      ...registryFields(dto as CreateCrmCompanyDTO),
+      ...registryFields(dto),
     })
 
     if (!result.ok) {
