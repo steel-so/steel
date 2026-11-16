@@ -5,6 +5,12 @@ vi.mock('@/lib/axiom/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const cache = vi.hoisted(() => ({
+  get: vi.fn(async () => null as unknown),
+  set: vi.fn(async () => undefined),
+}))
+vi.mock('@/src/cache/crm-cnpj.cache', () => ({ CrmCnpjCache: cache }))
+
 import {
   BrasilApiCnpjProvider,
   getCnpjProvider,
@@ -44,18 +50,37 @@ const FULL = {
   uf: 'sp',
 }
 
-function respond(status: number, body: unknown = {}) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({
-      ok: status >= 200 && status < 300,
-      status,
-      json: async () => body,
-    })),
-  )
+afterEach(() => {
+  vi.unstubAllGlobals()
+  cache.get.mockResolvedValue(null)
+  cache.set.mockClear()
+})
+
+type Reply = { status: number; body?: unknown } | Error
+
+/** Routes by host: every source answers what the test says, 503 otherwise. */
+function sources(replies: Partial<Record<string, Reply>>) {
+  const fetchMock = vi.fn(async (url: string) => {
+    const host = new URL(url).hostname
+    const reply = replies[host] ?? { status: 503 }
+    if (reply instanceof Error) throw reply
+    return {
+      ok: reply.status >= 200 && reply.status < 300,
+      status: reply.status,
+      json: async () => reply.body ?? {},
+    }
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
 }
 
-afterEach(() => vi.unstubAllGlobals())
+const HOSTS = {
+  brasilapi: 'brasilapi.com.br',
+  cnpjws: 'publica.cnpj.ws',
+  cnpja: 'open.cnpja.com',
+  receitaws: 'receitaws.com.br',
+  mirror: 'minhareceita.org',
+} as const
 
 describe('toCnpjProfile', () => {
   it('maps the full BrasilAPI payload', () => {
@@ -121,6 +146,84 @@ describe('toCnpjProfile', () => {
   })
 })
 
+const WS = {
+  razao_social: 'ACME LTDA',
+  capital_social: '1000.00',
+  porte: { descricao: 'Demais' },
+  natureza_juridica: { descricao: 'Sociedade Limitada' },
+  socios: [
+    {
+      nome: 'MARIA SOUZA',
+      data_entrada: '2015-03-02',
+      qualificacao_socio: { descricao: 'Sócio-Administrador ' },
+    },
+  ],
+  estabelecimento: {
+    nome_fantasia: null,
+    situacao_cadastral: 'Ativa',
+    data_inicio_atividade: '2015-03-02',
+    tipo_logradouro: 'RUA',
+    logradouro: 'A',
+    numero: '10',
+    bairro: 'CENTRO',
+    cep: '01001000',
+    estado: { sigla: 'SP' },
+    cidade: { nome: 'São Paulo' },
+    atividade_principal: { id: '4711302', descricao: 'Comércio varejista' },
+    atividades_secundarias: [{ id: '4712100', descricao: 'Minimercados' }],
+  },
+}
+
+const CNPJA = {
+  alias: 'Acme Store',
+  founded: '2015-03-02',
+  status: { text: 'Ativa' },
+  company: {
+    name: 'ACME LTDA',
+    equity: 1000,
+    nature: { text: 'Sociedade Limitada' },
+    size: { text: 'Demais' },
+    members: [
+      {
+        since: '2015-03-02',
+        person: { name: 'Maria Souza' },
+        role: { text: 'Sócio-Administrador' },
+      },
+    ],
+  },
+  address: {
+    street: 'Rua A',
+    number: '10',
+    details: null,
+    district: 'Centro',
+    city: 'São Paulo',
+    state: 'SP',
+    zip: '01001000',
+  },
+  mainActivity: { id: 4711302, text: 'Comércio varejista' },
+  sideActivities: [{ id: 4712100, text: 'Minimercados' }],
+}
+
+const RECEITAWS = {
+  status: 'OK',
+  nome: 'ACME LTDA',
+  fantasia: '',
+  porte: 'EMPRESA DE PEQUENO PORTE',
+  natureza_juridica: '206-2 - Sociedade Empresária Limitada',
+  situacao: 'ATIVA',
+  abertura: '02/03/2015',
+  capital_social: '1000.00',
+  atividade_principal: [{ code: '47.11-3-02', text: 'Comércio varejista' }],
+  atividades_secundarias: [{ code: '47.12-1-00', text: 'Minimercados' }],
+  qsa: [{ nome: 'MARIA SOUZA', qual: '49-Sócio-Administrador' }],
+  logradouro: 'R A',
+  numero: '10',
+  bairro: 'CENTRO',
+  municipio: 'SAO PAULO',
+  uf: 'SP',
+  cep: '01.001-000',
+}
+
 describe('BrasilApiCnpjProvider', () => {
   it('exposes itself as the default provider', () => {
     expect(getCnpjProvider()).toBe(BrasilApiCnpjProvider)
@@ -134,54 +237,121 @@ describe('BrasilApiCnpjProvider', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('returns the profile for a 200', async () => {
-    respond(200, FULL)
+  it('asks all five sources and merges what they return', async () => {
+    const fetchMock = sources({
+      [HOSTS.brasilapi]: { status: 200, body: FULL },
+      [HOSTS.cnpjws]: { status: 200, body: WS },
+      [HOSTS.cnpja]: { status: 200, body: CNPJA },
+      [HOSTS.receitaws]: { status: 200, body: RECEITAWS },
+      [HOSTS.mirror]: { status: 404 },
+    })
     const profile = expectOk(
       await BrasilApiCnpjProvider.lookup('11.222.333/0001-81'),
     )
-    expect(profile.cnpj).toBe(CNPJ)
-    expect(fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(fetchMock).toHaveBeenCalledWith(
       `https://brasilapi.com.br/api/cnpj/v1/${CNPJ}`,
       expect.objectContaining({ headers: { accept: 'application/json' } }),
     )
-  })
-
-  it.each([
-    [404, 'CRM_CNPJ_NOT_FOUND'],
-    [429, 'CRM_CNPJ_LOOKUP_FAILED'],
-    [500, 'CRM_CNPJ_LOOKUP_FAILED'],
-  ] as const)('maps HTTP %s to %s', async (status, code) => {
-    respond(status)
-    expectErr(await BrasilApiCnpjProvider.lookup(CNPJ), code)
-  })
-
-  it('falls back to Minha Receita when BrasilAPI is rate limited', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 429 })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => FULL })
-    vi.stubGlobal('fetch', fetchMock)
-    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
     expect(profile.cnpj).toBe(CNPJ)
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1][0]).toBe(`https://minhareceita.org/${CNPJ}`)
+    // CNPJá is the first source: its street (with type, proper case) wins.
+    expect(profile.address).toMatchObject({
+      street: 'Rua A',
+      city: 'São Paulo',
+    })
+    expect(profile.tradeName).toBe('Acme Store')
+    expect(cache.set).toHaveBeenCalledWith(CNPJ, profile)
   })
 
-  it('does not trust a mirror 404 while BrasilAPI is down', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, status: 503 })
-      .mockResolvedValueOnce({ ok: false, status: 404 })
-    vi.stubGlobal('fetch', fetchMock)
+  it('fills the gaps of the source that answered with the others', async () => {
+    sources({
+      [HOSTS.cnpjws]: { status: 200, body: WS },
+      [HOSTS.receitaws]: { status: 200, body: RECEITAWS },
+      [HOSTS.brasilapi]: { status: 403 },
+    })
+    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+    expect(profile.legalName).toBe('ACME LTDA')
+    expect(profile.size).toBe('DEMAIS')
+    expect(profile.cnaeCode).toBe('4711302')
+    expect(profile.openedAt).toBe('2015-03-02')
+    expect(profile.legalNature).toBe('Sociedade Limitada')
+    expect(profile.address?.street).toBe('RUA A')
+    expect(profile.partners).toEqual([
+      {
+        name: 'MARIA SOUZA',
+        qualification: 'Sócio-Administrador',
+        enteredAt: '2015-03-02',
+      },
+    ])
+  })
+
+  it('parses the ReceitaWS formats (date, nature, role, activity code)', async () => {
+    sources({ [HOSTS.receitaws]: { status: 200, body: RECEITAWS } })
+    const profile = expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))
+    expect(profile).toMatchObject({
+      openedAt: '2015-03-02',
+      legalNature: 'Sociedade Empresária Limitada',
+      size: 'EPP',
+      cnaeCode: '4711302',
+      shareCapital: 1000,
+    })
+    expect(profile.partners[0]?.qualification).toBe('Sócio-Administrador')
+    expect(profile.address?.zipCode).toBe('01001-000')
+  })
+
+  it('treats a ReceitaWS "ERROR" answer as a failed source', async () => {
+    sources({
+      [HOSTS.receitaws]: {
+        status: 200,
+        body: { status: 'ERROR', message: 'Too many requests' },
+      },
+    })
     expectErr(
       await BrasilApiCnpjProvider.lookup(CNPJ),
       'CRM_CNPJ_LOOKUP_FAILED',
     )
-    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('maps a network failure to a lookup error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+  it('answers from the cache without calling any source', async () => {
+    const fetchMock = sources({})
+    const cached = toCnpjProfile(CNPJ, FULL)
+    cache.get.mockResolvedValue(cached)
+    expect(expectOk(await BrasilApiCnpjProvider.lookup(CNPJ))).toBe(cached)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('says not found when an authoritative source does and nobody has it', async () => {
+    sources({
+      [HOSTS.brasilapi]: { status: 404 },
+      [HOSTS.cnpjws]: { status: 404 },
+    })
+    expectErr(await BrasilApiCnpjProvider.lookup(CNPJ), 'CRM_CNPJ_NOT_FOUND')
+    expect(cache.set).not.toHaveBeenCalled()
+  })
+
+  it('does not trust the mirror 404 while the others are out of reach', async () => {
+    sources({ [HOSTS.mirror]: { status: 404 } })
+    expectErr(
+      await BrasilApiCnpjProvider.lookup(CNPJ),
+      'CRM_CNPJ_LOOKUP_FAILED',
+    )
+  })
+
+  it('still returns a profile when one source says 404 and another has it', async () => {
+    sources({
+      [HOSTS.brasilapi]: { status: 404 },
+      [HOSTS.cnpja]: { status: 200, body: CNPJA },
+    })
+    expect(expectOk(await BrasilApiCnpjProvider.lookup(CNPJ)).legalName).toBe(
+      'ACME LTDA',
+    )
+  })
+
+  it('maps network failures of every source to a lookup error', async () => {
+    sources({
+      [HOSTS.brasilapi]: new Error('offline'),
+      [HOSTS.cnpjws]: new Error('offline'),
+    })
     expectErr(
       await BrasilApiCnpjProvider.lookup(CNPJ),
       'CRM_CNPJ_LOOKUP_FAILED',

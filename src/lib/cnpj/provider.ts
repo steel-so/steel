@@ -1,4 +1,5 @@
 import { logger } from '@/lib/axiom/logger'
+import { CrmCnpjCache } from '@/src/cache/crm-cnpj.cache'
 import {
   crmCnpjInvalid,
   crmCnpjLookupFailed,
@@ -8,6 +9,7 @@ import { formatCep } from '@/src/lib/crm-cep'
 import { isValidCnpj, normalizeCnpj } from '@/src/lib/crm-cnpj'
 import { err, ok, type Result } from '@/src/lib/result'
 import type { CrmCompanyAddress } from '@/types/crm-company'
+import { mergeCnpjProfiles } from './merge'
 
 /** Company size as the Receita classifies it (`porte`). */
 export type CnpjSize = 'ME' | 'EPP' | 'DEMAIS'
@@ -83,6 +85,9 @@ type BrasilApiCnpj = {
 
 const BRASILAPI_URL = 'https://brasilapi.com.br/api/cnpj/v1'
 const MINHA_RECEITA_URL = 'https://minhareceita.org'
+const CNPJ_WS_URL = 'https://publica.cnpj.ws/cnpj'
+const CNPJA_URL = 'https://open.cnpja.com/office'
+const RECEITAWS_URL = 'https://receitaws.com.br/v1/cnpj'
 const REQUEST_TIMEOUT_MS = 10_000
 
 function text(value: string | number | null | undefined): string | null {
@@ -160,44 +165,308 @@ export function toCnpjProfile(cnpj: string, data: BrasilApiCnpj): CnpjProfile {
   }
 }
 
-type Endpoint = { name: string; url: (cnpj: string) => string }
+// ─── publica.cnpj.ws ─────────────────────────────────────────────────────
 
-/** Both mirrors serve the same payload shape. */
+type CnpjWsActivity = { id?: string; descricao?: string }
+
+/** Subset of the publica.cnpj.ws `/cnpj/{cnpj}` response we read. */
+type CnpjWsResponse = {
+  razao_social?: string
+  capital_social?: string
+  porte?: { descricao?: string }
+  natureza_juridica?: { descricao?: string }
+  socios?: Array<{
+    nome?: string
+    data_entrada?: string
+    qualificacao_socio?: { descricao?: string }
+  }>
+  estabelecimento?: {
+    nome_fantasia?: string
+    situacao_cadastral?: string
+    data_inicio_atividade?: string
+    tipo_logradouro?: string
+    logradouro?: string
+    numero?: string
+    complemento?: string
+    bairro?: string
+    cep?: string
+    estado?: { sigla?: string }
+    cidade?: { nome?: string }
+    atividade_principal?: CnpjWsActivity
+    atividades_secundarias?: CnpjWsActivity[]
+  }
+}
+
+/** The shape BrasilAPI uses, so one mapper (`toCnpjProfile`) serves all. */
+function cnpjWsToBrasilApi(data: CnpjWsResponse): BrasilApiCnpj {
+  const e = data.estabelecimento ?? {}
+  const street = [e.tipo_logradouro, e.logradouro]
+    .map((p) => text(p))
+    .filter(Boolean)
+    .join(' ')
+  const capital = Number(data.capital_social)
+  return {
+    razao_social: data.razao_social,
+    nome_fantasia: e.nome_fantasia,
+    cnae_fiscal: e.atividade_principal?.id,
+    cnae_fiscal_descricao: e.atividade_principal?.descricao,
+    cnaes_secundarios: (e.atividades_secundarias ?? []).map((a) => ({
+      codigo: a.id,
+      descricao: a.descricao,
+    })),
+    porte: data.porte?.descricao,
+    natureza_juridica: data.natureza_juridica?.descricao,
+    descricao_situacao_cadastral: e.situacao_cadastral,
+    data_inicio_atividade: e.data_inicio_atividade,
+    capital_social: Number.isFinite(capital) ? capital : undefined,
+    qsa: (data.socios ?? []).map((p) => ({
+      nome_socio: p.nome,
+      qualificacao_socio: p.qualificacao_socio?.descricao?.trim(),
+      data_entrada_sociedade: p.data_entrada,
+    })),
+    cep: e.cep,
+    logradouro: street || undefined,
+    numero: e.numero,
+    complemento: e.complemento,
+    bairro: e.bairro,
+    municipio: e.cidade?.nome,
+    uf: e.estado?.sigla,
+  }
+}
+
+// ─── open.cnpja.com ──────────────────────────────────────────────────────
+
+type CnpjaActivity = { id?: number | string; text?: string }
+
+/** Subset of the CNPJá open `/office/{cnpj}` response we read. */
+type CnpjaResponse = {
+  alias?: string
+  founded?: string
+  status?: { text?: string }
+  company?: {
+    name?: string
+    equity?: number
+    nature?: { text?: string }
+    size?: { text?: string }
+    members?: Array<{
+      since?: string
+      person?: { name?: string }
+      role?: { text?: string }
+    }>
+  }
+  address?: {
+    street?: string
+    number?: string
+    details?: string | null
+    district?: string
+    city?: string
+    state?: string
+    zip?: string
+  }
+  mainActivity?: CnpjaActivity
+  sideActivities?: CnpjaActivity[]
+}
+
+function cnpjaToBrasilApi(data: CnpjaResponse): BrasilApiCnpj {
+  const a = data.address ?? {}
+  return {
+    razao_social: data.company?.name,
+    nome_fantasia: data.alias,
+    cnae_fiscal: data.mainActivity?.id,
+    cnae_fiscal_descricao: data.mainActivity?.text,
+    cnaes_secundarios: (data.sideActivities ?? []).map((s) => ({
+      codigo: s.id,
+      descricao: s.text,
+    })),
+    porte: data.company?.size?.text,
+    natureza_juridica: data.company?.nature?.text,
+    descricao_situacao_cadastral: data.status?.text,
+    data_inicio_atividade: data.founded,
+    capital_social: data.company?.equity,
+    qsa: (data.company?.members ?? []).map((m) => ({
+      nome_socio: m.person?.name,
+      qualificacao_socio: m.role?.text,
+      data_entrada_sociedade: m.since,
+    })),
+    cep: a.zip,
+    logradouro: a.street,
+    numero: a.number,
+    complemento: a.details ?? undefined,
+    bairro: a.district,
+    municipio: a.city,
+    uf: a.state,
+  }
+}
+
+// ─── receitaws.com.br ────────────────────────────────────────────────────
+
+type ReceitaWsActivity = { code?: string; text?: string }
+
+/** Subset of the ReceitaWS `/v1/cnpj/{cnpj}` response we read. */
+type ReceitaWsResponse = {
+  status?: string
+  message?: string
+  nome?: string
+  fantasia?: string
+  porte?: string
+  natureza_juridica?: string
+  situacao?: string
+  abertura?: string
+  capital_social?: string
+  atividade_principal?: ReceitaWsActivity[]
+  atividades_secundarias?: ReceitaWsActivity[]
+  qsa?: Array<{ nome?: string; qual?: string }>
+  logradouro?: string
+  numero?: string
+  complemento?: string
+  bairro?: string
+  municipio?: string
+  uf?: string
+  cep?: string
+}
+
+/** `06/05/1970` → `1970-05-06`. */
+function brDate(value: string | undefined): string | undefined {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value?.trim() ?? '')
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : undefined
+}
+
+function receitaWsToBrasilApi(data: ReceitaWsResponse): BrasilApiCnpj {
+  // It answers 200 with `status: "ERROR"` for anything it refuses.
+  if (data.status === 'ERROR') {
+    throw new Error(data.message ?? 'ReceitaWS error')
+  }
+  const main = data.atividade_principal?.[0]
+  const capital = Number(data.capital_social)
+  return {
+    razao_social: data.nome,
+    nome_fantasia: data.fantasia,
+    cnae_fiscal: main?.code,
+    cnae_fiscal_descricao: main?.text,
+    cnaes_secundarios: (data.atividades_secundarias ?? []).map((a) => ({
+      codigo: a.code,
+      descricao: a.text,
+    })),
+    porte: data.porte,
+    // "399-9 - Associação Privada" → "Associação Privada"
+    natureza_juridica: data.natureza_juridica?.replace(/^[\d-]+\s*-\s*/, ''),
+    descricao_situacao_cadastral: data.situacao,
+    data_inicio_atividade: brDate(data.abertura),
+    capital_social: Number.isFinite(capital) ? capital : undefined,
+    qsa: (data.qsa ?? []).map((p) => ({
+      nome_socio: p.nome,
+      // "10-Diretor" → "Diretor"
+      qualificacao_socio: p.qual?.replace(/^\d+\s*-\s*/, ''),
+    })),
+    cep: data.cep,
+    logradouro: data.logradouro,
+    numero: data.numero,
+    complemento: data.complemento,
+    bairro: data.bairro,
+    municipio: data.municipio,
+    uf: data.uf,
+  }
+}
+
+// ─── sources ─────────────────────────────────────────────────────────────
+
+type Endpoint = {
+  name: string
+  url: (cnpj: string) => string
+  /** Payload → the BrasilAPI shape `toCnpjProfile` reads. */
+  normalize: (payload: unknown) => BrasilApiCnpj
+  /**
+   * A 404 from an authoritative source means the CNPJ does not exist. Minha
+   * Receita is a mirror that lags behind new registrations, so its 404 only
+   * means "not here".
+   */
+  authoritative: boolean
+}
+
+/**
+ * Every source is asked and the answers are merged (`mergeCnpjProfiles`),
+ * so this order is the priority of a field when sources disagree: CNPJá and
+ * cnpj.ws print the street with its type and proper case, BrasilAPI has the
+ * fullest partner list, ReceitaWS and the mirror fill what is left. All
+ * public, no key; each one is optional (BrasilAPI answers 403/429 to some
+ * server IPs).
+ */
 const ENDPOINTS: Endpoint[] = [
-  { name: 'brasilapi', url: (c) => `${BRASILAPI_URL}/${c}` },
-  { name: 'minhareceita', url: (c) => `${MINHA_RECEITA_URL}/${c}` },
+  {
+    name: 'cnpja',
+    url: (c) => `${CNPJA_URL}/${c}`,
+    normalize: (p) => cnpjaToBrasilApi(p as CnpjaResponse),
+    authoritative: true,
+  },
+  {
+    name: 'cnpjws',
+    url: (c) => `${CNPJ_WS_URL}/${c}`,
+    normalize: (p) => cnpjWsToBrasilApi(p as CnpjWsResponse),
+    authoritative: true,
+  },
+  {
+    name: 'brasilapi',
+    url: (c) => `${BRASILAPI_URL}/${c}`,
+    normalize: (p) => p as BrasilApiCnpj,
+    authoritative: true,
+  },
+  {
+    name: 'receitaws',
+    url: (c) => `${RECEITAWS_URL}/${c}`,
+    normalize: (p) => receitaWsToBrasilApi(p as ReceitaWsResponse),
+    authoritative: true,
+  },
+  {
+    name: 'minhareceita',
+    url: (c) => `${MINHA_RECEITA_URL}/${c}`,
+    normalize: (p) => p as BrasilApiCnpj,
+    authoritative: false,
+  },
 ]
 
-/** Definitive answers are never retried on the fallback mirror. */
+type Outcome =
+  | { kind: 'profile'; profile: CnpjProfile }
+  | { kind: 'not_found' }
+  | { kind: 'failed' }
+
 async function fetchFrom(
   endpoint: Endpoint,
   cnpj: string,
   signal?: AbortSignal,
-): Promise<Result<CnpjProfile> | null> {
+): Promise<Outcome> {
   try {
     const res = await fetch(endpoint.url(cnpj), {
       signal: signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: { accept: 'application/json' },
     })
-    if (res.status === 404) return err(crmCnpjNotFound())
+    if (res.status === 404) {
+      if (endpoint.authoritative) return { kind: 'not_found' }
+      logger.warn('crm.cnpj.mirror_not_found', { provider: endpoint.name })
+      return { kind: 'failed' }
+    }
     if (!res.ok) {
       logger.warn('crm.cnpj.provider_failed', {
         provider: endpoint.name,
         status: res.status,
       })
-      return null
+      return { kind: 'failed' }
     }
-    return ok(toCnpjProfile(cnpj, (await res.json()) as BrasilApiCnpj))
+    const data = endpoint.normalize(await res.json())
+    return { kind: 'profile', profile: toCnpjProfile(cnpj, data) }
   } catch (error) {
     logger.warn('crm.cnpj.provider_failed', {
       provider: endpoint.name,
       cause: error instanceof Error ? error.message : String(error),
     })
-    return null
+    return { kind: 'failed' }
   }
 }
 
-/** BrasilAPI-backed provider with a Minha Receita fallback (no key). */
+/**
+ * All public sources in parallel, merged, with a 24 h cache. It fails only
+ * when no source has the CNPJ: "not found" when an authoritative one says so,
+ * "try again" when they were all out of reach.
+ */
 export const BrasilApiCnpjProvider: CnpjProvider = {
   source: 'brasilapi',
 
@@ -205,27 +474,22 @@ export const BrasilApiCnpjProvider: CnpjProvider = {
     const cnpj = normalizeCnpj(rawCnpj)
     if (!isValidCnpj(cnpj)) return err(crmCnpjInvalid())
 
-    let primaryAnswered = true
-    for (const [index, endpoint] of ENDPOINTS.entries()) {
-      const result = await fetchFrom(endpoint, cnpj, signal)
-      if (!result) {
-        if (index === 0) primaryAnswered = false
-        continue
-      }
-      // A mirror's "not found" is only definitive when the primary source
-      // answered too: with BrasilAPI down, the mirror may simply lag behind
-      // a recent CNPJ, and "try again later" is the honest answer.
-      if (
-        !result.ok &&
-        !primaryAnswered &&
-        result.error.code === 'CRM_CNPJ_NOT_FOUND'
-      ) {
-        logger.warn('crm.cnpj.mirror_not_found_primary_down', {
-          provider: endpoint.name,
-        })
-        continue
-      }
-      return result
+    const cached = await CrmCnpjCache.get(cnpj)
+    if (cached) return ok(cached)
+
+    const outcomes = await Promise.all(
+      ENDPOINTS.map((endpoint) => fetchFrom(endpoint, cnpj, signal)),
+    )
+    const profiles = outcomes.flatMap((o) =>
+      o.kind === 'profile' ? [o.profile] : [],
+    )
+    if (profiles.length > 0) {
+      const merged = mergeCnpjProfiles(profiles)
+      await CrmCnpjCache.set(cnpj, merged)
+      return ok(merged)
+    }
+    if (outcomes.some((o) => o.kind === 'not_found')) {
+      return err(crmCnpjNotFound())
     }
     return err(crmCnpjLookupFailed())
   },
