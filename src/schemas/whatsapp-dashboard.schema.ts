@@ -11,6 +11,11 @@ export const WA_DASHBOARD_SOURCES = [
   'whatsapp-conversation-events',
   'whatsapp-sla-cycles',
   'whatsapp-team-members',
+  'whatsapp-messages',
+  'whatsapp-broadcast-recipients',
+  'whatsapp-templates',
+  'whatsapp-costs',
+  'whatsapp-ai-campaign-actions',
 ] as const
 
 export type WaDashboardSource = (typeof WA_DASHBOARD_SOURCES)[number]
@@ -38,4 +43,9 @@ export const WA_DASHBOARD_ROW_LIMITS: Record<WaDashboardSource, number> = {
   'whatsapp-sla-cycles': 20_000,
   // Current state (no history window): one row per team membership.
   'whatsapp-team-members': 2_000,
+  'whatsapp-messages': 20_000,
+  'whatsapp-broadcast-recipients': 20_000,
+  'whatsapp-templates': 5_000,
+  'whatsapp-costs': 20_000,
+  'whatsapp-ai-campaign-actions': 20_000,
 }

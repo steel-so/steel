@@ -60,3 +60,8 @@ export type WaDashboardRow =
   | WaConversationEventDashboardRow
   | WaSlaCycleDashboardRow
   | WaTeamMemberDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaMessageDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaBroadcastRecipientDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaTemplateDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaCostDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaAiCampaignActionDashboardRow
