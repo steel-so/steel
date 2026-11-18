@@ -10,10 +10,12 @@ import {
   CreateCrmReportSchema,
   UpdateCrmReportSchema,
 } from '@/src/schemas/crm-report.schema'
+import { WA_DASHBOARD_SOURCES } from '@/src/schemas/whatsapp-dashboard.schema'
 import { flag } from '../../common'
 import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   WhatsAppDashboardDTO,
+  WhatsAppDashboardRowDTO,
   WhatsAppDashboardWidgetDTO,
   WhatsAppReportDataDTO,
   WhatsAppReportDTO,
@@ -313,5 +315,33 @@ export const dashboardRoutes: RouteConfig[] = [
       },
     },
     errors: byIdErrors('reports', 'VIEW', 'CrmReport'),
+  },
+  /* -------------------------------- sources ------------------------------- */
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/dashboards/sources/{source}',
+    tags: [TAG],
+    summary: 'Dados de uma fonte dos dashboards',
+    description: `Linhas achatadas que os widgets agregam no navegador (contagem, soma, média, baldes de data, período, comparação). Histórico de 400 dias, com teto de 20 mil linhas por fonte. ${perm('dashboards', 'VIEW')}`,
+    params: {
+      source: {
+        description: 'Fonte de dados.',
+        schema: { type: 'string', enum: [...WA_DASHBOARD_SOURCES] },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Linhas.',
+        schema: z.array(WhatsAppDashboardRowDTO),
+      },
+    },
+    errors: [
+      ...permErrors('dashboards', 'VIEW'),
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Fonte de dados desconhecida',
+        when: '`source` fora da lista',
+      },
+    ],
   },
 ]

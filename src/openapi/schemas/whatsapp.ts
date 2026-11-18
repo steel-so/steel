@@ -1899,3 +1899,33 @@ export const WidgetSendResultDTO = dto(
     }),
   }),
 )
+
+export const WhatsAppDashboardRowDTO = dto(
+  'WhatsAppDashboardRow',
+  z.record(z.string(), z.unknown()).meta({
+    description:
+      'Linha achatada da fonte, com rótulos em pt-BR e campos derivados, sem nome nem telefone do contato. `whatsapp-ai-campaign-recipients` (um destinatário de campanha de IA por linha): `campaign`, `campaignStatus`, `sendStatus` (Enviado, Falhou, Pendente, Ignorado), `isSent`, `delivery` (Lida, Entregue, Enviada, Não entregue), `isDelivered`, `response` (Sim, Não, texto de outro botão, Outra resposta, Sem retorno), `replied`, `transferred`, `stage` (Sem retorno, Aguardando atendimento, Em atendimento, Encerrada), `isWaiting`, `attendant`, `team`, `outcome` (Deu certo, Não deu), `closeStatus` e datas. A resposta de um celular brasileiro que chega sem o nono dígito conta para o mesmo destinatário.',
+    example: {
+      id: 'ckr1',
+      campaign: 'Santander',
+      campaignStatus: 'Concluída',
+      sendStatus: 'Enviado',
+      isSent: true,
+      delivery: 'Lida',
+      isDelivered: true,
+      response: 'Sim',
+      replied: true,
+      transferred: true,
+      stage: 'Em atendimento',
+      isWaiting: false,
+      attendant: 'Ana',
+      team: 'Retenção',
+      outcome: null,
+      closeStatus: [],
+      sentAt: '2026-11-17T18:20:00.000Z',
+      repliedAt: '2026-11-17T18:28:15.000Z',
+      closedAt: null,
+      createdAt: '2026-11-17T18:00:00.000Z',
+    },
+  }),
+)

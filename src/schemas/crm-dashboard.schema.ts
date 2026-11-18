@@ -89,6 +89,9 @@ export const VIEW_SOURCES = [
   'forms',
   'whatsapp-conversations',
   'whatsapp-broadcasts',
+  // Comunicação — flattened rows served by
+  // `whatsapp/dashboards/sources/<source>` (answer, stage, attendant…).
+  'whatsapp-ai-campaign-recipients',
   // ServiceDesk — linhas achatadas servidas por
   // `servicedesk/dashboards/sources/<fonte>` (campos derivados de SLA, MTTR…).
   'sd-tickets',
