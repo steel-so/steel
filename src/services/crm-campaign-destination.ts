@@ -22,7 +22,12 @@ import type { CrmCampaignDestinationDTO } from '@/types/crm-campaign'
 
 export type CampaignDestinationFields = Pick<
   CrmCampaign,
-  'workspaceId' | 'destinationType' | 'formId' | 'siteId' | 'sitePageId'
+  | 'workspaceId'
+  | 'destinationType'
+  | 'formId'
+  | 'siteId'
+  | 'sitePageId'
+  | 'externalUrl'
 >
 
 export interface ResolvedCampaignDestination {
@@ -65,12 +70,42 @@ export function siteDestination(
   return { ref: page ? { url: page.url } : null, summary, issue }
 }
 
+/** An external address destination (pure): any http(s) link. */
+export function externalDestination(
+  externalUrl: string | null,
+): ResolvedCampaignDestination | null {
+  if (!externalUrl) return null
+  let host: string
+  try {
+    const parsed = new URL(externalUrl)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+    host = parsed.host
+  } catch {
+    return null
+  }
+  return {
+    ref: { url: externalUrl },
+    summary: {
+      type: 'EXTERNAL_URL',
+      name: host,
+      pageTitle: null,
+      url: externalUrl,
+      published: true,
+    },
+    issue: null,
+  }
+}
+
 /** The campaign's destination, or `null` when none is chosen (or it was
  * deleted). */
 export async function resolveCampaignDestination(
   campaign: CampaignDestinationFields,
 ): Promise<Result<ResolvedCampaignDestination | null>> {
   const { workspaceId } = campaign
+
+  if (campaign.destinationType === 'EXTERNAL_URL') {
+    return ok(externalDestination(campaign.externalUrl))
+  }
 
   if (campaign.destinationType === 'SITE_PAGE') {
     if (!campaign.siteId) return ok(null)

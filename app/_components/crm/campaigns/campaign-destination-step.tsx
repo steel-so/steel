@@ -33,7 +33,7 @@ import type { CampaignDraft, DraftChange } from './campaign-draft'
 import { CampaignSiteThumbnail } from './campaign-site-thumbnail'
 import { AdvancedOptions, CopyLinkRow, campaignLinks } from './campaign-steps'
 
-type Tab = 'sites' | 'forms'
+type Tab = 'sites' | 'forms' | 'link'
 type StatusFilter = 'all' | 'published' | 'draft'
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -64,6 +64,7 @@ function keepStatus(filter: StatusFilter, published: boolean) {
 
 function tabOf(draft: CampaignDraft): Tab {
   if (draft.destinationType === 'FORM') return 'forms'
+  if (draft.destinationType === 'EXTERNAL_URL') return 'link'
   return 'sites'
 }
 
@@ -75,12 +76,59 @@ function pick(
     formId: null,
     siteId: null,
     sitePageId: null,
+    externalUrl: null,
     ...patch,
   }
 }
 
 function hostOf(url: string) {
   return url.replace(/^https?:\/\//, '')
+}
+
+function isHttpUrl(value: string) {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function LinkTab({
+  draft,
+  onChange,
+}: {
+  draft: CampaignDraft
+  onChange: DraftChange
+}) {
+  const value = draft.externalUrl ?? ''
+  const invalid = value.trim() !== '' && !isHttpUrl(value.trim())
+  return (
+    <div className='flex max-w-xl flex-col gap-2'>
+      <Label htmlFor='external-url'>Endereço de destino</Label>
+      <Input
+        id='external-url'
+        type='url'
+        inputMode='url'
+        placeholder='https://www.seusite.com.br/oferta'
+        value={value}
+        aria-invalid={invalid}
+        onChange={(e) => {
+          const next = e.target.value
+          onChange(
+            next.trim() === ''
+              ? pick({ destinationType: null })
+              : pick({ destinationType: 'EXTERNAL_URL', externalUrl: next }),
+          )
+        }}
+      />
+      <p className='text-muted-foreground text-xs'>
+        {invalid
+          ? 'Use um endereço completo, começando com http:// ou https://.'
+          : 'Qualquer página fora do Steel. Acrescentamos os parâmetros utm e o rastreio de clique.'}
+      </p>
+    </div>
+  )
 }
 
 function Empty({ children }: { children: ReactNode }) {
@@ -400,6 +448,28 @@ export function DestinationPreview({
     )
   }
 
+  if (draft.destinationType === 'EXTERNAL_URL') {
+    const url = draft.externalUrl?.trim() ?? ''
+    if (!isHttpUrl(url)) return <Empty>Informe o link de destino.</Empty>
+    return (
+      <div className='flex min-w-0 flex-col gap-3 rounded-xl border p-4'>
+        <span className='flex items-center gap-2 font-medium text-sm'>
+          <SteelIcon
+            icon={LinkSquare02Icon}
+            size={18}
+            className='text-primary'
+          />
+          Link externo
+        </span>
+        <p className='text-muted-foreground text-xs'>
+          O contato abre este endereço. Os cliques são contados, mas visitas e
+          formulários fora do Steel não entram na conversão.
+        </p>
+        <OpenLink url={url} />
+      </div>
+    )
+  }
+
   if (draft.destinationType === 'FORM') {
     const form = options.forms.find((item) => item.id === draft.formId)
     if (!form) return <Empty>Escolha um formulário.</Empty>
@@ -481,6 +551,7 @@ export function DestinationStep({
       label: `Formulários (${options.forms.length})`,
       icon: FormIcon,
     },
+    { value: 'link', label: 'Link externo', icon: LinkSquare02Icon },
   ]
 
   return (
@@ -491,8 +562,8 @@ export function DestinationStep({
             Este passo é opcional: para onde o link da campanha leva?
           </span>
           <span className='text-muted-foreground'>
-            Escolha um site ou um formulário se a mensagem tiver um botão ou
-            link. Se for só um aviso, siga sem escolher nada.
+            Escolha um site, um formulário ou um link externo se a mensagem
+            tiver um botão ou link. Se for só um aviso, siga sem escolher nada.
           </span>
         </p>
         {draft.destinationType ? (
@@ -506,6 +577,7 @@ export function DestinationStep({
                 formId: null,
                 siteId: null,
                 sitePageId: null,
+                externalUrl: null,
               })
             }
           >
@@ -538,65 +610,69 @@ export function DestinationStep({
             </button>
           ))}
         </div>
-        <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
-          <div className='relative min-w-0 sm:max-w-xs sm:flex-1'>
-            <SteelIcon
-              icon={Search01Icon}
-              size={16}
-              className='-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 text-muted-foreground'
-            />
-            <Input
-              aria-label='Buscar destino'
-              placeholder='Buscar…'
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className='pl-8'
-            />
-          </div>
-          <Select
-            items={STATUS_FILTERS}
-            value={filter}
-            onValueChange={(value) => setFilter(value as StatusFilter)}
-          >
-            <SelectTrigger
-              aria-label='Filtrar por situação'
-              className='w-full sm:w-40'
+        {tab === 'link' ? null : (
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+            <div className='relative min-w-0 sm:max-w-xs sm:flex-1'>
+              <SteelIcon
+                icon={Search01Icon}
+                size={16}
+                className='-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 text-muted-foreground'
+              />
+              <Input
+                aria-label='Buscar destino'
+                placeholder='Buscar…'
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className='pl-8'
+              />
+            </div>
+            <Select
+              items={STATUS_FILTERS}
+              value={filter}
+              onValueChange={(value) => setFilter(value as StatusFilter)}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_FILTERS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            type='button'
-            variant='ghost'
-            onClick={onRefreshOptions}
-            aria-label='Atualizar lista'
-            className='self-start sm:self-auto'
-          >
-            <SteelIcon icon={RefreshIcon} />
-          </Button>
-          {tab === 'sites' && options.sites.length > 0 ? (
-            <CreateLinkButton href={`/${workspaceSlug}/crm/sites`}>
-              Criar site
-            </CreateLinkButton>
-          ) : null}
-          {tab === 'forms' && options.forms.length > 0 ? (
-            <CreateLinkButton href={`/${workspaceSlug}/crm/forms`}>
-              Criar formulário
-            </CreateLinkButton>
-          ) : null}
-        </div>
+              <SelectTrigger
+                aria-label='Filtrar por situação'
+                className='w-full sm:w-40'
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTERS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type='button'
+              variant='ghost'
+              onClick={onRefreshOptions}
+              aria-label='Atualizar lista'
+              className='self-start sm:self-auto'
+            >
+              <SteelIcon icon={RefreshIcon} />
+            </Button>
+            {tab === 'sites' && options.sites.length > 0 ? (
+              <CreateLinkButton href={`/${workspaceSlug}/crm/sites`}>
+                Criar site
+              </CreateLinkButton>
+            ) : null}
+            {tab === 'forms' && options.forms.length > 0 ? (
+              <CreateLinkButton href={`/${workspaceSlug}/crm/forms`}>
+                Criar formulário
+              </CreateLinkButton>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className='grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]'>
         <div className='min-w-0' role='tabpanel'>
-          {tab === 'sites' ? (
+          {tab === 'link' ? (
+            <LinkTab draft={draft} onChange={onChange} />
+          ) : tab === 'sites' ? (
             <SitesTab
               draft={draft}
               onChange={onChange}

@@ -46,7 +46,9 @@ export function destinationLabel(
 ): string {
   if (!draft.destinationType) return 'Sem link: a campanha é só um aviso'
   let name: string | undefined
-  if (draft.destinationType === 'SITE_PAGE') {
+  if (draft.destinationType === 'EXTERNAL_URL') {
+    name = draft.externalUrl?.trim() || undefined
+  } else if (draft.destinationType === 'SITE_PAGE') {
     const site = options.sites.find((item) => item.id === draft.siteId)
     const page = site?.pages.find((item) => item.id === draft.sitePageId)
     name = site ? `${site.name}${page ? ` › ${page.title}` : ''}` : undefined

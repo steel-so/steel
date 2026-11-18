@@ -9,6 +9,7 @@ export type CampaignDraft = Pick<
   | 'formId'
   | 'siteId'
   | 'sitePageId'
+  | 'externalUrl'
   | 'emailFrom'
   | 'emailSubject'
   | 'emailPreheader'
@@ -40,6 +41,7 @@ export function draftFromCampaign(c: CrmCampaignDetailDTO): CampaignDraft {
     formId: c.formId,
     siteId: c.siteId,
     sitePageId: c.sitePageId,
+    externalUrl: c.externalUrl,
     emailFrom: c.emailFrom,
     emailSubject: c.emailSubject,
     emailPreheader: c.emailPreheader,
@@ -68,6 +70,7 @@ export function draftToPatch(draft: CampaignDraft): CampaignDraft {
     value === null || value.trim() === '' ? null : value.trim()
   return {
     ...draft,
+    externalUrl: blank(draft.externalUrl),
     emailFrom: blank(draft.emailFrom),
     emailSubject: blank(draft.emailSubject),
     emailPreheader: blank(draft.emailPreheader),

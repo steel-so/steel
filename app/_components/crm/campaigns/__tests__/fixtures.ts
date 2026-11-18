@@ -19,6 +19,7 @@ export function campaign(
     destinationType: 'FORM',
     formId: 'f1',
     siteId: null,
+    externalUrl: null,
     sitePageId: null,
     utmMedium: 'campanha',
     emailFrom: 'mkt@acme.com',

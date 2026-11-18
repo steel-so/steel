@@ -7,7 +7,7 @@ export type CrmCampaignStatusDTO =
   | 'CANCELED'
   | 'FAILED'
 
-export type CrmCampaignDestinationTypeDTO = 'FORM' | 'SITE_PAGE'
+export type CrmCampaignDestinationTypeDTO = 'FORM' | 'SITE_PAGE' | 'EXTERNAL_URL'
 
 export type CrmCampaignConversionKindDTO =
   /** Legacy: views of the removed landing page editor (old rows only). */
@@ -103,6 +103,7 @@ export interface CrmCampaignDTO {
   formId: string | null
   siteId: string | null
   sitePageId: string | null
+  externalUrl: string | null
   utmMedium: string
   emailFrom: string | null
   emailSubject: string | null

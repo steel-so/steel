@@ -4657,6 +4657,8 @@ enum CrmCampaignDestinationType {
   FORM
   /// A page of a published site (Sites builder).
   SITE_PAGE
+  /// Any http(s) address outside the platform.
+  EXTERNAL_URL
 }
 
 /// LGPD legal basis declared for a channel at launch.
@@ -4704,6 +4706,8 @@ model CrmCampaign {
   /// Site + page of a SITE_PAGE destination.
   siteId               String?                     @map("site_id")
   sitePageId           String?                     @map("site_page_id")
+  /// Address of an EXTERNAL_URL destination.
+  externalUrl          String?                     @map("external_url")
   utmMedium            String                      @default("campanha") @map("utm_medium")
   emailFrom            String?                     @map("email_from")
   emailSubject         String?                     @map("email_subject")

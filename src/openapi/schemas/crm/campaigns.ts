@@ -41,13 +41,17 @@ const campaignShape = {
     description: 'Valor de `utm_campaign`.',
   }),
   status,
-  destinationType: z.enum(['FORM', 'SITE_PAGE']).nullable().meta({
-    description:
-      'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); FORM = formulário do CRM (`formId`).',
-  }),
+  destinationType: z
+    .enum(['FORM', 'SITE_PAGE', 'EXTERNAL_URL'])
+    .nullable()
+    .meta({
+      description:
+        'SITE_PAGE = página de um site publicado (`siteId` + `sitePageId`); FORM = formulário do CRM (`formId`); EXTERNAL_URL = link http(s) fora da plataforma (`externalUrl`).',
+    }),
   formId: z.string().nullable(),
   siteId: z.string().nullable(),
   sitePageId: z.string().nullable(),
+  externalUrl: z.string().nullable(),
   utmMedium: z.string().meta({ example: 'campanha' }),
   emailFrom: z.string().nullable(),
   emailSubject: z.string().nullable(),
@@ -95,7 +99,7 @@ const campaignShape = {
   }),
   destination: z
     .object({
-      type: z.enum(['FORM', 'SITE_PAGE']),
+      type: z.enum(['FORM', 'SITE_PAGE', 'EXTERNAL_URL']),
       name: z.string(),
       pageTitle: z.string().nullable(),
       url: z.string().nullable(),

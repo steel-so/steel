@@ -10,7 +10,11 @@ export const CRM_CAMPAIGN_LEGAL_BASES = [
 
 export const CrmCampaignLegalBasisEnum = z.enum(CRM_CAMPAIGN_LEGAL_BASES)
 
-export const CrmCampaignDestinationTypeEnum = z.enum(['FORM', 'SITE_PAGE'])
+export const CrmCampaignDestinationTypeEnum = z.enum([
+  'FORM',
+  'SITE_PAGE',
+  'EXTERNAL_URL',
+])
 
 export const CrmCampaignChannelEnum = z.enum(['EMAIL', 'WHATSAPP'])
 
@@ -83,6 +87,10 @@ export const UpdateCrmCampaignSchema = z
     formId: nullableId,
     siteId: nullableId,
     sitePageId: nullableId,
+    externalUrl: z
+      .url({ protocol: /^https?$/, error: 'Informe um link http(s) válido' })
+      .max(2000)
+      .nullable(),
     emailFrom: z.email('Remetente inválido').nullable(),
     emailSubject: z.string().trim().max(200).nullable(),
     emailPreheader: z.string().trim().max(200).nullable(),

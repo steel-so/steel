@@ -77,6 +77,7 @@ import type {
 } from '@/types/crm-campaign'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import {
+  externalDestination,
   resolveCampaignDestination,
   siteDestination,
 } from './crm-campaign-destination'
@@ -529,12 +530,13 @@ function toUpdateData(
         : whatsappVariables
   }
   // One destination at a time: picking a type clears the other ids.
-  const clear = (keep: 'FORM' | 'SITE_PAGE' | null) => {
+  const clear = (keep: 'FORM' | 'SITE_PAGE' | 'EXTERNAL_URL' | null) => {
     if (keep !== 'FORM') data.formId = null
     if (keep !== 'SITE_PAGE') {
       data.siteId = null
       data.sitePageId = null
     }
+    if (keep !== 'EXTERNAL_URL') data.externalUrl = null
   }
   if (dto.destinationType !== undefined) clear(dto.destinationType)
   // Another site: its pages are not the old site's.
@@ -544,7 +546,11 @@ function toUpdateData(
   return data
 }
 
-const MISSING_DESTINATION: Record<'FORM' | 'SITE_PAGE', string> = {
+const MISSING_DESTINATION: Record<
+  'FORM' | 'SITE_PAGE' | 'EXTERNAL_URL',
+  string
+> = {
+  EXTERNAL_URL: 'Informe o link de destino',
   FORM: 'Escolha o formulário de destino',
   SITE_PAGE: 'Escolha o site e a página de destino',
 }
@@ -608,7 +614,11 @@ export const CrmCampaignService = {
           campaign.destinationType === 'SITE_PAGE' && campaign.siteId
             ? siteById.get(campaign.siteId)
             : undefined
-        const onSite = site ? siteDestination(site, campaign.sitePageId) : null
+        const onSite = site
+          ? siteDestination(site, campaign.sitePageId)
+          : campaign.destinationType === 'EXTERNAL_URL'
+            ? externalDestination(campaign.externalUrl)
+            : null
         const destinationId =
           campaign.destinationType === 'FORM' ? campaign.formId : null
         return {
@@ -617,7 +627,8 @@ export const CrmCampaignService = {
             toCrmCampaignLinks(
               campaign,
               BETTER_AUTH_URL,
-              campaign.destinationType === 'SITE_PAGE'
+              campaign.destinationType === 'SITE_PAGE' ||
+                campaign.destinationType === 'EXTERNAL_URL'
                 ? (onSite?.ref ?? null)
                 : (destinationId && tokens.value.get(destinationId)) || null,
             ),

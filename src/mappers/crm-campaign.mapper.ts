@@ -50,7 +50,7 @@ export function toCrmCampaignLinks(
   const usable =
     type !== null &&
     destination !== null &&
-    (type === 'SITE_PAGE') === (typeof destination === 'object')
+    (type !== 'FORM') === (typeof destination === 'object')
   if (!usable) return { destination: null, email: null, whatsapp: null }
   const destinationUrl = campaignDestinationUrl(
     baseUrl,
@@ -84,6 +84,7 @@ export function toCrmCampaignDTO(
     formId: campaign.formId,
     siteId: campaign.siteId,
     sitePageId: campaign.sitePageId,
+    externalUrl: campaign.externalUrl,
     utmMedium: campaign.utmMedium,
     emailFrom: campaign.emailFrom,
     emailSubject: campaign.emailSubject,

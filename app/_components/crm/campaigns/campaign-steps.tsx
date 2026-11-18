@@ -36,6 +36,9 @@ export function destinationUrlOf(
         ?.pages.find((page) => page.id === draft.sitePageId)?.url ?? null
     )
   }
+  if (draft.destinationType === 'EXTERNAL_URL') {
+    return draft.externalUrl?.trim() || null
+  }
   const token =
     draft.destinationType === 'FORM'
       ? options.forms.find((f) => f.id === draft.formId)?.publicToken

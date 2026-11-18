@@ -69,6 +69,7 @@ export const DESTINATION_TYPE_LABEL: Record<
 > = {
   SITE_PAGE: 'Página do site',
   FORM: 'Formulário do CRM',
+  EXTERNAL_URL: 'Link externo',
 }
 
 export const VARIABLE_SOURCE_LABEL: Record<
