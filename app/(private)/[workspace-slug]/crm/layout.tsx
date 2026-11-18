@@ -72,156 +72,232 @@ export default async function CrmLayout({
         <ContextSidebar>
           <ContextHeader title='CRM' />
           <NavGroup>
-            <NavItem
-              href={`${base}/leads`}
-              icon={UserSearch01Icon}
-              data-tour='crm-home-leads'
-            >
-              Leads
-            </NavItem>
-            <NavItem href={`${base}/cadences`} icon={Route01Icon}>
-              Cadências
-            </NavItem>
-            <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
-              Oportunidades
-            </NavItem>
-            <NavItem href={`${base}/companies`} icon={Building03Icon}>
-              Empresas
-            </NavItem>
-            <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
-              Renovações
-            </NavItem>
-            <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
-              Pessoas
-            </NavItem>
-            <NavItem href={`${base}/duplicates`} icon={GitMergeIcon}>
-              Duplicados
-            </NavItem>
-            <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
-              Funis
-            </NavItem>
-            <NavItem href={`${base}/products`} icon={PackageIcon}>
-              Produtos
-            </NavItem>
-            <NavItem href={`${base}/forecast`} icon={ChartLineData01Icon}>
-              Previsão
-            </NavItem>
-          </NavGroup>
-          <NavGroup>
-            <NavItem href={`${base}/tasks`} icon={TaskDone01Icon}>
-              Tarefas
-            </NavItem>
-            <NavItem href={`${base}/tasks/calendar`} icon={Calendar01Icon}>
-              Calendário
-            </NavItem>
-            <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
-              Notas
-            </NavItem>
-            <NavItem href={`${base}/documents`} icon={DocumentValidationIcon}>
-              Documentos
-            </NavItem>
-            <NavItem
-              href={`${base}/documents?kind=PROPOSAL`}
-              icon={DocumentValidationIcon}
-            >
-              Propostas
-            </NavItem>
-            <NavItem
-              href={`${base}/documents?tab=modelos&kind=PROPOSAL`}
-              icon={DocumentValidationIcon}
-            >
-              Modelos de proposta
-            </NavItem>
-            <NavItem href={`${base}/forms`} icon={FormIcon}>
-              Formulários
-            </NavItem>
-          </NavGroup>
-          <NavGroup>
-            <NavGroupAccordion label='Marketing' icon={MegaphoneIcon}>
-              <NavItem href={`${base}/campaigns`} icon={Megaphone01Icon}>
-                Campanhas
-              </NavItem>
-              <NavItem href={`${base}/email-campaigns`} icon={MailSend01Icon}>
-                E-mail avulso
-              </NavItem>
-              <NavItem href={`${base}/email-templates`} icon={Mail01Icon}>
-                Templates
-              </NavItem>
-              <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
-                Listas
-              </NavItem>
-              <NavItem href={`${base}/newsletters`} icon={NewsIcon}>
-                Newsletters
-              </NavItem>
-              <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
-                Sites
-              </NavItem>
-            </NavGroupAccordion>
-            <NavGroupAccordion label='Social' icon={Share08Icon}>
-              <NavItem href={`${base}/social`} icon={Calendar01Icon}>
-                Agendar posts
-              </NavItem>
-              <NavItem href={`${base}/social/hook-vault`} icon={QuoteUpIcon}>
-                Hook Vault
-              </NavItem>
-              <NavItem
-                href={`${base}/social/competitors`}
-                icon={UserSearch02Icon}
+            <NavGroupAccordion label='Atrair' icon={MegaphoneIcon}>
+              <NavGroupAccordion
+                nested
+                label='Site e SEO'
+                icon={WebDesign01Icon}
               >
-                Concorrentes
-              </NavItem>
-              <NavItem href={`${base}/social/trending`} icon={FireIcon}>
-                Em Alta
-              </NavItem>
-              <NavItem href={`${base}/social/instagram`} icon={InstagramIcon}>
-                Instagram
-              </NavItem>
-              <NavItem href={`${base}/social/facebook`} icon={Facebook01Icon}>
-                Facebook
-              </NavItem>
-              <NavItem href={`${base}/social/tiktok`} icon={TiktokIcon}>
-                TikTok
-              </NavItem>
-              <NavItem href={`${base}/social/youtube`} icon={YoutubeIcon}>
-                YouTube
-              </NavItem>
-              <NavItem
-                href={`${base}/social/google_analytics`}
-                icon={GoogleIcon}
+                <NavItem href={`${base}/sites`} icon={WebDesign01Icon}>
+                  Sites
+                </NavItem>
+                <NavItem
+                  href={`${base}/social/google_analytics`}
+                  icon={GoogleIcon}
+                >
+                  Google Analytics
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Redes sociais'
+                icon={Share08Icon}
               >
-                Google Analytics
-              </NavItem>
-              <NavItem
-                href={`${base}/social/google_ads`}
+                <NavItem href={`${base}/social/instagram`} icon={InstagramIcon}>
+                  Instagram
+                </NavItem>
+                <NavItem href={`${base}/social/facebook`} icon={Facebook01Icon}>
+                  Facebook
+                </NavItem>
+                <NavItem href={`${base}/social/youtube`} icon={YoutubeIcon}>
+                  YouTube
+                </NavItem>
+                <NavItem href={`${base}/social/tiktok`} icon={TiktokIcon}>
+                  TikTok
+                </NavItem>
+                <NavItem href={`${base}/social`} icon={Calendar01Icon}>
+                  Agendar posts
+                </NavItem>
+                <NavItem href={`${base}/social/hook-vault`} icon={QuoteUpIcon}>
+                  Ideias e conteúdos (Hook Vault)
+                </NavItem>
+                <NavItem
+                  href={`${base}/social/competitors`}
+                  icon={UserSearch02Icon}
+                >
+                  Concorrentes
+                </NavItem>
+                <NavItem href={`${base}/social/trending`} icon={FireIcon}>
+                  Tendências (Em alta)
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Tráfego pago'
                 icon={Megaphone01Icon}
               >
-                Google Ads
+                <NavItem
+                  href={`${base}/social/google_ads`}
+                  icon={Megaphone01Icon}
+                >
+                  Google Ads
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='E-mail marketing'
+                icon={Mail01Icon}
+              >
+                <NavItem href={`${base}/campaigns`} icon={Megaphone01Icon}>
+                  Campanhas
+                </NavItem>
+                <NavItem href={`${base}/newsletters`} icon={NewsIcon}>
+                  Newsletters
+                </NavItem>
+                <NavItem href={`${base}/email-templates`} icon={Mail01Icon}>
+                  Templates de e-mail
+                </NavItem>
+                <NavItem href={`${base}/email-campaigns`} icon={MailSend01Icon}>
+                  E-mail avulso
+                </NavItem>
+              </NavGroupAccordion>
+            </NavGroupAccordion>
+          </NavGroup>
+          <NavGroup>
+            <NavGroupAccordion
+              label='Captar e qualificar'
+              icon={UserSearch01Icon}
+            >
+              <NavGroupAccordion nested label='Leads' icon={UserSearch01Icon}>
+                <NavItem
+                  href={`${base}/leads`}
+                  icon={UserSearch01Icon}
+                  data-tour='crm-home-leads'
+                >
+                  Todos os leads
+                </NavItem>
+                <NavItem href={`${base}/duplicates`} icon={GitMergeIcon}>
+                  Duplicados
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion nested label='Formulários' icon={FormIcon}>
+                <NavItem href={`${base}/forms`} icon={FormIcon}>
+                  Formulários
+                </NavItem>
+                <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
+                  Listas
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion nested label='Prospecção' icon={Route01Icon}>
+                <NavItem href={`${base}/cadences`} icon={Route01Icon}>
+                  Cadências
+                </NavItem>
+              </NavGroupAccordion>
+            </NavGroupAccordion>
+          </NavGroup>
+          <NavGroup>
+            <NavGroupAccordion label='Relacionar' icon={UserMultipleIcon}>
+              <NavGroupAccordion
+                nested
+                label='Contatos'
+                icon={UserMultipleIcon}
+              >
+                <NavItem href={`${base}/people`} icon={UserMultipleIcon}>
+                  Pessoas
+                </NavItem>
+                <NavItem href={`${base}/companies`} icon={Building03Icon}>
+                  Empresas
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Comunicação'
+                icon={MailReceive01Icon}
+              >
+                <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
+                  Registro e histórico de e-mails
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Atividades'
+                icon={TaskDone01Icon}
+              >
+                <NavItem href={`${base}/tasks`} icon={TaskDone01Icon}>
+                  Tarefas
+                </NavItem>
+                <NavItem href={`${base}/tasks/calendar`} icon={Calendar01Icon}>
+                  Calendário
+                </NavItem>
+                <NavItem href={`${base}/notes`} icon={StickyNote01Icon}>
+                  Notas
+                </NavItem>
+              </NavGroupAccordion>
+            </NavGroupAccordion>
+          </NavGroup>
+          <NavGroup>
+            <NavGroupAccordion label='Vender' icon={TargetDollarIcon}>
+              <NavGroupAccordion
+                nested
+                label='Oportunidades'
+                icon={TargetDollarIcon}
+              >
+                <NavItem href={`${base}/opportunities`} icon={TargetDollarIcon}>
+                  Oportunidades
+                </NavItem>
+                <NavItem href={`${base}/pipelines`} icon={FunnelIcon}>
+                  Funis
+                </NavItem>
+                <NavItem href={`${base}/forecast`} icon={ChartLineData01Icon}>
+                  Previsão de vendas
+                </NavItem>
+                <NavItem href={`${base}/products`} icon={PackageIcon}>
+                  Produtos
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Documentos'
+                icon={DocumentValidationIcon}
+              >
+                <NavItem
+                  href={`${base}/documents`}
+                  icon={DocumentValidationIcon}
+                >
+                  Documentos
+                </NavItem>
+                <NavItem
+                  href={`${base}/documents?kind=PROPOSAL`}
+                  icon={DocumentValidationIcon}
+                >
+                  Propostas
+                </NavItem>
+                <NavItem
+                  href={`${base}/documents?tab=modelos`}
+                  icon={DocumentValidationIcon}
+                >
+                  Modelos de documentos
+                </NavItem>
+              </NavGroupAccordion>
+            </NavGroupAccordion>
+          </NavGroup>
+          <NavGroup>
+            <NavGroupAccordion label='Fidelizar' icon={RepeatIcon}>
+              <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
+                Renovações
               </NavItem>
             </NavGroupAccordion>
           </NavGroup>
           <NavGroup>
-            <NavItem href={`${base}/workflows`} icon={WorkflowCircle01Icon}>
-              Workflows
-            </NavItem>
-            <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
-              Painéis
-            </NavItem>
-            <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
-              Relatórios
-            </NavItem>
-          </NavGroup>
-          <NavGroup>
-            <NavItem href={`${base}/email-sync`} icon={MailReceive01Icon}>
-              Registro de e-mails
-            </NavItem>
-            {canManageKeys ? (
-              <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
-                Chaves de API
+            <NavGroupAccordion label='Gestão' icon={Settings02Icon}>
+              <NavItem href={`${base}/workflows`} icon={WorkflowCircle01Icon}>
+                Workflows
               </NavItem>
-            ) : null}
-            <NavItem href={`${base}/settings`} icon={Settings02Icon}>
-              Configurações
-            </NavItem>
+              <NavItem href={`${base}/dashboards`} icon={DashboardSquare01Icon}>
+                Painéis
+              </NavItem>
+              <NavItem href={`${base}/reports`} icon={ChartHistogramIcon}>
+                Relatórios
+              </NavItem>
+              {canManageKeys ? (
+                <NavItem href={`${base}/integration-keys`} icon={Key01Icon}>
+                  Chaves de API
+                </NavItem>
+              ) : null}
+              <NavItem href={`${base}/settings`} icon={Settings02Icon}>
+                Configurações
+              </NavItem>
+            </NavGroupAccordion>
           </NavGroup>
         </ContextSidebar>
       </ModuleRail>

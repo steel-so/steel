@@ -16,12 +16,15 @@ export function NavGroupAccordion({
   icon,
   defaultOpen = true,
   action,
+  nested = false,
   children,
 }: {
   label: string
   icon?: IconType
   defaultOpen?: boolean
   action?: ReactNode
+  /** Sub-menu inside another group: indents its content. */
+  nested?: boolean
   children: ReactNode
 }) {
   return (
@@ -41,7 +44,9 @@ export function NavGroupAccordion({
             </span>
           )}
         </AccordionTrigger>
-        <AccordionContent className='pb-0 space-y-0.5'>
+        <AccordionContent
+          className={nested ? 'pb-0 space-y-0.5 pl-3' : 'pb-0 space-y-0.5'}
+        >
           {children}
         </AccordionContent>
       </AccordionItem>
