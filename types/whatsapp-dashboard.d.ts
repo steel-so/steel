@@ -1,3 +1,10 @@
+import type {
+  WaAttendanceDashboardRow,
+  WaConversationEventDashboardRow,
+  WaSlaCycleDashboardRow,
+  WaTeamMemberDashboardRow,
+} from './whatsapp-dashboard-attendance'
+
 /**
  * Rows of the Comunicação (WhatsApp) dashboard sources
  * (`GET /api/workspaces/[id]/whatsapp/dashboards/sources/[source]`).
@@ -47,4 +54,9 @@ export interface WaAiCampaignRecipientDashboardRow {
   createdAt: string
 }
 
-export type WaDashboardRow = WaAiCampaignRecipientDashboardRow
+export type WaDashboardRow =
+  | WaAiCampaignRecipientDashboardRow
+  | WaAttendanceDashboardRow
+  | WaConversationEventDashboardRow
+  | WaSlaCycleDashboardRow
+  | WaTeamMemberDashboardRow
