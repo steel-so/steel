@@ -6,9 +6,6 @@ import {
   toWaSlaCycleRows,
   toWaTeamMemberRows,
 } from '@/src/mappers/whatsapp-dashboard-attendance.mapper'
-import { toWaAiCampaignRecipientRows } from '@/src/mappers/whatsapp-dashboard-source.mapper'
-import { WhatsAppDashboardAttendanceRepository } from '@/src/repositories/whatsapp-dashboard-attendance.repository'
-import { WhatsAppDashboardSourceRepository } from '@/src/repositories/whatsapp-dashboard-source.repository'
 import {
   toWaAiCampaignActionRows,
   toWaBroadcastRecipientRows,
@@ -16,7 +13,10 @@ import {
   toWaMessageRows,
   toWaTemplateRows,
 } from '@/src/mappers/whatsapp-dashboard-messaging.mapper'
+import { toWaAiCampaignRecipientRows } from '@/src/mappers/whatsapp-dashboard-source.mapper'
+import { WhatsAppDashboardAttendanceRepository } from '@/src/repositories/whatsapp-dashboard-attendance.repository'
 import { WhatsAppDashboardMessagingRepository } from '@/src/repositories/whatsapp-dashboard-messaging.repository'
+import { WhatsAppDashboardSourceRepository } from '@/src/repositories/whatsapp-dashboard-source.repository'
 import {
   WA_DASHBOARD_HISTORY_DAYS,
   WA_DASHBOARD_ROW_LIMITS,
@@ -24,6 +24,7 @@ import {
 } from '@/src/schemas/whatsapp-dashboard.schema'
 import type { WaDashboardRow } from '@/types/whatsapp-dashboard'
 import { assertModuleMember } from './authz'
+import { WA_CHANNEL_LOADERS } from './whatsapp-dashboard-channels.loaders'
 
 const DAY_MS = 86_400_000
 
@@ -129,6 +130,7 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
     if (!runs.ok) return runs
     return ok(toWaAiCampaignActionRows(runs.value))
   },
+  ...WA_CHANNEL_LOADERS,
 }
 
 /**

@@ -16,6 +16,15 @@ export const WA_DASHBOARD_SOURCES = [
   'whatsapp-templates',
   'whatsapp-costs',
   'whatsapp-ai-campaign-actions',
+  // Channels — see `types/whatsapp-dashboard-channels.d.ts`.
+  'whatsapp-calls',
+  'whatsapp-charges',
+  'whatsapp-appointments',
+  'whatsapp-chatbot-sessions',
+  'whatsapp-flow-responses',
+  'whatsapp-ad-referrals',
+  'whatsapp-ad-spends',
+  'whatsapp-contacts',
 ] as const
 
 export type WaDashboardSource = (typeof WA_DASHBOARD_SOURCES)[number]
@@ -48,4 +57,12 @@ export const WA_DASHBOARD_ROW_LIMITS: Record<WaDashboardSource, number> = {
   'whatsapp-templates': 5_000,
   'whatsapp-costs': 20_000,
   'whatsapp-ai-campaign-actions': 20_000,
+  'whatsapp-calls': 20_000,
+  'whatsapp-charges': 20_000,
+  'whatsapp-appointments': 20_000,
+  'whatsapp-chatbot-sessions': 20_000,
+  'whatsapp-flow-responses': 20_000,
+  'whatsapp-ad-referrals': 20_000,
+  'whatsapp-ad-spends': 5_000,
+  'whatsapp-contacts': 20_000,
 }

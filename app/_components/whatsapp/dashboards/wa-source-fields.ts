@@ -4,6 +4,12 @@
  * `types/whatsapp-dashboard.d.ts`).
  */
 
+import {
+  WA_CHANNEL_SOURCE_FIELDS,
+  WA_CHANNEL_SOURCE_LABELS,
+  WA_CHANNEL_SOURCE_PATH,
+} from './wa-channel-source-fields'
+
 export type WaSourceField = { key: string; label: string }
 
 export type WaDashboardSourceKey =
@@ -17,6 +23,7 @@ export type WaDashboardSourceKey =
   | 'whatsapp-templates'
   | 'whatsapp-costs'
   | 'whatsapp-ai-campaign-actions'
+  | import('./wa-channel-source-fields').WaChannelSourceKey
 
 export const WA_SOURCE_FIELDS: Record<WaDashboardSourceKey, WaSourceField[]> = {
   'whatsapp-ai-campaign-recipients': [
@@ -119,6 +126,7 @@ export const WA_SOURCE_FIELDS: Record<WaDashboardSourceKey, WaSourceField[]> = {
     { key: 'lastAssignedAt', label: 'Última conversa recebida em' },
     { key: 'presenceChangedAt', label: 'Presença alterada em' },
     { key: 'createdAt', label: 'Entrou na equipe em' },
+  ],
   'whatsapp-messages': [
     { key: 'direction', label: 'Direção' },
     { key: 'type', label: 'Tipo' },
@@ -192,6 +200,7 @@ export const WA_SOURCE_FIELDS: Record<WaDashboardSourceKey, WaSourceField[]> = {
     { key: 'error', label: 'Erro' },
     { key: 'createdAt', label: 'Executada em' },
   ],
+  ...WA_CHANNEL_SOURCE_FIELDS,
 }
 
 export const WA_SOURCE_LABELS: Record<WaDashboardSourceKey, string> = {
@@ -205,6 +214,7 @@ export const WA_SOURCE_LABELS: Record<WaDashboardSourceKey, string> = {
   'whatsapp-templates': 'Modelos de mensagem',
   'whatsapp-costs': 'Custos de mensagens',
   'whatsapp-ai-campaign-actions': 'Campanhas de IA (ações da IA)',
+  ...WA_CHANNEL_SOURCE_LABELS,
 }
 
 /** API path per source (after `/api/workspaces/<id>/`). */
@@ -223,4 +233,5 @@ export const WA_SOURCE_PATH: Record<WaDashboardSourceKey, string> = {
   'whatsapp-costs': 'whatsapp/dashboards/sources/whatsapp-costs',
   'whatsapp-ai-campaign-actions':
     'whatsapp/dashboards/sources/whatsapp-ai-campaign-actions',
+  ...WA_CHANNEL_SOURCE_PATH,
 }

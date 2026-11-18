@@ -101,6 +101,14 @@ export const VIEW_SOURCES = [
   'whatsapp-templates',
   'whatsapp-costs',
   'whatsapp-ai-campaign-actions',
+  'whatsapp-calls',
+  'whatsapp-charges',
+  'whatsapp-appointments',
+  'whatsapp-chatbot-sessions',
+  'whatsapp-flow-responses',
+  'whatsapp-ad-referrals',
+  'whatsapp-ad-spends',
+  'whatsapp-contacts',
   // ServiceDesk — linhas achatadas servidas por
   // `servicedesk/dashboards/sources/<fonte>` (campos derivados de SLA, MTTR…).
   'sd-tickets',
