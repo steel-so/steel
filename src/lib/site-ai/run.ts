@@ -57,6 +57,8 @@ export interface StructuredCallInput<T> {
   maxTokens: number
   /** Domain checks after the schema; problems in pt-BR (empty = valid). */
   validate?: (value: T) => string[]
+  /** Reference pictures (`data:` URLs) shown to the model with the message. */
+  images?: string[]
   /** Called after every provider call with its token usage. */
   onUsage: (usage: AiUsageTokens) => Promise<void>
   maxAttempts?: number
@@ -87,7 +89,17 @@ function repairMessage(problems: string[]): string {
 export async function structuredCall<T>(
   input: StructuredCallInput<T>,
 ): Promise<StructuredCallResult<T>> {
-  const messages: AiMessage[] = [{ role: 'user', content: input.message }]
+  const messages: AiMessage[] = [
+    {
+      role: 'user',
+      content: input.images?.length
+        ? [
+            { type: 'text', text: input.message },
+            ...input.images.map((url) => ({ type: 'image' as const, url })),
+          ]
+        : input.message,
+    },
+  ]
   const maxAttempts = input.maxAttempts ?? SITE_AI_MAX_ATTEMPTS
   let problems: string[] = []
   let partial: T | undefined

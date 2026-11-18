@@ -95,11 +95,13 @@ function Harness({
   return (
     <InspirationField
       links={links}
+      images={[]}
       focus={focus}
       onLinksChange={(next) => {
         setLinks(next)
         onChange?.(next, focus)
       }}
+      onImagesChange={() => {}}
       onFocusChange={(next) => {
         setFocus(next)
         onChange?.(links, next)

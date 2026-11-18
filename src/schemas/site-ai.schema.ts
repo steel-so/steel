@@ -89,6 +89,13 @@ export const SITE_AI_MAX_PRODUCTS = 6
 /** Most inspiration links one generation reads (ADR 0071). */
 export const SITE_AI_MAX_INSPIRATION_LINKS = 5
 
+/** Most reference images one generation takes (vision input). */
+export const SITE_AI_MAX_INSPIRATION_IMAGES = 4
+
+/** Longest data URL of one reference image (~1 MB of image). The browser
+ * downsizes the picture before sending. */
+export const SITE_AI_MAX_INSPIRATION_IMAGE_CHARS = 1_400_000
+
 // ─── shared pieces ────────────────────────────────────────────────────────
 
 const hexColor = z
@@ -135,6 +142,15 @@ export const InspirationLinkSchema = z
     { message: 'Use um endereço completo, como https://exemplo.com.br' },
   )
 
+/** Reference image as a base64 `data:` URL (png, jpeg or webp). */
+export const InspirationImageSchema = z
+  .string()
+  .max(SITE_AI_MAX_INSPIRATION_IMAGE_CHARS, 'Imagem grande demais')
+  .regex(
+    /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/,
+    'Use imagens PNG, JPEG ou WebP',
+  )
+
 // ─── "Gerar com IA" ───────────────────────────────────────────────────────
 
 export const GenerateSiteSchema = z
@@ -179,6 +195,15 @@ export const GenerateSiteSchema = z
       )
       .default([])
       .transform((links) => [...new Set(links)]),
+    /** Screenshots or pictures the AI looks at as a reference (structure,
+     * colors, style — never copied). */
+    inspirationImages: z
+      .array(InspirationImageSchema)
+      .max(
+        SITE_AI_MAX_INSPIRATION_IMAGES,
+        `Até ${SITE_AI_MAX_INSPIRATION_IMAGES} imagens de inspiração`,
+      )
+      .default([]),
     /** What to take from the references ("cores", "estrutura", "tom"). */
     inspirationFocus: z.string().trim().max(300).default(''),
     /** Model chosen for this generation (`provider:model`); absent = the

@@ -4,10 +4,11 @@ import {
   Add01Icon,
   Cancel01Icon,
   CheckmarkCircle02Icon,
+  Image01Icon,
   Link01Icon,
   Loading03Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
-import { type KeyboardEvent, useId, useState } from 'react'
+import { type KeyboardEvent, useId, useRef, useState } from 'react'
 import { SteelAiModelPicker } from '@/app/_components/steel-ai/steel-ai-model-picker'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,8 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import {
   InspirationLinkSchema,
+  SITE_AI_MAX_INSPIRATION_IMAGE_CHARS,
+  SITE_AI_MAX_INSPIRATION_IMAGES,
   SITE_AI_MAX_INSPIRATION_LINKS,
 } from '@/src/schemas/site-ai.schema'
 import type { SiteAiLinkDTO } from '@/types/site-ai'
@@ -37,6 +40,39 @@ export function displayLink(link: string): string {
   }
 }
 
+/** Longest side of a reference picture after downsizing, in pixels. */
+const IMAGE_MAX_SIDE = 1280
+
+/** Reads a picture file and returns it as a JPEG `data:` URL no larger than
+ * the server accepts (downsized, quality lowered until it fits). */
+export async function imageFileToDataUrl(file: File): Promise<string | null> {
+  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) return null
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    return null
+  }
+  const scale = Math.min(
+    1,
+    IMAGE_MAX_SIDE / Math.max(bitmap.width, bitmap.height),
+  )
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+  const context = canvas.getContext('2d')
+  if (!context) return null
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  for (const quality of [0.85, 0.7, 0.55, 0.4]) {
+    const url = canvas.toDataURL('image/jpeg', quality)
+    if (url.length <= SITE_AI_MAX_INSPIRATION_IMAGE_CHARS) return url
+  }
+  return null
+}
+
 /**
  * "Inspiração": up to five links the AI takes as a reference for structure
  * and style (never for the copy), plus what to take from them. Each link
@@ -45,13 +81,17 @@ export function displayLink(link: string): string {
  */
 export function InspirationField({
   links,
+  images,
   focus,
   onLinksChange,
+  onImagesChange,
   onFocusChange,
 }: {
   links: string[]
+  images: string[]
   focus: string
   onLinksChange: (links: string[]) => void
+  onImagesChange: (images: string[]) => void
   onFocusChange: (focus: string) => void
 }) {
   const inputId = useId()
@@ -60,6 +100,28 @@ export function InspirationField({
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const full = links.length >= SITE_AI_MAX_INSPIRATION_LINKS
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const imagesFull = images.length >= SITE_AI_MAX_INSPIRATION_IMAGES
+
+  const addImages = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const next = [...images]
+    let failed = false
+    for (const file of Array.from(files)) {
+      if (next.length >= SITE_AI_MAX_INSPIRATION_IMAGES) break
+      const url = await imageFileToDataUrl(file)
+      if (url) next.push(url)
+      else failed = true
+    }
+    onImagesChange(next)
+    setImageError(
+      failed
+        ? 'Não foi possível usar alguma imagem. Envie PNG, JPEG ou WebP.'
+        : null,
+    )
+    if (fileInput.current) fileInput.current.value = ''
+  }
 
   const add = () => {
     if (!draft.trim()) return
@@ -95,12 +157,14 @@ export function InspirationField({
         <legend className='font-medium text-sm'>
           Inspiração{' '}
           <span className='font-normal text-muted-foreground'>
-            (opcional, até {SITE_AI_MAX_INSPIRATION_LINKS} links)
+            (opcional, até {SITE_AI_MAX_INSPIRATION_LINKS} links e{' '}
+            {SITE_AI_MAX_INSPIRATION_IMAGES} imagens)
           </span>
         </legend>
         <p className='text-muted-foreground text-xs'>
-          Cole sites de que você gosta. A IA aproveita a estrutura, as cores e o
-          estilo, mas escreve textos novos para a sua empresa — nada é copiado.
+          Cole sites de que você gosta ou envie imagens (capturas de tela,
+          fotos). A IA aproveita a estrutura, as cores e o estilo, mas escreve
+          textos novos para a sua empresa — nada é copiado.
         </p>
       </div>
 
@@ -172,7 +236,61 @@ export function InspirationField({
         ) : null}
       </div>
 
-      {links.length > 0 ? (
+      {images.length > 0 ? (
+        <ul className='flex flex-wrap gap-2' aria-label='Imagens de inspiração'>
+          {images.map((image, index) => (
+            <li key={image.slice(-48) + index} className='relative'>
+              <img
+                src={image}
+                alt={`Imagem de inspiração ${index + 1}`}
+                className='h-16 w-24 rounded-md border object-cover'
+              />
+              <button
+                type='button'
+                aria-label={`Remover imagem ${index + 1}`}
+                className='-top-1.5 -right-1.5 absolute rounded-full border bg-background p-0.5 text-muted-foreground hover:text-foreground'
+                onClick={() =>
+                  onImagesChange(images.filter((_, i) => i !== index))
+                }
+              >
+                <SteelIcon icon={Cancel01Icon} className='size-3.5' />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className='grid gap-1.5'>
+        <input
+          ref={fileInput}
+          type='file'
+          accept='image/png,image/jpeg,image/webp,image/gif'
+          multiple
+          hidden
+          aria-label='Enviar imagens de inspiração'
+          data-testid='site-ai-image-input'
+          onChange={(event) => void addImages(event.target.files)}
+        />
+        <Button
+          type='button'
+          variant='outline'
+          className='justify-self-start'
+          disabled={imagesFull}
+          onClick={() => fileInput.current?.click()}
+        >
+          <SteelIcon icon={Image01Icon} data-icon='inline-start' />
+          {imagesFull
+            ? `Limite de ${SITE_AI_MAX_INSPIRATION_IMAGES} imagens`
+            : 'Enviar imagens'}
+        </Button>
+        {imageError ? (
+          <p role='alert' className='text-destructive text-xs'>
+            {imageError}
+          </p>
+        ) : null}
+      </div>
+
+      {links.length > 0 || images.length > 0 ? (
         <div className='grid gap-1.5'>
           <Label htmlFor={focusId}>O que aproveitar? (opcional)</Label>
           <Input

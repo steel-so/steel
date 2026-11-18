@@ -631,8 +631,20 @@ async function* runGeneration(input: {
   const planned = await structuredCall({
     provider: call.provider,
     model: call.model.model,
-    system: buildPlanSystem(kinds, withInspiration),
-    message: ['Briefing:', ...brief, ...inspiration].join('\n'),
+    system: buildPlanSystem(
+      kinds,
+      withInspiration || dto.inspirationImages.length > 0,
+      dto.inspirationImages.length > 0,
+    ),
+    message: [
+      'Briefing:',
+      ...brief,
+      ...inspiration,
+      ...(dto.inspirationImages.length > 0
+        ? [`Imagens de referência anexadas: ${dto.inspirationImages.length}.`]
+        : []),
+    ].join('\n'),
+    images: dto.inspirationImages,
     schemaName: 'site_plan',
     jsonSchema: SITE_PLAN_JSON_SCHEMA,
     schema: SitePlanOutputSchema,

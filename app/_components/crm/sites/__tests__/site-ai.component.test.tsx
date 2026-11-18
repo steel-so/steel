@@ -288,6 +288,7 @@ describe('toGenerateInput', () => {
     eventDate: '2026-12-01',
     extra: '',
     inspirationLinks: [],
+    inspirationImages: [],
     inspirationFocus: '',
     modelKey: '',
   }

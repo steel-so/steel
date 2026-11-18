@@ -75,6 +75,7 @@ interface Brief {
   eventDate: string
   extra: string
   inspirationLinks: string[]
+  inspirationImages: string[]
   inspirationFocus: string
   modelKey: string
 }
@@ -108,6 +109,7 @@ function initialBrief(context: SiteAiContextDTO): Brief {
     eventDate: '',
     extra: '',
     inspirationLinks: [],
+    inspirationImages: [],
     inspirationFocus: '',
     modelKey: context.defaultModelKey ?? '',
   }
@@ -142,9 +144,12 @@ export function toGenerateInput(
       ? { eventDate: brief.eventDate }
       : {}),
     extra: brief.extra.trim(),
-    ...(brief.inspirationLinks.length > 0
+    ...(brief.inspirationLinks.length > 0 || brief.inspirationImages.length > 0
       ? {
           inspirationLinks: brief.inspirationLinks,
+          ...(brief.inspirationImages.length > 0
+            ? { inspirationImages: brief.inspirationImages }
+            : {}),
           inspirationFocus: brief.inspirationFocus.trim(),
         }
       : {}),
@@ -552,8 +557,10 @@ function BriefForm({
 
       <InspirationField
         links={brief.inspirationLinks}
+        images={brief.inspirationImages}
         focus={brief.inspirationFocus}
         onLinksChange={(links) => set('inspirationLinks', links)}
+        onImagesChange={(images) => set('inspirationImages', images)}
         onFocusChange={(focus) => set('inspirationFocus', focus)}
       />
 

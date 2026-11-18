@@ -77,6 +77,7 @@ export function briefLines(
 export function buildPlanSystem(
   kinds: SitePageKind[],
   withInspiration = false,
+  withImages = false,
 ): string {
   return [
     'Você é um web designer e estrategista de conteúdo brasileiro que planeja sites de empresas.',
@@ -95,6 +96,11 @@ export function buildPlanSystem(
       ? [
           'Use as referências de inspiração do briefing para decidir a ordem das seções, o estilo, a paleta e as fontes; as cores e fontes das referências servem de ponto de partida, mas respeite a cor da marca quando houver.',
           ...INSPIRATION_RULES,
+        ]
+      : []),
+    ...(withImages
+      ? [
+          'O briefing traz imagens anexadas (capturas de sites ou fotos de referência). Observe a composição, a ordem das seções, a paleta de cores, a tipografia e o estilo visual delas para planejar o site; não copie textos, logos nem fotos que aparecerem nelas.',
         ]
       : []),
     'Regras das seções: a página home começa com hero; as outras começam com intro; contact tem o formulário (fica na página contact, ou no fim da home se não houver página de contato); products e testimonials só quando o briefing tiver esses dados; countdown só para evento com data; de 3 a 6 seções por página.',
