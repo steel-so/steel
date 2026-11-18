@@ -15,6 +15,7 @@ import {
 import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { err, ok, type Result } from '@/src/lib/result'
 import { readWorkspaceMedia } from '@/src/lib/whatsapp/media'
+import { metaNumberQualityOf } from '@/src/lib/whatsapp/meta-number-quality'
 import {
   createMetaTemplate,
   fetchMetaTemplates,
@@ -284,6 +285,32 @@ export type MetaTemplateWebhookInput =
       value: MetaTemplateQualityUpdate
     }
 
+/**
+ * Meta's rating of each number of the workspace, by connection id. Best
+ * effort: the list still answers when the lookup is not possible.
+ */
+async function numberQualities(
+  workspaceId: string,
+): Promise<Map<string, TemplateQuality>> {
+  const qualities = new Map<string, TemplateQuality>()
+  try {
+    const connections =
+      await WhatsAppConnectionRepository.listByWorkspace(workspaceId)
+    if (!connections.ok) return qualities
+    await Promise.all(
+      connections.value.map(async (connection) => {
+        qualities.set(connection.id, await metaNumberQualityOf(connection))
+      }),
+    )
+  } catch (error) {
+    logger.warn('whatsapp.number_quality.list_failed', {
+      workspaceId,
+      reason: error instanceof Error ? error.message : String(error),
+    })
+  }
+  return qualities
+}
+
 export const WhatsAppTemplateService = {
   async list(
     actorId: string,
@@ -300,7 +327,15 @@ export const WhatsAppTemplateService = {
     const result = await WhatsAppTemplateRepository.listByWorkspace(workspaceId)
     if (!result.ok) return result
 
-    return ok(result.value.map(toWhatsAppTemplateDTO))
+    const numberQuality = await numberQualities(workspaceId)
+    return ok(
+      result.value.map((template) =>
+        toWhatsAppTemplateDTO(
+          template,
+          numberQuality.get(template.connectionId),
+        ),
+      ),
+    )
   },
 
   async sync(
@@ -360,6 +395,7 @@ export const WhatsAppTemplateService = {
     const rejected: string[] = []
     const atRisk: string[] = []
     const now = new Date()
+    const numberQuality = await metaNumberQualityOf(connection.value)
 
     const synced: WhatsAppTemplateDTO[] = []
     for (const item of raw) {
@@ -380,7 +416,7 @@ export const WhatsAppTemplateService = {
         headerFormat: headerFormatOf(components),
       })
       if (!result.ok) continue
-      synced.push(toWhatsAppTemplateDTO(result.value))
+      synced.push(toWhatsAppTemplateDTO(result.value, numberQuality))
       const previous = before.get(`${item.name}|${item.language}`)
       if (!previous) continue
       if (

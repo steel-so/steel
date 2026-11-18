@@ -25,7 +25,14 @@ export interface WhatsAppTemplateDTO {
   category: string
   status: WhatsAppTemplateStatusDTO
   components: unknown[]
+  /** Rating shown by the badge: the worse of the template's and the number's. */
   quality: WhatsAppTemplateQualityDTO
+  /** Where `quality` comes from: the template's own score or the number's. */
+  qualitySource: 'TEMPLATE' | 'NUMBER'
+  /** Meta's own score of the template (`quality_score`). */
+  templateQuality: WhatsAppTemplateQualityDTO
+  /** Meta's rating of the number that sends it; UNKNOWN when not read. */
+  numberQuality: WhatsAppTemplateQualityDTO
   qualityUpdatedAt: string | null
   statusReason: string | null
   headerFormat: WhatsAppTemplateHeaderFormatDTO | null
