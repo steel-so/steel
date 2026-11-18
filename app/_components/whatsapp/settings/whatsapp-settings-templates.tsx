@@ -166,7 +166,10 @@ export function WhatsappSettingsTemplates({
                 <TableRow key={template.id}>
                   <TableCell>
                     <span className='flex items-center gap-2'>
-                      <TemplateQualityBadge quality={template.quality} />
+                      <TemplateQualityBadge
+                        quality={template.quality}
+                        source={template.qualitySource}
+                      />
                       <span className='font-medium'>{template.name}</span>
                     </span>
                   </TableCell>

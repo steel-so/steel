@@ -774,6 +774,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                         <TemplateNameWithQuality
                           name={selected.name}
                           quality={selected.quality}
+                          source={selected.qualitySource}
                         />
                       ) : (
                         <span className='text-muted-foreground'>
@@ -790,6 +791,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
                         <TemplateNameWithQuality
                           name={template.name}
                           quality={template.quality}
+                          source={template.qualitySource}
                         />
                       </SelectItem>
                     ))}

@@ -603,7 +603,19 @@ export const WhatsAppTemplateDTO = dto(
     }),
     quality: z.enum(['GREEN', 'YELLOW', 'RED', 'UNKNOWN']).meta({
       description:
-        'Qualidade da Meta (`quality_score`): `YELLOW` = caindo, `RED` = risco de pausa/desativação. Atualizada na sincronização e pelo webhook `message_template_quality_update`.',
+        'Qualidade exibida: a pior entre a do template (`templateQuality`) e a do número de envio (`numberQuality`). `YELLOW` = caindo, `RED` = risco de pausa/desativação.',
+    }),
+    qualitySource: z.enum(['TEMPLATE', 'NUMBER']).meta({
+      description:
+        'De onde vem `quality`: `NUMBER` quando a avaliação do número é pior que a do template.',
+    }),
+    templateQuality: z.enum(['GREEN', 'YELLOW', 'RED', 'UNKNOWN']).meta({
+      description:
+        'Qualidade do próprio template (`quality_score` da Meta). Atualizada na sincronização e pelo webhook `message_template_quality_update`.',
+    }),
+    numberQuality: z.enum(['GREEN', 'YELLOW', 'RED', 'UNKNOWN']).meta({
+      description:
+        'Avaliação da Meta (`quality_rating`) do número que envia o template, lida na Graph API e guardada por 30 minutos. `UNKNOWN` quando a conexão não é Meta ou a consulta falha.',
     }),
     qualityUpdatedAt: nullableDateTime(),
     statusReason: z.string().nullable().meta({

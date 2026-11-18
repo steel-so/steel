@@ -763,7 +763,10 @@ export function WhatsappComposer({
                       }}
                     >
                       <span className='flex w-full min-w-0 items-center gap-1.5 font-medium'>
-                        <TemplateQualityBadge quality={template.quality} />
+                        <TemplateQualityBadge
+                          quality={template.quality}
+                          source={template.qualitySource}
+                        />
                         <span className='truncate'>{template.name}</span>
                       </span>
                       <span className='text-muted-foreground text-xs'>

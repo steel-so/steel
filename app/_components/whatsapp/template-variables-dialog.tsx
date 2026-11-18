@@ -76,7 +76,10 @@ export function TemplateVariablesDialog({
       <DialogContent className='max-h-[92vh] overflow-y-auto sm:max-w-2xl'>
         <DialogHeader>
           <DialogTitle className='flex min-w-0 items-center gap-2'>
-            <TemplateQualityBadge quality={template.quality} />
+            <TemplateQualityBadge
+              quality={template.quality}
+              source={template.qualitySource}
+            />
             <span className='truncate'>{template.name}</span>
           </DialogTitle>
           <DialogDescription>

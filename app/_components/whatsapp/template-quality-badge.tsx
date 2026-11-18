@@ -12,6 +12,7 @@ import {
   TEMPLATE_STATUS_LABEL,
 } from '@/src/lib/whatsapp/button-editor'
 import type {
+  WhatsAppTemplateDTO,
   WhatsAppTemplateQualityDTO,
   WhatsAppTemplateStatusDTO,
 } from '@/types/whatsapp-template'
@@ -29,9 +30,12 @@ const QUALITY_FILL: Record<WhatsAppTemplateQualityDTO, string> = {
  * explaining the level and its risk. */
 export function TemplateQualityBadge({
   quality,
+  source = 'TEMPLATE',
   className,
 }: {
   quality: WhatsAppTemplateQualityDTO
+  /** `NUMBER` when the color comes from the sending number's rating. */
+  source?: WhatsAppTemplateDTO['qualitySource']
   className?: string
 }) {
   // Anything Meta adds later reads as "not rated" instead of breaking.
@@ -57,6 +61,12 @@ export function TemplateQualityBadge({
       <TooltipContent className='max-w-64'>
         <p className='font-medium'>{meta.label}</p>
         <p className='mt-0.5 opacity-80'>{meta.description}</p>
+        {source === 'NUMBER' ? (
+          <p className='mt-1 opacity-80'>
+            A cor vem da qualidade do número de envio: a Meta avalia o número e
+            isso vale para todos os modelos dele.
+          </p>
+        ) : null}
       </TooltipContent>
     </Tooltip>
   )
@@ -98,15 +108,17 @@ export function TemplateStatusBadge({
 export function TemplateNameWithQuality({
   name,
   quality,
+  source,
   status,
 }: {
   name: string
   quality: WhatsAppTemplateQualityDTO
+  source?: WhatsAppTemplateDTO['qualitySource']
   status?: WhatsAppTemplateStatusDTO
 }) {
   return (
     <span className='inline-flex min-w-0 items-center gap-1.5'>
-      <TemplateQualityBadge quality={quality} />
+      <TemplateQualityBadge quality={quality} source={source} />
       <span className='truncate'>{name}</span>
       {status && status !== 'APPROVED' ? (
         <span className='shrink-0 text-muted-foreground text-xs'>

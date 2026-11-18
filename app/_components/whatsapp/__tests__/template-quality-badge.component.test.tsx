@@ -34,6 +34,25 @@ describe('<TemplateQualityBadge />', () => {
     ).toBeTruthy()
   })
 
+  it('says the color comes from the number when the number is the worse one', async () => {
+    render(<TemplateQualityBadge quality='RED' source='NUMBER' />)
+    const square = screen.getByRole('img', { name: 'Qualidade baixa' })
+    fireEvent.focus(square)
+    fireEvent.mouseEnter(square)
+    fireEvent.pointerEnter(square)
+    expect(await screen.findByText(/qualidade do número de envio/)).toBeTruthy()
+  })
+
+  it("does not mention the number when the color is the template's own", async () => {
+    render(<TemplateQualityBadge quality='RED' source='TEMPLATE' />)
+    const square = screen.getByRole('img', { name: 'Qualidade baixa' })
+    fireEvent.focus(square)
+    fireEvent.mouseEnter(square)
+    fireEvent.pointerEnter(square)
+    await screen.findByText(/Risco de a Meta pausar ou desativar/)
+    expect(screen.queryByText(/qualidade do número de envio/)).toBeNull()
+  })
+
   it('falls back to unknown for an unexpected rating', () => {
     render(<TemplateQualityBadge quality={'BLUE' as unknown as 'GREEN'} />)
     expect(

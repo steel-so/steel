@@ -86,7 +86,10 @@ function TemplateButtonsForm({
     <>
       <SheetHeader className='border-b pr-12'>
         <SheetTitle className='flex min-w-0 items-center gap-2'>
-          <TemplateQualityBadge quality={template.quality} />
+          <TemplateQualityBadge
+            quality={template.quality}
+            source={template.qualitySource}
+          />
           <span className='truncate'>{template.name}</span>
         </SheetTitle>
         <SheetDescription>
