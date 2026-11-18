@@ -50,6 +50,14 @@ const SD_PORTAL_WRITE_DURATION_SECONDS = 10 * 60
 const AI_MESSAGE_POINTS = 20
 const AI_MESSAGE_DURATION_SECONDS = 60
 
+// Site AI inspiration links (ADR 0071): every link read is an outbound
+// request to a third-party site, so each costs one point, per user and per
+// workspace.
+const SITE_INSPIRATION_USER_POINTS = 15
+const SITE_INSPIRATION_USER_DURATION_SECONDS = 10 * 60
+const SITE_INSPIRATION_WORKSPACE_POINTS = 40
+const SITE_INSPIRATION_WORKSPACE_DURATION_SECONDS = 60 * 60
+
 // Public MCP server (ADR 0032): one budget per user and a wider one per OAuth
 // client, so a single runaway client can't exhaust every user it serves.
 const MCP_USER_POINTS = 120
@@ -211,6 +219,24 @@ export const aiMessageLimiter = new RateLimiterRedis({
   duration: AI_MESSAGE_DURATION_SECONDS,
 })
 
+export const siteInspirationUserLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:site:inspiration:user',
+  points: SITE_INSPIRATION_USER_POINTS,
+  duration: SITE_INSPIRATION_USER_DURATION_SECONDS,
+})
+
+export const siteInspirationWorkspaceLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:site:inspiration:workspace',
+  points: SITE_INSPIRATION_WORKSPACE_POINTS,
+  duration: SITE_INSPIRATION_WORKSPACE_DURATION_SECONDS,
+})
+
 export const mcpUserLimiter = new RateLimiterRedis({
   storeClient: redis,
   storeType: 'redis',
@@ -369,6 +395,8 @@ const limiterNames = new WeakMap<Limiter, string>([
   [sdPortalLinkLimiter, 'sd_portal_link'],
   [sdPortalWriteLimiter, 'sd_portal_write'],
   [aiMessageLimiter, 'ai_message'],
+  [siteInspirationUserLimiter, 'site_inspiration_user'],
+  [siteInspirationWorkspaceLimiter, 'site_inspiration_workspace'],
   [mcpUserLimiter, 'mcp_user'],
   [mcpClientLimiter, 'mcp_client'],
 

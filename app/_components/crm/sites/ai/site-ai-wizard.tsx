@@ -47,6 +47,11 @@ import {
   type SiteAiTone,
 } from '@/src/schemas/site-ai.schema'
 import type { SiteAiContextDTO, SiteAiStep } from '@/types/site-ai'
+import {
+  GenerateWithField,
+  InspirationField,
+  InspirationLinkStatus,
+} from './site-ai-inspiration'
 import { AiCostLine, ChoiceSelect } from './site-ai-shared'
 
 const NEW_FORM = 'new'
@@ -69,6 +74,9 @@ interface Brief {
   form: string
   eventDate: string
   extra: string
+  inspirationLinks: string[]
+  inspirationFocus: string
+  modelKey: string
 }
 
 function initialForm(context: SiteAiContextDTO): string {
@@ -99,6 +107,9 @@ function initialBrief(context: SiteAiContextDTO): Brief {
     form: initialForm(context),
     eventDate: '',
     extra: '',
+    inspirationLinks: [],
+    inspirationFocus: '',
+    modelKey: context.defaultModelKey ?? '',
   }
 }
 
@@ -131,6 +142,15 @@ export function toGenerateInput(
       ? { eventDate: brief.eventDate }
       : {}),
     extra: brief.extra.trim(),
+    ...(brief.inspirationLinks.length > 0
+      ? {
+          inspirationLinks: brief.inspirationLinks,
+          inspirationFocus: brief.inspirationFocus.trim(),
+        }
+      : {}),
+    ...(brief.modelKey && context.models.some((m) => m.key === brief.modelKey)
+      ? { modelKey: brief.modelKey }
+      : {}),
   }
 }
 
@@ -211,6 +231,7 @@ export function SiteAiProgress({
           ))}
         </ol>
       )}
+      <InspirationLinkStatus links={state.links} />
       {state.status === 'done' && state.warnings.length > 0 ? (
         <ul className='grid gap-1 rounded-lg border bg-muted/40 p-3 text-muted-foreground text-xs'>
           {state.warnings.map((warning) => (
@@ -279,8 +300,9 @@ function BriefForm({
         : [...brief.productIds, id].slice(0, SITE_AI_MAX_PRODUCTS),
     )
 
-  const estimate = context.estimate
-    ? estimateSiteGeneration(context.estimate, brief.pages.length + 1)
+  const priced = context.estimates[brief.modelKey] ?? context.estimate
+  const estimate = priced
+    ? estimateSiteGeneration(priced, brief.pages.length + 1)
     : null
   const businessOk = brief.business.trim().length >= 10
   const canSubmit =
@@ -522,6 +544,19 @@ function BriefForm({
           onChange={(event) => set('extra', event.target.value)}
         />
       </div>
+
+      <InspirationField
+        links={brief.inspirationLinks}
+        focus={brief.inspirationFocus}
+        onLinksChange={(links) => set('inspirationLinks', links)}
+        onFocusChange={(focus) => set('inspirationFocus', focus)}
+      />
+
+      <GenerateWithField
+        models={context.models}
+        value={brief.modelKey}
+        onChange={(key) => set('modelKey', key)}
+      />
 
       <AiCostLine estimateUsd={estimate} quota={context.quota} />
 
