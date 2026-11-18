@@ -187,7 +187,7 @@ export const aiCampaignRoutes: RouteConfig[] = [
     path: `${ITEM}/play`,
     tags: [TAG],
     summary: 'Iniciar campanha (play)',
-    description: `Liga o envio: o worker manda o template a um contato por vez, no intervalo da campanha, dentro do horário de atendimento. Cada envio abre (ou reabre) a conversa ligada à campanha — uma conversa aberta recebe o template de novo —, com a IA respondendo pelas instruções e ações da campanha (se \`aiReplies\` e se ninguém assumiu a conversa). Contatos descadastrados ou sem valor para uma variável são pulados. Para sozinho ao esvaziar (\`DONE\`) ou no limite mensal (\`PAUSED\` com \`lastError\`). Já rodando = sem efeito. Auditado. ${perm('broadcasts', 'EDIT')}`,
+    description: `Liga o envio: o worker manda o template a um contato por vez, no intervalo da campanha, dentro do horário de atendimento. Cada envio abre (ou reabre) a conversa ligada à campanha — uma conversa aberta recebe o template de novo —, com a IA respondendo pelas instruções e ações da campanha (se \`aiReplies\` e se ninguém assumiu a conversa). Contatos descadastrados ou sem valor para uma variável são pulados. Para sozinho ao esvaziar (\`DONE\`), no limite mensal ou quando a Meta passa o número/template para qualidade Baixa (\`PAUSED\` com \`lastError\`; no caso da qualidade começa com "Envios bloqueados pela qualidade:" e os contatos seguem pendentes). Já rodando = sem efeito. Auditado. ${perm('broadcasts', 'EDIT')}`,
     params: PARAMS,
     responses: {
       200: { description: 'Campanha ligada.', schema: WhatsAppAiCampaignDTO },
@@ -198,6 +198,10 @@ export const aiCampaignRoutes: RouteConfig[] = [
       {
         code: 'WHATSAPP_AI_CAMPAIGN_NOT_READY',
         when: 'Falta conexão da Meta, template aprovado, variável preenchida ou contato (a mensagem lista o que falta)',
+      },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'A Meta classifica o número (ou o template da campanha) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Se a consulta à Meta falhar, o início não é bloqueado',
       },
     ],
   },

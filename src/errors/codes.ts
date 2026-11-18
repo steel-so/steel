@@ -204,6 +204,9 @@ export const ERROR_CODES = {
     code: 'WHATSAPP_SPEND_CAP_REACHED',
     status: 402,
   },
+  // zap-quality-gate: the sending number (or the campaign template) is rated
+  // RED by Meta, so AI campaign template sends are refused until it recovers.
+  WHATSAPP_QUALITY_BLOCKED: { code: 'WHATSAPP_QUALITY_BLOCKED', status: 409 },
   // zap-block-contacts: the recipient is blocked on this number, so every
   // send to them is refused until a manager unblocks the contact.
   WHATSAPP_CONTACT_BLOCKED: { code: 'WHATSAPP_CONTACT_BLOCKED', status: 409 },

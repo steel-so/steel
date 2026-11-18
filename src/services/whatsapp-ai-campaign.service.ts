@@ -25,6 +25,7 @@ import {
   resolveTemplateValues,
   templateFields,
 } from '@/src/lib/whatsapp/ai-campaign'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import { isWhatsAppPhone } from '@/src/lib/whatsapp/phone'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
@@ -777,6 +778,15 @@ export const WhatsAppAiCampaignService = {
       return err(whatsappAiCampaignNotReady(problems.join('. ')))
     }
 
+    // Quality gate: no start/resume while the number or template is RED.
+    const sendable = await loadSendable(campaign.value)
+    if (!sendable.ok) return sendable
+    const allowed = await assertCampaignSendAllowed(
+      sendable.value.connection,
+      sendable.value.template,
+    )
+    if (!allowed.ok) return allowed
+
     const runToken = createId()
     const started = await WhatsAppAiCampaignRepository.update(id, {
       status: 'RUNNING',
@@ -884,6 +894,24 @@ export const WhatsAppAiCampaignService = {
       return stop('PAUSED', sendable.error.message)
     }
     const { connection } = sendable.value
+
+    // Quality gate: a number or template that turned RED pauses the run
+    // before anything is sent; recipients stay PENDING for a later resume.
+    const quality = await assertCampaignSendAllowed(
+      connection,
+      sendable.value.template,
+    )
+    if (!quality.ok) {
+      logger.warn('whatsapp.ai_campaign.quality_blocked', {
+        component: 'WhatsAppAiCampaignService',
+        campaignId: campaign.id,
+        workspaceId: campaign.workspaceId,
+        subject: (quality.error.details as { subject?: string } | undefined)
+          ?.subject,
+      })
+      return stop('PAUSED', quality.error.message)
+    }
+
     const template = {
       ...sendable.value.template,
       headerMediaUrl:

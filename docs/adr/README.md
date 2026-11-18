@@ -87,3 +87,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0067 | [Uma branch de junção e um PR único para as fatias em paralelo](./0067-branch-unica-de-juncao-para-fatias-em-paralelo.md) | Aceita | 2026-11-13 |
 | 0068 | [Remover o editor antigo de landing pages e apagar as não migradas](./0068-remove-legacy-landing-pages.md) | Aceita | 2026-11-14 |
 | 0069 | [Instância Z-API da plataforma para validar números de qualquer workspace](./0069-instancia-zapi-da-plataforma-para-validar-numeros.md) | Aceita | 2026-11-18 |
+| 0070 | [Bloqueio das campanhas de IA por qualidade vermelha do número ou template](./0070-bloqueio-de-campanhas-de-ia-por-qualidade-do-numero.md) | Aceita | 2026-11-18 |

@@ -445,6 +445,7 @@ export {
   whatsappOutsideBusinessHours,
   whatsappPriceNotFound,
   whatsappProviderError,
+  whatsappQualityBlocked,
   whatsappQuickReplyConflict,
   whatsappQuickReplyNotFound,
   whatsappSchedAppointmentNotFound,
