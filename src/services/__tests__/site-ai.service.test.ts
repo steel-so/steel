@@ -1,6 +1,6 @@
 import type { Role } from '@prisma/client'
 import { Prisma } from '@prisma/client'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeCrmFormDTO } from '@/src/__tests__/factories/crm-form.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import {
@@ -8,6 +8,14 @@ import {
   createFakeSitePage,
   createSiteDocument,
 } from '@/src/__tests__/factories/site.factory'
+import {
+  bpForm,
+  bpSection,
+  bpText,
+  fakeCapture,
+  fakeDesignSpec,
+  fakeHeroBlueprint,
+} from '@/src/__tests__/factories/site-fidelity.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   aiQuotaExceeded,
@@ -26,6 +34,7 @@ import {
   toDocument,
 } from '@/src/lib/canvas-site/presets/builder'
 import { err, ok } from '@/src/lib/result'
+import { registerCapturePort } from '@/src/lib/site-ai/fidelity/capture-port'
 import { validateSiteDocument } from '@/src/lib/sites/document'
 import {
   type GenerateSiteInput,
@@ -89,7 +98,11 @@ import { assertFeature } from '@/src/services/feature-flag.service'
 import { PlatformAiSettingsService } from '@/src/services/platform-ai-settings.service'
 import { SiteMediaService } from '@/src/services/site-media.service'
 import { MAX_SITES_PER_WORKSPACE } from '../site.service'
-import { MAX_REWRITE_SLOTS, SiteAiService } from '../site-ai.service'
+import {
+  FIDELITY_PROVIDER_TIMEOUT_MS,
+  MAX_REWRITE_SLOTS,
+  SiteAiService,
+} from '../site-ai.service'
 
 const membership = vi.mocked(MembershipRepository)
 const sites = vi.mocked(SiteRepository)
@@ -895,8 +908,9 @@ describe('SiteAiService.generateSite — inspiration links', () => {
     expect(events[0]).toMatchObject({ type: 'steps' })
     const first = events[0]
     if (first.type === 'steps') {
-      expect(first.steps.slice(0, 2).map((step) => step.id)).toEqual([
+      expect(first.steps.slice(0, 3).map((step) => step.id)).toEqual([
         'inspiration',
+        'analysis',
         'theme',
       ])
     }
@@ -1537,5 +1551,293 @@ describe('SiteAiService.suggestImages', () => {
       await SiteAiService.suggestImages(ACTOR, WS, site.id, dto()),
       'FORBIDDEN',
     )
+  })
+})
+
+// ─── reference-faithful path ─────────────────────────────────────────────
+
+describe('SiteAiService.generateSite — reference-faithful path', () => {
+  const IMAGE = 'data:image/png;base64,AAAA'
+  const FIDELITY_PLAN = {
+    siteName: 'Pão & Cia',
+    tagline: 'Pão fresco todo dia',
+    ctaLabel: 'Peça já',
+    pages: [
+      {
+        kind: 'home',
+        title: 'Início',
+        seoTitle: 'Pão & Cia — início',
+        seoDescription: 'Padaria artesanal',
+        sections: [
+          {
+            name: 'Destaque',
+            purpose: 'Apresentar a padaria',
+            equivalent: 'hero',
+            referenceId: 'ref1',
+            referenceSection: 0,
+          },
+          {
+            name: 'Serviços',
+            purpose: 'O que fazemos',
+            equivalent: 'services',
+            referenceId: 'ref1',
+            referenceSection: 1,
+          },
+        ],
+      },
+    ],
+  }
+
+  const requestText = (request: AiChatRequest) => {
+    const content = request.messages[0].content
+    return typeof content === 'string'
+      ? content
+      : content
+          .map((part) => (part.type === 'text' ? part.text : ''))
+          .join('\n')
+  }
+  const callsOf = (name: string) =>
+    chat.mock.calls
+      .map(([request]) => request)
+      .filter((request) => request.jsonSchema?.name === name)
+
+  const preparedWithQuota = () =>
+    ok({
+      feature: 'CRM_ASSISTANT' as const,
+      provider: provider as never,
+      model: {
+        key: 'anthropic:claude',
+        provider: 'anthropic',
+        model: 'claude-x',
+        label: 'Claude',
+      } as never,
+      monthlyQuotaUsd: 10,
+    })
+
+  beforeEach(() => {
+    chat.mockClear()
+    overrides.design_spec = () => fakeDesignSpec()
+    overrides.fidelity_plan = () => FIDELITY_PLAN
+    overrides.section_blueprint = (request) =>
+      requestText(request).includes('seção de CONTATO')
+        ? bpSection([bpText(), bpForm()], { name: 'Contato' })
+        : fakeHeroBlueprint()
+  })
+
+  afterEach(() => {
+    registerCapturePort(null)
+  })
+
+  it('analyzes the pictures, plans from them and draws the sections', async () => {
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationImages: [IMAGE], primaryColor: '#123456' }),
+        ),
+      ),
+    )
+    const first = events[0]
+    if (first.type !== 'steps') throw new Error('no steps')
+    expect(first.steps.slice(0, 2).map((step) => step.id)).toEqual([
+      'analysis',
+      'theme',
+    ])
+    for (const id of ['analysis', 'theme', 'page:home', 'page:about']) {
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: 'step', id, status: 'done' }),
+      )
+    }
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'step',
+        id: 'page:home',
+        status: 'running',
+        label: expect.stringContaining('Desenhando a seção "Destaque"'),
+      }),
+    )
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+
+    // no classic plan call: the plan comes from the references
+    expect(callsOf('site_plan')).toHaveLength(0)
+    expect(callsOf('design_spec')).toHaveLength(1)
+    expect(callsOf('fidelity_plan')).toHaveLength(1)
+    expect(callsOf('section_blueprint').length).toBeGreaterThanOrEqual(5)
+    // the picture goes to the analysis
+    const analysis = callsOf('design_spec')[0]
+    expect(JSON.stringify(analysis.messages[0].content)).toContain(IMAGE)
+
+    const input = created()
+    const theme = input.site.theme as { colors: Record<string, string> }
+    expect(theme.colors.primary).toBe('#123456')
+    expect(input.pages.map((page) => page.slug)).toEqual([
+      'inicio',
+      'sobre',
+      'contato',
+    ])
+    expect(input.pages[0].seo).toEqual({
+      title: 'Pão & Cia — início',
+      description: 'Padaria artesanal',
+    })
+    const names = (doc: unknown) =>
+      Object.values((doc as CanvasDocument).nodes).map(
+        (node) => node.meta?.name,
+      )
+    expect(names(input.pages[0].document)).toContain('Destaque')
+    for (const page of input.pages) {
+      expect(validateSiteDocument(page.document).ok).toBe(true)
+    }
+    // the form drawn for the contact section points at the CRM form
+    const forms = Object.values(
+      (input.pages[2].document as CanvasDocument).nodes,
+    ).filter((node) => node.type === SITE_TYPES.form)
+    expect(forms).toHaveLength(1)
+    expect(forms[0].props.formToken).toBe('tok_form1')
+    expect(JSON.stringify(audit.mock.calls)).toContain('"sectionsDrawn"')
+    expect(ai.prepare).toHaveBeenCalledWith(WS, 'CRM_ASSISTANT', ACTOR, [], {
+      timeoutMs: FIDELITY_PROVIDER_TIMEOUT_MS,
+    })
+  })
+
+  it('uses the ready sections for any section that cannot be drawn', async () => {
+    overrides.section_blueprint = () => bpSection([])
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationImages: [IMAGE] }),
+        ),
+      ),
+    )
+    const done = events.at(-1)
+    expect(done?.type).toBe('done')
+    if (done?.type !== 'done') return
+    expect(done.warnings.join(' ')).toContain('modelo pronto')
+    for (const page of created().pages) {
+      expect(validateSiteDocument(page.document).ok).toBe(true)
+    }
+    // the ready sections got their copy from the page copy call
+    expect(callsOf('site_page_copy').length).toBeGreaterThan(0)
+  })
+
+  it('falls back to the classic generation when no reference can be analyzed', async () => {
+    overrides.design_spec = () => ({ nope: true })
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationImages: [IMAGE] }),
+        ),
+      ),
+    )
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'step',
+        id: 'analysis',
+        status: 'failed',
+      }),
+    )
+    const done = events.at(-1)
+    expect(done?.type).toBe('done')
+    if (done?.type !== 'done') return
+    expect(done.warnings.join(' ')).toContain('layout das referências')
+    expect(callsOf('site_plan')).toHaveLength(1)
+    expect(callsOf('section_blueprint')).toHaveLength(0)
+  })
+
+  it('captures the links and follows the capture even when the text read fails', async () => {
+    const capture = vi.fn(async () => ok(fakeCapture()))
+    registerCapturePort({ capture })
+    readLink.mockResolvedValue({
+      url: 'https://ref.example/a',
+      status: 'failed',
+      message: 'O site demorou demais para responder.',
+      brief: null,
+    })
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationLinks: ['https://ref.example/a?utm=1'] }),
+        ),
+      ),
+    )
+    expect(capture).toHaveBeenCalledWith('https://ref.example/a?utm=1')
+    expect(events.at(-1)).toMatchObject({
+      type: 'done',
+      links: [{ url: 'https://ref.example/a', status: 'read', message: null }],
+    })
+    expect(callsOf('design_spec')).toHaveLength(1)
+    const parts = callsOf('design_spec')[0].messages[0].content as Array<{
+      type: string
+    }>
+    expect(parts.filter((part) => part.type === 'image')).toHaveLength(3)
+  })
+
+  it('keeps the text summary when the capture fails or throws', async () => {
+    readLink.mockResolvedValue(readOk('https://ref.example/a'))
+    for (const failing of [
+      vi.fn(async () => err(databaseError())),
+      vi.fn(async () => {
+        throw new Error('browser crashed')
+      }),
+    ]) {
+      chat.mockClear()
+      registerCapturePort({ capture: failing })
+      const events = await collect(
+        expectOk(
+          await SiteAiService.generateSite(
+            ACTOR,
+            WS,
+            brief({ inspirationLinks: ['https://ref.example/a'] }),
+          ),
+        ),
+      )
+      expect(events.at(-1)).toMatchObject({
+        type: 'done',
+        links: [{ status: 'read' }],
+      })
+      // the text summary alone still feeds the analysis
+      expect(callsOf('design_spec')).toHaveLength(1)
+    }
+  })
+
+  it('stops drawing when the monthly quota is spent during the run', async () => {
+    ai.prepare.mockResolvedValue(preparedWithQuota())
+    usageRepo.sumSince.mockResolvedValue(ok({ costUsd: 10 } as never))
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationImages: [IMAGE] }),
+        ),
+      ),
+    )
+    const done = events.at(-1)
+    expect(done?.type).toBe('done')
+    if (done?.type !== 'done') return
+    expect(done.warnings.join(' ')).toContain('cota mensal')
+    expect(callsOf('section_blueprint')).toHaveLength(0)
+  })
+
+  it('keeps going when the quota cannot be read', async () => {
+    ai.prepare.mockResolvedValue(preparedWithQuota())
+    usageRepo.sumSince.mockResolvedValue(err(databaseError()))
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationImages: [IMAGE] }),
+        ),
+      ),
+    )
+    expect(events.at(-1)?.type).toBe('done')
+    expect(callsOf('section_blueprint').length).toBeGreaterThan(0)
   })
 })

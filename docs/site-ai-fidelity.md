@@ -71,3 +71,34 @@ export interface ReferenceCapture {
   automaticamente quando há link ou imagem): entrega análise visual, blueprint,
   compilador e a geração por seção.
 - **Frente C — refino** (depois de A e B): renderiza o rascunho, compara e corrige.
+
+## Frente B — o que foi entregue (blueprints e geração)
+
+Código em `src/lib/site-ai/fidelity/blueprint/*` (porta de captura em
+`fidelity/capture-port.ts`; a frente A registra a implementação com
+`registerCapturePort({ capture: captureReference })`).
+
+- `design-spec.ts`: `DesignSpec` (zod + JSON schema estrito) por referência.
+- `analyze.ts`: `analyzeReferences` (visão sobre faixas + blocos do DOM, ou
+  sobre a imagem do usuário; uma chamada por referência).
+- `section-blueprint.ts` / `compile.ts`: `SectionBlueprint` (seção, `box`
+  coluna/linha/grade e `card`, título, texto, botão, imagem, ícone, lista,
+  divisor, espaçador, formulário) e `blueprintToNodeSpec`, que limita números,
+  descarta cores inválidas e usa os helpers de `presets/builder`.
+- `plan.ts`: plano das páginas; cada seção aponta a seção da referência cujo
+  layout ela segue (`referenceId` + `referenceSection`) e a seção pronta
+  equivalente (`equivalent`), usada para dados do CRM e como reserva.
+- `generate.ts`: `generateSectionBlueprint` (uma chamada estruturada com reparo
+  por seção, recebendo as faixas e os blocos da faixa correspondente) e
+  `buildFidelitySection` (cai para a seção pronta se falhar).
+- `pipeline.ts`: `runFidelityPipeline` (análise, plano, tema, seções) com
+  progresso pelos mesmos passos do stream (`analysis`, `theme`, `page:<tipo>`).
+- Integração em `site-ai.service.ts`: usada quando há link ou imagem de
+  inspiração; sem referência, ou se a análise falhar, segue o caminho antigo.
+
+Para a frente C (refino): `FidelityResult.specs` traz as `DesignSpec` por
+referência (`source` = `ref1`…), `pages[].specs/origins/equivalents` traz as
+seções de cada página (`origins` diz se foi desenhada ou pronta) e
+`generateSectionBlueprint` / `buildFidelitySection` aceitam um
+`SectionRequest` para redesenhar uma seção; o blueprint anterior de cada seção
+ainda não é guardado (a frente C pode guardar `BuiltSection` por seção).

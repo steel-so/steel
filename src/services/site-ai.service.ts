@@ -22,7 +22,7 @@ import {
   SITE_TYPES,
 } from '@/src/lib/canvas-site/constants'
 import { SITE_KITS } from '@/src/lib/canvas-site/presets/kits'
-import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
+import { parseSiteTheme, type SiteTheme } from '@/src/lib/canvas-site/theme'
 import {
   consume,
   siteInspirationUserLimiter,
@@ -39,6 +39,19 @@ import {
   replaceSampleBrand,
 } from '@/src/lib/site-ai/assemble'
 import { estimateSiteAi } from '@/src/lib/site-ai/estimate'
+import {
+  buildReferenceSources,
+  type FidelityResult,
+  fidelityPageDocument,
+  isAnalyzable,
+  pickReadySlots,
+  runFidelityPipeline,
+} from '@/src/lib/site-ai/fidelity/blueprint'
+import {
+  type CapturePort,
+  getCapturePort,
+} from '@/src/lib/site-ai/fidelity/capture-port'
+import type { ReferenceCapture } from '@/src/lib/site-ai/fidelity/types'
 import {
   buildCandidates,
   collectImageTargets,
@@ -165,6 +178,8 @@ export const PAGE_CONCURRENCY = 3
 export const MAX_REWRITE_SLOTS = 150
 /** Inspiration links read at the same time. */
 export const INSPIRATION_CONCURRENCY = 3
+/** Wait for the first chunk of a provider answer on the fidelity path. */
+export const FIDELITY_PROVIDER_TIMEOUT_MS = 300_000
 
 const json = (value: unknown) => value as Prisma.InputJsonValue
 const round = (value: number) => Math.round(value * 10_000) / 10_000
@@ -178,11 +193,20 @@ async function prepareCall(
   actorId: string,
   workspaceId: string,
   modelKey?: string,
+  options: { timeoutMs?: number } = {},
 ): Promise<Result<PreparedAiCall>> {
   const feature = await assertFeature(workspaceId, 'crm.aiAssistant')
   if (!feature.ok) return feature
   if (!modelKey) {
-    return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+    return options.timeoutMs === undefined
+      ? AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+      : AiUsageService.prepare(
+          workspaceId,
+          'CRM_ASSISTANT',
+          actorId,
+          [],
+          options,
+        )
   }
   // The chosen model must be usable here (enabled for the workspace, with a
   // key in this environment): resolution would silently fall back to the
@@ -201,9 +225,15 @@ async function prepareCall(
       ),
     )
   }
-  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId, [
-    modelKey,
-  ])
+  return options.timeoutMs === undefined
+    ? AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId, [modelKey])
+    : AiUsageService.prepare(
+        workspaceId,
+        'CRM_ASSISTANT',
+        actorId,
+        [modelKey],
+        options,
+      )
 }
 
 /** Records every provider call and keeps the running cost. */
@@ -432,36 +462,48 @@ async function writePage(input: {
   inspiration: string[]
   testimonials: SiteAiTestimonialData[]
   workspaceId: string
+  /** Reference-faithful page: sections already built (drawn from the
+   * references); only the ready ones still need copy. */
+  prebuilt?: {
+    page: ReturnType<typeof fidelityPageDocument>
+    seo: { title: string; description: string }
+  }
 }): Promise<PageResult> {
-  const { page, ctx } = input
+  const { page, ctx, prebuilt } = input
   const warnings: string[] = []
-  const doc = buildPageDocument(page.sections, ctx)
-  const slots = collectSlots(doc)
-  const answer = await structuredCall({
-    provider: input.call.provider,
-    model: input.call.model.model,
-    system: buildPageCopySystem({
-      brief: input.brief,
-      pageTitle: page.title,
-      testimonials: input.testimonials,
-      withInspiration: input.inspiration.length > 0,
-    }),
-    message: [
-      `Página: ${page.title}`,
-      `Botão principal do site: ${input.plan.ctaLabel}`,
-      ...(input.inspiration.length > 0 ? ['', ...input.inspiration] : []),
-      '',
-      'Campos:',
-      describeSlots(slots),
-    ].join('\n'),
-    schemaName: 'site_page_copy',
-    jsonSchema: PAGE_COPY_JSON_SCHEMA,
-    schema: PageCopyOutputSchema,
-    maxTokens: PAGE_MAX_TOKENS,
-    validate: (value) => checkFields(slots, value.fields),
-    onUsage: input.meter.onUsage,
-  })
-  if (!answer.ok && answer.reason === 'provider') {
+  const doc = prebuilt?.page.doc ?? buildPageDocument(page.sections, ctx)
+  const slots = prebuilt
+    ? pickReadySlots(prebuilt.page, collectSlots(doc))
+    : collectSlots(doc)
+  // A fidelity page whose sections were all drawn has no copy left to write.
+  const answer =
+    prebuilt && slots.length === 0
+      ? null
+      : await structuredCall({
+          provider: input.call.provider,
+          model: input.call.model.model,
+          system: buildPageCopySystem({
+            brief: input.brief,
+            pageTitle: page.title,
+            testimonials: input.testimonials,
+            withInspiration: input.inspiration.length > 0,
+          }),
+          message: [
+            `Página: ${page.title}`,
+            `Botão principal do site: ${input.plan.ctaLabel}`,
+            ...(input.inspiration.length > 0 ? ['', ...input.inspiration] : []),
+            '',
+            'Campos:',
+            describeSlots(slots),
+          ].join('\n'),
+          schemaName: 'site_page_copy',
+          jsonSchema: PAGE_COPY_JSON_SCHEMA,
+          schema: PageCopyOutputSchema,
+          maxTokens: PAGE_MAX_TOKENS,
+          validate: (value) => checkFields(slots, value.fields),
+          onUsage: input.meter.onUsage,
+        })
+  if (answer && !answer.ok && answer.reason === 'provider') {
     logger.error('site_ai.provider_failed', {
       component: COMPONENT,
       workspaceId: input.workspaceId,
@@ -472,10 +514,20 @@ async function writePage(input: {
           ? answer.cause.message
           : String(answer.cause),
     })
-    throw new GenerationError(aiFailed())
+    // A failure on the copy of a few ready sections must not throw away
+    // the sections drawn from the references.
+    if (!prebuilt) throw new GenerationError(aiFailed())
   }
-  const copy = answer.ok ? answer.value : (answer.partial ?? null)
+  const copy = answer
+    ? answer.ok
+      ? answer.value
+      : (answer.partial ?? null)
+    : null
   const seo: PageResult['seo'] = {}
+  if (prebuilt) {
+    if (prebuilt.seo.title) seo.title = prebuilt.seo.title
+    if (prebuilt.seo.description) seo.description = prebuilt.seo.description
+  }
   if (copy) {
     const applied = fillSlots(doc.nodes, slots, copy.fields)
     if (applied.skipped.length > 0) {
@@ -483,11 +535,13 @@ async function writePage(input: {
         `Alguns textos da página ${page.title} ficaram com o texto do modelo — revise no editor.`,
       )
     }
-    const title = clip(copy.seoTitle, 70)
-    const description = clip(copy.seoDescription, 160)
-    if (title) seo.title = title
-    if (description) seo.description = description
-  } else {
+    if (!prebuilt) {
+      const title = clip(copy.seoTitle, 70)
+      const description = clip(copy.seoDescription, 160)
+      if (title) seo.title = title
+      if (description) seo.description = description
+    }
+  } else if (answer) {
     warnings.push(
       `A IA não escreveu os textos da página ${page.title}; ela ficou com o texto do modelo.`,
     )
@@ -525,6 +579,62 @@ function contactLinkFor(
     : { type: 'page', value: pageIds.home }
 }
 
+const CAPTURE_TIMEOUT_MS = 120_000
+
+/** Capture of one link through the registered port; `null` when there is
+ * no port, it fails or it takes too long (the text summary still works). */
+async function captureLink(
+  port: CapturePort | null,
+  url: string,
+): Promise<ReferenceCapture | null> {
+  if (!port) return null
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      port.capture(url),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), CAPTURE_TIMEOUT_MS)
+      }),
+    ])
+    return result?.ok ? result.value : null
+  } catch {
+    return null
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+function defaultCtaLabel(goal: GenerateSiteDTO['goal']): string {
+  if (goal === 'sales') return 'Quero comprar'
+  return goal === 'event' ? 'Garantir minha vaga' : 'Fale com a gente'
+}
+
+/** The plan the rest of the generation reads, from a fidelity result. */
+function fidelityToSitePlan(
+  result: Extract<FidelityResult, { ok: true }>,
+): SitePlan {
+  const { theme } = result
+  return {
+    siteName: result.plan.siteName,
+    tagline: result.plan.tagline,
+    ctaLabel: result.plan.ctaLabel,
+    kit: result.kit,
+    colors: {
+      primary: theme.colors.primary,
+      secondary: theme.colors.secondary,
+      accent: theme.colors.accent,
+      dark: theme.colors.dark,
+    },
+    fonts: { ...theme.fonts },
+    pages: result.plan.pages.map((page) => ({
+      kind: page.kind,
+      title: page.title,
+      slug: page.slug,
+      sections: page.sections.map((section) => section.equivalent),
+    })),
+  }
+}
+
 async function* runGeneration(input: {
   actorId: string
   workspaceId: string
@@ -532,9 +642,14 @@ async function* runGeneration(input: {
   call: PreparedAiCall
   data: GenerationData
   slug: string
+  /** US$ left of the workspace's monthly AI quota when the generation
+   * started (`null` = unknown); drawing stops when the run has spent it. */
+  quotaRemainingUsd: number | null
 }): AsyncGenerator<SiteAiEvent> {
   const { actorId, workspaceId, dto, call, data } = input
   const hasLinks = dto.inspirationLinks.length > 0
+  // Links or pictures of inspiration: the layout follows them.
+  const useFidelity = hasLinks || dto.inspirationImages.length > 0
   const meter = usageMeter(call, workspaceId, actorId)
   const kinds = requestedKinds(dto)
   const steps: SiteAiStep[] = [
@@ -543,6 +658,15 @@ async function* runGeneration(input: {
           {
             id: 'inspiration',
             label: 'Lendo as referências…',
+            status: 'pending',
+          } satisfies SiteAiStep,
+        ]
+      : []),
+    ...(useFidelity
+      ? [
+          {
+            id: 'analysis',
+            label: 'Analisando as referências…',
             status: 'pending',
           } satisfies SiteAiStep,
         ]
@@ -568,6 +692,10 @@ async function* runGeneration(input: {
   // 0. Inspiration links, read here (never in the browser). A link that
   // cannot be read is reported and skipped; the generation goes on.
   const links: InspirationLinkResult[] = []
+  const captures: Array<ReferenceCapture | null> = dto.inspirationLinks.map(
+    () => null,
+  )
+  const capturePort = useFidelity ? getCapturePort() : null
   const linkStates: SiteAiLinkDTO[] = dto.inspirationLinks.map((url) => ({
     url: stripUrlForDisplay(url),
     status: 'reading',
@@ -586,22 +714,31 @@ async function* runGeneration(input: {
     }
     const reading = pool(
       dto.inspirationLinks.map((url, index) => async () => {
-        const result = await readInspirationLink(url)
+        const [result, captured] = await Promise.all([
+          readInspirationLink(url),
+          captureLink(capturePort, url),
+        ])
         links[index] = result
-        linkStates[index] = {
-          url: result.url,
-          status: result.status,
-          message: result.message,
-        }
+        captures[index] = captured
+        // A page we could capture counts as read even when the text
+        // summary failed: the capture is what the layout follows.
+        linkStates[index] =
+          captured && result.status === 'failed'
+            ? { url: result.url, status: 'read', message: null }
+            : {
+                url: result.url,
+                status: result.status,
+                message: result.message,
+              }
         linkEvents.push({ type: 'link', index, link: linkStates[index] })
       }),
       INSPIRATION_CONCURRENCY,
     ).finally(() => linkEvents.close())
     yield* linkEvents.drain()
     await reading
-    const readCount = links.filter((link) => link?.status === 'read').length
-    for (const link of links) {
-      if (link?.status === 'failed') {
+    const readCount = linkStates.filter((link) => link.status === 'read').length
+    for (const link of linkStates) {
+      if (link.status === 'failed') {
         warnings.push(
           `Não foi possível ler a referência ${link.url}: ${link.message ?? 'erro desconhecido'}`,
         )
@@ -611,9 +748,9 @@ async function* runGeneration(input: {
       type: 'step',
       id: 'inspiration',
       label:
-        readCount === links.length
+        readCount === linkStates.length
           ? 'Referências lidas'
-          : `${readCount} de ${links.length} referências lidas`,
+          : `${readCount} de ${linkStates.length} referências lidas`,
       status: readCount > 0 ? 'done' : 'failed',
     }
   }
@@ -626,136 +763,273 @@ async function* runGeneration(input: {
     event: Boolean(dto.eventDate),
   }
 
-  // 1. Theme and page tree.
-  yield { type: 'step', id: 'theme', label: 'Criando tema…', status: 'running' }
-  const planned = await structuredCall({
-    provider: call.provider,
-    model: call.model.model,
-    system: buildPlanSystem(
-      kinds,
-      withInspiration || dto.inspirationImages.length > 0,
-      dto.inspirationImages.length > 0,
-    ),
-    message: [
-      'Briefing:',
-      ...brief,
-      ...inspiration,
-      ...(dto.inspirationImages.length > 0
-        ? [`Imagens de referência anexadas: ${dto.inspirationImages.length}.`]
-        : []),
-    ].join('\n'),
-    images: dto.inspirationImages,
-    schemaName: 'site_plan',
-    jsonSchema: SITE_PLAN_JSON_SCHEMA,
-    schema: SitePlanOutputSchema,
-    maxTokens: PLAN_MAX_TOKENS,
-    onUsage: meter.onUsage,
-  })
-  if (!planned.ok && planned.reason === 'provider') {
-    logger.error('site_ai.provider_failed', {
-      component: COMPONENT,
-      workspaceId,
-      step: 'theme',
-      model: call.model.key,
-      message:
-        planned.cause instanceof Error
-          ? planned.cause.message
-          : String(planned.cause),
-    })
-    yield {
-      type: 'step',
-      id: 'theme',
-      label: 'Criando tema…',
-      status: 'failed',
-    }
-    const error = aiFailed()
-    yield { type: 'error', code: error.code, message: error.message }
-    return
+  // 0b. Reference-faithful path: visual analysis of every reference, the
+  // page plan, the theme and every section drawn from the references.
+  // When it cannot run (nothing analyzable, every analysis failed) the
+  // classic path below takes over with the text summary and the pictures.
+  const pageIds: Record<string, string> = {}
+  const ensurePageIds = (pagesOfPlan: Array<{ kind: SitePageKind }>) => {
+    for (const page of pagesOfPlan) pageIds[page.kind] ??= createId()
   }
-  if (!planned.ok) {
-    warnings.push(
-      'A IA não sugeriu um tema; usamos o estilo e as seções padrão.',
-    )
-  }
-  const plan = normalizePlan(
-    planned.ok ? planned.value : null,
-    dto,
-    availability,
-  )
-  const theme = buildPlanTheme(plan)
-  yield { type: 'step', id: 'theme', label: 'Tema criado', status: 'done' }
-
-  // 2. Pages, a few at a time.
-  const pageIds: Record<string, string> = Object.fromEntries(
-    plan.pages.map((page) => [page.kind, createId()]),
-  )
-  const baseCtx = {
-    kit: SITE_KITS[plan.kit],
+  const makeBaseCtx = (kit: SitePlan['kit'], ctaLabel: string) => ({
+    kit: SITE_KITS[kit],
     companyName: dto.name,
     logoUrl: dto.logoUrl ?? null,
-    ctaLabel: plan.ctaLabel,
+    ctaLabel,
     products: data.products,
     testimonials: data.testimonials,
     form: data.form,
     eventDate: dto.eventDate ?? null,
-  }
-  const events = channel<SiteAiEvent>()
-  const pagesDone = pool(
-    plan.pages.map((page) => async () => {
-      const id = `page:${page.kind}`
-      events.push({
+  })
+  let fidelity: Extract<FidelityResult, { ok: true }> | null = null
+  if (useFidelity) {
+    const sources = buildReferenceSources({
+      links: dto.inspirationLinks.map((_, index) => {
+        const result = links[index]
+        const summary = result
+          ? buildInspirationBlock([result], '').join('\n')
+          : ''
+        return {
+          url: linkStates[index].url,
+          capture: captures[index] ?? null,
+          summary: summary || null,
+        }
+      }),
+      images: dto.inspirationImages,
+    }).filter(isAnalyzable)
+    if (sources.length === 0) {
+      yield {
         type: 'step',
-        id,
-        label: `Montando a página ${page.title}…`,
-        status: 'running',
-      })
-      try {
-        const result = await writePage({
-          call,
-          meter,
-          plan,
-          page,
-          ctx: {
-            ...baseCtx,
+        id: 'analysis',
+        label: 'Nenhuma referência pôde ser analisada',
+        status: 'failed',
+      }
+    } else {
+      const progress = channel<SiteAiEvent>()
+      const drawing = runFidelityPipeline({
+        llm: {
+          provider: call.provider,
+          model: call.model.model,
+          onUsage: meter.onUsage,
+        },
+        brief,
+        focus: dto.inspirationFocus,
+        kinds,
+        name: dto.name,
+        defaultCtaLabel: defaultCtaLabel(dto.goal),
+        primaryColor: dto.primaryColor ?? null,
+        availability,
+        sources,
+        sectionContext: (page, fidelityPlan, kit) => {
+          ensurePageIds(fidelityPlan.pages)
+          return {
+            ...makeBaseCtx(kit, fidelityPlan.ctaLabel),
             pageTitle: page.title,
             contactLink: contactLinkFor(page.kind, pageIds),
-          },
-          brief,
-          inspiration,
-          testimonials: data.testimonials,
-          workspaceId,
-        })
-        events.push({
-          type: 'step',
-          id,
-          label: `Página ${page.title} pronta`,
-          status: 'done',
-        })
-        return result
+          }
+        },
+        onProgress: (step) => progress.push({ type: 'step', ...step }),
+        overBudget: () =>
+          input.quotaRemainingUsd !== null &&
+          meter.cost() >= input.quotaRemainingUsd,
+      }).finally(() => progress.close())
+      drawing.catch(() => undefined)
+      yield* progress.drain()
+      try {
+        const outcome = await drawing
+        warnings.push(...outcome.warnings)
+        if (outcome.ok) fidelity = outcome
+        else {
+          warnings.push(
+            'Não foi possível seguir o layout das referências; o site usa as seções padrão, inspiradas nelas.',
+          )
+        }
       } catch (cause) {
+        logger.error('site_ai.fidelity_failed', {
+          component: COMPONENT,
+          workspaceId,
+          model: call.model.key,
+          message: cause instanceof Error ? cause.message : String(cause),
+        })
+        yield {
+          type: 'step',
+          id: 'analysis',
+          label: 'Análise das referências falhou',
+          status: 'failed',
+        }
+        warnings.push(
+          'Não foi possível seguir o layout das referências; o site usa as seções padrão, inspiradas nelas.',
+        )
+      }
+    }
+  }
+
+  // 1. Theme and page tree.
+  let plan: SitePlan
+  let theme: SiteTheme
+  if (fidelity) {
+    plan = fidelityToSitePlan(fidelity)
+    theme = fidelity.theme
+  } else {
+    yield {
+      type: 'step',
+      id: 'theme',
+      label: 'Criando tema…',
+      status: 'running',
+    }
+    const planned = await structuredCall({
+      provider: call.provider,
+      model: call.model.model,
+      system: buildPlanSystem(
+        kinds,
+        withInspiration || dto.inspirationImages.length > 0,
+        dto.inspirationImages.length > 0,
+      ),
+      message: [
+        'Briefing:',
+        ...brief,
+        ...inspiration,
+        ...(dto.inspirationImages.length > 0
+          ? [`Imagens de referência anexadas: ${dto.inspirationImages.length}.`]
+          : []),
+      ].join('\n'),
+      images: dto.inspirationImages,
+      schemaName: 'site_plan',
+      jsonSchema: SITE_PLAN_JSON_SCHEMA,
+      schema: SitePlanOutputSchema,
+      maxTokens: PLAN_MAX_TOKENS,
+      onUsage: meter.onUsage,
+    })
+    if (!planned.ok && planned.reason === 'provider') {
+      logger.error('site_ai.provider_failed', {
+        component: COMPONENT,
+        workspaceId,
+        step: 'theme',
+        model: call.model.key,
+        message:
+          planned.cause instanceof Error
+            ? planned.cause.message
+            : String(planned.cause),
+      })
+      yield {
+        type: 'step',
+        id: 'theme',
+        label: 'Criando tema…',
+        status: 'failed',
+      }
+      const error = aiFailed()
+      yield { type: 'error', code: error.code, message: error.message }
+      return
+    }
+    if (!planned.ok) {
+      warnings.push(
+        'A IA não sugeriu um tema; usamos o estilo e as seções padrão.',
+      )
+    }
+    plan = normalizePlan(planned.ok ? planned.value : null, dto, availability)
+    theme = buildPlanTheme(plan)
+    yield { type: 'step', id: 'theme', label: 'Tema criado', status: 'done' }
+  }
+
+  // 2. Pages, a few at a time.
+  ensurePageIds(plan.pages)
+  const baseCtx = makeBaseCtx(plan.kit, plan.ctaLabel)
+  let pages: PageResult[]
+  if (fidelity) {
+    const drawn = fidelity
+    try {
+      pages = await pool(
+        drawn.pages.map((result, index) => async () => {
+          const page = plan.pages[index]
+          return writePage({
+            call,
+            meter,
+            plan,
+            page,
+            ctx: {
+              ...baseCtx,
+              pageTitle: page.title,
+              contactLink: contactLinkFor(page.kind, pageIds),
+            },
+            brief,
+            inspiration: [],
+            testimonials: data.testimonials,
+            workspaceId,
+            prebuilt: {
+              page: fidelityPageDocument(result),
+              seo: drawn.plan.pages[index].seo,
+            },
+          })
+        }),
+        PAGE_CONCURRENCY,
+      )
+    } catch (cause) {
+      const error = cause instanceof GenerationError ? cause.error : aiFailed()
+      yield { type: 'error', code: error.code, message: error.message }
+      return
+    }
+  } else {
+    const events = channel<SiteAiEvent>()
+    const pagesDone = pool(
+      plan.pages.map((page) => async () => {
+        const id = `page:${page.kind}`
         events.push({
           type: 'step',
           id,
-          label: `Página ${page.title} falhou`,
-          status: 'failed',
+          label: `Montando a página ${page.title}…`,
+          status: 'running',
         })
-        throw cause
-      }
-    }),
-    PAGE_CONCURRENCY,
-  ).finally(() => events.close())
-  // The rejection is handled below, after the queued events are sent.
-  pagesDone.catch(() => undefined)
-  yield* events.drain()
-  let pages: PageResult[]
-  try {
-    pages = await pagesDone
-  } catch (cause) {
-    const error = cause instanceof GenerationError ? cause.error : aiFailed()
-    yield { type: 'error', code: error.code, message: error.message }
-    return
+        try {
+          const result = await writePage({
+            call,
+            meter,
+            plan,
+            page,
+            ctx: {
+              ...baseCtx,
+              pageTitle: page.title,
+              contactLink: contactLinkFor(page.kind, pageIds),
+            },
+            brief,
+            inspiration,
+            testimonials: data.testimonials,
+            workspaceId,
+          })
+          events.push({
+            type: 'step',
+            id,
+            label: `Página ${page.title} pronta`,
+            status: 'done',
+          })
+          return result
+        } catch (cause) {
+          events.push({
+            type: 'step',
+            id,
+            label: `Página ${page.title} falhou`,
+            status: 'failed',
+          })
+          throw cause
+        }
+      }),
+      PAGE_CONCURRENCY,
+    ).finally(() => events.close())
+    // The rejection is handled below, after the queued events are sent.
+    pagesDone.catch(() => undefined)
+    yield* events.drain()
+    try {
+      pages = await pagesDone
+    } catch (cause) {
+      const error = cause instanceof GenerationError ? cause.error : aiFailed()
+      yield { type: 'error', code: error.code, message: error.message }
+      return
+    }
   }
   for (const page of pages) warnings.push(...page.warnings)
+  // Forms drawn from the references are bare: point them at the CRM form.
+  if (fidelity && data.form) {
+    for (const page of pages) attachForm(page.document, data.form)
+  }
 
   // 3. Header and footer.
   yield {
@@ -846,7 +1120,7 @@ async function* runGeneration(input: {
         aiGeneration: {
           modelKey: call.model.key,
           inspirationLinks: dto.inspirationLinks.length,
-          inspirationRead: links.filter((link) => link.status === 'read')
+          inspirationRead: linkStates.filter((link) => link.status === 'read')
             .length,
         },
       }),
@@ -881,6 +1155,23 @@ async function* runGeneration(input: {
     return
   }
   const site: Site = created.value
+  // Counts only (never the references' content).
+  const fidelityStats = fidelity
+    ? {
+        references: fidelity.specs.length,
+        sectionsDrawn: fidelity.pages.reduce(
+          (sum, page) =>
+            sum +
+            page.origins.filter((origin) => origin === 'blueprint').length,
+          0,
+        ),
+        sectionsReady: fidelity.pages.reduce(
+          (sum, page) =>
+            sum + page.origins.filter((origin) => origin === 'ready').length,
+          0,
+        ),
+      }
+    : null
   auditMutation({
     entity: 'site',
     action: 'create',
@@ -896,7 +1187,9 @@ async function* runGeneration(input: {
       // Counts only: neither the URLs' query strings nor any page content
       // is stored or logged (ADR 0071).
       inspirationLinks: dto.inspirationLinks.length,
-      inspirationRead: links.filter((link) => link.status === 'read').length,
+      inspirationRead: linkStates.filter((link) => link.status === 'read')
+        .length,
+      fidelity: fidelityStats,
     },
   })
   logger.info('site_ai.generated', {
@@ -909,6 +1202,7 @@ async function* runGeneration(input: {
     costUsd: meter.cost(),
     model: call.model.key,
     inspirationLinks: dto.inspirationLinks.length,
+    fidelity: fidelityStats,
   })
   yield { type: 'step', id: 'save', label: 'Site salvo', status: 'done' }
   yield {
@@ -1074,8 +1368,33 @@ export const SiteAiService = {
       )
     }
 
-    const call = await prepareCall(actorId, workspaceId, dto.modelKey)
+    // References make the generation long (vision calls, one per section):
+    // the provider gets a generous wait for the first answer chunk.
+    const withReferences =
+      dto.inspirationLinks.length > 0 || dto.inspirationImages.length > 0
+    const call = await prepareCall(
+      actorId,
+      workspaceId,
+      dto.modelKey,
+      withReferences ? { timeoutMs: FIDELITY_PROVIDER_TIMEOUT_MS } : {},
+    )
     if (!call.ok) return call
+
+    // Quota left when the generation starts: drawing stops once the run
+    // has spent it (the rest of the sections use the ready ones).
+    let quotaRemainingUsd: number | null = null
+    if (withReferences && call.value.monthlyQuotaUsd !== undefined) {
+      const used = await AiUsageRepository.sumSince(
+        workspaceId,
+        currentPeriodStart(),
+      )
+      if (used.ok) {
+        quotaRemainingUsd = Math.max(
+          0,
+          call.value.monthlyQuotaUsd - used.value.costUsd,
+        )
+      }
+    }
 
     // Reading links is an outbound request per link: budget per user and
     // per workspace, spent before anything is fetched.
@@ -1119,6 +1438,7 @@ export const SiteAiService = {
         call: call.value,
         data: data.value,
         slug: slug.value,
+        quotaRemainingUsd,
       }),
     )
   },

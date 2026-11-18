@@ -17,6 +17,12 @@ export const SITE_AI_TYPICAL_USAGE = {
   section: { inputTokens: 3_400, outputTokens: 1_300 },
   rewrite: { inputTokens: 3_500, outputTokens: 2_400 },
   images: { inputTokens: 2_600, outputTokens: 900 },
+  /** Fidelity path: analysis of one reference (vision, several strips). */
+  reference: { inputTokens: 16_000, outputTokens: 4_000 },
+  /** Fidelity path: the page plan (all references' specs in). */
+  fidelityPlan: { inputTokens: 8_000, outputTokens: 2_500 },
+  /** Fidelity path: one drawn section (strips + tokens in, blueprint out). */
+  fidelitySection: { inputTokens: 11_000, outputTokens: 4_500 },
 } satisfies Record<string, AiUsageTokens>
 
 /** Rounds up to the cent fraction the UI shows (US$ 0.001). */
@@ -33,6 +39,9 @@ export function estimateSiteAi(pricing: AiModelPricing, margin = 1) {
     sectionUsd: price(SITE_AI_TYPICAL_USAGE.section),
     rewriteUsd: price(SITE_AI_TYPICAL_USAGE.rewrite),
     imagesUsd: price(SITE_AI_TYPICAL_USAGE.images),
+    referenceUsd: price(SITE_AI_TYPICAL_USAGE.reference),
+    fidelityPlanUsd: price(SITE_AI_TYPICAL_USAGE.fidelityPlan),
+    fidelitySectionUsd: price(SITE_AI_TYPICAL_USAGE.fidelitySection),
   }
 }
 
@@ -42,4 +51,31 @@ export function estimateSiteGeneration(
   pageCount: number,
 ): number {
   return roundUp(estimate.planUsd + estimate.pageUsd * Math.max(1, pageCount))
+}
+
+/** Sections a page of the fidelity path draws, on average. */
+export const FIDELITY_SECTIONS_PER_PAGE = 5
+
+/**
+ * Estimated cost of a generation with references: analysis of each one,
+ * the page plan and every section drawn by the model (plus the copy call
+ * of the ready sections, one per page). Much higher than the ready-section
+ * path on purpose — fidelity spends tokens.
+ */
+export function estimateFidelityGeneration(
+  estimate: {
+    pageUsd: number
+    referenceUsd: number
+    fidelityPlanUsd: number
+    fidelitySectionUsd: number
+  },
+  input: { pageCount: number; referenceCount: number },
+): number {
+  const pages = Math.max(1, input.pageCount)
+  return roundUp(
+    estimate.referenceUsd * Math.max(1, input.referenceCount) +
+      estimate.fidelityPlanUsd +
+      estimate.fidelitySectionUsd * FIDELITY_SECTIONS_PER_PAGE * pages +
+      estimate.pageUsd * 0.5 * pages,
+  )
 }
