@@ -10,10 +10,12 @@ import {
   crmWorkflowInvalidDefinition,
   whatsappConversationLimitReached,
   whatsappMessageLimitReached,
+  whatsappQualityBlocked,
   whatsappSpendCapReached,
   workspaceStatusConflict,
 } from '@/src/errors/app-error'
 import { ERROR_CODES } from '@/src/errors/codes'
+import { QUALITY_BLOCK_PREFIX } from '@/src/lib/whatsapp/quality-block'
 
 type Factory = (...args: unknown[]) => AppError
 
@@ -123,6 +125,20 @@ describe('AppError factories — parametrized messages', () => {
     expect(error.message).toContain('1.500,00')
     expect(error.message).toContain('só avisar')
     expect(error.details).toEqual({ cap: 1500, spent: 1499.8 })
+  })
+
+  it('tells the number quality block from the template one, with the fixed prefix', () => {
+    const number = whatsappQualityBlocked('NUMBER')
+    expect(number.code).toBe('WHATSAPP_QUALITY_BLOCKED')
+    expect(ERROR_CODES.WHATSAPP_QUALITY_BLOCKED.status).toBe(409)
+    expect(number.message.startsWith(QUALITY_BLOCK_PREFIX)).toBe(true)
+    expect(number.message).toContain('o número desta conexão')
+    expect(number.details).toEqual({ subject: 'NUMBER' })
+
+    const template = whatsappQualityBlocked('TEMPLATE', 'cobranca')
+    expect(template.message.startsWith(QUALITY_BLOCK_PREFIX)).toBe(true)
+    expect(template.message).toContain('o template "cobranca"')
+    expect(template.details).toEqual({ subject: 'TEMPLATE' })
   })
 
   it('passes required messages through unchanged', () => {

@@ -50,6 +50,7 @@ import {
 } from '@/src/lib/whatsapp/ai-campaign'
 import { AI_CAMPAIGN_ACTION_KIND_LABEL } from '@/src/lib/whatsapp/ai-campaign-actions'
 import { formatContactCreatedAt } from '@/src/lib/whatsapp/contact-created-today'
+import { isQualityBlockReason } from '@/src/lib/whatsapp/quality-block'
 import type { AiCampaignAction } from '@/src/schemas/whatsapp-ai-campaign.schema'
 import type {
   WhatsAppAiCampaignDTO,
@@ -59,6 +60,7 @@ import type {
 import { AiCampaignNoWhatsapp } from './ai-campaign-no-whatsapp'
 import {
   AiCampaignFunnel,
+  AiCampaignQualityNotice,
   AiCampaignStatusBadge,
   aiCampaignProgress,
   ProgressBar,
@@ -363,6 +365,9 @@ function CampaignControls({
           onClick={() =>
             play.mutate(campaign.id, {
               onSuccess: () => notify.success('Campanha iniciada'),
+              // Shows the server's reason (e.g. the quality gate) as is.
+              onError: (error) =>
+                notify.error(error, 'Não foi possível iniciar a campanha'),
             })
           }
         >
@@ -470,7 +475,8 @@ export function WhatsappAiCampaignDetail({
         />
       </div>
 
-      {campaign.lastError ? (
+      <AiCampaignQualityNotice reason={campaign.lastError} />
+      {campaign.lastError && !isQualityBlockReason(campaign.lastError) ? (
         <div className='rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm'>
           <span className='font-medium text-destructive'>Último erro: </span>
           {campaign.lastError}

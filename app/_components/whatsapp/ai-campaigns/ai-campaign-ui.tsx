@@ -1,8 +1,13 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  isQualityBlockReason,
+  QUALITY_BLOCK_PREFIX,
+} from '@/src/lib/whatsapp/quality-block'
 import type {
   WhatsAppAiCampaignStatsDTO,
   WhatsAppAiCampaignStatusDTO,
@@ -103,6 +108,29 @@ export function StatTile({
       </p>
       {hint ? <p className='text-muted-foreground text-xs'>{hint}</p> : null}
     </div>
+  )
+}
+
+/**
+ * Why a campaign is not sending: the number or template quality gate paused
+ * it (or refused the start). Renders nothing for any other reason.
+ */
+export function AiCampaignQualityNotice({
+  reason,
+  className,
+}: {
+  reason: string | null | undefined
+  className?: string
+}) {
+  if (!reason || !isQualityBlockReason(reason)) return null
+  const body = reason.slice(QUALITY_BLOCK_PREFIX.length).trim()
+  return (
+    <Alert variant='destructive' className={className}>
+      <AlertTitle>Envios bloqueados pela qualidade do WhatsApp</AlertTitle>
+      <AlertDescription>
+        {body.charAt(0).toUpperCase() + body.slice(1)}
+      </AlertDescription>
+    </Alert>
   )
 }
 

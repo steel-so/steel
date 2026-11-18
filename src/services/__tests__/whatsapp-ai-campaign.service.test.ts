@@ -10,8 +10,14 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { appError } from '@/src/errors/app-error'
 import { err, ok } from '@/src/lib/result'
 
-const { queueAdd } = vi.hoisted(() => ({ queueAdd: vi.fn() }))
+const { queueAdd, numberQuality } = vi.hoisted(() => ({
+  queueAdd: vi.fn(),
+  numberQuality: vi.fn(),
+}))
 
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: numberQuality,
+}))
 vi.mock('@/src/lib/queue/queues', () => ({
   getWhatsappBroadcastQueue: () => ({ add: queueAdd }),
 }))
@@ -191,6 +197,7 @@ function asRole(role: 'MEMBER' | 'VIEWER' | 'ADMIN') {
 }
 
 beforeEach(() => {
+  numberQuality.mockResolvedValue('GREEN')
   connectionRepo.findById.mockResolvedValue(ok(connection))
   templateRepo.findById.mockResolvedValue(ok(template))
   repo.statsFor.mockImplementation(async (ids) =>
@@ -412,6 +419,71 @@ describe('WhatsAppAiCampaignService.play()/pause()', () => {
       'send-ai-campaign-next',
       { campaignId: 'cp1', runToken: expect.any(String) },
       expect.objectContaining({ delay: 0 }),
+    )
+  })
+
+  it('should refuse to start while the number is RED, with the quality code', async () => {
+    numberQuality.mockResolvedValue('RED')
+    asRole('ADMIN')
+    repo.findById.mockResolvedValue(
+      ok(withTemplate({ status: 'PAUSED', runToken: null })),
+    )
+
+    const error = expectErr(
+      await WhatsAppAiCampaignService.play('u1', 'ws1', 'cp1'),
+      'WHATSAPP_QUALITY_BLOCKED',
+    )
+    expect(error.message).toContain('Baixa')
+    expect(repo.update).not.toHaveBeenCalled()
+    expect(queueAdd).not.toHaveBeenCalled()
+  })
+
+  it('should refuse to start while the template is RED', async () => {
+    templateRepo.findById.mockResolvedValue(
+      ok(
+        createFakeWhatsAppTemplate({
+          id: 't1',
+          workspaceId: 'ws1',
+          connectionId: 'c1',
+          name: 'cobranca',
+          language: 'pt_BR',
+          components,
+          quality: 'RED',
+        }),
+      ),
+    )
+    asRole('ADMIN')
+    repo.findById.mockResolvedValue(
+      ok(withTemplate({ status: 'PAUSED', runToken: null })),
+    )
+
+    const error = expectErr(
+      await WhatsAppAiCampaignService.play('u1', 'ws1', 'cp1'),
+      'WHATSAPP_QUALITY_BLOCKED',
+    )
+    expect(error.message).toContain('o template "cobranca"')
+  })
+
+  it('should resume once the rating recovers', async () => {
+    numberQuality.mockResolvedValue('YELLOW')
+    asRole('ADMIN')
+    repo.findById.mockResolvedValue(
+      ok(
+        withTemplate({
+          status: 'PAUSED',
+          runToken: null,
+          lastError: 'Envios bloqueados pela qualidade: o número ...',
+        }),
+      ),
+    )
+
+    const dto = expectOk(
+      await WhatsAppAiCampaignService.play('u1', 'ws1', 'cp1'),
+    )
+    expect(dto.status).toBe('RUNNING')
+    expect(repo.update).toHaveBeenCalledWith(
+      'cp1',
+      expect.objectContaining({ lastError: null }),
     )
   })
 
@@ -720,6 +792,76 @@ describe('WhatsAppAiCampaignService.sendNext()', () => {
     expect(repo.updateRecipient).not.toHaveBeenCalledWith(
       'r1',
       expect.objectContaining({ status: 'FAILED' }),
+    )
+  })
+
+  describe('quality gate', () => {
+    it('should pause the run when the number turned RED, sending nothing and keeping recipients PENDING', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+      repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+
+      const outcome = expectOk(
+        await WhatsAppAiCampaignService.sendNext('cp1', 'tok'),
+      )
+
+      expect(outcome.status).toBe('paused')
+      const reason = (outcome as { reason: string }).reason
+      expect(reason).toMatch(/^Envios bloqueados pela qualidade:/)
+      expect(reason).toContain('número')
+      expect(repo.stopRun).toHaveBeenCalledWith(
+        'cp1',
+        'tok',
+        expect.objectContaining({ status: 'PAUSED', lastError: reason }),
+      )
+      expect(send.template).not.toHaveBeenCalled()
+      expect(repo.updateRecipient).not.toHaveBeenCalled()
+      expect(queueAdd).not.toHaveBeenCalled()
+    })
+
+    it('should pause the run when the template turned RED', async () => {
+      templateRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppTemplate({
+            id: 't1',
+            workspaceId: 'ws1',
+            connectionId: 'c1',
+            name: 'cobranca',
+            language: 'pt_BR',
+            components,
+            quality: 'RED',
+          }),
+        ),
+      )
+      repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+      repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+
+      const outcome = expectOk(
+        await WhatsAppAiCampaignService.sendNext('cp1', 'tok'),
+      )
+
+      expect(outcome.status).toBe('paused')
+      expect((outcome as { reason: string }).reason).toContain(
+        'o template "cobranca"',
+      )
+      expect(send.template).not.toHaveBeenCalled()
+      expect(repo.updateRecipient).not.toHaveBeenCalled()
+    })
+
+    it.each(['GREEN', 'YELLOW', 'UNKNOWN'] as const)(
+      'should keep sending when the number is %s',
+      async (rating) => {
+        numberQuality.mockResolvedValue(rating)
+        repo.findByIdRaw.mockResolvedValue(ok(campaign()))
+        repo.findNextPending.mockResolvedValue(ok(pendingRecipient()))
+        send.template.mockResolvedValue(ok({ providerMessageId: 'wamid.1' }))
+
+        expect(
+          expectOk(await WhatsAppAiCampaignService.sendNext('cp1', 'tok'))
+            .status,
+        ).toBe('sent')
+        expect(repo.stopRun).not.toHaveBeenCalled()
+      },
     )
   })
 

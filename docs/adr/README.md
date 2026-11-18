@@ -86,3 +86,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0066 | [Cadastro único: vínculo opcional entre CRM, ServiceDesk e WhatsApp](./0066-cadastro-unico-entre-crm-servicedesk-e-whatsapp.md) | Aceita | 2026-11-13 |
 | 0067 | [Uma branch de junção e um PR único para as fatias em paralelo](./0067-branch-unica-de-juncao-para-fatias-em-paralelo.md) | Aceita | 2026-11-13 |
 | 0068 | [Remover o editor antigo de landing pages e apagar as não migradas](./0068-remove-legacy-landing-pages.md) | Aceita | 2026-11-14 |
+| 0069 | [Bloqueio das campanhas de IA por qualidade vermelha do número ou template](./0069-bloqueio-de-campanhas-de-ia-por-qualidade-do-numero.md) | Aceita | 2026-11-18 |

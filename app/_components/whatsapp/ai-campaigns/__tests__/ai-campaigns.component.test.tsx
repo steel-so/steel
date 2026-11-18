@@ -237,6 +237,72 @@ describe('<WhatsappAiCampaignDetail />', () => {
   })
 })
 
+describe('<WhatsappAiCampaignDetail /> quality gate', () => {
+  const QUALITY_REASON =
+    'Envios bloqueados pela qualidade: o número desta conexão está com qualidade "Baixa" (vermelha) na Meta. Aguarde a Meta recuperar a classificação.'
+
+  function routesFor(data: WhatsAppAiCampaignDTO, extra: FetchRoute[] = []) {
+    return mockFetch([
+      ...extra,
+      { match: `${BASE}/c1/recipients`, data: { items: [], nextCursor: null } },
+      { match: `${BASE}/c1/action-runs`, data: [] },
+      { match: `${BASE}/c1`, data },
+    ])
+  }
+
+  function renderDetail() {
+    renderWithQuery(
+      <WhatsappAiCampaignDetail
+        workspaceId='ws_1'
+        slug='acme'
+        campaignId='c1'
+      />,
+    )
+  }
+
+  it('shows the quality reason as a prominent alert on a campaign paused by the gate', async () => {
+    routesFor(campaign({ status: 'PAUSED', lastError: QUALITY_REASON }))
+    renderDetail()
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain(
+      'Envios bloqueados pela qualidade do WhatsApp',
+    )
+    expect(alert.textContent).toContain('O número desta conexão')
+    expect(alert.textContent).toContain('Aguarde a Meta recuperar')
+    expect(screen.queryByText('Último erro:', { exact: false })).toBeNull()
+  })
+
+  it('keeps the generic last error for any other automatic pause', async () => {
+    routesFor(
+      campaign({ status: 'PAUSED', lastError: 'Limite de gasto atingido' }),
+    )
+    renderDetail()
+
+    expect(await screen.findByText('Limite de gasto atingido')).toBeTruthy()
+    expect(screen.getByText('Último erro:', { exact: false })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('shows the server reason when starting is refused', async () => {
+    notify.error.mockClear()
+    routesFor(campaign({ status: 'PAUSED' }), [
+      {
+        method: 'POST',
+        match: `${BASE}/c1/play`,
+        status: 409,
+        error: QUALITY_REASON,
+      },
+    ])
+    renderDetail()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Continuar/ }))
+    await waitFor(() => expect(notify.error).toHaveBeenCalled())
+    const [error] = notify.error.mock.calls[0]
+    expect((error as Error).message).toBe(QUALITY_REASON)
+  })
+})
+
 describe('<AiCampaignStepContacts /> "Inseridos hoje"', () => {
   function contact(id: string, extra: Partial<WhatsAppContactDTO> = {}) {
     return {
