@@ -25,7 +25,7 @@ describe('CRM sidebar entries', () => {
     expect(status).toBe(200)
     expect(html).toContain(`href="/${workspace.slug}/crm/email-sync"`)
     expect(html).toContain(`href="/${workspace.slug}/crm/integration-keys"`)
-    expect(html).toContain('Registro de e-mails')
+    expect(html).toContain('Registro e histórico de e-mails')
     expect(html).toContain('Chaves de API')
   })
 
