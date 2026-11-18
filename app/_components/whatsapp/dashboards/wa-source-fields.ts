@@ -4,9 +4,17 @@
  * `types/whatsapp-dashboard.d.ts`).
  */
 
+import {
+  WA_CHANNEL_SOURCE_FIELDS,
+  WA_CHANNEL_SOURCE_LABELS,
+  WA_CHANNEL_SOURCE_PATH,
+} from './wa-channel-source-fields'
+
 export type WaSourceField = { key: string; label: string }
 
-export type WaDashboardSourceKey = 'whatsapp-ai-campaign-recipients'
+export type WaDashboardSourceKey =
+  | 'whatsapp-ai-campaign-recipients'
+  | import('./wa-channel-source-fields').WaChannelSourceKey
 
 export const WA_SOURCE_FIELDS: Record<WaDashboardSourceKey, WaSourceField[]> = {
   'whatsapp-ai-campaign-recipients': [
@@ -30,14 +38,17 @@ export const WA_SOURCE_FIELDS: Record<WaDashboardSourceKey, WaSourceField[]> = {
     { key: 'closedAt', label: 'Encerrado em' },
     { key: 'createdAt', label: 'Criado em' },
   ],
+  ...WA_CHANNEL_SOURCE_FIELDS,
 }
 
 export const WA_SOURCE_LABELS: Record<WaDashboardSourceKey, string> = {
   'whatsapp-ai-campaign-recipients': 'Campanhas de IA (destinatários)',
+  ...WA_CHANNEL_SOURCE_LABELS,
 }
 
 /** API path per source (after `/api/workspaces/<id>/`). */
 export const WA_SOURCE_PATH: Record<WaDashboardSourceKey, string> = {
   'whatsapp-ai-campaign-recipients':
     'whatsapp/dashboards/sources/whatsapp-ai-campaign-recipients',
+  ...WA_CHANNEL_SOURCE_PATH,
 }

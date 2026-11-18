@@ -9,6 +9,7 @@ import {
 } from '@/src/schemas/whatsapp-dashboard.schema'
 import type { WaDashboardRow } from '@/types/whatsapp-dashboard'
 import { assertModuleMember } from './authz'
+import { WA_CHANNEL_LOADERS } from './whatsapp-dashboard-channels.loaders'
 
 const DAY_MS = 86_400_000
 
@@ -30,6 +31,7 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
     if (!data.ok) return data
     return ok(toWaAiCampaignRecipientRows(data.value))
   },
+  ...WA_CHANNEL_LOADERS,
 }
 
 /**
