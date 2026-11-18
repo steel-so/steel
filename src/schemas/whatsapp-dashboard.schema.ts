@@ -5,7 +5,14 @@ import z from 'zod'
  * flattened rows (pt-BR labels + derived fields) that the CRM widget engine
  * aggregates in the browser. See `types/whatsapp-dashboard.d.ts`.
  */
-export const WA_DASHBOARD_SOURCES = ['whatsapp-ai-campaign-recipients'] as const
+export const WA_DASHBOARD_SOURCES = [
+  'whatsapp-ai-campaign-recipients',
+  'whatsapp-messages',
+  'whatsapp-broadcast-recipients',
+  'whatsapp-templates',
+  'whatsapp-costs',
+  'whatsapp-ai-campaign-actions',
+] as const
 
 export type WaDashboardSource = (typeof WA_DASHBOARD_SOURCES)[number]
 
@@ -27,4 +34,9 @@ export const WA_DASHBOARD_HISTORY_DAYS = 400
 /** Row ceiling per source (widgets aggregate in the browser). */
 export const WA_DASHBOARD_ROW_LIMITS: Record<WaDashboardSource, number> = {
   'whatsapp-ai-campaign-recipients': 20_000,
+  'whatsapp-messages': 20_000,
+  'whatsapp-broadcast-recipients': 20_000,
+  'whatsapp-templates': 5_000,
+  'whatsapp-costs': 20_000,
+  'whatsapp-ai-campaign-actions': 20_000,
 }

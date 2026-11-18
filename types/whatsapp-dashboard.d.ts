@@ -47,4 +47,10 @@ export interface WaAiCampaignRecipientDashboardRow {
   createdAt: string
 }
 
-export type WaDashboardRow = WaAiCampaignRecipientDashboardRow
+export type WaDashboardRow =
+  | WaAiCampaignRecipientDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaMessageDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaBroadcastRecipientDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaTemplateDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaCostDashboardRow
+  | import('./whatsapp-dashboard-messaging').WaAiCampaignActionDashboardRow

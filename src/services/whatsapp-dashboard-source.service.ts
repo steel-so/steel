@@ -1,6 +1,14 @@
 import { logger } from '@/lib/axiom/logger'
 import { ok, type Result } from '@/src/lib/result'
+import {
+  toWaAiCampaignActionRows,
+  toWaBroadcastRecipientRows,
+  toWaCostRows,
+  toWaMessageRows,
+  toWaTemplateRows,
+} from '@/src/mappers/whatsapp-dashboard-messaging.mapper'
 import { toWaAiCampaignRecipientRows } from '@/src/mappers/whatsapp-dashboard-source.mapper'
+import { WhatsAppDashboardMessagingRepository } from '@/src/repositories/whatsapp-dashboard-messaging.repository'
 import { WhatsAppDashboardSourceRepository } from '@/src/repositories/whatsapp-dashboard-source.repository'
 import {
   WA_DASHBOARD_HISTORY_DAYS,
@@ -29,6 +37,53 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
       )
     if (!data.ok) return data
     return ok(toWaAiCampaignRecipientRows(data.value))
+  },
+  'whatsapp-messages': async (workspaceId, since, limit) => {
+    const messages = await WhatsAppDashboardMessagingRepository.messages(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!messages.ok) return messages
+    return ok(toWaMessageRows(messages.value))
+  },
+  'whatsapp-broadcast-recipients': async (workspaceId, since, limit) => {
+    const data =
+      await WhatsAppDashboardMessagingRepository.broadcastRecipientData(
+        workspaceId,
+        since,
+        limit,
+      )
+    if (!data.ok) return data
+    return ok(toWaBroadcastRecipientRows(data.value))
+  },
+  // Current state of the templates: the history window does not apply.
+  'whatsapp-templates': async (workspaceId, _since, limit) => {
+    const templates = await WhatsAppDashboardMessagingRepository.templates(
+      workspaceId,
+      limit,
+    )
+    if (!templates.ok) return templates
+    return ok(toWaTemplateRows(templates.value))
+  },
+  'whatsapp-costs': async (workspaceId, since, limit) => {
+    const data = await WhatsAppDashboardMessagingRepository.costData(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!data.ok) return data
+    return ok(toWaCostRows(data.value))
+  },
+  'whatsapp-ai-campaign-actions': async (workspaceId, since, limit) => {
+    const runs =
+      await WhatsAppDashboardMessagingRepository.aiCampaignActionRuns(
+        workspaceId,
+        since,
+        limit,
+      )
+    if (!runs.ok) return runs
+    return ok(toWaAiCampaignActionRows(runs.value))
   },
 }
 
