@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { createFakeWhatsAppTemplate } from '@/src/__tests__/factories/whatsapp-template.factory'
@@ -19,12 +19,16 @@ vi.mock('@/src/lib/crypto', () => ({
     envelope.replace(/^enc:/, ''),
   ),
 }))
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: vi.fn(async () => 'UNKNOWN'),
+}))
 vi.mock('@/src/lib/whatsapp/meta-templates', () => ({
   fetchMetaTemplates: vi.fn(),
   createMetaTemplate: vi.fn(),
 }))
 
 import { auditMutation } from '@/lib/axiom/audit'
+import { metaNumberQualityOf } from '@/src/lib/whatsapp/meta-number-quality'
 import {
   createMetaTemplate,
   fetchMetaTemplates,
@@ -40,6 +44,7 @@ const mockedConnectionRepo = vi.mocked(WhatsAppConnectionRepository)
 const mockedTemplateRepo = vi.mocked(WhatsAppTemplateRepository)
 const mockedFetch = vi.mocked(fetchMetaTemplates)
 const mockedCreate = vi.mocked(createMetaTemplate)
+const mockedNumberQuality = vi.mocked(metaNumberQualityOf)
 
 const DB_ERROR: AppError = { code: 'DATABASE_ERROR', message: 'db down' }
 
@@ -102,6 +107,108 @@ describe('WhatsAppTemplateService.list()', () => {
     mockedTemplateRepo.listByWorkspace.mockResolvedValue(err(DB_ERROR))
 
     expectErr(await WhatsAppTemplateService.list('u1', 'ws1'), 'DATABASE_ERROR')
+  })
+})
+
+describe('WhatsAppTemplateService.list() · number quality', () => {
+  const listed = async () =>
+    expectOk(await WhatsAppTemplateService.list('u1', 'ws1'))
+
+  function arrange(
+    templateQuality: 'UNKNOWN' | 'GREEN' | 'RED',
+    numberQuality: 'UNKNOWN' | 'GREEN' | 'RED',
+  ) {
+    asAdmin()
+    mockedTemplateRepo.listByWorkspace.mockResolvedValue(
+      ok([
+        createFakeWhatsAppTemplate({
+          id: 't1',
+          connectionId: 'conn1',
+          quality: templateQuality,
+        }),
+      ]),
+    )
+    mockedConnectionRepo.listByWorkspace.mockResolvedValue(
+      ok([createFakeWhatsAppConnection({ id: 'conn1', provider: 'META' })]),
+    )
+    mockedNumberQuality.mockImplementation(async () => numberQuality)
+  }
+
+  afterEach(() => {
+    mockedNumberQuality.mockReset()
+    mockedNumberQuality.mockResolvedValue('UNKNOWN')
+  })
+
+  it('should show RED for an UNKNOWN template on a RED number', async () => {
+    arrange('UNKNOWN', 'RED')
+
+    const [template] = await listed()
+
+    expect(template).toMatchObject({
+      quality: 'RED',
+      qualitySource: 'NUMBER',
+      templateQuality: 'UNKNOWN',
+      numberQuality: 'RED',
+    })
+  })
+
+  it('should keep a RED template RED on a GREEN number', async () => {
+    arrange('RED', 'GREEN')
+
+    const [template] = await listed()
+
+    expect(template).toMatchObject({
+      quality: 'RED',
+      qualitySource: 'TEMPLATE',
+      templateQuality: 'RED',
+      numberQuality: 'GREEN',
+    })
+  })
+
+  it('should change nothing when the lookup returns UNKNOWN', async () => {
+    arrange('GREEN', 'UNKNOWN')
+
+    const [template] = await listed()
+
+    expect(template).toMatchObject({
+      quality: 'GREEN',
+      qualitySource: 'TEMPLATE',
+      numberQuality: 'UNKNOWN',
+    })
+  })
+
+  it('should still return the templates when listing connections fails', async () => {
+    arrange('GREEN', 'RED')
+    mockedConnectionRepo.listByWorkspace.mockResolvedValue(err(DB_ERROR))
+
+    const [template] = await listed()
+
+    expect(template).toMatchObject({
+      quality: 'GREEN',
+      numberQuality: 'UNKNOWN',
+    })
+    expect(mockedNumberQuality).not.toHaveBeenCalled()
+  })
+
+  it('should still return the templates when listing connections throws', async () => {
+    arrange('GREEN', 'RED')
+    mockedConnectionRepo.listByWorkspace.mockRejectedValue(
+      new Error('connection pool closed'),
+    )
+
+    const [template] = await listed()
+
+    expect(template).toMatchObject({
+      quality: 'GREEN',
+      numberQuality: 'UNKNOWN',
+    })
+  })
+
+  it('should log a non-Error failure and still return the templates', async () => {
+    arrange('GREEN', 'RED')
+    mockedConnectionRepo.listByWorkspace.mockRejectedValue('boom')
+
+    expect(await listed()).toHaveLength(1)
   })
 })
 
@@ -343,5 +450,30 @@ describe('WhatsAppTemplateService.sync() · rejection notice', () => {
     mockedTemplateRepo.listByWorkspace.mockResolvedValue(err(DB_ERROR))
     expect(expectOk(await sync())).toHaveLength(1)
     expect(notify).not.toHaveBeenCalled()
+  })
+})
+
+describe('WhatsAppTemplateService.sync() · number quality', () => {
+  afterEach(() => {
+    mockedNumberQuality.mockReset()
+    mockedNumberQuality.mockResolvedValue('UNKNOWN')
+  })
+
+  it('should carry the number quality in the synced DTOs', async () => {
+    arrangeMeta()
+    mockedTemplateRepo.listByWorkspace.mockResolvedValue(ok([]))
+    mockedFetch.mockResolvedValue([metaItem('boas_vindas', 'APPROVED')])
+    mockedNumberQuality.mockResolvedValue('RED')
+
+    const dtos = expectOk(
+      await WhatsAppTemplateService.sync('u1', 'ws1', 'conn1'),
+    )
+
+    expect(dtos).toHaveLength(1)
+    expect(dtos[0]).toMatchObject({
+      quality: 'RED',
+      qualitySource: 'NUMBER',
+      numberQuality: 'RED',
+    })
   })
 })
