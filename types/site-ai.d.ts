@@ -22,6 +22,12 @@ export interface SiteAiEstimateDTO {
   rewriteUsd: number
   /** "Sugerir imagens". */
   imagesUsd: number
+  /** Analysis of one reference (links/images of inspiration). */
+  referenceUsd?: number
+  /** Page plan of a generation with references. */
+  fidelityPlanUsd?: number
+  /** One section drawn from a reference. */
+  fidelitySectionUsd?: number
   /** Model label shown next to the estimate. */
   model: string
 }
