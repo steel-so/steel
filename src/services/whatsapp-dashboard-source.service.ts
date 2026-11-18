@@ -1,6 +1,21 @@
 import { logger } from '@/lib/axiom/logger'
 import { ok, type Result } from '@/src/lib/result'
+import {
+  toWaAttendanceRows,
+  toWaConversationEventRows,
+  toWaSlaCycleRows,
+  toWaTeamMemberRows,
+} from '@/src/mappers/whatsapp-dashboard-attendance.mapper'
+import {
+  toWaAiCampaignActionRows,
+  toWaBroadcastRecipientRows,
+  toWaCostRows,
+  toWaMessageRows,
+  toWaTemplateRows,
+} from '@/src/mappers/whatsapp-dashboard-messaging.mapper'
 import { toWaAiCampaignRecipientRows } from '@/src/mappers/whatsapp-dashboard-source.mapper'
+import { WhatsAppDashboardAttendanceRepository } from '@/src/repositories/whatsapp-dashboard-attendance.repository'
+import { WhatsAppDashboardMessagingRepository } from '@/src/repositories/whatsapp-dashboard-messaging.repository'
 import { WhatsAppDashboardSourceRepository } from '@/src/repositories/whatsapp-dashboard-source.repository'
 import {
   WA_DASHBOARD_HISTORY_DAYS,
@@ -9,6 +24,7 @@ import {
 } from '@/src/schemas/whatsapp-dashboard.schema'
 import type { WaDashboardRow } from '@/types/whatsapp-dashboard'
 import { assertModuleMember } from './authz'
+import { WA_CHANNEL_LOADERS } from './whatsapp-dashboard-channels.loaders'
 
 const DAY_MS = 86_400_000
 
@@ -30,6 +46,91 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
     if (!data.ok) return data
     return ok(toWaAiCampaignRecipientRows(data.value))
   },
+  'whatsapp-attendances': async (workspaceId, since, limit) => {
+    const data = await WhatsAppDashboardAttendanceRepository.attendances(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!data.ok) return data
+    return ok(toWaAttendanceRows(data.value))
+  },
+  'whatsapp-conversation-events': async (workspaceId, since, limit) => {
+    const data = await WhatsAppDashboardAttendanceRepository.conversationEvents(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!data.ok) return data
+    return ok(toWaConversationEventRows(data.value))
+  },
+  'whatsapp-sla-cycles': async (workspaceId, since, limit) => {
+    const data = await WhatsAppDashboardAttendanceRepository.slaCycleData(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!data.ok) return data
+    // The running targets (on time, at risk, breached) are read as of now.
+    return ok(toWaSlaCycleRows(data.value, new Date()))
+  },
+  // Current state: the history window does not apply.
+  'whatsapp-team-members': async (workspaceId, _since, limit) => {
+    const data = await WhatsAppDashboardAttendanceRepository.teamMemberData(
+      workspaceId,
+      limit,
+    )
+    if (!data.ok) return data
+    return ok(toWaTeamMemberRows(data.value))
+  },
+  'whatsapp-messages': async (workspaceId, since, limit) => {
+    const messages = await WhatsAppDashboardMessagingRepository.messages(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!messages.ok) return messages
+    return ok(toWaMessageRows(messages.value))
+  },
+  'whatsapp-broadcast-recipients': async (workspaceId, since, limit) => {
+    const data =
+      await WhatsAppDashboardMessagingRepository.broadcastRecipientData(
+        workspaceId,
+        since,
+        limit,
+      )
+    if (!data.ok) return data
+    return ok(toWaBroadcastRecipientRows(data.value))
+  },
+  // Current state of the templates: the history window does not apply.
+  'whatsapp-templates': async (workspaceId, _since, limit) => {
+    const templates = await WhatsAppDashboardMessagingRepository.templates(
+      workspaceId,
+      limit,
+    )
+    if (!templates.ok) return templates
+    return ok(toWaTemplateRows(templates.value))
+  },
+  'whatsapp-costs': async (workspaceId, since, limit) => {
+    const data = await WhatsAppDashboardMessagingRepository.costData(
+      workspaceId,
+      since,
+      limit,
+    )
+    if (!data.ok) return data
+    return ok(toWaCostRows(data.value))
+  },
+  'whatsapp-ai-campaign-actions': async (workspaceId, since, limit) => {
+    const runs =
+      await WhatsAppDashboardMessagingRepository.aiCampaignActionRuns(
+        workspaceId,
+        since,
+        limit,
+      )
+    if (!runs.ok) return runs
+    return ok(toWaAiCampaignActionRows(runs.value))
+  },
+  ...WA_CHANNEL_LOADERS,
 }
 
 /**
