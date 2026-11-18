@@ -137,9 +137,21 @@ export function stripUrlForDisplay(raw: string): string {
   }
 }
 
-type Validated =
+export type Validated =
   | { ok: true; url: URL; address: string; family: 4 | 6 }
   | { ok: false; reason: SafeFetchFailure }
+
+/**
+ * The same checks `fetchHtml` runs on every hop (scheme, credentials, port,
+ * host name, resolved addresses), for callers that drive their own network
+ * stack (the reference-capture browser).
+ */
+export function validateFetchTarget(
+  raw: string,
+  resolver: Resolver = defaultResolver,
+): Promise<Validated> {
+  return validate(raw, resolver)
+}
 
 async function validate(raw: string, resolver: Resolver): Promise<Validated> {
   let url: URL

@@ -64,6 +64,7 @@ import { processServicedeskRisk } from '../src/lib/queue/processors/servicedesk-
 import { processServicedeskSla } from '../src/lib/queue/processors/servicedesk-sla'
 import { processServicedeskTaskReminders } from '../src/lib/queue/processors/servicedesk-task-reminders'
 import { processSitePosts } from '../src/lib/queue/processors/site-posts'
+import { processSiteReferenceCapture } from '../src/lib/queue/processors/site-reference-capture'
 import { processStatusCollect } from '../src/lib/queue/processors/status-collect'
 import { processSteelAgents } from '../src/lib/queue/processors/steel-agents'
 import { processUsageRollup } from '../src/lib/queue/processors/usage-rollup'
@@ -376,6 +377,16 @@ async function main(): Promise<void> {
     registerWorker(QueueName.DocumentsPdf, processDocumentsPdf, {
       concurrency: 1,
     }),
+  )
+  // site-reference-capture: also one Chromium at a time (45 s budget per job).
+  workers.push(
+    registerWorker(
+      QueueName.SiteReferenceCapture,
+      processSiteReferenceCapture,
+      {
+        concurrency: 1,
+      },
+    ),
   )
   workers.push(
     registerWorker(QueueName.DocumentsExpiry, processDocumentsExpiry),
