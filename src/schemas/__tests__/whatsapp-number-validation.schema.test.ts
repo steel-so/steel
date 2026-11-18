@@ -5,7 +5,7 @@ describe('StartWhatsAppNumberValidationSchema', () => {
   it.each([
     [{ scope: 'CONTACTS', contactIds: ['c1'] }],
     [{ scope: 'CONTACTS', all: true, force: true }],
-    [{ scope: 'BROADCAST', broadcastId: 'b1', connectionId: 'cn1' }],
+    [{ scope: 'BROADCAST', broadcastId: 'b1' }],
     [{ scope: 'AI_CAMPAIGN', campaignId: 'camp1' }],
   ])('accepts %j', (input) => {
     expect(StartWhatsAppNumberValidationSchema.safeParse(input).success).toBe(

@@ -17,8 +17,6 @@ export const StartWhatsAppNumberValidationSchema = z
     all: z.boolean().optional(),
     broadcastId: z.string().min(1).optional(),
     campaignId: z.string().min(1).optional(),
-    /** Z-API connection to ask; defaults to a connected one. */
-    connectionId: z.string().min(1).optional(),
     /** Ignore the cache (TTL) and check everyone again. */
     force: z.boolean().optional(),
   })

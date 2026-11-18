@@ -416,9 +416,9 @@ export const NumberValidationAvailabilityDTO = dto(
   'NumberValidationAvailability',
   z.object({
     available: z.boolean(),
-    source: z.enum(['WORKSPACE', 'PLATFORM']).nullable().meta({
+    source: z.enum(['PLATFORM']).nullable().meta({
       description:
-        '`WORKSPACE`: a conexão Z-API própria do workspace responde; `PLATFORM`: a instância compartilhada do servidor responde (ex.: workspace só com Meta); `null`: indisponível.',
+        '`PLATFORM`: a linha de verificação da plataforma (gerida no admin) responde; `null`: indisponível (desconectada ou sem configurar).',
     }),
   }),
 )
@@ -430,7 +430,7 @@ export const WhatsAppNumberValidationDTO = dto(
     workspaceId: z.string(),
     connectionId: z.string().meta({
       description:
-        'Conexão Z-API do workspace consultada, ou `platform` quando a instância Z-API da plataforma respondeu (a Meta não tem essa checagem).',
+        'Sempre `platform`: a linha de verificação da plataforma respondeu (não há conexão do workspace envolvida).',
     }),
     scope: z.enum(['CONTACTS', 'BROADCAST', 'AI_CAMPAIGN', 'IMPORT']),
     scopeId: z.string().nullable().meta({

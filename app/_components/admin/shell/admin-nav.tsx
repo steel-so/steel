@@ -8,6 +8,7 @@ import {
   DashboardSquare01Icon,
   DatabaseSync01Icon,
   MailAtSign01Icon,
+  QrCodeIcon,
   SparklesIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
@@ -45,6 +46,11 @@ export const ADMIN_NAV: { title: string; items: NavEntry[] }[] = [
   {
     title: 'Comunicação',
     items: [
+      {
+        href: '/admin/zapi-line',
+        label: 'Linha de verificação',
+        icon: QrCodeIcon,
+      },
       { href: '/admin/changelog', label: 'Changelog', icon: MailAtSign01Icon },
     ],
   },

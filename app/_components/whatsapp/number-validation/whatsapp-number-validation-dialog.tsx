@@ -22,10 +22,7 @@ import {
 import type { WhatsAppNumberValidationDTO } from '@/types/whatsapp-number-validation'
 import { useNumberValidationState } from './use-number-validation-state'
 
-export type NumberValidationSource = Omit<
-  StartNumberValidationInput,
-  'force' | 'connectionId'
->
+export type NumberValidationSource = Omit<StartNumberValidationInput, 'force'>
 
 function Counter({ label, value }: { label: string; value: number }) {
   return (

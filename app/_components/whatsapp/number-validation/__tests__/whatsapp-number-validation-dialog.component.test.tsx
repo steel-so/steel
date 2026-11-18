@@ -16,7 +16,7 @@ const AVAILABILITY =
   '/api/workspaces/ws_1/whatsapp/number-validation/availability'
 const VALIDATIONS = '/api/workspaces/ws_1/whatsapp/number-validations'
 
-function available(source: 'WORKSPACE' | 'PLATFORM' | null) {
+function available(source: 'PLATFORM' | null) {
   return { available: source !== null, source }
 }
 
@@ -60,8 +60,12 @@ describe('<WhatsappNumberValidationDialog />', () => {
     renderDialog()
 
     expect(await screen.findByRole('alert')).toBeTruthy()
-    expect(screen.getByText(/ainda não está disponível/)).toBeTruthy()
-    expect(screen.getByText(/Peça a um administrador/)).toBeTruthy()
+    expect(
+      screen.getByText(/linha de verificação da plataforma está desconectada/),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/peça a um administrador da plataforma/),
+    ).toBeTruthy()
     expect(
       (
         screen.getByRole('button', {
@@ -96,25 +100,19 @@ describe('<WhatsappNumberValidationDialog />', () => {
     expect(fetchBody(spy, VALIDATIONS)).toMatchObject({ scope: 'CONTACTS' })
   })
 
-  it('mentions the own connection when the workspace has Z-API', async () => {
-    mockFetch([{ match: AVAILABILITY, data: available('WORKSPACE') }])
-    renderDialog()
-
-    expect(await screen.findByText(/pela sua conexão Z-API/)).toBeTruthy()
-    expect(screen.queryByText(/linha de verificação/)).toBeNull()
-  })
-
   it('does not claim it is unavailable when the lookup itself fails', async () => {
     mockFetch([{ match: AVAILABILITY, status: 500, error: 'boom' }])
     renderDialog()
 
     expect(await screen.findByText(/Não foi possível confirmar/)).toBeTruthy()
-    expect(screen.queryByText(/Peça a um administrador/)).toBeNull()
+    expect(
+      screen.queryByText(/peça a um administrador da plataforma/),
+    ).toBeNull()
   })
 
   it('starts the check and shows the counters when it finishes at once', async () => {
     const spy = mockFetch([
-      { match: AVAILABILITY, data: available('WORKSPACE') },
+      { match: AVAILABILITY, data: available('PLATFORM') },
       { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
       { match: `${VALIDATIONS}/run1`, data: run() },
       { match: '/whatsapp/contacts', data: [] },
@@ -149,7 +147,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('can force a re-check ignoring recent results', async () => {
     const spy = mockFetch([
-      { match: AVAILABILITY, data: available('WORKSPACE') },
+      { match: AVAILABILITY, data: available('PLATFORM') },
       { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
       { match: `${VALIDATIONS}/run1`, data: run() },
       { match: '/whatsapp/contacts', data: [] },
@@ -170,7 +168,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
   it('polls a background run until it ends', async () => {
     let polls = 0
     mockFetch([
-      { match: AVAILABILITY, data: available('WORKSPACE') },
+      { match: AVAILABILITY, data: available('PLATFORM') },
       {
         method: 'POST',
         match: VALIDATIONS,
@@ -215,7 +213,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('shows the failure message of a failed run', async () => {
     mockFetch([
-      { match: AVAILABILITY, data: available('WORKSPACE') },
+      { match: AVAILABILITY, data: available('PLATFORM') },
       {
         method: 'POST',
         match: VALIDATIONS,
@@ -252,7 +250,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('notifies when the server refuses to start', async () => {
     mockFetch([
-      { match: AVAILABILITY, data: available('WORKSPACE') },
+      { match: AVAILABILITY, data: available('PLATFORM') },
       {
         method: 'POST',
         match: VALIDATIONS,

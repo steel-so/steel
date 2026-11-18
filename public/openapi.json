@@ -469,6 +469,10 @@
       "description": "Margem da plataforma sobre o preço real dos modelos de IA (ADR 0019)."
     },
     {
+      "name": "Admin · Linha de verificação",
+      "description": "Linha Z-API da plataforma que confere, para todos os workspaces, se um número tem WhatsApp (ADR 0069): credenciais, QR Code, status, reinício e desconexão."
+    },
+    {
       "name": "Steel AI",
       "description": "Assistente de IA transversal (ServiceDesk, CRM, Comunicação e plataforma): conversas privadas, resposta em stream (SSE) e ações propostas no modo agente, que só executam com a confirmação do usuário."
     },
@@ -638,7 +642,8 @@
         "Admin · Backups e operações",
         "Admin · Métricas",
         "Admin · Changelog",
-        "Admin · Steel IA"
+        "Admin · Steel IA",
+        "Admin · Linha de verificação"
       ]
     },
     {
@@ -961,7 +966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -4310,6 +4315,453 @@
           },
           "500": {
             "$ref": "#/components/responses/500_STORAGE_ERROR_5"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/zapi-line": {
+      "get": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Linha de verificação da plataforma",
+        "operationId": "getAdminZapiLine",
+        "description": "Estado da linha Z-API que responde o \"tem WhatsApp?\" de todos os workspaces (ADR 0069). Só o ID da instância mascarado e o estado: os tokens nunca saem do servidor.\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Estado salvo da linha.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Salvar ou substituir as credenciais da linha",
+        "operationId": "putAdminZapiLine",
+        "description": "ID da instância, token e Client-Token copiados do painel da Z-API (criptografados). A linha volta a desconectada até a leitura do QR Code.\n\nSó admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "instanceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "clientToken": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": ["instanceId", "token"]
+              },
+              "example": {
+                "instanceId": "3C4A5B6C7D8E9F00",
+                "token": "abc123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linha salva.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Remover a linha",
+        "operationId": "deleteAdminZapiLine",
+        "description": "Apaga as credenciais do Steel (a instância segue na Z-API). Sem linha a validação de números fica indisponível. O motivo vai para a auditoria.\n\nSó admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": ["reason"]
+              },
+              "example": {
+                "reason": "Linha aposentada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linha removida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/zapi-line/disconnect": {
+      "post": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Desconectar a linha",
+        "operationId": "postAdminZapiLineDisconnect",
+        "description": "Desvincula o celular na Z-API. Os workspaces ficam sem validação até um novo QR Code ser lido; validações em andamento terminam com os números restantes como \"não checado\". O motivo vai para a auditoria.\n\nSó admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": ["reason"]
+              },
+              "example": {
+                "reason": "Trocar o número da linha"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linha desconectada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_5"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/zapi-line/qr-code": {
+      "get": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "QR Code para conectar o número",
+        "operationId": "getAdminZapiLineQrCode",
+        "description": "Devolve o QR Code enquanto o celular não foi pareado (a tela consulta a cada poucos segundos) ou `connected` quando já está.\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "QR Code ou conexão confirmada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLineQrCode"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_7"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/zapi-line/restart": {
+      "post": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Reiniciar a linha",
+        "operationId": "postAdminZapiLineRestart",
+        "description": "Reinicia a sessão da instância na Z-API e lê o estado de volta. O motivo vai para a auditoria.\n\nSó admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": ["reason"]
+              },
+              "example": {
+                "reason": "Sessão travada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado após o reinício.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          },
+          "502": {
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_5"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/zapi-line/status": {
+      "get": {
+        "tags": ["Admin · Linha de verificação"],
+        "summary": "Status ao vivo da linha",
+        "operationId": "getAdminZapiLineStatus",
+        "description": "Consulta a Z-API e grava o estado (conectada, aguardando QR Code, desconectada ou erro) e o número pareado.\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Estado atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformZapiLine"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
           }
         },
         "security": [
@@ -9986,7 +10438,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28382,7 +28834,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -33036,7 +33488,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -33188,7 +33640,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -34346,7 +34798,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -40462,7 +40914,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40654,7 +41106,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -40870,7 +41322,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -41780,7 +42232,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -46000,7 +46452,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47319,7 +47771,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -58796,7 +59248,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -58874,7 +59326,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -58940,7 +59392,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -60545,7 +60997,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67978,7 +68430,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "409": {
             "$ref": "#/components/responses/409_SITE_LIMIT_REACHED"
@@ -78459,7 +78911,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -138060,7 +138512,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -142524,7 +142976,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "502": {
-            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_6"
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_8"
           }
         },
         "security": [
@@ -146847,7 +147299,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -149856,7 +150308,7 @@
             "$ref": "#/components/responses/429_RATE_LIMITED"
           },
           "502": {
-            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_5"
+            "$ref": "#/components/responses/502_WHATSAPP_PROVIDER_ERROR_6"
           }
         },
         "security": [
@@ -150547,7 +150999,7 @@
         "tags": ["Comunicação · Contatos"],
         "summary": "A validação de números está disponível?",
         "operationId": "getWorkspacesByIdWhatsappNumberValidationAvailability",
-        "description": "Informa se o \"tem WhatsApp?\" pode rodar neste workspace e por qual caminho: `WORKSPACE` (conexão Z-API própria conectada), `PLATFORM` (instância compartilhada do servidor) ou indisponível (`available: false`). Nunca expõe credenciais. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Informa se o \"tem WhatsApp?\" pode rodar agora: `available: true` (`source: PLATFORM`) quando a linha de verificação da plataforma está conectada, ou `available: false` (`source: null`) quando está desconectada ou sem configurar. É igual para todos os workspaces. Nunca expõe credenciais. Módulo **Comunicação** habilitado e permissão `contacts` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -150598,7 +151050,7 @@
         "tags": ["Comunicação · Contatos"],
         "summary": "Validar se os números têm WhatsApp",
         "operationId": "postWorkspacesByIdWhatsappNumberValidations",
-        "description": "Checagem \"tem WhatsApp?\" para higiene de base (**não** é uma pré-checagem a cada mensagem: a Z-API já valida no envio). Escolha a origem em `scope`: `CONTACTS` (`contactIds` ou `all`, até 20.000), `BROADCAST` (`broadcastId`) ou `AI_CAMPAIGN` (`campaignId`). A consulta usa a conexão **Z-API** conectada do próprio workspace; sem ela, usa a instância Z-API da plataforma (configurada no servidor), então workspaces só com Meta também validam — a API oficial da Meta não tem endpoint equivalente e nunca é chamada. Na instância da plataforma há limite global de vazão e de concorrência entre todos os workspaces; números que o provedor não respondeu ficam como \"não checados\" (`failed`), nunca como \"sem WhatsApp\". Consulte `GET .../number-validation/availability` para saber se está disponível. Contatos com resultado recente (TTL em `whatsappCheckTtlDays`, padrão 30 dias) não são consultados de novo, a menos que `force: true`. Até 200 contatos terminam na própria chamada; acima disso vira um job em segundo plano e o progresso sai em `GET .../number-validations/{validationId}`. Uma validação por vez por workspace. Não consome limite do plano (não envia mensagem). Os números nunca são gravados no log nem na auditoria. Auditado. Módulo **Comunicação** habilitado e permissão `contacts` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Checagem \"tem WhatsApp?\" para higiene de base (**não** é uma pré-checagem a cada mensagem: a Z-API já valida no envio). Escolha a origem em `scope`: `CONTACTS` (`contactIds` ou `all`, até 20.000), `BROADCAST` (`broadcastId`) ou `AI_CAMPAIGN` (`campaignId`). A validação é um recurso global: toda consulta passa pela **linha de verificação da plataforma** (um número Z-API que um admin da plataforma conecta lendo o QR Code no painel admin), qualquer que seja a conexão de mensagens do workspace (Meta ou Z-API própria, que não é usada aqui); o campo `connectionId` do corpo, se enviado, é ignorado. Com a linha desconectada ou sem configurar a chamada responde `WHATSAPP_VALIDATION_UNAVAILABLE`. Há limite global de vazão e de concorrência entre todos os workspaces; números que o provedor não respondeu, ou que sobraram quando a linha caiu no meio da validação, ficam como \"não checados\" (`failed`), nunca como \"sem WhatsApp\". Consulte `GET .../number-validation/availability` para saber se está disponível. Contatos com resultado recente (TTL em `whatsappCheckTtlDays`, padrão 30 dias) não são consultados de novo, a menos que `force: true`. Até 200 contatos terminam na própria chamada; acima disso vira um job em segundo plano e o progresso sai em `GET .../number-validations/{validationId}`. Uma validação por vez por workspace. Não consome limite do plano (não envia mensagem). Os números nunca são gravados no log nem na auditoria. Auditado. Módulo **Comunicação** habilitado e permissão `contacts` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -150632,10 +151084,6 @@
                     "minLength": 1
                   },
                   "campaignId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "connectionId": {
                     "type": "string",
                     "minLength": 1
                   },
@@ -150678,7 +151126,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_26"
           },
           "404": {
-            "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_BROADCAST_NOT_FOUND"
+            "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
             "$ref": "#/components/responses/409_CONFLICT_5"
@@ -178744,6 +179192,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Ainda não há credenciais salvas",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Registro não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_38": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Bloqueio não encontrado",
                 "value": {
                   "success": false,
@@ -178758,7 +179229,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_38": {
+      "404_RESOURCE_NOT_FOUND_39": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178781,7 +179252,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_39": {
+      "404_RESOURCE_NOT_FOUND_40": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178804,7 +179275,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_40": {
+      "404_RESOURCE_NOT_FOUND_41": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178827,7 +179298,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_41": {
+      "404_RESOURCE_NOT_FOUND_42": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178850,7 +179321,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_42": {
+      "404_RESOURCE_NOT_FOUND_43": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178873,7 +179344,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_43": {
+      "404_RESOURCE_NOT_FOUND_44": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178896,7 +179367,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_44": {
+      "404_RESOURCE_NOT_FOUND_45": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178919,7 +179390,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_45": {
+      "404_RESOURCE_NOT_FOUND_46": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178942,7 +179413,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_46": {
+      "404_RESOURCE_NOT_FOUND_47": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178965,7 +179436,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_47": {
+      "404_RESOURCE_NOT_FOUND_48": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178988,7 +179459,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179011,7 +179482,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179034,7 +179505,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179057,7 +179528,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_51": {
+      "404_RESOURCE_NOT_FOUND_52": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179102,7 +179573,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_52": {
+      "404_RESOURCE_NOT_FOUND_53": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179136,7 +179607,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_53": {
+      "404_RESOURCE_NOT_FOUND_54": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179159,7 +179630,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_54": {
+      "404_RESOURCE_NOT_FOUND_55": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179182,7 +179653,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_55": {
+      "404_RESOURCE_NOT_FOUND_56": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179205,7 +179676,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_56": {
+      "404_RESOURCE_NOT_FOUND_57": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -184077,6 +184548,40 @@
           }
         }
       },
+      "404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_BROADCAST_NOT_FOUND": {
+        "description": "Não encontrado: `WHATSAPP_AI_CAMPAIGN_NOT_FOUND`, `WHATSAPP_BROADCAST_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_BROADCAST_NOT_FOUND": {
+                "summary": "WHATSAPP_BROADCAST_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Lista de transmissão não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_BROADCAST_NOT_FOUND"
+                  }
+                }
+              },
+              "WHATSAPP_AI_CAMPAIGN_NOT_FOUND": {
+                "summary": "WHATSAPP_AI_CAMPAIGN_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Campanha de IA não encontrada",
+                  "error": {
+                    "code": "WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "404_WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND": {
         "description": "Não encontrado: `WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND`",
         "content": {
@@ -184270,51 +184775,6 @@
               },
               "WHATSAPP_CONNECTION_NOT_FOUND": {
                 "summary": "WHATSAPP_CONNECTION_NOT_FOUND — O workspace não tem conexão de WhatsApp",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Conexão do WhatsApp não encontrada",
-                  "error": {
-                    "code": "WHATSAPP_CONNECTION_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_BROADCAST_NOT_FOUND": {
-        "description": "Não encontrado: `WHATSAPP_CONNECTION_NOT_FOUND`, `WHATSAPP_AI_CAMPAIGN_NOT_FOUND`, `WHATSAPP_BROADCAST_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "WHATSAPP_BROADCAST_NOT_FOUND": {
-                "summary": "WHATSAPP_BROADCAST_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Lista de transmissão não encontrada",
-                  "error": {
-                    "code": "WHATSAPP_BROADCAST_NOT_FOUND"
-                  }
-                }
-              },
-              "WHATSAPP_AI_CAMPAIGN_NOT_FOUND": {
-                "summary": "WHATSAPP_AI_CAMPAIGN_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Campanha de IA não encontrada",
-                  "error": {
-                    "code": "WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
-                  }
-                }
-              },
-              "WHATSAPP_CONNECTION_NOT_FOUND": {
-                "summary": "WHATSAPP_CONNECTION_NOT_FOUND",
                 "value": {
                   "success": false,
                   "statusCode": 404,
@@ -200203,6 +200663,29 @@
             },
             "examples": {
               "WHATSAPP_PROVIDER_ERROR": {
+                "summary": "WHATSAPP_PROVIDER_ERROR — A Z-API recusou a chamada",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "message": "Falha ao comunicar com o provedor do WhatsApp",
+                  "error": {
+                    "code": "WHATSAPP_PROVIDER_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_WHATSAPP_PROVIDER_ERROR_6": {
+        "description": "Falha em serviço externo: `WHATSAPP_PROVIDER_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_PROVIDER_ERROR": {
                 "summary": "WHATSAPP_PROVIDER_ERROR — A Z-API não devolveu link",
                 "value": {
                   "success": false,
@@ -200217,7 +200700,30 @@
           }
         }
       },
-      "502_WHATSAPP_PROVIDER_ERROR_6": {
+      "502_WHATSAPP_PROVIDER_ERROR_7": {
+        "description": "Falha em serviço externo: `WHATSAPP_PROVIDER_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_PROVIDER_ERROR": {
+                "summary": "WHATSAPP_PROVIDER_ERROR — A Z-API recusou as credenciais ou está fora do ar",
+                "value": {
+                  "success": false,
+                  "statusCode": 502,
+                  "message": "Falha ao comunicar com o provedor do WhatsApp",
+                  "error": {
+                    "code": "WHATSAPP_PROVIDER_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "502_WHATSAPP_PROVIDER_ERROR_8": {
         "description": "Falha em serviço externo: `WHATSAPP_PROVIDER_ERROR`",
         "content": {
           "application/json": {
@@ -233149,13 +233655,13 @@
             "anyOf": [
               {
                 "type": "string",
-                "enum": ["WORKSPACE", "PLATFORM"]
+                "enum": ["PLATFORM"]
               },
               {
                 "type": "null"
               }
             ],
-            "description": "`WORKSPACE`: a conexão Z-API própria do workspace responde; `PLATFORM`: a instância compartilhada do servidor responde (ex.: workspace só com Meta); `null`: indisponível."
+            "description": "`PLATFORM`: a linha de verificação da plataforma (gerida no admin) responde; `null`: indisponível (desconectada ou sem configurar)."
           }
         },
         "required": ["available", "source"]
@@ -233310,6 +233816,133 @@
           "taskModels",
           "failoverEnabled"
         ]
+      },
+      "PlatformZapiLine": {
+        "type": "object",
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "description": "Falso até as credenciais serem salvas; os demais campos vêm vazios."
+          },
+          "instanceIdMasked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ID da instância com o meio mascarado. Os tokens nunca são devolvidos."
+          },
+          "hasClientToken": {
+            "type": "boolean"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dígitos do número pareado, quando conectada."
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["DISCONNECTED", "AWAITING_QR", "CONNECTED", "ERROR"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "statusError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connectedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "statusCheckedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "configured",
+          "instanceIdMasked",
+          "hasClientToken",
+          "label",
+          "phone",
+          "status",
+          "statusError",
+          "connectedAt",
+          "statusCheckedAt",
+          "updatedAt"
+        ]
+      },
+      "PlatformZapiLineQrCode": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["connected", "awaiting_scan"]
+          },
+          "qrCodeBase64": {
+            "description": "Imagem do QR Code (data URL) enquanto aguarda a leitura.",
+            "type": "string"
+          },
+          "line": {
+            "$ref": "#/components/schemas/PlatformZapiLine"
+          }
+        },
+        "required": ["status", "line"]
       },
       "Profile": {
         "type": "object",
@@ -270869,7 +271502,7 @@
           },
           "connectionId": {
             "type": "string",
-            "description": "Conexão Z-API do workspace consultada, ou `platform` quando a instância Z-API da plataforma respondeu (a Meta não tem essa checagem)."
+            "description": "Sempre `platform`: a linha de verificação da plataforma respondeu (não há conexão do workspace envolvida)."
           },
           "scope": {
             "type": "string",

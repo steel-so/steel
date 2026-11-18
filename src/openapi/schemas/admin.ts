@@ -373,6 +373,48 @@ export const AdminAnalyticsDTO = dto(
   }),
 )
 
+const PLATFORM_ZAPI_LINE_STATUS = z.enum([
+  'DISCONNECTED',
+  'AWAITING_QR',
+  'CONNECTED',
+  'ERROR',
+])
+
+export const PlatformZapiLineDTO = dto(
+  'PlatformZapiLine',
+  z.object({
+    configured: z.boolean().meta({
+      description:
+        'Falso até as credenciais serem salvas; os demais campos vêm vazios.',
+    }),
+    instanceIdMasked: z.string().nullable().meta({
+      description:
+        'ID da instância com o meio mascarado. Os tokens nunca são devolvidos.',
+    }),
+    hasClientToken: z.boolean(),
+    label: z.string().nullable(),
+    phone: z.string().nullable().meta({
+      description: 'Dígitos do número pareado, quando conectada.',
+    }),
+    status: PLATFORM_ZAPI_LINE_STATUS.nullable(),
+    statusError: z.string().nullable(),
+    connectedAt: nullableDateTime(),
+    statusCheckedAt: nullableDateTime(),
+    updatedAt: nullableDateTime(),
+  }),
+)
+
+export const PlatformZapiLineQrCodeDTO = dto(
+  'PlatformZapiLineQrCode',
+  z.object({
+    status: z.enum(['connected', 'awaiting_scan']),
+    qrCodeBase64: z.string().optional().meta({
+      description: 'Imagem do QR Code (data URL) enquanto aguarda a leitura.',
+    }),
+    line: PlatformZapiLineDTO,
+  }),
+)
+
 export const PlatformAiSettingsDTO = dto(
   'PlatformAiSettings',
   z.object({

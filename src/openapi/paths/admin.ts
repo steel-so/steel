@@ -15,6 +15,10 @@ import { UpdateCrmNewsletterSettingsSchema } from '@/src/schemas/crm-newsletter.
 import { SetFeatureOverrideSchema } from '@/src/schemas/feature-flag.schema'
 import { UpdatePlatformAiSettingsSchema } from '@/src/schemas/platform-ai-settings.schema'
 import {
+  PlatformZapiLineActionSchema,
+  SavePlatformZapiLineSchema,
+} from '@/src/schemas/platform-zapi-line.schema'
+import {
   CreateProfileSchema,
   UpdateProfileSchema,
 } from '@/src/schemas/profile.schema'
@@ -42,6 +46,8 @@ import {
   ChangelogReleaseDraftDTO,
   ChangelogSummaryDTO,
   PlatformAiSettingsDTO,
+  PlatformZapiLineDTO,
+  PlatformZapiLineQrCodeDTO,
 } from '../schemas/admin'
 import {
   MediaUrlDTO,
@@ -670,6 +676,138 @@ const routes: RouteConfig[] = [
         schema: PlatformAiSettingsDTO,
       },
     },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/zapi-line',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Linha de verificação da plataforma',
+    description:
+      'Estado da linha Z-API que responde o "tem WhatsApp?" de todos os workspaces (ADR 0069). Só o ID da instância mascarado e o estado: os tokens nunca saem do servidor.',
+    responses: {
+      200: {
+        description: 'Estado salvo da linha.',
+        schema: PlatformZapiLineDTO,
+      },
+    },
+  }),
+  admin({
+    method: 'put',
+    path: '/admin/zapi-line',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Salvar ou substituir as credenciais da linha',
+    description:
+      'ID da instância, token e Client-Token copiados do painel da Z-API (criptografados). A linha volta a desconectada até a leitura do QR Code.',
+    consent: true,
+    body: {
+      schema: SavePlatformZapiLineSchema,
+      example: { instanceId: '3C4A5B6C7D8E9F00', token: 'abc123' },
+    },
+    responses: {
+      200: { description: 'Linha salva.', schema: PlatformZapiLineDTO },
+    },
+  }),
+  admin({
+    method: 'delete',
+    path: '/admin/zapi-line',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Remover a linha',
+    description:
+      'Apaga as credenciais do Steel (a instância segue na Z-API). Sem linha a validação de números fica indisponível. O motivo vai para a auditoria.',
+    consent: true,
+    body: {
+      schema: PlatformZapiLineActionSchema,
+      example: { reason: 'Linha aposentada' },
+    },
+    responses: {
+      200: { description: 'Linha removida.', schema: PlatformZapiLineDTO },
+    },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/zapi-line/status',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Status ao vivo da linha',
+    description:
+      'Consulta a Z-API e grava o estado (conectada, aguardando QR Code, desconectada ou erro) e o número pareado.',
+    responses: {
+      200: { description: 'Estado atualizado.', schema: PlatformZapiLineDTO },
+    },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/zapi-line/qr-code',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'QR Code para conectar o número',
+    description:
+      'Devolve o QR Code enquanto o celular não foi pareado (a tela consulta a cada poucos segundos) ou `connected` quando já está.',
+    responses: {
+      200: {
+        description: 'QR Code ou conexão confirmada.',
+        schema: PlatformZapiLineQrCodeDTO,
+      },
+    },
+    errors: [
+      {
+        code: 'WHATSAPP_PROVIDER_ERROR',
+        message: 'Falha ao comunicar com o provedor do WhatsApp',
+        when: 'A Z-API recusou as credenciais ou está fora do ar',
+      },
+      {
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'Registro não encontrado',
+        when: 'Ainda não há credenciais salvas',
+      },
+    ],
+  }),
+  admin({
+    method: 'post',
+    path: '/admin/zapi-line/restart',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Reiniciar a linha',
+    description:
+      'Reinicia a sessão da instância na Z-API e lê o estado de volta. O motivo vai para a auditoria.',
+    consent: true,
+    body: {
+      schema: PlatformZapiLineActionSchema,
+      example: { reason: 'Sessão travada' },
+    },
+    responses: {
+      200: {
+        description: 'Estado após o reinício.',
+        schema: PlatformZapiLineDTO,
+      },
+    },
+    errors: [
+      {
+        code: 'WHATSAPP_PROVIDER_ERROR',
+        message: 'Falha ao comunicar com o provedor do WhatsApp',
+        when: 'A Z-API recusou a chamada',
+      },
+    ],
+  }),
+  admin({
+    method: 'post',
+    path: '/admin/zapi-line/disconnect',
+    tags: ['Admin · Linha de verificação'],
+    summary: 'Desconectar a linha',
+    description:
+      'Desvincula o celular na Z-API. Os workspaces ficam sem validação até um novo QR Code ser lido; validações em andamento terminam com os números restantes como "não checado". O motivo vai para a auditoria.',
+    consent: true,
+    body: {
+      schema: PlatformZapiLineActionSchema,
+      example: { reason: 'Trocar o número da linha' },
+    },
+    responses: {
+      200: { description: 'Linha desconectada.', schema: PlatformZapiLineDTO },
+    },
+    errors: [
+      {
+        code: 'WHATSAPP_PROVIDER_ERROR',
+        message: 'Falha ao comunicar com o provedor do WhatsApp',
+        when: 'A Z-API recusou a chamada',
+      },
+    ],
   }),
   admin({
     method: 'get',

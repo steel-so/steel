@@ -24,7 +24,7 @@ const API = '/api/workspaces/ws_1/whatsapp'
 const VALIDATIONS = `${API}/number-validations`
 const AVAILABILITY = `${API}/number-validation/availability`
 
-function available(source: 'WORKSPACE' | 'PLATFORM' | null) {
+function available(source: 'PLATFORM' | null) {
   return { available: source !== null, source }
 }
 
@@ -102,7 +102,7 @@ function startRoutes(extra: FetchRoute[] = []): FetchRoute[] {
     ...extra,
     { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
     { match: `${VALIDATIONS}/run1`, data: run() },
-    { match: AVAILABILITY, data: available('WORKSPACE') },
+    { match: AVAILABILITY, data: available('PLATFORM') },
     { match: `${API}/connections`, data: [connection('ZAPI')] },
   ]
 }
@@ -309,7 +309,9 @@ describe('contacts page "tem zap?"', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Importar planilha' }))
     const dialog = await screen.findByRole('dialog')
     expect(
-      await within(dialog).findByText(/ainda não está disponível/),
+      await within(dialog).findByText(
+        /linha de verificação da plataforma está desconectada/,
+      ),
     ).toBeTruthy()
     const input = dialog.querySelector('input[type=file]') as HTMLInputElement
     fireEvent.change(input, {
@@ -482,7 +484,7 @@ describe('broadcast lists "tem zap?"', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Nova lista' }))
     const dialog = await screen.findByRole('dialog')
     expect(
-      await within(dialog).findByText(/Peça a um administrador/),
+      await within(dialog).findByText(/peça a um administrador da plataforma/),
     ).toBeTruthy()
   })
 
@@ -503,7 +505,9 @@ describe('broadcast lists "tem zap?"', () => {
     await waitFor(() =>
       expect(toggle.getAttribute('aria-disabled')).not.toBe('true'),
     )
-    expect(within(dialog).queryByText(/Peça a um administrador/)).toBeNull()
+    expect(
+      within(dialog).queryByText(/peça a um administrador da plataforma/),
+    ).toBeNull()
   })
 })
 
@@ -568,7 +572,9 @@ describe('<AiCampaignNoWhatsapp />', () => {
       <AiCampaignNoWhatsapp workspaceId='ws_1' campaign={campaign} />,
     )
 
-    expect(await screen.findByText(/Peça a um administrador/)).toBeTruthy()
+    expect(
+      await screen.findByText(/peça a um administrador da plataforma/),
+    ).toBeTruthy()
     expect(
       screen
         .getByRole('switch', { name: 'Pular números sem WhatsApp' })
@@ -595,7 +601,7 @@ describe('<AiCampaignNoWhatsapp />', () => {
   })
 
   it('does not offer validation for an empty campaign', async () => {
-    mockFetch([{ match: AVAILABILITY, data: available('WORKSPACE') }])
+    mockFetch([{ match: AVAILABILITY, data: available('PLATFORM') }])
     renderWithQuery(
       <AiCampaignNoWhatsapp
         workspaceId='ws_1'

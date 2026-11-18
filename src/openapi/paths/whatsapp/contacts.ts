@@ -267,7 +267,7 @@ export const contactRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/number-validations',
     tags: [TAG],
     summary: 'Validar se os números têm WhatsApp',
-    description: `Checagem "tem WhatsApp?" para higiene de base (**não** é uma pré-checagem a cada mensagem: a Z-API já valida no envio). Escolha a origem em \`scope\`: \`CONTACTS\` (\`contactIds\` ou \`all\`, até 20.000), \`BROADCAST\` (\`broadcastId\`) ou \`AI_CAMPAIGN\` (\`campaignId\`). A consulta usa a conexão **Z-API** conectada do próprio workspace; sem ela, usa a instância Z-API da plataforma (configurada no servidor), então workspaces só com Meta também validam — a API oficial da Meta não tem endpoint equivalente e nunca é chamada. Na instância da plataforma há limite global de vazão e de concorrência entre todos os workspaces; números que o provedor não respondeu ficam como "não checados" (\`failed\`), nunca como "sem WhatsApp". Consulte \`GET .../number-validation/availability\` para saber se está disponível. Contatos com resultado recente (TTL em \`whatsappCheckTtlDays\`, padrão 30 dias) não são consultados de novo, a menos que \`force: true\`. Até 200 contatos terminam na própria chamada; acima disso vira um job em segundo plano e o progresso sai em \`GET .../number-validations/{validationId}\`. Uma validação por vez por workspace. Não consome limite do plano (não envia mensagem). Os números nunca são gravados no log nem na auditoria. Auditado. ${perm('contacts', 'EDIT')}`,
+    description: `Checagem "tem WhatsApp?" para higiene de base (**não** é uma pré-checagem a cada mensagem: a Z-API já valida no envio). Escolha a origem em \`scope\`: \`CONTACTS\` (\`contactIds\` ou \`all\`, até 20.000), \`BROADCAST\` (\`broadcastId\`) ou \`AI_CAMPAIGN\` (\`campaignId\`). A validação é um recurso global: toda consulta passa pela **linha de verificação da plataforma** (um número Z-API que um admin da plataforma conecta lendo o QR Code no painel admin), qualquer que seja a conexão de mensagens do workspace (Meta ou Z-API própria, que não é usada aqui); o campo \`connectionId\` do corpo, se enviado, é ignorado. Com a linha desconectada ou sem configurar a chamada responde \`WHATSAPP_VALIDATION_UNAVAILABLE\`. Há limite global de vazão e de concorrência entre todos os workspaces; números que o provedor não respondeu, ou que sobraram quando a linha caiu no meio da validação, ficam como "não checados" (\`failed\`), nunca como "sem WhatsApp". Consulte \`GET .../number-validation/availability\` para saber se está disponível. Contatos com resultado recente (TTL em \`whatsappCheckTtlDays\`, padrão 30 dias) não são consultados de novo, a menos que \`force: true\`. Até 200 contatos terminam na própria chamada; acima disso vira um job em segundo plano e o progresso sai em \`GET .../number-validations/{validationId}\`. Uma validação por vez por workspace. Não consome limite do plano (não envia mensagem). Os números nunca são gravados no log nem na auditoria. Auditado. ${perm('contacts', 'EDIT')}`,
     body: StartWhatsAppNumberValidationSchema,
     responses: {
       201: {
@@ -280,7 +280,6 @@ export const contactRoutes: RouteConfig[] = [
       'WHATSAPP_VALIDATION_UNAVAILABLE',
       'WHATSAPP_BROADCAST_NOT_FOUND',
       'WHATSAPP_AI_CAMPAIGN_NOT_FOUND',
-      'WHATSAPP_CONNECTION_NOT_FOUND',
       {
         code: 'CONFLICT',
         when: 'Já há uma validação em andamento, a seleção está vazia ou passa de 20.000 contatos',
@@ -292,7 +291,7 @@ export const contactRoutes: RouteConfig[] = [
     path: '/workspaces/{id}/whatsapp/number-validation/availability',
     tags: [TAG],
     summary: 'A validação de números está disponível?',
-    description: `Informa se o "tem WhatsApp?" pode rodar neste workspace e por qual caminho: \`WORKSPACE\` (conexão Z-API própria conectada), \`PLATFORM\` (instância compartilhada do servidor) ou indisponível (\`available: false\`). Nunca expõe credenciais. ${perm('contacts', 'VIEW')}`,
+    description: `Informa se o "tem WhatsApp?" pode rodar agora: \`available: true\` (\`source: PLATFORM\`) quando a linha de verificação da plataforma está conectada, ou \`available: false\` (\`source: null\`) quando está desconectada ou sem configurar. É igual para todos os workspaces. Nunca expõe credenciais. ${perm('contacts', 'VIEW')}`,
     responses: {
       200: {
         description: 'Disponibilidade.',

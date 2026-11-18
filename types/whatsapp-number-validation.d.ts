@@ -40,11 +40,12 @@ export interface WhatsAppImportValidationDTO {
 }
 
 /**
- * Whether "tem WhatsApp?" can run for a workspace. `WORKSPACE`: its own
- * connected Z-API connection answers; `PLATFORM`: the server-side shared
- * instance does (e.g. Meta-only workspaces). Credentials are never exposed.
+ * Whether "tem WhatsApp?" can run. Validation is global (ADR 0069): the one
+ * platform verification line, managed in the admin, answers for every
+ * workspace, so `source` is `PLATFORM` when it is connected and null when it
+ * is not. Credentials are never exposed.
  */
 export interface NumberValidationAvailabilityDTO {
   available: boolean
-  source: 'WORKSPACE' | 'PLATFORM' | null
+  source: 'PLATFORM' | null
 }

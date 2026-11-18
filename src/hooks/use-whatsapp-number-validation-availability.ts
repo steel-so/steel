@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './_fetch'
 
 /**
- * Where a "tem WhatsApp?" check would run: the workspace's own connected Z-API
- * (`WORKSPACE`), the server's shared instance (`PLATFORM`) or nowhere (`null`).
+ * Where a "tem WhatsApp?" check would run: always the platform verification
+ * line managed in the admin (`PLATFORM`), or nowhere (`null`) while it is
+ * disconnected (ADR 0069).
  */
-export type NumberValidationSourceKind = 'WORKSPACE' | 'PLATFORM'
+export type NumberValidationSourceKind = 'PLATFORM'
 
 export interface NumberValidationAvailabilityDTO {
   available: boolean
