@@ -27,6 +27,7 @@ export function createFakeWhatsAppBroadcastList(
     status: 'DRAFT',
     scheduledAt: null,
     skipNoWhatsapp: false,
+    pausedReason: null,
     createdById: createId(),
     createdAt: now,
     updatedAt: now,

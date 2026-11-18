@@ -301,6 +301,7 @@ describe('<CelebrationOverlay />', () => {
 
 describe('<CrmDashboardTvPublic />', () => {
   const boot: CrmDashboardTvBootDTO = {
+    module: 'CRM',
     workspaceName: 'Stratus',
     timeZone: 'America/Sao_Paulo',
     dashboard: { id: 'd1', title: 'Vendas — TV', settings: SETTINGS },

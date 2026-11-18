@@ -1,9 +1,17 @@
 import { randomBytes } from 'node:crypto'
-import type { CrmDashboard, CrmDashboardTvLink } from '@prisma/client'
+import type {
+  CrmDashboard,
+  CrmDashboardTvLink,
+  ModuleKind,
+} from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { crmTvLinkNotFound, notFound } from '@/src/errors'
 import { err, ok, type Result } from '@/src/lib/result'
+import {
+  isWaDashboardSource,
+  pickWaTvRows,
+} from '@/src/lib/whatsapp/dashboard-tv-rows'
 import {
   toCrmDashboardTvLinkDTO,
   toCrmDashboardWidgetDTO,
@@ -26,7 +34,9 @@ import {
   type SalesMetric,
   type SalesMetricOf,
 } from '@/src/schemas/crm-sales-metrics.schema'
+import type { WaDashboardSource } from '@/src/schemas/whatsapp-dashboard.schema'
 import type {
+  CrmDashboardLookupsDTO,
   CrmDashboardTvBootDTO,
   CrmDashboardTvLinkDTO,
 } from '@/types/crm-dashboard'
@@ -42,6 +52,7 @@ import { CrmLeadService } from './crm-lead.service'
 import { CrmOpportunityService } from './crm-opportunity.service'
 import { CrmSalesMetricsService } from './crm-sales-metrics.service'
 import { CrmTaskService } from './crm-task.service'
+import { WhatsAppDashboardSourceService } from './whatsapp-dashboard-source.service'
 
 /** 192 random bits, URL-safe: the token is the whole credential. */
 const TOKEN_BYTES = 24
@@ -49,6 +60,13 @@ const TOKEN_BYTES = 24
 const TOUCH_EVERY_MS = 5 * 60_000
 
 type Row = Record<string, unknown>
+
+/** Modules whose dashboards may be shown on a TV link. */
+export type TvModule = Extract<ModuleKind, 'CRM' | 'COMMUNICATION'>
+
+function isTvModule(module: ModuleKind): module is TvModule {
+  return module === 'CRM' || module === 'COMMUNICATION'
+}
 
 /**
  * Sources a TV link may show in charts and tables. People, notes and the
@@ -67,7 +85,11 @@ type TvRowSource = (typeof TV_ROW_SOURCES)[number]
 const CONTACT_FIELD =
   /e-?mail|phone|linkedin|whatsapp|waid|address|document|cpf|cnpj/i
 
-/** Drops contact fields and custom fields (free-form, may hold anything). */
+/**
+ * Drops contact fields and custom fields (free-form, may hold anything).
+ * CRM rows only: the WhatsApp sources use a per-source allowlist instead
+ * (`pickWaTvRows`), because this pattern would drop `hasWhatsapp`.
+ */
 export function stripContactData(rows: Row[]): Row[] {
   return rows.map((row) => {
     const clean: Row = {}
@@ -115,30 +137,56 @@ function isTvRowSource(source: string): source is TvRowSource {
   return (TV_ROW_SOURCES as readonly string[]).includes(source)
 }
 
-/** The CRM dashboard behind `dashboardId`, for the link management routes. */
-async function loadCrmDashboard(
+/**
+ * The dashboard of `module` behind `dashboardId`, for the link management
+ * routes. A CRM route never accepts a Comunicação dashboard and vice versa.
+ */
+async function loadTvDashboard(
   workspaceId: string,
   dashboardId: string,
+  module: TvModule,
 ): Promise<Result<CrmDashboard>> {
   const dashboard = await CrmDashboardRepository.findById(
     dashboardId,
     workspaceId,
   )
   if (!dashboard.ok) return dashboard
-  if (dashboard.value.module !== 'CRM') return err(notFound('CrmDashboard'))
+  if (dashboard.value.module !== module) return err(notFound('CrmDashboard'))
   return dashboard
 }
 
+/** Rows of a Comunicação source for a link: allowlisted keys only. */
+async function listWhatsAppRows(
+  workspaceId: string,
+  source: WaDashboardSource,
+  now: Date,
+): Promise<Result<Row[]>> {
+  const rows = await WhatsAppDashboardSourceService.rowsForWorkspace(
+    workspaceId,
+    source,
+    now,
+  )
+  if (!rows.ok) return rows
+  return ok(pickWaTvRows(source, rows.value as unknown as Row[]))
+}
+
+const NO_LOOKUPS: CrmDashboardLookupsDTO = {
+  pipelines: [],
+  stages: [],
+  users: [],
+}
+
 export const CrmDashboardTvService = {
-  /** Live TV links of a dashboard (owners and admins of the CRM). */
+  /** Live TV links of a dashboard (owners and admins of its module). */
   async listLinks(
     actorId: string,
     workspaceId: string,
     dashboardId: string,
+    module: TvModule = 'CRM',
   ): Promise<Result<CrmDashboardTvLinkDTO[]>> {
-    const access = await assertModulePrivileged(actorId, workspaceId, 'CRM')
+    const access = await assertModulePrivileged(actorId, workspaceId, module)
     if (!access.ok) return access
-    const dashboard = await loadCrmDashboard(workspaceId, dashboardId)
+    const dashboard = await loadTvDashboard(workspaceId, dashboardId, module)
     if (!dashboard.ok) return dashboard
 
     const links =
@@ -148,18 +196,20 @@ export const CrmDashboardTvService = {
   },
 
   /**
-   * Creates a read-only TV link. Publishing CRM numbers without a login is
-   * an admin decision, so only owners and admins of the CRM may do it.
+   * Creates a read-only TV link. Publishing a module's numbers without a
+   * login is an admin decision, so only owners and admins of that module
+   * may do it, and only for a dashboard of the same module.
    */
   async createLink(
     actorId: string,
     workspaceId: string,
     dashboardId: string,
     dto: CreateCrmDashboardTvLinkDTO,
+    module: TvModule = 'CRM',
   ): Promise<Result<CrmDashboardTvLinkDTO>> {
-    const access = await assertModulePrivileged(actorId, workspaceId, 'CRM')
+    const access = await assertModulePrivileged(actorId, workspaceId, module)
     if (!access.ok) return access
-    const dashboard = await loadCrmDashboard(workspaceId, dashboardId)
+    const dashboard = await loadTvDashboard(workspaceId, dashboardId, module)
     if (!dashboard.ok) return dashboard
 
     const created = await CrmDashboardTvLinkRepository.create({
@@ -176,7 +226,7 @@ export const CrmDashboardTvService = {
       action: 'create',
       actorId,
       targetId: created.value.id,
-      meta: { dashboardId },
+      meta: { dashboardId, module },
     })
     return ok(toCrmDashboardTvLinkDTO(created.value))
   },
@@ -186,10 +236,11 @@ export const CrmDashboardTvService = {
     workspaceId: string,
     dashboardId: string,
     linkId: string,
+    module: TvModule = 'CRM',
   ): Promise<Result<void>> {
-    const access = await assertModulePrivileged(actorId, workspaceId, 'CRM')
+    const access = await assertModulePrivileged(actorId, workspaceId, module)
     if (!access.ok) return access
-    const dashboard = await loadCrmDashboard(workspaceId, dashboardId)
+    const dashboard = await loadTvDashboard(workspaceId, dashboardId, module)
     if (!dashboard.ok) return dashboard
 
     const link = await CrmDashboardTvLinkRepository.findById(
@@ -205,15 +256,16 @@ export const CrmDashboardTvService = {
       action: 'delete',
       actorId,
       targetId: linkId,
-      meta: { dashboardId },
+      meta: { dashboardId, module },
     })
     return ok(undefined)
   },
 
   /**
-   * Resolves a token to its live link and CRM dashboard. Any broken link in
-   * the chain (revoked, dashboard deleted, CRM off, creator no longer able
-   * to see dashboards) answers the same not-found error.
+   * Resolves a token to its live link and dashboard (CRM or Comunicação).
+   * Any broken link in the chain (revoked, dashboard deleted or of another
+   * module, the dashboard's module off, creator no longer able to see
+   * dashboards) answers the same not-found error.
    */
   async resolve(
     token: string,
@@ -223,11 +275,14 @@ export const CrmDashboardTvService = {
     const found = await CrmDashboardTvLinkRepository.findByToken(token)
     if (!found.ok) return found
     const { dashboard, ...link } = found.value
-    if (dashboard.deletedAt || dashboard.module !== 'CRM') {
+    if (dashboard.deletedAt || !isTvModule(dashboard.module)) {
       return err(crmTvLinkNotFound())
     }
 
-    const enabled = await assertModuleEnabled(link.workspaceId, 'CRM')
+    const enabled = await assertModuleEnabled(
+      link.workspaceId,
+      dashboard.module,
+    )
     if (!enabled.ok)
       return enabled.error.code === 'DATABASE_ERROR'
         ? enabled
@@ -260,9 +315,13 @@ export const CrmDashboardTvService = {
     if (!resolved.ok) return resolved
     const { link, dashboard } = resolved.value
 
+    // Only CRM rows carry stage/pipeline/owner ids; a Comunicação screen
+    // has nothing to translate and exposes no CRM names.
     const [widgets, lookups, workspace, clock] = await Promise.all([
       CrmDashboardWidgetRepository.listByDashboard(dashboard.id),
-      loadDashboardLookups(link.workspaceId),
+      dashboard.module === 'CRM'
+        ? loadDashboardLookups(link.workspaceId)
+        : Promise.resolve(ok(NO_LOOKUPS)),
       WorkspaceRepository.findById(link.workspaceId),
       CrmSalesMetricsService.clock(link.workspaceId),
     ])
@@ -272,6 +331,7 @@ export const CrmDashboardTvService = {
     if (!clock.ok) return clock
 
     return ok({
+      module: dashboard.module as TvModule,
       workspaceName: workspace.value.name,
       timeZone: clock.value.timeZone,
       dashboard: {
@@ -280,7 +340,7 @@ export const CrmDashboardTvService = {
         settings: parseDashboardSettings(dashboard.settings),
       },
       widgets: widgets.value
-        // An iframe could frame anything; the TV link shows CRM data only.
+        // An iframe could frame anything; the TV link shows Steel data only.
         .filter((widget) => widget.type !== 'IFRAME')
         .map(toCrmDashboardWidgetDTO),
       lookups: lookups.value,
@@ -307,6 +367,8 @@ export const CrmDashboardTvService = {
     if (!widget.ok) return widget
 
     if (widget.value.type === 'SALES') {
+      // The "Vendas" kit is CRM only.
+      if (dashboard.module !== 'CRM') return err(notFound('CrmDashboardWidget'))
       const config = SalesConfigSchema.safeParse(widget.value.config)
       if (!config.success) return err(notFound('CrmDashboardWidget'))
       const metric = await CrmSalesMetricsService.compute(
@@ -324,14 +386,19 @@ export const CrmDashboardTvService = {
         : widget.value.type === 'VIEW'
           ? ViewConfigSchema.safeParse(widget.value.config)
           : null
-    if (!parsed?.success || !isTvRowSource(parsed.data.source)) {
-      return ok({ type: 'ROWS', rows: [] })
+    if (!parsed?.success) return ok({ type: 'ROWS', rows: [] })
+
+    // Each module serves only its own sources: a Comunicação widget never
+    // reads CRM rows and a CRM widget never reads WhatsApp ones.
+    const source = parsed.data.source
+    if (dashboard.module === 'COMMUNICATION') {
+      if (!isWaDashboardSource(source)) return ok({ type: 'ROWS', rows: [] })
+      const rows = await listWhatsAppRows(link.workspaceId, source, now)
+      if (!rows.ok) return rows
+      return ok({ type: 'ROWS', rows: rows.value })
     }
-    const rows = await listRows(
-      link.createdById,
-      link.workspaceId,
-      parsed.data.source,
-    )
+    if (!isTvRowSource(source)) return ok({ type: 'ROWS', rows: [] })
+    const rows = await listRows(link.createdById, link.workspaceId, source)
     if (!rows.ok) return rows
     return ok({ type: 'ROWS', rows: rows.value })
   },
@@ -343,6 +410,11 @@ export const CrmDashboardTvService = {
   ): Promise<Result<SalesMetricOf<'wins-feed'>>> {
     const resolved = await CrmDashboardTvService.resolve(token, now)
     if (!resolved.ok) return resolved
+    // The feed is CRM only. A Comunicação screen still polls it (that poll
+    // is how a revoked link is noticed), so it gets an empty feed.
+    if (resolved.value.dashboard.module !== 'CRM') {
+      return ok({ kind: 'wins-feed', rows: [] })
+    }
     const feed = await CrmSalesMetricsService.compute(
       resolved.value.link.workspaceId,
       { kind: 'wins-feed', period: 'month', stalledDays: 14, limit: 5 },

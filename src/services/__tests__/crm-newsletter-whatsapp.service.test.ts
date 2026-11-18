@@ -50,6 +50,10 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
   WhatsAppSend: { text: vi.fn(), template: vi.fn() },
 }))
 const add = vi.hoisted(() => vi.fn())
+const numberQuality = vi.hoisted(() => vi.fn())
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: numberQuality,
+}))
 vi.mock('@/src/lib/queue/queues', () => ({
   getCrmNewsletterQueue: () => ({ add }),
 }))
@@ -128,6 +132,7 @@ const sentIssue = (over = {}) => ({
 describe('CrmNewsletterWhatsAppService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    numberQuality.mockResolvedValue('GREEN')
     vi.mocked(assertModuleEnabled).mockResolvedValue(ok(true))
     vi.mocked(loadNewsletterScope).mockResolvedValue(
       ok({ membership: {}, newsletter } as never),
@@ -856,6 +861,277 @@ describe('CrmNewsletterWhatsAppService', () => {
       expectErr(await Service.report(...A, q), 'DATABASE_ERROR')
       lookup.findConnection.mockResolvedValueOnce(err(databaseError()))
       expectErr(await Service.report(...A, q), 'DATABASE_ERROR')
+    })
+  })
+})
+
+describe('CrmNewsletterWhatsAppService quality gate', () => {
+  const issue = createFakeNewsletterIssue()
+  const started = { ...metaConfig, startedAt: NOW }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    numberQuality.mockReset()
+    numberQuality.mockResolvedValue('GREEN')
+    vi.mocked(assertModuleEnabled).mockResolvedValue(ok(true))
+    vi.mocked(loadNewsletterScope).mockResolvedValue(
+      ok({ membership: {}, newsletter } as never),
+    )
+    vi.mocked(loadIssue).mockResolvedValue(ok(issue))
+    repo.findConfig.mockResolvedValue(ok(started))
+    repo.releaseStuck.mockResolvedValue(ok(0))
+    repo.countSentSince.mockResolvedValue(ok(0))
+    repo.claimBatch.mockResolvedValue(ok([createFakeWhatsAppRecipient()]))
+    repo.optedOut.mockResolvedValue(ok(new Set()))
+    repo.markSent.mockResolvedValue(ok(undefined))
+    repo.setPausedReason.mockResolvedValue(ok(true))
+    lookup.findConnection.mockImplementation(async (_ws, id) =>
+      ok(id === 'c2' ? meta : id === 'c1' ? zapi : null),
+    )
+    lookup.findWhatsAppTemplate.mockResolvedValue(ok(template))
+    vi.mocked(
+      CrmCampaignRecipientRepository.countWhatsAppSentSince,
+    ).mockResolvedValue(ok(0))
+    vi.mocked(CrmNewsletterIssueRepository.findByIdUnscoped).mockResolvedValue(
+      ok(sentIssue() as never),
+    )
+    send.template.mockResolvedValue(
+      ok({ providerMessageId: 'wamid.2' } as never),
+    )
+  })
+
+  describe('preSendCheck', () => {
+    it('refuses to send or schedule while the number is RED', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findConfig.mockResolvedValue(ok(metaConfig))
+
+      const error = expectErr(
+        await Service.preSendCheck(issue, newsletter),
+        'WHATSAPP_QUALITY_BLOCKED',
+      )
+      expect(error.message).toContain(
+        'Envios bloqueados pela qualidade: o número desta conexão',
+      )
+      expect(error.message).toContain(
+        'o envio da newsletter no WhatsApp fica bloqueado',
+      )
+      expect(error.message).toContain('continue o envio no WhatsApp')
+    })
+
+    it('refuses while the template is RED and names it', async () => {
+      lookup.findWhatsAppTemplate.mockResolvedValue(
+        ok({ ...template, quality: 'RED' }),
+      )
+      repo.findConfig.mockResolvedValue(ok(metaConfig))
+
+      const error = expectErr(
+        await Service.preSendCheck(issue, newsletter),
+        'WHATSAPP_QUALITY_BLOCKED',
+      )
+      expect(error.message).toContain('o template "nova_edicao"')
+    })
+
+    it.each(['GREEN', 'YELLOW', 'UNKNOWN'] as const)(
+      'passes when the number is %s',
+      async (quality) => {
+        numberQuality.mockResolvedValue(quality)
+        repo.findConfig.mockResolvedValue(ok(metaConfig))
+
+        expectOk(await Service.preSendCheck(issue, newsletter))
+      },
+    )
+
+    it('does not enforce the gate for a due schedule or a system send', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findConfig.mockResolvedValue(ok(metaConfig))
+
+      expectOk(
+        await Service.preSendCheck(issue, newsletter, {
+          enforceQuality: false,
+        }),
+      )
+      expect(numberQuality).not.toHaveBeenCalled()
+    })
+
+    it('never gates Z-API or an issue without the WhatsApp version', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findConfig.mockResolvedValue(ok(createFakeIssueWhatsApp()))
+      expectOk(await Service.preSendCheck(issue, newsletter))
+
+      repo.findConfig.mockResolvedValue(
+        ok(createFakeIssueWhatsApp({ enabled: false })),
+      )
+      expectOk(await Service.preSendCheck(issue, newsletter))
+      expect(numberQuality).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('dispatch', () => {
+    it('holds the send when the number turns RED, claiming and sending nothing', async () => {
+      numberQuality.mockResolvedValue('RED')
+
+      expect(expectOk(await Service.dispatch('is1', NOW))).toEqual({
+        status: 'paused',
+        reason: 'quality_blocked',
+      })
+      expect(repo.setPausedReason).toHaveBeenCalledWith(
+        'is1',
+        expect.stringContaining('Envios bloqueados pela qualidade:'),
+      )
+      expect(repo.claimBatch).not.toHaveBeenCalled()
+      expect(repo.markSkipped).not.toHaveBeenCalled()
+      expect(repo.markFailed).not.toHaveBeenCalled()
+      expect(repo.skipPending).not.toHaveBeenCalled()
+      expect(send.template).not.toHaveBeenCalled()
+      // The batch chain ends: no next dispatch is queued.
+      expect(add).not.toHaveBeenCalled()
+    })
+
+    it('holds the send when the template turns RED', async () => {
+      lookup.findWhatsAppTemplate.mockResolvedValue(
+        ok({ ...template, quality: 'RED' }),
+      )
+
+      expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({
+        status: 'paused',
+      })
+      expect(repo.setPausedReason).toHaveBeenCalledWith(
+        'is1',
+        expect.stringContaining('o template "nova_edicao"'),
+      )
+      expect(send.template).not.toHaveBeenCalled()
+    })
+
+    it('does nothing while the hold is on, even if the quality recovered', async () => {
+      repo.findConfig.mockResolvedValue(
+        ok({ ...started, pausedReason: 'Envios bloqueados pela qualidade: x' }),
+      )
+
+      expect(expectOk(await Service.dispatch('is1', NOW))).toEqual({
+        status: 'paused',
+        reason: 'already_paused',
+      })
+      expect(repo.claimBatch).not.toHaveBeenCalled()
+      expect(send.template).not.toHaveBeenCalled()
+    })
+
+    it.each(['GREEN', 'YELLOW', 'UNKNOWN'] as const)(
+      'sends when the number is %s',
+      async (quality) => {
+        numberQuality.mockResolvedValue(quality)
+
+        expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({
+          status: 'sent',
+        })
+        expect(send.template).toHaveBeenCalledTimes(1)
+        expect(repo.setPausedReason).not.toHaveBeenCalled()
+      },
+    )
+
+    it('never gates a Z-API send', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findConfig.mockResolvedValue(
+        ok(createFakeIssueWhatsApp({ startedAt: NOW })),
+      )
+      send.text.mockResolvedValue(ok({ providerMessageId: 'wamid.1' } as never))
+
+      expect(expectOk(await Service.dispatch('is1', NOW))).toMatchObject({
+        status: 'sent',
+      })
+      expect(numberQuality).not.toHaveBeenCalled()
+    })
+
+    it('propagates a database error while holding', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.setPausedReason.mockResolvedValue(err(databaseError()))
+
+      expectErr(await Service.dispatch('is1', NOW), 'DATABASE_ERROR')
+    })
+  })
+
+  describe('resume', () => {
+    const held = {
+      ...started,
+      pausedReason: 'Envios bloqueados pela qualidade: o número',
+    }
+
+    it('stays held while the quality is still RED', async () => {
+      numberQuality.mockResolvedValue('RED')
+      repo.findConfig.mockResolvedValue(ok(held))
+
+      expectErr(await Service.resume(...A, NOW), 'WHATSAPP_QUALITY_BLOCKED')
+      expect(repo.setPausedReason).not.toHaveBeenCalled()
+      expect(add).not.toHaveBeenCalled()
+    })
+
+    it('clears the hold, queues the next batch and audits', async () => {
+      repo.findConfig.mockResolvedValue(ok(held))
+
+      expectOk(await Service.resume(...A, NOW))
+
+      expect(repo.setPausedReason).toHaveBeenCalledWith('is1', null)
+      expect(add).toHaveBeenCalledTimes(1)
+      expect(add.mock.calls[0][0]).toBe('whatsapp-dispatch')
+      expect(auditMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity: 'crm_newsletter_issue_whatsapp',
+          action: 'reactivate',
+        }),
+      )
+    })
+
+    it('does not queue twice when another request already resumed', async () => {
+      repo.findConfig.mockResolvedValue(ok(held))
+      repo.setPausedReason.mockResolvedValue(ok(false))
+
+      expectOk(await Service.resume(...A, NOW))
+      expect(add).not.toHaveBeenCalled()
+    })
+
+    it('refuses a send that is not held', async () => {
+      repo.findConfig.mockResolvedValue(ok(started))
+
+      expectErr(
+        await Service.resume(...A, NOW),
+        'CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE',
+      )
+    })
+
+    it('propagates authorization and database errors', async () => {
+      vi.mocked(loadNewsletterScope).mockResolvedValueOnce(err(forbidden()))
+      expectErr(await Service.resume(...A, NOW), 'FORBIDDEN')
+
+      repo.findConfig.mockResolvedValueOnce(err(databaseError()))
+      expectErr(await Service.resume(...A, NOW), 'DATABASE_ERROR')
+
+      repo.findConfig.mockResolvedValue(ok(held))
+      repo.setPausedReason.mockResolvedValueOnce(err(databaseError()))
+      expectErr(await Service.resume(...A, NOW), 'DATABASE_ERROR')
+    })
+  })
+
+  describe('report', () => {
+    it('exposes the hold reason', async () => {
+      repo.findConfig.mockResolvedValue(
+        ok({ ...started, pausedReason: 'Envios bloqueados pela qualidade: x' }),
+      )
+      repo.stats.mockResolvedValue(
+        ok({
+          total: 2,
+          pending: 2,
+          sent: 0,
+          failed: 0,
+          skipped: 0,
+          delivered: 0,
+          read: 0,
+        }),
+      )
+      repo.listRecipients.mockResolvedValue(ok({ items: [], total: 0 }))
+
+      expect(
+        expectOk(await Service.report(...A, { page: 1, pageSize: 25 }))
+          .pausedReason,
+      ).toBe('Envios bloqueados pela qualidade: x')
     })
   })
 })

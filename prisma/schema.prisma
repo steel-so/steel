@@ -2051,6 +2051,9 @@ enum WhatsAppBroadcastStatus {
   DRAFT
   QUEUED
   RUNNING
+  /// Stopped by the template quality gate: recipients stay PENDING and the
+  /// list waits for an explicit resume.
+  PAUSED
   DONE
   FAILED
 }
@@ -2073,6 +2076,8 @@ model WhatsAppBroadcastList {
   scheduledAt   DateTime?                   @map("scheduled_at")
   /// Pula (SKIPPED_NO_WHATSAPP) quem a checagem "tem zap?" marcou sem WhatsApp.
   skipNoWhatsapp Boolean                    @default(false) @map("skip_no_whatsapp")
+  /// Why the list is PAUSED (quality gate message, fixed prefix); null otherwise.
+  pausedReason  String?                     @map("paused_reason")
   createdById   String                      @map("created_by_id")
   createdAt     DateTime                    @default(now()) @map("created_at")
   updatedAt     DateTime                    @updatedAt @map("updated_at")
@@ -4729,6 +4734,8 @@ model CrmCampaign {
   /// When sending starts (scheduledAt or the launch moment).
   startAt              DateTime?                   @map("start_at")
   completedAt          DateTime?                   @map("completed_at")
+  /// Why the campaign is PAUSED by the WhatsApp quality gate (fixed prefix); null otherwise.
+  pausedReason         String?                     @map("paused_reason")
   createdById          String                      @map("created_by_id")
   updatedById          String?                     @map("updated_by_id")
   createdAt            DateTime                    @default(now()) @map("created_at")
@@ -10465,6 +10472,9 @@ model CrmNewsletterIssueWhatsApp {
   consentConfirmedById String?                @map("consent_confirmed_by_id")
   /// When the WhatsApp audience snapshot was taken (sending started).
   startedAt            DateTime?              @map("started_at")
+  /// Set while the WhatsApp quality gate holds the send (fixed prefix); the
+  /// recipients stay PENDING until an explicit resume clears it.
+  pausedReason         String?                @map("paused_reason")
   updatedById          String?                @map("updated_by_id")
   createdAt            DateTime               @default(now()) @map("created_at")
   updatedAt            DateTime               @updatedAt @map("updated_at")

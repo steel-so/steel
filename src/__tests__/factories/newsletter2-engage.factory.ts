@@ -66,6 +66,7 @@ export function createFakeIssueWhatsApp(
     consentConfirmedAt: NOW,
     consentConfirmedById: 'u1',
     startedAt: null,
+    pausedReason: null,
     updatedById: 'u1',
     createdAt: NOW,
     updatedAt: NOW,

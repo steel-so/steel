@@ -44,6 +44,7 @@ export function campaign(
     launchedAt: null,
     startAt: null,
     completedAt: null,
+    pausedReason: null,
     createdById: 'u1',
     createdAt: '2026-10-09T12:00:00.000Z',
     updatedAt: '2026-10-09T12:00:00.000Z',

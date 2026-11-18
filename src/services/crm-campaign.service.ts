@@ -81,6 +81,7 @@ import {
   siteDestination,
 } from './crm-campaign-destination'
 import {
+  assertCampaignWhatsAppQuality,
   buildCampaignEmail,
   CrmCampaignSendService,
   sendCampaignWhatsApp,
@@ -1055,6 +1056,11 @@ export const CrmCampaignService = {
     if (!campaign.ok) return campaign
     if (campaign.value.status !== 'DRAFT') return err(crmCampaignLocked())
 
+    // Quality gate: no launch/schedule while the WhatsApp number or template
+    // is RED.
+    const allowed = await assertCampaignWhatsAppQuality(campaign.value)
+    if (!allowed.ok) return allowed
+
     const issues = await computeCampaignIssues(campaign.value)
     if (!issues.ok) return issues
     if (issues.value.length > 0) {
@@ -1171,12 +1177,17 @@ export const CrmCampaignService = {
       updated = await CrmCampaignRepository.transition(
         campaignId,
         ['SCHEDULED', 'SENDING'],
-        { status: 'PAUSED', updatedById: actorId },
+        { status: 'PAUSED', pausedReason: null, updatedById: actorId },
       )
     } else if (dto.action === 'resume') {
+      // Quality gate: a campaign paused for quality stays paused while the
+      // number or template is still RED.
+      const allowed = await assertCampaignWhatsAppQuality(campaign.value)
+      if (!allowed.ok) return allowed
       const due = !campaign.value.startAt || campaign.value.startAt <= now
       updated = await CrmCampaignRepository.transition(campaignId, ['PAUSED'], {
         status: due ? 'SENDING' : 'SCHEDULED',
+        pausedReason: null,
         updatedById: actorId,
       })
     } else {

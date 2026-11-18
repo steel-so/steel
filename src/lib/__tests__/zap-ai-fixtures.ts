@@ -167,6 +167,7 @@ export function broadcast(
     noWhatsappCount: 0,
     skipNoWhatsapp: false,
     failureReason: null,
+    pausedReason: null,
     createdAt: ISO,
     updatedAt: ISO,
     recipients: [],

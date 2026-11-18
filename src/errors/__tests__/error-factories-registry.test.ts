@@ -141,6 +141,58 @@ describe('AppError factories — parametrized messages', () => {
     expect(template.details).toEqual({ subject: 'TEMPLATE' })
   })
 
+  it('keeps the AI campaign wording by default', () => {
+    expect(whatsappQualityBlocked('NUMBER').message).toBe(
+      whatsappQualityBlocked('NUMBER', undefined, 'AI_CAMPAIGN').message,
+    )
+    expect(whatsappQualityBlocked('NUMBER').message).toContain(
+      'as campanhas da IA ficam bloqueadas',
+    )
+    expect(whatsappQualityBlocked('TEMPLATE', 'x').message).toContain(
+      'troque o template da campanha',
+    )
+  })
+
+  it.each([
+    [
+      'BROADCAST',
+      'as transmissões ficam bloqueadas',
+      'continue a transmissão',
+      'a transmissão fica bloqueada',
+      'troque o template da transmissão',
+    ],
+    [
+      'NEWSLETTER',
+      'o envio da newsletter no WhatsApp fica bloqueado',
+      'continue o envio no WhatsApp',
+      'o envio da newsletter no WhatsApp fica bloqueado',
+      'troque o template da newsletter',
+    ],
+    [
+      'CRM_CAMPAIGN',
+      'as campanhas do CRM com WhatsApp ficam bloqueadas',
+      'continue a campanha',
+      'a campanha fica bloqueada',
+      'troque o template da campanha',
+    ],
+  ] as const)(
+    'says what the %s is in both messages',
+    (sender, plural, resume, singular, swap) => {
+      const number = whatsappQualityBlocked('NUMBER', undefined, sender)
+      expect(number.message.startsWith(QUALITY_BLOCK_PREFIX)).toBe(true)
+      expect(number.message).toContain(plural)
+      expect(number.message).toContain(resume)
+      expect(number.message).not.toContain('da IA')
+
+      const template = whatsappQualityBlocked('TEMPLATE', 'cobranca', sender)
+      expect(template.message.startsWith(QUALITY_BLOCK_PREFIX)).toBe(true)
+      expect(template.message).toContain('o template "cobranca"')
+      expect(template.message).toContain(singular)
+      expect(template.message).toContain(swap)
+      expect(template.message).not.toContain('da IA')
+    },
+  )
+
   it('passes required messages through unchanged', () => {
     expect(workspaceStatusConflict('Já está suspenso')).toEqual({
       code: 'WORKSPACE_STATUS_CONFLICT',

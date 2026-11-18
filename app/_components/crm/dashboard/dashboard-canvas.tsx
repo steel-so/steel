@@ -81,6 +81,8 @@ export function DashboardCanvas({
   const { width, containerRef, mounted } = useContainerWidth()
   // Telas e modo TV são do CRM (o painel de Vendas vive lá).
   const isCrm = basePath === 'crm'
+  // O link da TV existe também nos painéis da Comunicação.
+  const isWhatsapp = basePath === 'whatsapp'
   const { dashboard, setDashboard } = useCrmDashboard(
     isCrm ? workspaceId : '',
     dashboardId,
@@ -279,6 +281,16 @@ export function DashboardCanvas({
             Na TV, até {TV_MAX_BLOCKS_PER_PAGE} blocos por tela leem bem.
           </span>
         ) : null}
+        {isWhatsapp ? (
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setTvLinkOpen(true)}
+          >
+            <SteelIcon icon={Link01Icon} strokeWidth={2} />
+            Link da TV
+          </Button>
+        ) : null}
         {isCrm && slug ? (
           <>
             <Link
@@ -424,12 +436,13 @@ export function DashboardCanvas({
           )
         }
       />
-      {isCrm ? (
+      {isCrm || isWhatsapp ? (
         <TvLinkDialog
           open={tvLinkOpen}
           onOpenChange={setTvLinkOpen}
           workspaceId={workspaceId}
           dashboardId={dashboardId}
+          basePath={isWhatsapp ? 'whatsapp' : 'crm'}
         />
       ) : null}
     </div>

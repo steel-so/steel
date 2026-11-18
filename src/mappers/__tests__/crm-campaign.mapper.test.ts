@@ -81,6 +81,18 @@ describe('crm-campaign mapper', () => {
     expect(dto.destination).toBeNull()
     expect(dto.siteId).toBeNull()
     expect(dto.whatsappQuickReplyId).toBeNull()
+    expect(dto.pausedReason).toBeNull()
+  })
+
+  it('should expose the quality-gate pause reason', () => {
+    const dto = toCrmCampaignDTO(
+      createFakeCrmCampaign({
+        status: 'PAUSED',
+        pausedReason: 'Envios bloqueados pela qualidade: o número',
+      }),
+      { destination: null, email: null, whatsapp: null },
+    )
+    expect(dto.pausedReason).toBe('Envios bloqueados pela qualidade: o número')
   })
 
   it('should default KPIs without a funnel', () => {

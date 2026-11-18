@@ -34,6 +34,7 @@ import {
 import { CrmNewsletterJob } from '@/src/lib/queue/jobs'
 import { getCrmNewsletterQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { buildMetaSendComponents } from '@/src/lib/whatsapp/template-variables'
@@ -88,6 +89,8 @@ const HOUR_MS = 60 * 60_000
 
 export type WhatsAppDispatchOutcome =
   | { status: 'missing' | 'inactive' | 'drained' }
+  // Quality gate: nothing sent, recipients stay PENDING until a resume.
+  | { status: 'paused'; reason: 'quality_blocked' | 'already_paused' }
   | { status: 'waiting'; retryAt: string }
   | { status: 'stopped' | 'unavailable' | 'limit_reached'; skipped: number }
   | {
@@ -442,6 +445,7 @@ export const CrmNewsletterWhatsAppService = {
   async preSendCheck(
     issue: CrmNewsletterIssue,
     newsletter: NewsletterWithWorkspace,
+    options: { enforceQuality?: boolean } = {},
   ): Promise<Result<void>> {
     const config = await CrmNewsletterWhatsAppRepository.findConfig(issue.id)
     if (!config.ok) return config
@@ -452,6 +456,21 @@ export const CrmNewsletterWhatsAppService = {
       config.value,
     )
     if (!evaluation.ok) return evaluation
+    // Quality gate: no send/schedule while the number or template is RED
+    // (before the generic problems, which also flag a red template).
+    const { connection, template } = evaluation.value
+    if (
+      options.enforceQuality !== false &&
+      connection?.provider === 'META' &&
+      template
+    ) {
+      const allowed = await assertCampaignSendAllowed(
+        connection,
+        template,
+        'NEWSLETTER',
+      )
+      if (!allowed.ok) return allowed
+    }
     const problem = evaluation.value.problems[0]
     if (problem) {
       return err(
@@ -538,6 +557,10 @@ export const CrmNewsletterWhatsAppService = {
     if (!config.value?.enabled || !config.value.startedAt) {
       return ok({ status: 'inactive' })
     }
+    // Held by the quality gate: only an explicit resume continues.
+    if (config.value.pausedReason) {
+      return ok({ status: 'paused', reason: 'already_paused' })
+    }
 
     const released = await CrmNewsletterWhatsAppRepository.releaseStuck(
       issueId,
@@ -571,6 +594,34 @@ export const CrmNewsletterWhatsAppService = {
     )
     if (!evaluation.ok) return evaluation
     const { connection, template, problems } = evaluation.value
+    // Quality gate: a number or template that turned RED holds the send
+    // before anything is claimed (and before the "unavailable" check, which
+    // would skip the rows for good); recipients stay PENDING and the batch
+    // chain ends here (resume queues it again).
+    if (connection?.provider === 'META' && template) {
+      const quality = await assertCampaignSendAllowed(
+        connection,
+        template,
+        'NEWSLETTER',
+      )
+      if (!quality.ok) {
+        if (quality.error.code !== 'WHATSAPP_QUALITY_BLOCKED') return quality
+        const held = await CrmNewsletterWhatsAppRepository.setPausedReason(
+          issueId,
+          quality.error.message,
+        )
+        if (!held.ok) return held
+        logger.warn('crm.newsletter.whatsapp_quality_blocked', {
+          component: 'CrmNewsletterWhatsAppService',
+          issueId,
+          workspaceId: issue.workspaceId,
+          subject: (quality.error.details as { subject?: string } | undefined)
+            ?.subject,
+        })
+        return ok({ status: 'paused', reason: 'quality_blocked' })
+      }
+    }
+
     if (!connection || problems.length > 0) {
       logger.warn('crm.newsletter.whatsapp_unavailable', {
         component: 'CrmNewsletterWhatsAppService',
@@ -731,6 +782,70 @@ export const CrmNewsletterWhatsAppService = {
     return ok({ status: 'sent', sent, failed, skipped, more })
   },
 
+  /**
+   * Continues a WhatsApp send held by the quality gate. Refused (with the
+   * gate's error) while the number or template is still RED; otherwise the
+   * hold is cleared and the next batch is queued. Never happens by itself.
+   */
+  async resume(
+    actorId: string,
+    workspaceId: string,
+    newsletterId: string,
+    issueId: string,
+    now: Date,
+  ): Promise<Result<void>> {
+    const scope = await loadNewsletterScope(
+      actorId,
+      workspaceId,
+      newsletterId,
+      'EDIT',
+    )
+    if (!scope.ok) return scope
+    const issue = await loadIssue(workspaceId, newsletterId, issueId)
+    if (!issue.ok) return issue
+    const config = await CrmNewsletterWhatsAppRepository.findConfig(issueId)
+    if (!config.ok) return config
+    if (!config.value?.pausedReason) {
+      return err(
+        crmNewsletterWhatsappUnavailable(
+          'O envio no WhatsApp desta edição não está pausado',
+        ),
+      )
+    }
+
+    const evaluation = await evaluate(
+      workspaceId,
+      scope.value.newsletter,
+      config.value,
+    )
+    if (!evaluation.ok) return evaluation
+    const { connection, template } = evaluation.value
+    if (connection?.provider === 'META' && template) {
+      const allowed = await assertCampaignSendAllowed(
+        connection,
+        template,
+        'NEWSLETTER',
+      )
+      if (!allowed.ok) return allowed
+    }
+
+    const released = await CrmNewsletterWhatsAppRepository.setPausedReason(
+      issueId,
+      null,
+    )
+    if (!released.ok) return released
+    if (released.value) await enqueue(issueId, now, now)
+
+    auditMutation({
+      entity: 'crm_newsletter_issue_whatsapp',
+      action: 'reactivate',
+      actorId,
+      targetId: issueId,
+      meta: { workspaceId, newsletterId },
+    })
+    return ok(undefined)
+  },
+
   /** Per-number delivery report of the WhatsApp version. */
   async report(
     actorId: string,
@@ -772,6 +887,7 @@ export const CrmNewsletterWhatsAppService = {
     return ok({
       enabled: config.value?.enabled ?? false,
       provider,
+      pausedReason: config.value?.pausedReason ?? null,
       stats: stats.value,
       items: page.value.items.map(toCrmNewsletterWhatsAppRecipientDTO),
       total: page.value.total,

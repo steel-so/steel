@@ -84,7 +84,7 @@ const routes: RouteConfig[] = [
     tags: ['CRM público · Modo TV'],
     summary: 'Abrir painel da TV',
     description:
-      'O que a página `/tv/<token>` precisa para montar a tela: título, telas e rotação, widgets (sem `IFRAME`), nomes de etapas/pipelines/membros e o fuso do workspace.',
+      'O que a página `/tv/<token>` precisa para montar a tela (painel do CRM ou da Comunicação, ver `module`): título, telas e rotação, widgets (sem `IFRAME`), nomes de etapas/pipelines/membros e o fuso do workspace.',
     params: TV_TOKEN,
     responses: {
       200: { description: 'Painel.', schema: CrmDashboardTvBootDTO },
@@ -98,7 +98,7 @@ const routes: RouteConfig[] = [
     tags: ['CRM público · Modo TV'],
     summary: 'Dados de um widget da TV',
     description:
-      'Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados).',
+      'Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados). Em um painel da Comunicação, as 18 fontes `whatsapp-*` novas, só com as chaves documentadas de cada fonte (sem texto digitado por atendentes) e nunca as fontes CRM; `SALES` não existe nesses painéis.',
     params: { ...TV_TOKEN, widgetId: 'ID do widget.' },
     responses: {
       200: { description: 'Dados.', schema: CrmDashboardTvWidgetDataDTO },
@@ -119,7 +119,7 @@ const routes: RouteConfig[] = [
     tags: ['CRM público · Modo TV'],
     summary: 'Últimas vitórias',
     description:
-      'Os 5 ganhos mais recentes (30 dias). A TV consulta a cada 15 s e comemora quando aparece um novo.',
+      'Os 5 ganhos mais recentes (30 dias). A TV consulta a cada 15 s e comemora quando aparece um novo. Em link da Comunicação devolve sempre uma lista vazia (a consulta serve para perceber a revogação).',
     params: TV_TOKEN,
     responses: {
       200: { description: 'Vitórias.', schema: CrmSalesMetricDTO },

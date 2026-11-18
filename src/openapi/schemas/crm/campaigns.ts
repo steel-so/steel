@@ -81,6 +81,10 @@ const campaignShape = {
   launchedAt: nullableDateTime(),
   startAt: nullableDateTime(),
   completedAt: nullableDateTime(),
+  pausedReason: z.string().nullable().meta({
+    description:
+      'Por que a campanha está `PAUSED` pela qualidade do WhatsApp (começa com "Envios bloqueados pela qualidade:"); `null` nos demais casos.',
+  }),
   createdById: z.string(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

@@ -134,10 +134,11 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
 }
 
 /**
- * Data of the widgets of the Comunicação dashboards. Same gate as the
- * dashboards themselves (module enabled + `dashboards:VIEW`). The cut is
- * the history of `WA_DASHBOARD_HISTORY_DAYS` days with a row ceiling per
- * source.
+ * Data of the widgets of the Comunicação dashboards. The logged-in path
+ * (`rows`) has the same gate as the dashboards themselves (module enabled +
+ * `dashboards:VIEW`); `rowsForWorkspace` skips it for callers that already
+ * authorised the workspace (the TV link). The cut is the history of
+ * `WA_DASHBOARD_HISTORY_DAYS` days with a row ceiling per source.
  */
 export const WhatsAppDashboardSourceService = {
   async rows(
@@ -154,6 +155,23 @@ export const WhatsAppDashboardSourceService = {
     )
     if (!access.ok) return access
 
+    return WhatsAppDashboardSourceService.rowsForWorkspace(
+      workspaceId,
+      source,
+      now,
+    )
+  },
+
+  /**
+   * Rows of a source for a workspace the caller already authorised: no
+   * session or permission check here. Only the TV link may call it, after
+   * resolving its token, and it must strip what a public screen cannot show.
+   */
+  async rowsForWorkspace(
+    workspaceId: string,
+    source: WaDashboardSource,
+    now: Date = new Date(),
+  ): Promise<Result<WaDashboardRow[]>> {
     const limit = WA_DASHBOARD_ROW_LIMITS[source]
     const since = new Date(now.getTime() - WA_DASHBOARD_HISTORY_DAYS * DAY_MS)
     const rows = await LOADERS[source](workspaceId, since, limit)

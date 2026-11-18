@@ -127,6 +127,8 @@ export interface CrmCampaignDTO {
   launchedAt: string | null
   startAt: string | null
   completedAt: string | null
+  /** Quality-gate pause reason (fixed prefix), null otherwise. */
+  pausedReason: string | null
   createdById: string
   createdAt: string
   updatedAt: string

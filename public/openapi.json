@@ -966,7 +966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -4636,7 +4636,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -6871,7 +6871,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
           },
           "422": {
             "$ref": "#/components/responses/422_CRM_FORM_NOT_PUBLISHED"
@@ -6988,7 +6988,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_FORM_NOT_PUBLISHED"
@@ -7701,7 +7701,7 @@
         "tags": ["CRM público · Modo TV"],
         "summary": "Abrir painel da TV",
         "operationId": "getCrmTvByToken",
-        "description": "O que a página `/tv/<token>` precisa para montar a tela: título, telas e rotação, widgets (sem `IFRAME`), nomes de etapas/pipelines/membros e o fuso do workspace.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "O que a página `/tv/<token>` precisa para montar a tela (painel do CRM ou da Comunicação, ver `module`): título, telas e rotação, widgets (sem `IFRAME`), nomes de etapas/pipelines/membros e o fuso do workspace.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "token",
@@ -7752,7 +7752,7 @@
         "tags": ["CRM público · Modo TV"],
         "summary": "Dados de um widget da TV",
         "operationId": "getCrmTvByTokenWidgetsByWidgetId",
-        "description": "Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados).\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Widget `SALES`: a métrica calculada (`metric`). Gráfico ou tabela: as linhas da fonte (`rows`) — só oportunidades, leads, tarefas, empresas, formulários, **sem dados de contato** (e-mail, telefone, endereço, documentos, campos personalizados). Em um painel da Comunicação, as 18 fontes `whatsapp-*` novas, só com as chaves documentadas de cada fonte (sem texto digitado por atendentes) e nunca as fontes CRM; `SALES` não existe nesses painéis.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "token",
@@ -7812,7 +7812,7 @@
         "tags": ["CRM público · Modo TV"],
         "summary": "Últimas vitórias",
         "operationId": "getCrmTvByTokenWins",
-        "description": "Os 5 ganhos mais recentes (30 dias). A TV consulta a cada 15 s e comemora quando aparece um novo.\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Os 5 ganhos mais recentes (30 dias). A TV consulta a cada 15 s e comemora quando aparece um novo. Em link da Comunicação devolve sempre uma lista vazia (a consulta serve para perceber a revogação).\n\nRate limit por IP; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "name": "token",
@@ -10438,7 +10438,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28834,7 +28834,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -30770,7 +30770,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -30839,7 +30839,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -31672,7 +31672,7 @@
         "tags": ["CRM · Campanhas"],
         "summary": "Pausar, retomar ou cancelar",
         "operationId": "postWorkspacesByIdCrmCampaignsByCampaignIdControl",
-        "description": "Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado). Quando a Meta passa o número ou o template do WhatsApp para qualidade Baixa durante o envio, o worker pausa a campanha sozinho (e-mails inclusos) com `pausedReason` começando por \"Envios bloqueados pela qualidade:\", sem tocar nos pendentes; retomar é recusado enquanto a qualidade continuar Baixa e nunca acontece sozinho.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -31740,7 +31740,7 @@
             "$ref": "#/components/responses/404_CRM_CAMPAIGN_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_CAMPAIGN_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -31829,7 +31829,7 @@
             "$ref": "#/components/responses/404_CRM_CAMPAIGN_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_CAMPAIGN_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_CAMPAIGN_INCOMPLETE_CRM_CAMPAIGN_NO_RECIPIENTS"
@@ -33488,7 +33488,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_58"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -33640,7 +33640,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -34798,7 +34798,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -36859,7 +36859,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_2"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37827,7 +37827,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
@@ -37905,7 +37905,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40914,7 +40914,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -41106,7 +41106,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -41322,7 +41322,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -42232,7 +42232,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -46039,7 +46039,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -46108,7 +46108,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -46452,7 +46452,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -46691,7 +46691,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -46760,7 +46760,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47030,7 +47030,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -47099,7 +47099,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47771,7 +47771,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -54018,7 +54018,7 @@
             "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_ISSUE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_SENDING_DOMAIN_NOT_VERIFIED_CRM_NEWSLETTER_ISSUE_INCOMPLETE_CRM_NEWSLETTER_NO_SUBSCRIBERS"
@@ -54603,6 +54603,89 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/issues/{issueId}/whatsapp/resume": {
+      "post": {
+        "tags": ["CRM · Newsletter · Engajamento"],
+        "summary": "Continuar envio no WhatsApp",
+        "operationId": "postWorkspacesByIdCrmNewslettersByNewsletterIdIssuesByIssueIdWhatsappResume",
+        "description": "Continua o envio da versão no WhatsApp que o worker segurou porque a Meta passou o número ou o template para qualidade Baixa (`pausedReason` em \"Entrega no WhatsApp\"; os números seguem pendentes, sem falha). Recusado enquanto a qualidade continuar Baixa; nunca retoma sozinho. Auditado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "description": "ID da edição.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envio retomado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_ISSUE_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -57837,7 +57920,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -57906,7 +57989,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -59248,7 +59331,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -59326,7 +59409,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -59392,7 +59475,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -60997,7 +61080,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -61883,7 +61966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -61961,7 +62044,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_PIPELINE_STAGE_IN_USE"
@@ -65348,7 +65431,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -65417,7 +65500,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67192,7 +67275,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
@@ -67541,7 +67624,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
@@ -67627,7 +67710,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
@@ -68482,7 +68565,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "409": {
             "$ref": "#/components/responses/409_SITE_LIMIT_REACHED"
@@ -78985,7 +79068,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -79567,7 +79650,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -79636,7 +79719,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -94581,7 +94664,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CEP_NOT_FOUND"
@@ -102212,7 +102295,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
@@ -102283,7 +102366,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -103860,7 +103943,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           }
         },
         "security": [
@@ -107267,7 +107350,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -107909,7 +107992,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -108150,7 +108233,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -108213,7 +108296,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_KB_ARTICLE_NOT_FOUND"
@@ -109049,7 +109132,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_KB_ARTICLE_NOT_FOUND_SD_ATTACHMENT_NOT_FOUND"
@@ -109211,7 +109294,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_KB_ARTICLE_NOT_FOUND"
@@ -114402,7 +114485,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -117226,7 +117309,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_19"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -118863,7 +118946,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_3"
@@ -119061,7 +119144,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_REPORT_NOT_FOUND"
@@ -119347,7 +119430,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_REPORT_NOT_FOUND"
@@ -119409,7 +119492,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_REPORT_NOT_FOUND"
@@ -120212,7 +120295,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -120281,7 +120364,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -124194,7 +124277,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_44"
@@ -125037,7 +125120,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -137227,7 +137310,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
@@ -137429,7 +137512,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -137492,7 +137575,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -137719,7 +137802,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -137792,7 +137875,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -138062,7 +138145,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE"
@@ -138586,7 +138669,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -138866,7 +138949,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -138976,6 +139059,9 @@
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
           },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_3"
+          },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_TEMPLATE_NOT_APPROVED"
           },
@@ -139058,7 +139144,7 @@
         "tags": ["Comunicação · Transmissões"],
         "summary": "Cancelar transmissão",
         "operationId": "postWorkspacesByIdWhatsappBroadcastsByBroadcastIdCancel",
-        "description": "Cancela uma transmissão agendada (`QUEUED`) ou em andamento (`RUNNING`): quem ainda estava `PENDING` vira `SKIPPED` (\"Envio cancelado\") e a lista fecha como `DONE`. O que já foi enviado não é afetado. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cancela uma transmissão agendada (`QUEUED`), em andamento (`RUNNING`) ou pausada (`PAUSED`): quem ainda estava `PENDING` vira `SKIPPED` (\"Envio cancelado\") e a lista fecha como `DONE`. O que já foi enviado não é afetado. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -139106,7 +139192,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_2"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -139182,6 +139268,72 @@
         ]
       }
     },
+    "/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/resume": {
+      "post": {
+        "tags": ["Comunicação · Transmissões"],
+        "summary": "Continuar transmissão pausada",
+        "operationId": "postWorkspacesByIdWhatsappBroadcastsByBroadcastIdResume",
+        "description": "Continua uma transmissão `PAUSED` — parada sozinha quando a Meta passou o número ou o template para qualidade Baixa (`pausedReason` começa com \"Envios bloqueados pela qualidade:\"; os destinatários seguem `PENDING`, sem falha). Recusada enquanto a qualidade continuar Baixa. Listas manuais voltam para `RUNNING` e os pendentes são enfileirados de novo; listas agendadas por CSV voltam para `QUEUED` e o tick de 5 min dispara os vencidos. Uma transmissão pausada não retoma sozinha. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "broadcastId",
+            "in": "path",
+            "required": true,
+            "description": "Id da lista de transmissão.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transmissão retomada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppBroadcastDetail"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/retry-failed": {
       "post": {
         "tags": ["Comunicação · Transmissões"],
@@ -139229,13 +139381,13 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_WHATSAPP_BROADCAST_NO_RECIPIENTS"
@@ -139319,13 +139471,13 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_3"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -142121,7 +142273,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_CUSTOM_FIELD_CONFLICT_2"
@@ -142216,7 +142368,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_CUSTOM_FIELD_NOT_FOUND"
@@ -142285,7 +142437,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_CUSTOM_FIELD_NOT_FOUND"
@@ -147373,7 +147525,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -147758,6 +147910,234 @@
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_11"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/dashboards/{dashboardId}/tv-links": {
+      "get": {
+        "tags": ["Comunicação · Dashboards e relatórios"],
+        "summary": "Listar links da TV",
+        "operationId": "getWorkspacesByIdWhatsappDashboardsByDashboardIdTvLinks",
+        "description": "Links ativos (não revogados) do modo TV de um dashboard da Comunicação. Um dashboard de outro módulo responde `404`. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "dashboardId",
+            "in": "path",
+            "required": true,
+            "description": "Id do dashboard.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Links.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmDashboardTvLink"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Comunicação · Dashboards e relatórios"],
+        "summary": "Criar link da TV",
+        "operationId": "postWorkspacesByIdWhatsappDashboardsByDashboardIdTvLinks",
+        "description": "Gera um link somente leitura (`/tv/<token>`, 192 bits aleatórios) para abrir o dashboard numa TV sem login. A tela serve as 18 fontes `whatsapp-*` dos dashboards (não as antigas `whatsapp-conversations` e `whatsapp-broadcasts`), só com os campos documentados de cada fonte: sem nome, telefone nem texto digitado por atendentes (`closeReason` e o `reason` dos eventos). Se quem criou o link sair do workspace ou o módulo for desabilitado, o link para de funcionar. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "dashboardId",
+            "in": "path",
+            "required": true,
+            "description": "Id do dashboard.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "default": "TV",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                }
+              },
+              "example": {
+                "name": "TV do atendimento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Link criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/CrmDashboardTvLink"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/dashboards/{dashboardId}/tv-links/{linkId}": {
+      "delete": {
+        "tags": ["Comunicação · Dashboards e relatórios"],
+        "summary": "Revogar link da TV",
+        "operationId": "deleteWorkspacesByIdWhatsappDashboardsByDashboardIdTvLinksByLinkId",
+        "description": "A tela que usa o link para na próxima atualização. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "dashboardId",
+            "in": "path",
+            "required": true,
+            "description": "Id do dashboard.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "description": "Id do link.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link revogado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_2"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -165504,6 +165884,62 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro ou não é OWNER/ADMIN",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede a permissão",
                 "value": {
                   "success": false,
@@ -165540,7 +165976,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_15": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165585,7 +166021,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_16": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165630,7 +166066,7 @@
           }
         }
       },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_17": {
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18": {
         "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
         "content": {
           "application/json": {
@@ -165690,62 +166126,6 @@
                   "message": "Apenas administradores do ServiceDesk podem alterar a configuração",
                   "error": {
                     "code": "FORBIDDEN"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_18": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro ou não é OWNER/ADMIN",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
                   }
                 }
               }
@@ -168688,6 +169068,62 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `CREATE`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FEATURE_NOT_ENABLED": {
+                "summary": "FEATURE_NOT_ENABLED — Feature `communication.broadcasts` desligada para o workspace (plano/override)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Esta funcionalidade não está disponível para este workspace",
+                  "error": {
+                    "code": "FEATURE_NOT_ENABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Consentimento LGPD pendente",
                 "value": {
                   "success": false,
@@ -168733,62 +169169,6 @@
               },
               "FEATURE_NOT_ENABLED": {
                 "summary": "FEATURE_NOT_ENABLED — Feature `crm.socialPublishing` desligada para o workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Esta funcionalidade não está disponível para este workspace",
-                  "error": {
-                    "code": "FEATURE_NOT_ENABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `CREATE`",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              },
-              "FEATURE_NOT_ENABLED": {
-                "summary": "FEATURE_NOT_ENABLED — Feature `communication.broadcasts` desligada para o workspace (plano/override)",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -178934,6 +179314,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Dashboard inexistente no workspace ou de outro módulo",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmDashboard not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_25": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Dashboard inexistente no workspace",
                 "value": {
                   "success": false,
@@ -178959,7 +179362,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_25": {
+      "404_RESOURCE_NOT_FOUND_26": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -178993,7 +179396,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_26": {
+      "404_RESOURCE_NOT_FOUND_27": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179016,7 +179419,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_27": {
+      "404_RESOURCE_NOT_FOUND_28": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179039,7 +179442,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_28": {
+      "404_RESOURCE_NOT_FOUND_29": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179062,7 +179465,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_29": {
+      "404_RESOURCE_NOT_FOUND_30": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179085,7 +179488,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_30": {
+      "404_RESOURCE_NOT_FOUND_31": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179108,7 +179511,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_31": {
+      "404_RESOURCE_NOT_FOUND_32": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179142,7 +179545,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_32": {
+      "404_RESOURCE_NOT_FOUND_33": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179165,7 +179568,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_33": {
+      "404_RESOURCE_NOT_FOUND_34": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179188,7 +179591,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_34": {
+      "404_RESOURCE_NOT_FOUND_35": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179211,7 +179614,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_35": {
+      "404_RESOURCE_NOT_FOUND_36": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179234,7 +179637,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_36": {
+      "404_RESOURCE_NOT_FOUND_37": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179257,7 +179660,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_37": {
+      "404_RESOURCE_NOT_FOUND_38": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179280,7 +179683,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_38": {
+      "404_RESOURCE_NOT_FOUND_39": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179303,7 +179706,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_39": {
+      "404_RESOURCE_NOT_FOUND_40": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179326,7 +179729,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_40": {
+      "404_RESOURCE_NOT_FOUND_41": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179349,7 +179752,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_41": {
+      "404_RESOURCE_NOT_FOUND_42": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179372,7 +179775,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_42": {
+      "404_RESOURCE_NOT_FOUND_43": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179395,7 +179798,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_43": {
+      "404_RESOURCE_NOT_FOUND_44": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179418,7 +179821,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_44": {
+      "404_RESOURCE_NOT_FOUND_45": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179441,7 +179844,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_45": {
+      "404_RESOURCE_NOT_FOUND_46": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179464,7 +179867,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_46": {
+      "404_RESOURCE_NOT_FOUND_47": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179487,7 +179890,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_47": {
+      "404_RESOURCE_NOT_FOUND_48": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179510,7 +179913,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179533,7 +179936,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179556,7 +179959,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179579,7 +179982,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_51": {
+      "404_RESOURCE_NOT_FOUND_52": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179602,7 +180005,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_52": {
+      "404_RESOURCE_NOT_FOUND_53": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179647,7 +180050,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_53": {
+      "404_RESOURCE_NOT_FOUND_54": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179681,7 +180084,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_54": {
+      "404_RESOURCE_NOT_FOUND_55": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179704,7 +180107,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_55": {
+      "404_RESOURCE_NOT_FOUND_56": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179727,7 +180130,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_56": {
+      "404_RESOURCE_NOT_FOUND_57": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -179750,7 +180153,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_57": {
+      "404_RESOURCE_NOT_FOUND_58": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -180304,6 +180707,40 @@
         }
       },
       "404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_2": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_TV_LINK_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Dashboard inexistente no workspace ou de outro módulo",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "CrmDashboard not found",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              },
+              "CRM_TV_LINK_NOT_FOUND": {
+                "summary": "CRM_TV_LINK_NOT_FOUND — Link inexistente, já revogado ou de outro dashboard",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Link da TV inválido ou revogado. Peça um novo link a quem administra o painel.",
+                  "error": {
+                    "code": "CRM_TV_LINK_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_3": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`, `CRM_TV_LINK_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187357,40 +187794,6 @@
           }
         }
       },
-      "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED": {
-        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_ISSUE_LOCKED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "CRM_NEWSLETTER_ISSUE_LOCKED": {
-                "summary": "CRM_NEWSLETTER_ISSUE_LOCKED — A edição saiu de rascunho/agendada (está sendo enviada ou já foi)",
-                "value": {
-                  "success": false,
-                  "statusCode": 409,
-                  "message": "Esta edição já foi enviada (ou está sendo) e não pode mais ser alterada",
-                  "error": {
-                    "code": "CRM_NEWSLETTER_ISSUE_LOCKED"
-                  }
-                }
-              },
-              "CRM_NEWSLETTER_ARCHIVED": {
-                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada",
-                "value": {
-                  "success": false,
-                  "statusCode": 409,
-                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
-                  "error": {
-                    "code": "CRM_NEWSLETTER_ARCHIVED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS": {
         "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_SUBSCRIBER_EXISTS`",
         "content": {
@@ -190382,6 +190785,29 @@
             },
             "examples": {
               "WHATSAPP_BROADCAST_LOCKED": {
+                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `QUEUED`, `RUNNING` nem `PAUSED`",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta lista de transmissão já foi iniciada e não pode ser editada",
+                  "error": {
+                    "code": "WHATSAPP_BROADCAST_LOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_BROADCAST_LOCKED": {
                 "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão ainda está em andamento ou é um rascunho",
                 "value": {
                   "success": false,
@@ -190391,13 +190817,23 @@
                     "code": "WHATSAPP_BROADCAST_LOCKED"
                   }
                 }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O reenvio de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
               }
             }
           }
         }
       },
-      "409_WHATSAPP_BROADCAST_LOCKED_2": {
-        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`",
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190405,7 +190841,7 @@
             },
             "examples": {
               "WHATSAPP_BROADCAST_LOCKED": {
-                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `QUEUED` nem `RUNNING`",
+                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `PAUSED`",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -190414,13 +190850,23 @@
                     "code": "WHATSAPP_BROADCAST_LOCKED"
                   }
                 }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Continuar é recusado enquanto a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
               }
             }
           }
         }
       },
-      "409_WHATSAPP_BROADCAST_LOCKED_3": {
-        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`",
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_3": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190435,6 +190881,16 @@
                   "message": "Esta lista de transmissão já foi iniciada e não pode ser editada",
                   "error": {
                     "code": "WHATSAPP_BROADCAST_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O disparo de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
                   }
                 }
               }
@@ -190803,6 +191259,160 @@
             "examples": {
               "WHATSAPP_QUALITY_BLOCKED": {
                 "summary": "WHATSAPP_QUALITY_BLOCKED — A Meta classifica o número (ou o template da campanha) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Se a consulta à Meta falhar, o início não é bloqueado",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Continuar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da edição como qualidade Baixa (vermelha). Sem WhatsApp, com Z-API ou sem template nunca é bloqueado, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_3": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O agendamento é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_CAMPAIGN_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_CAMPAIGN_LOCKED": {
+                "summary": "CRM_CAMPAIGN_LOCKED — Campanha já lançada (ou transição inválida)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta campanha já foi lançada e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_CAMPAIGN_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O lançamento ou agendamento é recusado quando a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_CAMPAIGN_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_CAMPAIGN_LOCKED": {
+                "summary": "CRM_CAMPAIGN_LOCKED — Campanha já lançada (ou transição inválida)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta campanha já foi lançada e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_CAMPAIGN_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Retomar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_ISSUE_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_ISSUE_LOCKED": {
+                "summary": "CRM_NEWSLETTER_ISSUE_LOCKED — A edição saiu de rascunho/agendada (está sendo enviada ou já foi)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta edição já foi enviada (ou está sendo) e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ISSUE_LOCKED"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_ARCHIVED": {
+                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ARCHIVED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O envio ou agendamento com a versão no WhatsApp é recusado quando a Meta classifica o número (ou o template) como qualidade Baixa (vermelha). Na hora marcada o e-mail sai de qualquer forma e o envio no WhatsApp fica parado até alguém continuar",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -191713,6 +192323,29 @@
                   "message": "O público desta edição não é mais válido: revise as condições",
                   "error": {
                     "code": "CRM_NEWSLETTER_SEGMENT_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE": {
+        "description": "Dados inválidos: `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE": {
+                "summary": "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE — O envio no WhatsApp da edição não está pausado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "O envio no WhatsApp não está disponível para esta edição",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE"
                   }
                 }
               }
@@ -210349,6 +210982,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a campanha está `PAUSED` pela qualidade do WhatsApp (começa com \"Envios bloqueados pela qualidade:\"); `null` nos demais casos."
+          },
           "createdById": {
             "type": "string"
           },
@@ -210514,6 +211158,7 @@
           "launchedAt",
           "startAt",
           "completedAt",
+          "pausedReason",
           "createdById",
           "createdAt",
           "updatedAt",
@@ -210892,6 +211537,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a campanha está `PAUSED` pela qualidade do WhatsApp (começa com \"Envios bloqueados pela qualidade:\"); `null` nos demais casos."
+          },
           "createdById": {
             "type": "string"
           },
@@ -211073,6 +211729,7 @@
           "launchedAt",
           "startAt",
           "completedAt",
+          "pausedReason",
           "createdById",
           "createdAt",
           "updatedAt",
@@ -213992,6 +214649,11 @@
       "CrmDashboardTvBoot": {
         "type": "object",
         "properties": {
+          "module": {
+            "type": "string",
+            "enum": ["CRM", "COMMUNICATION"],
+            "description": "Módulo do painel por trás do link."
+          },
           "workspaceName": {
             "type": "string"
           },
@@ -214044,7 +214706,7 @@
             "$ref": "#/components/schemas/CrmDashboardLookups"
           }
         },
-        "required": ["workspaceName", "timeZone", "dashboard", "widgets", "lookups"]
+        "required": ["module", "workspaceName", "timeZone", "dashboard", "widgets", "lookups"]
       },
       "CrmDashboardTvLink": {
         "type": "object",
@@ -221440,6 +222102,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preenchido enquanto o envio no WhatsApp está parado pela qualidade Baixa na Meta (começa com \"Envios bloqueados pela qualidade:\"); os números seguem pendentes até alguém continuar."
+          },
           "stats": {
             "type": "object",
             "properties": {
@@ -221610,7 +222283,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["enabled", "provider", "stats", "items", "total", "page", "pageSize"]
+        "required": ["enabled", "provider", "pausedReason", "stats", "items", "total", "page", "pageSize"]
       },
       "CrmNlCompanySearchResult": {
         "type": "object",
@@ -266543,7 +267216,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "QUEUED", "RUNNING", "DONE", "FAILED"]
+            "enum": ["DRAFT", "QUEUED", "RUNNING", "PAUSED", "DONE", "FAILED"]
           },
           "scheduledAt": {
             "anyOf": [
@@ -266602,6 +267275,17 @@
             ],
             "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com \"Envios bloqueados pela qualidade:\"), `null` nos demais casos."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -266630,6 +267314,7 @@
           "noWhatsappCount",
           "skipNoWhatsapp",
           "failureReason",
+          "pausedReason",
           "createdAt",
           "updatedAt"
         ]
@@ -266686,7 +267371,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "QUEUED", "RUNNING", "DONE", "FAILED"]
+            "enum": ["DRAFT", "QUEUED", "RUNNING", "PAUSED", "DONE", "FAILED"]
           },
           "scheduledAt": {
             "anyOf": [
@@ -266744,6 +267429,17 @@
               }
             ],
             "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
+          },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com \"Envios bloqueados pela qualidade:\"), `null` nos demais casos."
           },
           "createdAt": {
             "type": "string",
@@ -266848,6 +267544,7 @@
           "noWhatsappCount",
           "skipNoWhatsapp",
           "failureReason",
+          "pausedReason",
           "createdAt",
           "updatedAt",
           "recipients"

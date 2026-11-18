@@ -56,7 +56,7 @@ export function TvLinkGone() {
       </p>
       <p className='max-w-2xl text-[clamp(1rem,2.4vh,1.8rem)] text-muted-foreground'>
         Ele foi revogado ou o painel saiu do ar. Peça um novo link a quem
-        administra o CRM.
+        administra o painel.
       </p>
     </div>
   )

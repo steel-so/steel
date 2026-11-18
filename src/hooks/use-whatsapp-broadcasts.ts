@@ -121,6 +121,22 @@ export function useStartWhatsAppBroadcast(workspaceId: string) {
   })
 }
 
+export function useResumeWhatsAppBroadcast(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (broadcastId: string) =>
+      apiFetch<WhatsAppBroadcastListDetailDTO>(
+        `/api/workspaces/${workspaceId}/whatsapp/broadcasts/${broadcastId}/resume`,
+        { method: 'POST' },
+        'Erro ao continuar o envio',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BROADCASTS_KEY(workspaceId) })
+    },
+  })
+}
+
 export function useCancelWhatsAppBroadcast(workspaceId: string) {
   const queryClient = useQueryClient()
 

@@ -110,6 +110,7 @@ export function toCrmCampaignDTO(
     launchedAt: iso(campaign.launchedAt),
     startAt: iso(campaign.startAt),
     completedAt: iso(campaign.completedAt),
+    pausedReason: campaign.pausedReason,
     createdById: campaign.createdById,
     createdAt: campaign.createdAt.toISOString(),
     updatedAt: campaign.updatedAt.toISOString(),

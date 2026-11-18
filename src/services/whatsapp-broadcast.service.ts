@@ -14,6 +14,7 @@ import {
   type BroadcastMediaKind,
   resolveBroadcastMediaKind,
 } from '@/src/lib/whatsapp/broadcast-media'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import {
   describeMarketingLiteError,
   fetchMarketingLiteAnalytics,
@@ -86,6 +87,9 @@ export type WhatsAppBroadcastSendOutcome =
     }
   | { status: 'failed'; reason: string }
   | { status: 'sent'; providerMessageId: string }
+  // Quality gate: nothing was sent, the recipient is still PENDING. Either
+  // this job just paused the list or the list was already paused.
+  | { status: 'paused'; reason: 'quality_blocked' | 'list_paused' }
 
 const OUTBOUND_MEDIA_TYPE: Record<
   BroadcastMediaKind,
@@ -153,6 +157,35 @@ async function sendBroadcastMedia(
     })
   }
   return sent
+}
+
+/**
+ * Quality gate of a broadcast that sends a template: the number or the
+ * template RED refuses the start/resume/retry. Text and media broadcasts
+ * (no template) and non-Meta connections are never gated.
+ */
+async function assertBroadcastTemplateSendAllowed(
+  workspaceId: string,
+  list: { connectionId: string; templateId: string | null },
+): Promise<Result<void>> {
+  if (!list.templateId) return ok(undefined)
+  const connection = await WhatsAppConnectionRepository.findById(
+    list.connectionId,
+    workspaceId,
+  )
+  if (!connection.ok) return connection
+  if (connection.value?.provider !== 'META') return ok(undefined)
+  const template = await WhatsAppTemplateRepository.findById(
+    list.templateId,
+    workspaceId,
+  )
+  if (!template.ok) return template
+  if (!template.value) return ok(undefined)
+  return assertCampaignSendAllowed(
+    connection.value,
+    template.value,
+    'BROADCAST',
+  )
 }
 
 /**
@@ -422,6 +455,13 @@ export const WhatsAppBroadcastService = {
     if (!existing.value) return err(whatsappBroadcastNotFound())
     if (existing.value.status !== 'DRAFT') return err(whatsappBroadcastLocked())
 
+    // Quality gate: no start while the number or the template is RED.
+    const allowed = await assertBroadcastTemplateSendAllowed(
+      workspaceId,
+      existing.value,
+    )
+    if (!allowed.ok) return allowed
+
     // Quem se descadastrou entre a criação da lista e o disparo não recebe.
     const optedOut = existing.value.recipients.filter(
       (recipient) => recipient.contact.broadcastOptedOutAt !== null,
@@ -510,11 +550,12 @@ export const WhatsAppBroadcastService = {
     if (!existing.value) return err(whatsappBroadcastNotFound())
     if (
       existing.value.status !== 'QUEUED' &&
-      existing.value.status !== 'RUNNING'
+      existing.value.status !== 'RUNNING' &&
+      existing.value.status !== 'PAUSED'
     ) {
       return err(
         whatsappBroadcastLocked(
-          'Só dá para cancelar um envio que está agendado ou em andamento.',
+          'Só dá para cancelar um envio que está agendado, em andamento ou pausado.',
         ),
       )
     }
@@ -570,6 +611,13 @@ export const WhatsAppBroadcastService = {
       )
     }
 
+    // Quality gate: resending is a new bulk template send.
+    const allowed = await assertBroadcastTemplateSendAllowed(
+      workspaceId,
+      existing.value,
+    )
+    if (!allowed.ok) return allowed
+
     const reset = await WhatsAppBroadcastRepository.resetFailedRecipients(
       id,
       recipientIds,
@@ -616,6 +664,86 @@ export const WhatsAppBroadcastService = {
   },
 
   /**
+   * Continues a list paused by the quality gate. Refused (with the gate's
+   * error) while the number or the template is still RED. Recipients that
+   * stayed PENDING are queued again; scheduled (CSV) lists go back to QUEUED
+   * and the schedule tick picks the due ones up.
+   */
+  async resume(
+    actorId: string,
+    workspaceId: string,
+    id: string,
+  ): Promise<Result<WhatsAppBroadcastListDetailDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'broadcasts', action: 'CREATE' },
+    )
+    if (!membership.ok) return membership
+    const feature = await assertFeature(workspaceId, 'communication.broadcasts')
+    if (!feature.ok) return feature
+
+    const existing = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!existing.ok) return existing
+    if (!existing.value) return err(whatsappBroadcastNotFound())
+    if (existing.value.status !== 'PAUSED') {
+      return err(
+        whatsappBroadcastLocked('Só dá para continuar um envio pausado.'),
+      )
+    }
+
+    const allowed = await assertBroadcastTemplateSendAllowed(
+      workspaceId,
+      existing.value,
+    )
+    if (!allowed.ok) return allowed
+
+    const pending = existing.value.recipients.filter(
+      (recipient) => recipient.status === 'PENDING',
+    )
+    const scheduled = pending.some((recipient) => recipient.scheduledAt)
+    const resumed = await WhatsAppBroadcastRepository.resumePaused(
+      id,
+      scheduled ? 'QUEUED' : 'RUNNING',
+    )
+    if (!resumed.ok) return resumed
+    if (!resumed.value) {
+      return err(
+        whatsappBroadcastLocked('Só dá para continuar um envio pausado.'),
+      )
+    }
+
+    if (!scheduled && pending.length > 0) {
+      await getWhatsappBroadcastQueue().addBulk(
+        pending.map((recipient, index) => ({
+          name: WhatsappBroadcastJob.SendBroadcastMessage,
+          data: { broadcastListId: id, recipientId: recipient.id },
+          opts: { delay: index * STAGGER_DELAY_MS },
+        })),
+      )
+    }
+    if (pending.length === 0) await completeIfDrained(id)
+
+    auditMutation({
+      entity: 'whatsapp_broadcast_list',
+      action: 'update',
+      actorId,
+      targetId: id,
+      meta: {
+        status: scheduled ? 'QUEUED' : 'RUNNING',
+        resumed: true,
+        pendingRecipients: pending.length,
+      },
+    })
+
+    const fresh = await WhatsAppBroadcastRepository.findById(id, workspaceId)
+    if (!fresh.ok) return fresh
+    if (!fresh.value) return err(whatsappBroadcastNotFound())
+    return ok(toWhatsAppBroadcastListDetailDTO(fresh.value))
+  },
+
+  /**
    * Envia a mensagem da lista a um destinatário. Fluxo de sistema (job em
    * background, sem usuário): revalida o opt-out LGPD no momento do envio
    * (quem respondeu SAIR depois de enfileirado vira SKIPPED) e fecha a lista
@@ -634,6 +762,10 @@ export const WhatsAppBroadcastService = {
     }
     if (recipient.status !== 'PENDING') {
       return ok({ status: 'skipped', reason: 'not_pending' })
+    }
+    // Held by the quality gate: leave the recipient PENDING for the resume.
+    if (recipient.broadcastList.status === 'PAUSED') {
+      return ok({ status: 'paused', reason: 'list_paused' })
     }
 
     // Opt-out LGPD: o contato pode ter respondido SAIR depois que o job foi
@@ -717,6 +849,54 @@ export const WhatsAppBroadcastService = {
         )
         if (!failed.ok) return failed
         return ok({ status: 'failed', reason: 'template_missing' })
+      }
+
+      // Quality gate: a number or template that turned RED pauses the whole
+      // list before anything else is sent; recipients stay PENDING.
+      const quality =
+        connection.value.provider === 'META'
+          ? await assertCampaignSendAllowed(
+              connection.value,
+              template.value,
+              'BROADCAST',
+            )
+          : ok(undefined)
+      if (!quality.ok) {
+        const paused = await WhatsAppBroadcastRepository.pauseIfActive(
+          broadcastListId,
+          quality.error.message,
+        )
+        if (!paused.ok) return paused
+        if (paused.value) {
+          logger.warn('whatsapp.broadcast.quality_blocked', {
+            component: 'WhatsAppBroadcastService',
+            broadcastListId,
+            workspaceId: list.workspaceId,
+            subject: (quality.error.details as { subject?: string } | undefined)
+              ?.subject,
+          })
+          auditMutation({
+            entity: 'whatsapp_broadcast_list',
+            action: 'update',
+            actorId: null,
+            targetId: broadcastListId,
+            meta: {
+              status: 'PAUSED',
+              actor: 'system',
+              via: 'whatsapp_quality_gate',
+            },
+          })
+          await notifyWhatsAppUsers({
+            workspaceId: list.workspaceId,
+            kind: 'WHATSAPP_BROADCAST_FINISHED',
+            userIds: [list.createdById],
+            title: `Transmissão "${list.name}" pausada`,
+            body: 'A qualidade do número ou do template ficou baixa na Meta. Os envios restantes aguardam você continuar.',
+            path: '/zap/transmissoes',
+            meta: { broadcastListId, status: 'PAUSED' },
+          })
+        }
+        return ok({ status: 'paused', reason: 'quality_blocked' })
       }
 
       const fields = extractTemplateFillableFields(

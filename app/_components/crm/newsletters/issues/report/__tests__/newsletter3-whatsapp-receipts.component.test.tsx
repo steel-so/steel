@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { renderWithProviders } from '@/src/__tests__/helpers/component'
 import { jsonResponse, mockFetch } from '@/src/__tests__/helpers/fetch.helpers'
@@ -40,6 +40,7 @@ function row(
 const REPORT: CrmNewsletterWhatsAppReportDTO = {
   enabled: true,
   provider: 'META',
+  pausedReason: null,
   stats: {
     total: 5,
     pending: 0,
@@ -138,5 +139,70 @@ describe('IssueWhatsAppSection receipts (nl3-whatsapp-receipts)', () => {
       whatsappRowLabel(row({ status: 'SKIPPED', skipReason: 'UNKNOWN' })),
     ).toBe('Não enviado')
     expect(whatsappRowLabel(row({ status: 'SKIPPED' }))).toBe('Não enviado')
+  })
+})
+
+describe('IssueWhatsAppSection quality gate', () => {
+  const HELD = {
+    ...REPORT,
+    pausedReason:
+      'Envios bloqueados pela qualidade: o número desta conexão está com qualidade "Baixa" (vermelha) na Meta.',
+    stats: { ...REPORT.stats, pending: 2 },
+  }
+
+  it('says the send is held and keeps the numbers pending', async () => {
+    mockFetch(() => jsonResponse({ success: true, data: HELD }))
+    renderWithProviders(<IssueWhatsAppSection {...PROPS} />)
+
+    expect(
+      await screen.findByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/O número desta conexão está com qualidade/),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Continuar envio no WhatsApp' }),
+    ).toBeTruthy()
+  })
+
+  it('posts the resume and refreshes', async () => {
+    const calls = mockFetch((url, init) => {
+      if (init?.method === 'POST' && url.endsWith('/whatsapp/resume')) {
+        return jsonResponse({ success: true, data: null })
+      }
+      return jsonResponse({ success: true, data: HELD })
+    })
+    renderWithProviders(<IssueWhatsAppSection {...PROPS} />)
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Continuar envio no WhatsApp',
+      }),
+    )
+
+    await waitFor(() =>
+      expect(
+        calls
+          .calls()
+          .some(
+            (call) =>
+              call.init?.method === 'POST' &&
+              call.url.endsWith('/issues/is1/whatsapp/resume'),
+          ),
+      ).toBe(true),
+    )
+  })
+
+  it('shows nothing extra when the send is not held', async () => {
+    mockFetch(() => jsonResponse({ success: true, data: REPORT }))
+    renderWithProviders(<IssueWhatsAppSection {...PROPS} />)
+
+    await screen.findByText('(template da Meta)')
+    expect(
+      screen.queryByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Continuar envio no WhatsApp' }),
+    ).toBeNull()
   })
 })

@@ -63,6 +63,8 @@ export interface CrmDashboardLookupsDTO {
 
 /** Everything the public TV page needs to boot (`GET /api/crm/tv/<token>`). */
 export interface CrmDashboardTvBootDTO {
+  /** Module of the dashboard behind the link. */
+  module: 'CRM' | 'COMMUNICATION'
   workspaceName: string
   timeZone: string
   dashboard: Pick<CrmDashboardDTO, 'id' | 'title' | 'settings'>
