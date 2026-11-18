@@ -148,6 +148,9 @@ export const CrmSalesMetricDTO = dto(
 export const CrmDashboardTvBootDTO = dto(
   'CrmDashboardTvBoot',
   z.object({
+    module: z.enum(['CRM', 'COMMUNICATION']).meta({
+      description: 'Módulo do painel por trás do link.',
+    }),
     workspaceName: z.string(),
     timeZone: z.string().meta({ example: 'America/Sao_Paulo' }),
     dashboard: z.object({

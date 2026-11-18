@@ -36,6 +36,9 @@ vi.mock('@/src/services/crm-company.service', () => ({
 vi.mock('@/src/services/crm-form.service', () => ({
   CrmFormService: { list: vi.fn() },
 }))
+vi.mock('@/src/services/whatsapp-dashboard-source.service', () => ({
+  WhatsAppDashboardSourceService: { rowsForWorkspace: vi.fn() },
+}))
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
@@ -278,7 +281,7 @@ describe('resolve()', () => {
     )
   })
 
-  it('answers not found for a deleted or non-CRM dashboard', async () => {
+  it('answers not found for a deleted or ServiceDesk dashboard', async () => {
     links.findByToken.mockResolvedValue(
       ok(linkWithDashboard({}, crmDashboard({ deletedAt: NOW }))),
     )
@@ -287,7 +290,7 @@ describe('resolve()', () => {
       'CRM_TV_LINK_NOT_FOUND',
     )
     links.findByToken.mockResolvedValue(
-      ok(linkWithDashboard({}, crmDashboard({ module: 'COMMUNICATION' }))),
+      ok(linkWithDashboard({}, crmDashboard({ module: 'SERVICE_DESK' }))),
     )
     expectErr(
       await CrmDashboardTvService.resolve('tok'),

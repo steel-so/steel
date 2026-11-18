@@ -73,8 +73,15 @@ export function createCrmDashboardFromTemplate(
 
 /* ------------------------------- TV links ------------------------------- */
 
-function tvLinksUrl(workspaceId: string, dashboardId: string): string {
-  return `${dashboardsUrl(workspaceId)}/${dashboardId}/tv-links`
+/** Module segment of the API: `crm` or `whatsapp` (Comunicação). */
+export type TvLinkBasePath = 'crm' | 'whatsapp'
+
+function tvLinksUrl(
+  workspaceId: string,
+  dashboardId: string,
+  basePath: TvLinkBasePath = 'crm',
+): string {
+  return `/api/workspaces/${workspaceId}/${basePath}/dashboards/${dashboardId}/tv-links`
 }
 
 /** Live TV links of a dashboard (only loads while `enabled`). */
@@ -82,6 +89,7 @@ export function useCrmDashboardTvLinks(
   workspaceId: string,
   dashboardId: string,
   enabled: boolean,
+  basePath: TvLinkBasePath = 'crm',
 ) {
   const [links, setLinks] = useState<CrmDashboardTvLinkDTO[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -94,7 +102,7 @@ export function useCrmDashboardTvLinks(
     try {
       setLinks(
         await apiFetch<CrmDashboardTvLinkDTO[]>(
-          tvLinksUrl(workspaceId, dashboardId),
+          tvLinksUrl(workspaceId, dashboardId, basePath),
           undefined,
           'Não foi possível carregar os links da TV.',
         ),
@@ -107,7 +115,7 @@ export function useCrmDashboardTvLinks(
     } finally {
       setIsLoading(false)
     }
-  }, [workspaceId, dashboardId])
+  }, [workspaceId, dashboardId, basePath])
 
   useEffect(() => {
     if (enabled) void refetch()
@@ -120,9 +128,10 @@ export function createCrmDashboardTvLink(
   workspaceId: string,
   dashboardId: string,
   name: string,
+  basePath: TvLinkBasePath = 'crm',
 ): Promise<CrmDashboardTvLinkDTO> {
   return apiFetchJson<CrmDashboardTvLinkDTO>(
-    tvLinksUrl(workspaceId, dashboardId),
+    tvLinksUrl(workspaceId, dashboardId, basePath),
     'POST',
     { name },
     'Não foi possível criar o link da TV.',
@@ -133,9 +142,10 @@ export function revokeCrmDashboardTvLink(
   workspaceId: string,
   dashboardId: string,
   linkId: string,
+  basePath: TvLinkBasePath = 'crm',
 ): Promise<void> {
   return apiSend(
-    `${tvLinksUrl(workspaceId, dashboardId)}/${linkId}`,
+    `${tvLinksUrl(workspaceId, dashboardId, basePath)}/${linkId}`,
     { method: 'DELETE' },
     'Não foi possível revogar o link.',
   )

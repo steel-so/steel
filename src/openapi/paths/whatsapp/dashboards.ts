@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   CreateCrmDashboardSchema,
+  CreateCrmDashboardTvLinkSchema,
   CreateCrmDashboardWidgetSchema,
   CrmDashboardWidgetLayoutBatchSchema,
   UpdateCrmDashboardSchema,
@@ -13,6 +14,7 @@ import {
 import { WA_DASHBOARD_SOURCES } from '@/src/schemas/whatsapp-dashboard.schema'
 import { flag } from '../../common'
 import type { ErrorEntry, RouteConfig } from '../../registry'
+import { CrmDashboardTvLinkDTO } from '../../schemas/crm/reports'
 import {
   WhatsAppDashboardDTO,
   WhatsAppDashboardRowDTO,
@@ -20,7 +22,7 @@ import {
   WhatsAppReportDataDTO,
   WhatsAppReportDTO,
 } from '../../schemas/whatsapp'
-import { perm, permErrors } from './shared'
+import { PRIVILEGED, PRIVILEGED_ERRORS, perm, permErrors } from './shared'
 
 const TAG = 'Comunicação · Dashboards e relatórios' as const
 const DASHBOARD = '/workspaces/{id}/whatsapp/dashboards/{dashboardId}'
@@ -53,6 +55,12 @@ function byIdErrors(
       when: `${what} inexistente no workspace`,
     },
   ]
+}
+
+const DASHBOARD_NOT_FOUND: ErrorEntry = {
+  code: 'RESOURCE_NOT_FOUND',
+  message: 'CrmDashboard not found',
+  when: 'Dashboard inexistente no workspace ou de outro módulo',
 }
 
 const UNPARSED_JSON = 'Um corpo que não é JSON válido não é tratado (erro 500).'
@@ -341,6 +349,54 @@ export const dashboardRoutes: RouteConfig[] = [
         code: 'VALIDATION_ERROR',
         message: 'Fonte de dados desconhecida',
         when: '`source` fora da lista',
+      },
+    ],
+  },
+  /* ------------------------------- link da TV ------------------------------ */
+  {
+    method: 'get',
+    path: `${DASHBOARD}/tv-links`,
+    tags: [TAG],
+    summary: 'Listar links da TV',
+    description: `Links ativos (não revogados) do modo TV de um dashboard da Comunicação. Um dashboard de outro módulo responde \`404\`. ${PRIVILEGED}`,
+    params: DASHBOARD_PARAMS,
+    responses: {
+      200: { description: 'Links.', schema: z.array(CrmDashboardTvLinkDTO) },
+    },
+    errors: [...PRIVILEGED_ERRORS, DASHBOARD_NOT_FOUND],
+  },
+  {
+    method: 'post',
+    path: `${DASHBOARD}/tv-links`,
+    tags: [TAG],
+    summary: 'Criar link da TV',
+    description: `Gera um link somente leitura (\`/tv/<token>\`, 192 bits aleatórios) para abrir o dashboard numa TV sem login. A tela serve as 18 fontes \`whatsapp-*\` dos dashboards (não as antigas \`whatsapp-conversations\` e \`whatsapp-broadcasts\`), só com os campos documentados de cada fonte: sem nome, telefone nem texto digitado por atendentes (\`closeReason\` e o \`reason\` dos eventos). Se quem criou o link sair do workspace ou o módulo for desabilitado, o link para de funcionar. ${PRIVILEGED}`,
+    params: DASHBOARD_PARAMS,
+    consent: true,
+    body: {
+      schema: CreateCrmDashboardTvLinkSchema,
+      example: { name: 'TV do atendimento' },
+    },
+    responses: {
+      201: { description: 'Link criado.', schema: CrmDashboardTvLinkDTO },
+    },
+    errors: [...PRIVILEGED_ERRORS, DASHBOARD_NOT_FOUND],
+  },
+  {
+    method: 'delete',
+    path: `${DASHBOARD}/tv-links/{linkId}`,
+    tags: [TAG],
+    summary: 'Revogar link da TV',
+    description: `A tela que usa o link para na próxima atualização. ${PRIVILEGED}`,
+    params: { ...DASHBOARD_PARAMS, linkId: 'Id do link.' },
+    consent: true,
+    responses: { 200: { description: 'Link revogado.', schema: null } },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      DASHBOARD_NOT_FOUND,
+      {
+        code: 'CRM_TV_LINK_NOT_FOUND',
+        when: 'Link inexistente, já revogado ou de outro dashboard',
       },
     ],
   },

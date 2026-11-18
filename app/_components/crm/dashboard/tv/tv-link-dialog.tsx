@@ -23,6 +23,7 @@ import { isApiErrorCode } from '@/src/hooks/_fetch'
 import {
   createCrmDashboardTvLink,
   revokeCrmDashboardTvLink,
+  type TvLinkBasePath,
   useCrmDashboardTvLinks,
 } from '@/src/hooks/use-crm-dashboard-tv'
 import type { CrmDashboardTvLinkDTO } from '@/types/crm-dashboard'
@@ -110,22 +111,29 @@ function LinkRow({
 /**
  * Links somente leitura do painel para TVs (`/tv/<token>`): abrem sem login,
  * não mostram e-mail nem telefone de cliente e param na hora em que são
- * revogados. Só donos e administradores do CRM criam ou revogam.
+ * revogados. Só donos e administradores do módulo (CRM ou Comunicação)
+ * criam ou revogam.
  */
 export function TvLinkDialog({
   open,
   onOpenChange,
   workspaceId,
   dashboardId,
+  basePath = 'crm',
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   workspaceId: string
   dashboardId: string
+  /** Segmento de módulo da API (`crm` ou `whatsapp`). */
+  basePath?: TvLinkBasePath
 }) {
   const { links, setLinks, isLoading, error, forbidden } =
-    useCrmDashboardTvLinks(workspaceId, dashboardId, open)
-  const [name, setName] = React.useState('TV da sala de vendas')
+    useCrmDashboardTvLinks(workspaceId, dashboardId, open, basePath)
+  const moduleName = basePath === 'whatsapp' ? 'da Comunicação' : 'do CRM'
+  const [name, setName] = React.useState(
+    basePath === 'whatsapp' ? 'TV do atendimento' : 'TV da sala de vendas',
+  )
   const [creating, setCreating] = React.useState(false)
   const nameId = React.useId()
 
@@ -137,13 +145,14 @@ export function TvLinkDialog({
         workspaceId,
         dashboardId,
         name.trim() || 'TV',
+        basePath,
       )
       setLinks((prev) => [link, ...prev])
       await copy(absoluteUrl(link.path))
     } catch (e) {
       notify.error(
         isApiErrorCode(e, 'FORBIDDEN')
-          ? 'Só donos e administradores do CRM criam links da TV.'
+          ? `Só donos e administradores ${moduleName} criam links da TV.`
           : e,
       )
     } finally {
@@ -155,7 +164,12 @@ export function TvLinkDialog({
     const previous = links
     setLinks((prev) => prev.filter((item) => item.id !== link.id))
     try {
-      await revokeCrmDashboardTvLink(workspaceId, dashboardId, link.id)
+      await revokeCrmDashboardTvLink(
+        workspaceId,
+        dashboardId,
+        link.id,
+        basePath,
+      )
       notify.success('Link revogado. A TV para na próxima atualização.')
     } catch (e) {
       setLinks(previous)
@@ -195,7 +209,7 @@ export function TvLinkDialog({
           {error ? (
             <p className='text-muted-foreground text-sm'>
               {forbidden
-                ? 'Só donos e administradores do CRM gerenciam links da TV.'
+                ? `Só donos e administradores ${moduleName} gerenciam links da TV.`
                 : error}
             </p>
           ) : null}

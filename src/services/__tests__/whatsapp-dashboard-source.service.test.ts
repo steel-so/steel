@@ -103,3 +103,19 @@ describe('WhatsAppDashboardSourceService.rows', () => {
     )
   })
 })
+
+describe('WhatsAppDashboardSourceService.rowsForWorkspace', () => {
+  it('should load rows without any membership or module check', async () => {
+    membership.findByUserAndWorkspace.mockResolvedValue(ok(null))
+    moduleAccess.isEnabled.mockResolvedValue(ok(false))
+    repo.aiCampaignRecipientData.mockResolvedValue(ok(dataWith(2)))
+
+    const rows = expectOk(
+      await WhatsAppDashboardSourceService.rowsForWorkspace(WS, SOURCE, NOW),
+    )
+
+    expect(rows).toHaveLength(2)
+    expect(membership.findByUserAndWorkspace).not.toHaveBeenCalled()
+    expect(moduleAccess.isEnabled).not.toHaveBeenCalled()
+  })
+})
