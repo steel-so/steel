@@ -12,25 +12,12 @@ vi.setConfig({ testTimeout: 20_000 })
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 vi.mock('@/lib/notify', () => ({ notify }))
 
-const CONNECTIONS = '/api/workspaces/ws_1/whatsapp/connections'
+const AVAILABILITY =
+  '/api/workspaces/ws_1/whatsapp/number-validation/availability'
 const VALIDATIONS = '/api/workspaces/ws_1/whatsapp/number-validations'
 
-function connection(provider: 'ZAPI' | 'META') {
-  return {
-    id: `conn-${provider}`,
-    workspaceId: 'ws_1',
-    provider,
-    label: provider,
-    phoneNumber: '5511999990000',
-    status: 'CONNECTED',
-    statusError: null,
-    zapiInstanceId: null,
-    metaPhoneNumberId: null,
-    metaWabaId: null,
-    createdById: 'u1',
-    createdAt: '2026-10-01T00:00:00.000Z',
-    updatedAt: '2026-10-01T00:00:00.000Z',
-  }
+function available(source: 'WORKSPACE' | 'PLATFORM' | null) {
+  return { available: source !== null, source }
 }
 
 function run(overrides: Record<string, unknown> = {}) {
@@ -68,12 +55,13 @@ function renderDialog() {
 }
 
 describe('<WhatsappNumberValidationDialog />', () => {
-  it('explains that the check needs Z-API and blocks the action without it', async () => {
-    mockFetch([{ match: CONNECTIONS, data: [connection('META')] }])
+  it('explains what is missing and blocks the action when unavailable', async () => {
+    mockFetch([{ match: AVAILABILITY, data: available(null) }])
     renderDialog()
 
     expect(await screen.findByRole('alert')).toBeTruthy()
-    expect(screen.getByText(/só funciona com uma conexão Z-API/)).toBeTruthy()
+    expect(screen.getByText(/ainda não está disponível/)).toBeTruthy()
+    expect(screen.getByText(/Peça a um administrador/)).toBeTruthy()
     expect(
       (
         screen.getByRole('button', {
@@ -83,9 +71,50 @@ describe('<WhatsappNumberValidationDialog />', () => {
     ).toBe(true)
   })
 
+  it('enables the action for a Meta-only workspace through the platform line', async () => {
+    const spy = mockFetch([
+      { match: AVAILABILITY, data: available('PLATFORM') },
+      { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
+      { match: `${VALIDATIONS}/run1`, data: run() },
+      { match: '/whatsapp/contacts', data: [] },
+    ])
+    renderDialog()
+
+    expect(
+      await screen.findByText(/linha de verificação da Stratus/),
+    ).toBeTruthy()
+    expect(screen.getByText(/sem precisar da sua própria Z-API/)).toBeTruthy()
+    expect(screen.getByText(/nunca o nome/)).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    const button = screen.getByRole('button', {
+      name: 'Validar números',
+    }) as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+
+    fireEvent.click(button)
+    expect(await screen.findByText('Validação concluída')).toBeTruthy()
+    expect(fetchBody(spy, VALIDATIONS)).toMatchObject({ scope: 'CONTACTS' })
+  })
+
+  it('mentions the own connection when the workspace has Z-API', async () => {
+    mockFetch([{ match: AVAILABILITY, data: available('WORKSPACE') }])
+    renderDialog()
+
+    expect(await screen.findByText(/pela sua conexão Z-API/)).toBeTruthy()
+    expect(screen.queryByText(/linha de verificação/)).toBeNull()
+  })
+
+  it('does not claim it is unavailable when the lookup itself fails', async () => {
+    mockFetch([{ match: AVAILABILITY, status: 500, error: 'boom' }])
+    renderDialog()
+
+    expect(await screen.findByText(/Não foi possível confirmar/)).toBeTruthy()
+    expect(screen.queryByText(/Peça a um administrador/)).toBeNull()
+  })
+
   it('starts the check and shows the counters when it finishes at once', async () => {
     const spy = mockFetch([
-      { match: CONNECTIONS, data: [connection('ZAPI')] },
+      { match: AVAILABILITY, data: available('WORKSPACE') },
       { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
       { match: `${VALIDATIONS}/run1`, data: run() },
       { match: '/whatsapp/contacts', data: [] },
@@ -120,7 +149,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('can force a re-check ignoring recent results', async () => {
     const spy = mockFetch([
-      { match: CONNECTIONS, data: [connection('ZAPI')] },
+      { match: AVAILABILITY, data: available('WORKSPACE') },
       { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
       { match: `${VALIDATIONS}/run1`, data: run() },
       { match: '/whatsapp/contacts', data: [] },
@@ -141,7 +170,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
   it('polls a background run until it ends', async () => {
     let polls = 0
     mockFetch([
-      { match: CONNECTIONS, data: [connection('ZAPI')] },
+      { match: AVAILABILITY, data: available('WORKSPACE') },
       {
         method: 'POST',
         match: VALIDATIONS,
@@ -186,7 +215,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('shows the failure message of a failed run', async () => {
     mockFetch([
-      { match: CONNECTIONS, data: [connection('ZAPI')] },
+      { match: AVAILABILITY, data: available('WORKSPACE') },
       {
         method: 'POST',
         match: VALIDATIONS,
@@ -223,7 +252,7 @@ describe('<WhatsappNumberValidationDialog />', () => {
 
   it('notifies when the server refuses to start', async () => {
     mockFetch([
-      { match: CONNECTIONS, data: [connection('ZAPI')] },
+      { match: AVAILABILITY, data: available('WORKSPACE') },
       {
         method: 'POST',
         match: VALIDATIONS,

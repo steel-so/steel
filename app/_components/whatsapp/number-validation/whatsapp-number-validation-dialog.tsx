@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { notify } from '@/lib/notify'
-import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import {
   type StartNumberValidationInput,
   useRefreshAfterNumberValidation,
@@ -21,14 +20,12 @@ import {
   useWhatsAppNumberValidation,
 } from '@/src/hooks/use-whatsapp-number-validation'
 import type { WhatsAppNumberValidationDTO } from '@/types/whatsapp-number-validation'
+import { useNumberValidationState } from './use-number-validation-state'
 
 export type NumberValidationSource = Omit<
   StartNumberValidationInput,
   'force' | 'connectionId'
 >
-
-const NO_ZAPI_HINT =
-  'A checagem "tem WhatsApp?" só funciona com uma conexão Z-API conectada. A API oficial da Meta não oferece esse recurso, então nada é consultado nela.'
 
 function Counter({ label, value }: { label: string; value: number }) {
   return (
@@ -87,8 +84,8 @@ export function WhatsappNumberValidationProgress({
       ) : null}
       {finished && run.failed > 0 && run.status === 'DONE' ? (
         <p className='text-muted-foreground text-xs'>
-          Os números sem resposta da Z-API continuam como "Não verificado" e
-          podem ser conferidos de novo depois.
+          Os números sem resposta continuam como "Não verificado" e podem ser
+          conferidos de novo depois.
         </p>
       ) : null}
     </div>
@@ -116,15 +113,12 @@ export function WhatsappNumberValidationDialog({
   /** Complemento da frase "Vamos conferir quais números de {subject} …". */
   subject?: string
 }) {
-  const connections = useWhatsAppConnections(workspaceId)
+  const validation = useNumberValidationState(workspaceId)
   const start = useStartWhatsAppNumberValidation(workspaceId)
   const [force, setForce] = useState(false)
   const [run, setRun] = useState<WhatsAppNumberValidationDTO | null>(null)
 
-  const hasZapi = (connections.data ?? []).some(
-    (connection) => connection.provider === 'ZAPI',
-  )
-  const loaded = connections.data !== undefined
+  const { available, loaded } = validation
 
   function close(next: boolean) {
     onOpenChange(next)
@@ -154,10 +148,10 @@ export function WhatsappNumberValidationDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Vamos conferir quais números de {subject} têm WhatsApp, pela sua
-            conexão Z-API. É uma limpeza de base: o resultado fica salvo no
-            contato e não consome o limite do plano, porque nenhuma mensagem é
-            enviada.
+            Vamos conferir quais números de {subject} têm WhatsApp. É uma
+            limpeza de base: o resultado fica salvo no contato e não consome o
+            limite do plano, porque nenhuma mensagem é enviada.
+            {validation.info ? ` ${validation.info}` : ''}
           </DialogDescription>
         </DialogHeader>
 
@@ -168,12 +162,12 @@ export function WhatsappNumberValidationDialog({
           />
         ) : (
           <div className='space-y-3 text-sm'>
-            {loaded && !hasZapi ? (
+            {validation.unavailableHint ? (
               <p
                 role='alert'
                 className='rounded-lg border border-destructive/40 bg-destructive/5 p-3'
               >
-                {NO_ZAPI_HINT}
+                {validation.unavailableHint}
               </p>
             ) : null}
             <label
@@ -183,7 +177,7 @@ export function WhatsappNumberValidationDialog({
               <Checkbox
                 id='number-validation-force'
                 checked={force}
-                disabled={!hasZapi}
+                disabled={!available}
                 onCheckedChange={(checked) => setForce(checked === true)}
               />
               <span>
@@ -208,7 +202,7 @@ export function WhatsappNumberValidationDialog({
           {run ? null : (
             <Button
               onClick={submit}
-              disabled={!hasZapi || start.isPending || !loaded}
+              disabled={!available || start.isPending || !loaded}
             >
               {start.isPending ? 'Validando…' : 'Validar números'}
             </Button>

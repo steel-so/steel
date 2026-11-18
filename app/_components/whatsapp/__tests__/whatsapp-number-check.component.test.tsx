@@ -22,6 +22,11 @@ vi.mock('@/lib/notify', () => ({ notify }))
 
 const API = '/api/workspaces/ws_1/whatsapp'
 const VALIDATIONS = `${API}/number-validations`
+const AVAILABILITY = `${API}/number-validation/availability`
+
+function available(source: 'WORKSPACE' | 'PLATFORM' | null) {
+  return { available: source !== null, source }
+}
 
 function contact(overrides: Record<string, unknown> = {}) {
   return {
@@ -97,6 +102,7 @@ function startRoutes(extra: FetchRoute[] = []): FetchRoute[] {
     ...extra,
     { method: 'POST', match: VALIDATIONS, status: 201, data: run() },
     { match: `${VALIDATIONS}/run1`, data: run() },
+    { match: AVAILABILITY, data: available('WORKSPACE') },
     { match: `${API}/connections`, data: [connection('ZAPI')] },
   ]
 }
@@ -281,6 +287,7 @@ describe('contacts page "tem zap?"', () => {
 
   it('reports an unavailable check after the import', async () => {
     mockFetch([
+      { match: AVAILABILITY, data: available(null) },
       { match: `${API}/connections`, data: [connection('META')] },
       {
         method: 'POST',
@@ -302,7 +309,7 @@ describe('contacts page "tem zap?"', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Importar planilha' }))
     const dialog = await screen.findByRole('dialog')
     expect(
-      await within(dialog).findByText(/Disponível só com uma conexão Z-API/),
+      await within(dialog).findByText(/ainda não está disponível/),
     ).toBeTruthy()
     const input = dialog.querySelector('input[type=file]') as HTMLInputElement
     fireEvent.change(input, {
@@ -463,9 +470,10 @@ describe('broadcast lists "tem zap?"', () => {
     })
   })
 
-  it('explains the switch is unavailable without Z-API', async () => {
+  it('explains the switch is unavailable when validation is not configured', async () => {
     mockFetch([
       ...base,
+      { match: AVAILABILITY, data: available(null) },
       { match: `${API}/connections`, data: [connection('META')] },
       { match: `${API}/broadcasts`, data: [] },
     ])
@@ -474,8 +482,28 @@ describe('broadcast lists "tem zap?"', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Nova lista' }))
     const dialog = await screen.findByRole('dialog')
     expect(
-      await within(dialog).findByText(/Disponível só com uma conexão Z-API/),
+      await within(dialog).findByText(/Peça a um administrador/),
     ).toBeTruthy()
+  })
+
+  it('enables the switch for a Meta-only workspace via the platform line', async () => {
+    mockFetch([
+      ...base,
+      { match: AVAILABILITY, data: available('PLATFORM') },
+      { match: `${API}/connections`, data: [connection('META')] },
+      { match: `${API}/broadcasts`, data: [] },
+    ])
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Nova lista' }))
+    const dialog = await screen.findByRole('dialog')
+    const toggle = within(dialog).getByRole('switch', {
+      name: 'Pular números sem WhatsApp',
+    })
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-disabled')).not.toBe('true'),
+    )
+    expect(within(dialog).queryByText(/Peça a um administrador/)).toBeNull()
   })
 })
 
@@ -534,15 +562,13 @@ describe('<AiCampaignNoWhatsapp />', () => {
     })
   })
 
-  it('disables the switch without a Z-API connection', async () => {
-    mockFetch([{ match: `${API}/connections`, data: [connection('META')] }])
+  it('disables the switch and explains it when validation is unavailable', async () => {
+    mockFetch([{ match: AVAILABILITY, data: available(null) }])
     renderWithQuery(
       <AiCampaignNoWhatsapp workspaceId='ws_1' campaign={campaign} />,
     )
 
-    expect(
-      await screen.findByText(/Disponível só com uma conexão Z-API/),
-    ).toBeTruthy()
+    expect(await screen.findByText(/Peça a um administrador/)).toBeTruthy()
     expect(
       screen
         .getByRole('switch', { name: 'Pular números sem WhatsApp' })
@@ -550,8 +576,26 @@ describe('<AiCampaignNoWhatsapp />', () => {
     ).toBe('true')
   })
 
+  it('enables switch and validation for a Meta-only workspace', async () => {
+    mockFetch([{ match: AVAILABILITY, data: available('PLATFORM') }])
+    renderWithQuery(
+      <AiCampaignNoWhatsapp workspaceId='ws_1' campaign={campaign} />,
+    )
+
+    await screen.findByText(/quem não foi verificado/)
+    const toggle = screen.getByRole('switch', {
+      name: 'Pular números sem WhatsApp',
+    })
+    await waitFor(() =>
+      expect(toggle.getAttribute('aria-disabled')).not.toBe('true'),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Validar contatos' }),
+    ).toBeTruthy()
+  })
+
   it('does not offer validation for an empty campaign', async () => {
-    mockFetch([{ match: `${API}/connections`, data: [connection('ZAPI')] }])
+    mockFetch([{ match: AVAILABILITY, data: available('WORKSPACE') }])
     renderWithQuery(
       <AiCampaignNoWhatsapp
         workspaceId='ws_1'

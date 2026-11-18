@@ -51,9 +51,9 @@ export function WhatsappSettingsNumberCheck({
       <div>
         <p className='font-medium text-sm'>Checagem "tem WhatsApp?"</p>
         <p className='text-muted-foreground text-xs'>
-          Ao validar uma base pela conexão Z-API, o resultado fica salvo no
-          contato e é reaproveitado por este prazo. Depois dele, o contato é
-          consultado de novo na próxima validação.
+          Ao validar uma base, o resultado fica salvo no contato e é
+          reaproveitado por este prazo. Depois dele, o contato é consultado de
+          novo na próxima validação.
         </p>
       </div>
       <div className='space-y-1.5'>
