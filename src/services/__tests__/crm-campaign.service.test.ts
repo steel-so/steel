@@ -8,7 +8,7 @@ import {
 } from '@/src/__tests__/factories/crm-campaign.factory'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { databaseError } from '@/src/errors'
+import { databaseError, whatsappQualityBlocked } from '@/src/errors'
 import { createBlankEmailDocument } from '@/src/lib/canvas-email/presets'
 import { err, ok } from '@/src/lib/result'
 
@@ -46,6 +46,7 @@ import {
   emailChecklistOf,
 } from '../crm-campaign.service'
 import {
+  assertCampaignWhatsAppQuality,
   buildCampaignEmail,
   CrmCampaignSendService,
   sendCampaignWhatsApp,
@@ -151,6 +152,7 @@ function funnel(): CampaignFunnelCounts {
 
 beforeEach(() => {
   member()
+  vi.mocked(assertCampaignWhatsAppQuality).mockResolvedValue(ok(undefined))
   sendingDomains.findVerifiedByName.mockResolvedValue(
     ok({ id: 'dom1' } as never),
   )
@@ -1436,6 +1438,20 @@ describe('CrmCampaignService.launch()', () => {
     )
   })
 
+  it('should refuse to launch while the WhatsApp number or template is RED', async () => {
+    vi.mocked(assertCampaignWhatsAppQuality).mockResolvedValue(
+      err(whatsappQualityBlocked('NUMBER', undefined, 'CRM_CAMPAIGN')),
+    )
+    const error = expectErr(
+      await CrmCampaignService.launch(ACTOR, WS, 'c1', NOW),
+      'WHATSAPP_QUALITY_BLOCKED',
+    )
+    expect(error.message).toContain('as campanhas do CRM com WhatsApp')
+    expect(campaigns.transition).not.toHaveBeenCalled()
+    expect(recipients.createMany).not.toHaveBeenCalled()
+    expect(send.enqueueDispatch).not.toHaveBeenCalled()
+  })
+
   it('should refuse when nobody is reachable', async () => {
     audience.emailOptOuts.mockResolvedValue(
       ok({
@@ -1554,6 +1570,59 @@ describe('CrmCampaignService.control()', () => {
     expect(recipients.skipAllOpen).toHaveBeenCalledWith('c1')
     expect(auditMutation).toHaveBeenLastCalledWith(
       expect.objectContaining({ action: 'cancel' }),
+    )
+  })
+
+  it('should keep a campaign paused while the WhatsApp quality is still RED', async () => {
+    campaigns.findById.mockResolvedValue(
+      ok(
+        readyCampaign({
+          status: 'PAUSED',
+          startAt: NOW,
+          pausedReason: 'Envios bloqueados pela qualidade: o número',
+        }),
+      ),
+    )
+    vi.mocked(assertCampaignWhatsAppQuality).mockResolvedValue(
+      err(whatsappQualityBlocked('TEMPLATE', 'cobranca', 'CRM_CAMPAIGN')),
+    )
+    expectErr(
+      await CrmCampaignService.control(
+        ACTOR,
+        WS,
+        'c1',
+        { action: 'resume' },
+        NOW,
+      ),
+      'WHATSAPP_QUALITY_BLOCKED',
+    )
+    expect(campaigns.transition).not.toHaveBeenCalled()
+    expect(send.enqueueDispatch).not.toHaveBeenCalled()
+  })
+
+  it('should clear the pause reason when a campaign resumes', async () => {
+    campaigns.findById.mockResolvedValue(
+      ok(
+        readyCampaign({
+          status: 'PAUSED',
+          startAt: NOW,
+          pausedReason: 'Envios bloqueados pela qualidade: o número',
+        }),
+      ),
+    )
+    expectOk(
+      await CrmCampaignService.control(
+        ACTOR,
+        WS,
+        'c1',
+        { action: 'resume' },
+        NOW,
+      ),
+    )
+    expect(campaigns.transition).toHaveBeenCalledWith(
+      'c1',
+      ['PAUSED'],
+      expect.objectContaining({ status: 'SENDING', pausedReason: null }),
     )
   })
 

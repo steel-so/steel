@@ -40,6 +40,7 @@ import { checkCampaignSender } from '@/src/lib/sending-domain/campaign-sender'
 import { resolveBroadcastMediaKind } from '@/src/lib/whatsapp/broadcast-media'
 import { buildButtonPayload } from '@/src/lib/whatsapp/button-payload'
 import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { applyTemplateSendExtras } from '@/src/lib/whatsapp/template-send'
 import { buildMetaSendComponents } from '@/src/lib/whatsapp/template-variables'
@@ -99,6 +100,8 @@ export type CampaignSendOutcome =
         | 'not_pending'
         | 'opted_out'
         | 'tier_limit'
+        // WhatsApp quality gate: the campaign was paused, row left PENDING.
+        | 'quality_blocked'
     }
   | { status: 'retry'; reason: string }
   | { status: 'failed'; reason: string }
@@ -436,6 +439,48 @@ async function sendEmailTo(
   }
 }
 
+/**
+ * Quality gate of the campaign's WhatsApp template: the number or the
+ * template RED refuses the send. Only Meta campaigns with a template are
+ * gated (Z-API text sends have no rating); a missing connection or template
+ * is left to the send itself, which reports it.
+ */
+export async function assertCampaignWhatsAppQuality(
+  campaign: Pick<
+    CrmCampaign,
+    | 'workspaceId'
+    | 'whatsappEnabled'
+    | 'whatsappConnectionId'
+    | 'whatsappTemplateId'
+  >,
+): Promise<Result<void>> {
+  if (
+    !campaign.whatsappEnabled ||
+    !campaign.whatsappConnectionId ||
+    !campaign.whatsappTemplateId
+  ) {
+    return ok(undefined)
+  }
+  const connection = await CrmCampaignLookupRepository.findConnection(
+    campaign.workspaceId,
+    campaign.whatsappConnectionId,
+  )
+  if (!connection.ok) return connection
+  if (connection.value?.provider !== 'META') return ok(undefined)
+  const template = await CrmCampaignLookupRepository.findWhatsAppTemplate(
+    campaign.workspaceId,
+    connection.value.id,
+    campaign.whatsappTemplateId,
+  )
+  if (!template.ok) return template
+  if (!template.value) return ok(undefined)
+  return assertCampaignSendAllowed(
+    connection.value,
+    template.value,
+    'CRM_CAMPAIGN',
+  )
+}
+
 async function sendWhatsAppTo(
   campaign: CrmCampaign,
   recipient: CrmCampaignRecipient,
@@ -617,6 +662,38 @@ export const CrmCampaignSendService = {
         if (sentToday.value >= META_DAILY_CONVERSATION_LIMIT) {
           return ok({ status: 'skipped', reason: 'tier_limit' })
         }
+      }
+    }
+
+    // Quality gate: a number or template that turned RED pauses the campaign
+    // before the recipient is claimed, so every open row stays PENDING.
+    if (channel === 'WHATSAPP') {
+      const quality = await assertCampaignWhatsAppQuality(campaign)
+      if (!quality.ok) {
+        if (quality.error.code !== 'WHATSAPP_QUALITY_BLOCKED') return quality
+        const paused = await CrmCampaignRepository.transition(
+          campaignId,
+          ['SENDING'],
+          { status: 'PAUSED', pausedReason: quality.error.message },
+        )
+        if (!paused.ok) return paused
+        if (paused.value) {
+          logger.warn('crm.campaign.quality_blocked', {
+            component: 'CrmCampaignSendService',
+            campaignId,
+            workspaceId: campaign.workspaceId,
+            subject: (quality.error.details as { subject?: string } | undefined)
+              ?.subject,
+          })
+          auditMutation({
+            entity: 'crm_campaign',
+            action: 'suspend',
+            actorId: null,
+            targetId: campaignId,
+            meta: { actor: 'system', via: 'whatsapp_quality_gate' },
+          })
+        }
+        return ok({ status: 'skipped', reason: 'quality_blocked' })
       }
     }
 

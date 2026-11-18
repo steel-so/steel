@@ -2,6 +2,7 @@ export type WhatsAppBroadcastStatusDTO =
   | 'DRAFT'
   | 'QUEUED'
   | 'RUNNING'
+  | 'PAUSED'
   | 'DONE'
   | 'FAILED'
 
@@ -53,6 +54,8 @@ export interface WhatsAppBroadcastListDTO {
   skipNoWhatsapp: boolean
   /** The most common failure reason (e.g. spend cap), if any. */
   failureReason: string | null
+  /** Why the list is PAUSED (quality gate message), null otherwise. */
+  pausedReason: string | null
   createdAt: string
   updatedAt: string
 }

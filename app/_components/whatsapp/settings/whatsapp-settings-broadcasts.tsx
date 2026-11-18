@@ -41,6 +41,7 @@ import {
   useCancelWhatsAppBroadcast,
   useCreateWhatsAppBroadcast,
   useImportWhatsAppBroadcast,
+  useResumeWhatsAppBroadcast,
   useRetryFailedWhatsAppBroadcast,
   useStartWhatsAppBroadcast,
   useWhatsAppBroadcast,
@@ -69,6 +70,7 @@ import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcas
 import { formatBrl } from '../costs/whatsapp-costs-format'
 import { useNumberValidationState } from '../number-validation/use-number-validation-state'
 import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
+import { QualityBlockNotice } from '../quality-block-notice'
 import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
 import { WhatsappBroadcastMarketingMetrics } from './whatsapp-broadcast-marketing-metrics'
@@ -78,6 +80,7 @@ const STATUS_LABEL: Record<string, string> = {
   DRAFT: 'Rascunho',
   QUEUED: 'Agendada',
   RUNNING: 'Enviando',
+  PAUSED: 'Pausada',
   DONE: 'Concluída',
   FAILED: 'Falhou',
 }
@@ -1044,6 +1047,7 @@ export function WhatsappSettingsBroadcasts({
 }) {
   const broadcasts = useWhatsAppBroadcasts(workspaceId)
   const cancelBroadcast = useCancelWhatsAppBroadcast(workspaceId)
+  const resumeBroadcast = useResumeWhatsAppBroadcast(workspaceId)
   const retryFailed = useRetryFailedWhatsAppBroadcast(workspaceId)
   // Criar, importar e disparar transmissões é restrito a admins.
   const canManage = useCan('broadcasts', 'CREATE')
@@ -1119,6 +1123,12 @@ export function WhatsappSettingsBroadcasts({
                   {broadcast.skipNoWhatsapp ? (
                     <span className='block'>Pula números sem WhatsApp</span>
                   ) : null}
+                  {broadcast.status === 'PAUSED' ? (
+                    <QualityBlockNotice
+                      reason={broadcast.pausedReason}
+                      className='mt-2 max-w-md whitespace-normal'
+                    />
+                  ) : null}
                   {broadcast.failedCount > 0 && broadcast.failureReason ? (
                     <span
                       className='line-clamp-3 block max-w-md text-destructive'
@@ -1186,9 +1196,25 @@ export function WhatsappSettingsBroadcasts({
                       }
                     />
                   ) : null}
+                  {canManage && broadcast.status === 'PAUSED' ? (
+                    <Button
+                      size='xs'
+                      disabled={resumeBroadcast.isPending}
+                      onClick={() =>
+                        resumeBroadcast.mutate(broadcast.id, {
+                          onSuccess: () => notify.success('Envio retomado'),
+                          onError: (error) =>
+                            notify.error(error, 'Não foi possível continuar'),
+                        })
+                      }
+                    >
+                      Continuar envio
+                    </Button>
+                  ) : null}
                   {canManage &&
                   (broadcast.status === 'QUEUED' ||
-                    broadcast.status === 'RUNNING') ? (
+                    broadcast.status === 'RUNNING' ||
+                    broadcast.status === 'PAUSED') ? (
                     <ConfirmAction
                       trigger={
                         <Button

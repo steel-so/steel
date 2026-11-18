@@ -96,6 +96,7 @@ export const WA_BROADCAST_STATUS_LABELS: Record<
   DRAFT: 'Rascunho',
   QUEUED: 'Agendada',
   RUNNING: 'Enviando',
+  PAUSED: 'Pausada',
   DONE: 'Concluída',
   FAILED: 'Falhou',
 }

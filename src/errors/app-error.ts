@@ -961,22 +961,68 @@ export const whatsappSpendCapReached = (cap: number, spent: number): AppError =>
     { cap, spent },
   )
 
+/** Which bulk sender a quality-gate refusal is about (shapes the wording). */
+export type QualityBlockSender =
+  | 'AI_CAMPAIGN'
+  | 'BROADCAST'
+  | 'NEWSLETTER'
+  | 'CRM_CAMPAIGN'
+
+const QUALITY_BLOCK_WORDING: Record<
+  QualityBlockSender,
+  {
+    plural: string
+    singular: string
+    resume: string
+    ofSender: string
+  }
+> = {
+  AI_CAMPAIGN: {
+    plural: 'as campanhas da IA ficam bloqueadas',
+    singular: 'a campanha da IA fica bloqueada',
+    resume: 'continue a campanha',
+    ofSender: 'da campanha',
+  },
+  BROADCAST: {
+    plural: 'as transmissões ficam bloqueadas',
+    singular: 'a transmissão fica bloqueada',
+    resume: 'continue a transmissão',
+    ofSender: 'da transmissão',
+  },
+  NEWSLETTER: {
+    plural: 'o envio da newsletter no WhatsApp fica bloqueado',
+    singular: 'o envio da newsletter no WhatsApp fica bloqueado',
+    resume: 'continue o envio no WhatsApp',
+    ofSender: 'da newsletter',
+  },
+  CRM_CAMPAIGN: {
+    plural: 'as campanhas do CRM com WhatsApp ficam bloqueadas',
+    singular: 'a campanha fica bloqueada',
+    resume: 'continue a campanha',
+    ofSender: 'da campanha',
+  },
+}
+
 /**
- * zap-quality-gate: AI campaign template sends refused because Meta rates the
- * number (or the campaign template) RED. The message starts with the fixed
- * prefix the UI uses to tell this pause from the others.
+ * zap-quality-gate: bulk template sends refused because Meta rates the number
+ * (or the template) RED. The message starts with the fixed prefix the UI uses
+ * to tell this pause from the others; the sender picks the wording ("campanha
+ * da IA", "transmissão", "newsletter", "campanha").
  */
 export const whatsappQualityBlocked = (
   subject: 'NUMBER' | 'TEMPLATE',
   templateName?: string,
-): AppError =>
-  appError(
+  sender: QualityBlockSender = 'AI_CAMPAIGN',
+): AppError => {
+  const wording = QUALITY_BLOCK_WORDING[sender]
+  return appError(
     'WHATSAPP_QUALITY_BLOCKED',
     subject === 'NUMBER'
-      ? `${QUALITY_BLOCK_PREFIX} o número desta conexão está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando templates em massa piora a nota e reduz o limite de mensagens, então as campanhas da IA ficam bloqueadas. Aguarde a Meta recuperar a classificação do número e depois continue a campanha; enquanto isso, fale com os contatos diretamente pelos atendentes.`
-      : `${QUALITY_BLOCK_PREFIX} o template "${templateName ?? ''}" está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando-o piora a nota e pode reduzir o limite de mensagens, então a campanha da IA fica bloqueada. Aguarde a Meta recuperar a classificação do template ou troque o template da campanha; enquanto isso, fale com os contatos diretamente pelos atendentes.`,
+      ? `${QUALITY_BLOCK_PREFIX} o número desta conexão está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando templates em massa piora a nota e reduz o limite de mensagens, então ${wording.plural}. Aguarde a Meta recuperar a classificação do número e depois ${wording.resume}; enquanto isso, fale com os contatos diretamente pelos atendentes.`
+      : `${QUALITY_BLOCK_PREFIX} o template "${templateName ?? ''}" está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando-o piora a nota e pode reduzir o limite de mensagens, então ${wording.singular}. Aguarde a Meta recuperar a classificação do template ou troque o template ${wording.ofSender}; enquanto isso, fale com os contatos diretamente pelos atendentes.`,
     { subject },
   )
+}
 
 /** zap-block-contacts: send refused, the recipient is blocked on the number. */
 export const whatsappContactBlocked = (): AppError =>

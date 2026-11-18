@@ -111,6 +111,29 @@ export function useSaveCrmNewsletterIssueWhatsApp(
   })
 }
 
+/** Continues a WhatsApp send held by the quality gate. */
+export function useResumeCrmNewsletterWhatsApp(
+  workspaceId: string,
+  newsletterId: string,
+  issueId: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      apiFetchJson<null>(
+        `${issueBase(workspaceId, newsletterId, issueId)}/whatsapp/resume`,
+        'POST',
+        undefined,
+        'Erro ao continuar o envio no WhatsApp',
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['crm-newsletter-engage', workspaceId, newsletterId, issueId],
+      })
+    },
+  })
+}
+
 export type CrmNewsletterDeliveryStatusValue =
   (typeof CRM_NEWSLETTER_DELIVERY_STATUSES)[number]
 

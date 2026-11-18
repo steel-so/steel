@@ -194,6 +194,10 @@ export const crmCampaignRoutes: RouteConfig[] = [
         code: 'CRM_CAMPAIGN_NO_RECIPIENTS',
         when: 'Ninguém do público pode receber',
       },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'O lançamento ou agendamento é recusado quando a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
+      },
     ],
   },
   {
@@ -202,7 +206,7 @@ export const crmCampaignRoutes: RouteConfig[] = [
     tags: TAGS,
     summary: 'Pausar, retomar ou cancelar',
     description: describe(
-      'Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado).',
+      'Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado). Quando a Meta passa o número ou o template do WhatsApp para qualidade Baixa durante o envio, o worker pausa a campanha sozinho (e-mails inclusos) com `pausedReason` começando por "Envios bloqueados pela qualidade:", sem tocar nos pendentes; retomar é recusado enquanto a qualidade continuar Baixa e nunca acontece sozinho.',
       crmAccess('email', 'EDIT'),
     ),
     params: { campaignId: CAMPAIGN_ID },
@@ -210,7 +214,15 @@ export const crmCampaignRoutes: RouteConfig[] = [
     responses: {
       200: { description: 'Campanha.', schema: CrmCampaignDetailDTO },
     },
-    errors: [...CRM_ERRORS, NOT_FOUND, LOCKED],
+    errors: [
+      ...CRM_ERRORS,
+      NOT_FOUND,
+      LOCKED,
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'Retomar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
+      },
+    ],
   },
   {
     method: 'post',

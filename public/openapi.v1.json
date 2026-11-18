@@ -15710,7 +15710,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "QUEUED", "RUNNING", "DONE", "FAILED"]
+            "enum": ["DRAFT", "QUEUED", "RUNNING", "PAUSED", "DONE", "FAILED"]
           },
           "scheduledAt": {
             "anyOf": [
@@ -15768,6 +15768,17 @@
               }
             ],
             "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
+          },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com \"Envios bloqueados pela qualidade:\"), `null` nos demais casos."
           },
           "createdAt": {
             "type": "string",
@@ -15872,6 +15883,7 @@
           "noWhatsappCount",
           "skipNoWhatsapp",
           "failureReason",
+          "pausedReason",
           "createdAt",
           "updatedAt",
           "recipients"

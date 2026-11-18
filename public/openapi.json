@@ -31672,7 +31672,7 @@
         "tags": ["CRM · Campanhas"],
         "summary": "Pausar, retomar ou cancelar",
         "operationId": "postWorkspacesByIdCrmCampaignsByCampaignIdControl",
-        "description": "Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado).\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Pausar mantém os envios pendentes; retomar volta a enfileirar; cancelar descarta o que falta (auditado). Quando a Meta passa o número ou o template do WhatsApp para qualidade Baixa durante o envio, o worker pausa a campanha sozinho (e-mails inclusos) com `pausedReason` começando por \"Envios bloqueados pela qualidade:\", sem tocar nos pendentes; retomar é recusado enquanto a qualidade continuar Baixa e nunca acontece sozinho.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -31740,7 +31740,7 @@
             "$ref": "#/components/responses/404_CRM_CAMPAIGN_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_CAMPAIGN_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED_2"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -31829,7 +31829,7 @@
             "$ref": "#/components/responses/404_CRM_CAMPAIGN_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_CAMPAIGN_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_CAMPAIGN_INCOMPLETE_CRM_CAMPAIGN_NO_RECIPIENTS"
@@ -54018,7 +54018,7 @@
             "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_ISSUE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_SENDING_DOMAIN_NOT_VERIFIED_CRM_NEWSLETTER_ISSUE_INCOMPLETE_CRM_NEWSLETTER_NO_SUBSCRIBERS"
@@ -54603,6 +54603,89 @@
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/crm/newsletters/{newsletterId}/issues/{issueId}/whatsapp/resume": {
+      "post": {
+        "tags": ["CRM · Newsletter · Engajamento"],
+        "summary": "Continuar envio no WhatsApp",
+        "operationId": "postWorkspacesByIdCrmNewslettersByNewsletterIdIssuesByIssueIdWhatsappResume",
+        "description": "Continua o envio da versão no WhatsApp que o worker segurou porque a Meta passou o número ou o template para qualidade Baixa (`pausedReason` em \"Entrega no WhatsApp\"; os números seguem pendentes, sem falha). Recusado enquanto a qualidade continuar Baixa; nunca retoma sozinho. Auditado.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `email` × `EDIT` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "newsletterId",
+            "in": "path",
+            "required": true,
+            "description": "ID da newsletter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "description": "ID da edição.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envio retomado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_CRM_NEWSLETTER_NOT_FOUND_CRM_NEWSLETTER_ISSUE_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67192,7 +67275,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_29"
@@ -67541,7 +67624,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
@@ -67627,7 +67710,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
@@ -138866,7 +138949,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND"
@@ -138976,6 +139059,9 @@
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_CONNECTION_NOT_FOUND_WHATSAPP_TEMPLATE_NOT_FOUND"
           },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_QUALITY_BLOCKED_3"
+          },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_TEMPLATE_NOT_APPROVED"
           },
@@ -139058,7 +139144,7 @@
         "tags": ["Comunicação · Transmissões"],
         "summary": "Cancelar transmissão",
         "operationId": "postWorkspacesByIdWhatsappBroadcastsByBroadcastIdCancel",
-        "description": "Cancela uma transmissão agendada (`QUEUED`) ou em andamento (`RUNNING`): quem ainda estava `PENDING` vira `SKIPPED` (\"Envio cancelado\") e a lista fecha como `DONE`. O que já foi enviado não é afetado. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cancela uma transmissão agendada (`QUEUED`), em andamento (`RUNNING`) ou pausada (`PAUSED`): quem ainda estava `PENDING` vira `SKIPPED` (\"Envio cancelado\") e a lista fecha como `DONE`. O que já foi enviado não é afetado. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -139106,7 +139192,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_2"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -139182,6 +139268,72 @@
         ]
       }
     },
+    "/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/resume": {
+      "post": {
+        "tags": ["Comunicação · Transmissões"],
+        "summary": "Continuar transmissão pausada",
+        "operationId": "postWorkspacesByIdWhatsappBroadcastsByBroadcastIdResume",
+        "description": "Continua uma transmissão `PAUSED` — parada sozinha quando a Meta passou o número ou o template para qualidade Baixa (`pausedReason` começa com \"Envios bloqueados pela qualidade:\"; os destinatários seguem `PENDING`, sem falha). Recusada enquanto a qualidade continuar Baixa. Listas manuais voltam para `RUNNING` e os pendentes são enfileirados de novo; listas agendadas por CSV voltam para `QUEUED` e o tick de 5 min dispara os vencidos. Uma transmissão pausada não retoma sozinha. Sem corpo. Auditado. Módulo **Comunicação** habilitado e permissão `broadcasts` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "broadcastId",
+            "in": "path",
+            "required": true,
+            "description": "Id da lista de transmissão.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transmissão retomada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppBroadcastDetail"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/retry-failed": {
       "post": {
         "tags": ["Comunicação · Transmissões"],
@@ -139229,13 +139381,13 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED"
           },
           "422": {
             "$ref": "#/components/responses/422_WHATSAPP_BROADCAST_NO_RECIPIENTS"
@@ -139319,13 +139471,13 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_3"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_3"
+            "$ref": "#/components/responses/409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -168916,6 +169068,62 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `CREATE`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              },
+              "FEATURE_NOT_ENABLED": {
+                "summary": "FEATURE_NOT_ENABLED — Feature `communication.broadcasts` desligada para o workspace (plano/override)",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Esta funcionalidade não está disponível para este workspace",
+                  "error": {
+                    "code": "FEATURE_NOT_ENABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Consentimento LGPD pendente",
                 "value": {
                   "success": false,
@@ -168961,62 +169169,6 @@
               },
               "FEATURE_NOT_ENABLED": {
                 "summary": "FEATURE_NOT_ENABLED — Feature `crm.socialPublishing` desligada para o workspace",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Esta funcionalidade não está disponível para este workspace",
-                  "error": {
-                    "code": "FEATURE_NOT_ENABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`, `FEATURE_NOT_ENABLED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `CREATE`",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              },
-              "FEATURE_NOT_ENABLED": {
-                "summary": "FEATURE_NOT_ENABLED — Feature `communication.broadcasts` desligada para o workspace (plano/override)",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -187642,40 +187794,6 @@
           }
         }
       },
-      "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED": {
-        "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_ISSUE_LOCKED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "CRM_NEWSLETTER_ISSUE_LOCKED": {
-                "summary": "CRM_NEWSLETTER_ISSUE_LOCKED — A edição saiu de rascunho/agendada (está sendo enviada ou já foi)",
-                "value": {
-                  "success": false,
-                  "statusCode": 409,
-                  "message": "Esta edição já foi enviada (ou está sendo) e não pode mais ser alterada",
-                  "error": {
-                    "code": "CRM_NEWSLETTER_ISSUE_LOCKED"
-                  }
-                }
-              },
-              "CRM_NEWSLETTER_ARCHIVED": {
-                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada",
-                "value": {
-                  "success": false,
-                  "statusCode": 409,
-                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
-                  "error": {
-                    "code": "CRM_NEWSLETTER_ARCHIVED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
       "409_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_SUBSCRIBER_EXISTS": {
         "description": "Conflito com o estado atual: `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_SUBSCRIBER_EXISTS`",
         "content": {
@@ -190667,6 +190785,29 @@
             },
             "examples": {
               "WHATSAPP_BROADCAST_LOCKED": {
+                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `QUEUED`, `RUNNING` nem `PAUSED`",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta lista de transmissão já foi iniciada e não pode ser editada",
+                  "error": {
+                    "code": "WHATSAPP_BROADCAST_LOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_BROADCAST_LOCKED": {
                 "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão ainda está em andamento ou é um rascunho",
                 "value": {
                   "success": false,
@@ -190676,13 +190817,23 @@
                     "code": "WHATSAPP_BROADCAST_LOCKED"
                   }
                 }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O reenvio de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
               }
             }
           }
         }
       },
-      "409_WHATSAPP_BROADCAST_LOCKED_2": {
-        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`",
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190690,7 +190841,7 @@
             },
             "examples": {
               "WHATSAPP_BROADCAST_LOCKED": {
-                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `QUEUED` nem `RUNNING`",
+                "summary": "WHATSAPP_BROADCAST_LOCKED — A transmissão não está `PAUSED`",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -190699,13 +190850,23 @@
                     "code": "WHATSAPP_BROADCAST_LOCKED"
                   }
                 }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Continuar é recusado enquanto a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
               }
             }
           }
         }
       },
-      "409_WHATSAPP_BROADCAST_LOCKED_3": {
-        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`",
+      "409_WHATSAPP_BROADCAST_LOCKED_WHATSAPP_QUALITY_BLOCKED_3": {
+        "description": "Conflito com o estado atual: `WHATSAPP_BROADCAST_LOCKED`, `WHATSAPP_QUALITY_BLOCKED`",
         "content": {
           "application/json": {
             "schema": {
@@ -190720,6 +190881,16 @@
                   "message": "Esta lista de transmissão já foi iniciada e não pode ser editada",
                   "error": {
                     "code": "WHATSAPP_BROADCAST_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O disparo de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
                   }
                 }
               }
@@ -191088,6 +191259,160 @@
             "examples": {
               "WHATSAPP_QUALITY_BLOCKED": {
                 "summary": "WHATSAPP_QUALITY_BLOCKED — A Meta classifica o número (ou o template da campanha) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Se a consulta à Meta falhar, o início não é bloqueado",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Continuar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da edição como qualidade Baixa (vermelha). Sem WhatsApp, com Z-API ou sem template nunca é bloqueado, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_3": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O agendamento é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_CAMPAIGN_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_CAMPAIGN_LOCKED": {
+                "summary": "CRM_CAMPAIGN_LOCKED — Campanha já lançada (ou transição inválida)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta campanha já foi lançada e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_CAMPAIGN_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O lançamento ou agendamento é recusado quando a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_CAMPAIGN_LOCKED_2": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_CAMPAIGN_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_CAMPAIGN_LOCKED": {
+                "summary": "CRM_CAMPAIGN_LOCKED — Campanha já lançada (ou transição inválida)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta campanha já foi lançada e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_CAMPAIGN_LOCKED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — Retomar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da campanha como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Campanhas sem WhatsApp, com Z-API ou sem template nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "WHATSAPP_QUALITY_BLOCKED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_WHATSAPP_QUALITY_BLOCKED_CRM_NEWSLETTER_ARCHIVED_CRM_NEWSLETTER_ISSUE_LOCKED": {
+        "description": "Conflito com o estado atual: `WHATSAPP_QUALITY_BLOCKED`, `CRM_NEWSLETTER_ARCHIVED`, `CRM_NEWSLETTER_ISSUE_LOCKED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_ISSUE_LOCKED": {
+                "summary": "CRM_NEWSLETTER_ISSUE_LOCKED — A edição saiu de rascunho/agendada (está sendo enviada ou já foi)",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta edição já foi enviada (ou está sendo) e não pode mais ser alterada",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ISSUE_LOCKED"
+                  }
+                }
+              },
+              "CRM_NEWSLETTER_ARCHIVED": {
+                "summary": "CRM_NEWSLETTER_ARCHIVED — Newsletter arquivada",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "message": "Esta newsletter está arquivada. Reative-a para continuar.",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_ARCHIVED"
+                  }
+                }
+              },
+              "WHATSAPP_QUALITY_BLOCKED": {
+                "summary": "WHATSAPP_QUALITY_BLOCKED — O envio ou agendamento com a versão no WhatsApp é recusado quando a Meta classifica o número (ou o template) como qualidade Baixa (vermelha). Na hora marcada o e-mail sai de qualquer forma e o envio no WhatsApp fica parado até alguém continuar",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -191998,6 +192323,29 @@
                   "message": "O público desta edição não é mais válido: revise as condições",
                   "error": {
                     "code": "CRM_NEWSLETTER_SEGMENT_INVALID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE": {
+        "description": "Dados inválidos: `CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE": {
+                "summary": "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE — O envio no WhatsApp da edição não está pausado",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "O envio no WhatsApp não está disponível para esta edição",
+                  "error": {
+                    "code": "CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE"
                   }
                 }
               }
@@ -210634,6 +210982,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a campanha está `PAUSED` pela qualidade do WhatsApp (começa com \"Envios bloqueados pela qualidade:\"); `null` nos demais casos."
+          },
           "createdById": {
             "type": "string"
           },
@@ -210799,6 +211158,7 @@
           "launchedAt",
           "startAt",
           "completedAt",
+          "pausedReason",
           "createdById",
           "createdAt",
           "updatedAt",
@@ -211177,6 +211537,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a campanha está `PAUSED` pela qualidade do WhatsApp (começa com \"Envios bloqueados pela qualidade:\"); `null` nos demais casos."
+          },
           "createdById": {
             "type": "string"
           },
@@ -211358,6 +211729,7 @@
           "launchedAt",
           "startAt",
           "completedAt",
+          "pausedReason",
           "createdById",
           "createdAt",
           "updatedAt",
@@ -221730,6 +222102,17 @@
               }
             ]
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preenchido enquanto o envio no WhatsApp está parado pela qualidade Baixa na Meta (começa com \"Envios bloqueados pela qualidade:\"); os números seguem pendentes até alguém continuar."
+          },
           "stats": {
             "type": "object",
             "properties": {
@@ -221900,7 +222283,7 @@
             "maximum": 9007199254740991
           }
         },
-        "required": ["enabled", "provider", "stats", "items", "total", "page", "pageSize"]
+        "required": ["enabled", "provider", "pausedReason", "stats", "items", "total", "page", "pageSize"]
       },
       "CrmNlCompanySearchResult": {
         "type": "object",
@@ -266833,7 +267216,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "QUEUED", "RUNNING", "DONE", "FAILED"]
+            "enum": ["DRAFT", "QUEUED", "RUNNING", "PAUSED", "DONE", "FAILED"]
           },
           "scheduledAt": {
             "anyOf": [
@@ -266892,6 +267275,17 @@
             ],
             "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
           },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com \"Envios bloqueados pela qualidade:\"), `null` nos demais casos."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -266920,6 +267314,7 @@
           "noWhatsappCount",
           "skipNoWhatsapp",
           "failureReason",
+          "pausedReason",
           "createdAt",
           "updatedAt"
         ]
@@ -266976,7 +267371,7 @@
           },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "QUEUED", "RUNNING", "DONE", "FAILED"]
+            "enum": ["DRAFT", "QUEUED", "RUNNING", "PAUSED", "DONE", "FAILED"]
           },
           "scheduledAt": {
             "anyOf": [
@@ -267034,6 +267429,17 @@
               }
             ],
             "description": "Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver."
+          },
+          "pausedReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com \"Envios bloqueados pela qualidade:\"), `null` nos demais casos."
           },
           "createdAt": {
             "type": "string",
@@ -267138,6 +267544,7 @@
           "noWhatsappCount",
           "skipNoWhatsapp",
           "failureReason",
+          "pausedReason",
           "createdAt",
           "updatedAt",
           "recipients"

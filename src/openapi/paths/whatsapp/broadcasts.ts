@@ -93,6 +93,10 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
       'WHATSAPP_TEMPLATE_NOT_FOUND',
       'WHATSAPP_TEMPLATE_NOT_APPROVED',
       {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'O agendamento é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
+      },
+      {
         code: 'BAD_REQUEST',
         message:
           'Cabeçalho deve conter as colunas "telefone" e "data_referencia"',
@@ -155,6 +159,10 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
         code: 'WHATSAPP_BROADCAST_LOCKED',
         when: 'A transmissão não está mais em `DRAFT`',
       },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'O disparo de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
+      },
     ],
   },
   {
@@ -162,7 +170,7 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
     path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/cancel',
     tags: [TAG],
     summary: 'Cancelar transmissão',
-    description: `Cancela uma transmissão agendada (\`QUEUED\`) ou em andamento (\`RUNNING\`): quem ainda estava \`PENDING\` vira \`SKIPPED\` ("Envio cancelado") e a lista fecha como \`DONE\`. O que já foi enviado não é afetado. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
+    description: `Cancela uma transmissão agendada (\`QUEUED\`), em andamento (\`RUNNING\`) ou pausada (\`PAUSED\`): quem ainda estava \`PENDING\` vira \`SKIPPED\` ("Envio cancelado") e a lista fecha como \`DONE\`. O que já foi enviado não é afetado. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
     params: PARAMS,
     responses: {
       200: {
@@ -175,7 +183,34 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
       'WHATSAPP_BROADCAST_NOT_FOUND',
       {
         code: 'WHATSAPP_BROADCAST_LOCKED',
-        when: 'A transmissão não está `QUEUED` nem `RUNNING`',
+        when: 'A transmissão não está `QUEUED`, `RUNNING` nem `PAUSED`',
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/broadcasts/{broadcastId}/resume',
+    tags: [TAG],
+    summary: 'Continuar transmissão pausada',
+    description: `Continua uma transmissão \`PAUSED\` — parada sozinha quando a Meta passou o número ou o template para qualidade Baixa (\`pausedReason\` começa com "Envios bloqueados pela qualidade:"; os destinatários seguem \`PENDING\`, sem falha). Recusada enquanto a qualidade continuar Baixa. Listas manuais voltam para \`RUNNING\` e os pendentes são enfileirados de novo; listas agendadas por CSV voltam para \`QUEUED\` e o tick de 5 min dispara os vencidos. Uma transmissão pausada não retoma sozinha. Sem corpo. Auditado. ${perm('broadcasts', 'CREATE')}`,
+    params: PARAMS,
+    responses: {
+      200: {
+        description: 'Transmissão retomada.',
+        schema: WhatsAppBroadcastDetailDTO,
+      },
+    },
+    errors: [
+      ...permErrors('broadcasts', 'CREATE'),
+      FEATURE,
+      'WHATSAPP_BROADCAST_NOT_FOUND',
+      {
+        code: 'WHATSAPP_BROADCAST_LOCKED',
+        when: 'A transmissão não está `PAUSED`',
+      },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'Continuar é recusado enquanto a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
       },
     ],
   },
@@ -199,6 +234,10 @@ Os contatos são criados/atualizados pelo telefone. Linhas inválidas (telefone 
       {
         code: 'WHATSAPP_BROADCAST_LOCKED',
         when: 'A transmissão ainda está em andamento ou é um rascunho',
+      },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'O reenvio de uma transmissão com template é recusado quando a Meta classifica o número (ou o template da transmissão) como qualidade Baixa (vermelha); a mensagem diz qual dos dois e que é preciso aguardar a recuperação. Transmissões só de texto/mídia e conexões que não são da Meta nunca são bloqueadas, e uma consulta à Meta que falha não bloqueia',
       },
       {
         code: 'WHATSAPP_BROADCAST_NO_RECIPIENTS',

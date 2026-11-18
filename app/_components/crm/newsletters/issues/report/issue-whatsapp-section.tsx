@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { OptionSelect } from '@/app/_components/crm/email-editor/option-select'
+import { QualityBlockNotice } from '@/app/_components/whatsapp/quality-block-notice'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -13,9 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { notify } from '@/lib/notify'
 import {
   type CrmNewsletterDeliveryStatusValue,
   useCrmNewsletterWhatsAppReport,
+  useResumeCrmNewsletterWhatsApp,
   type WhatsAppReportQuery,
 } from '@/src/hooks/use-crm-newsletter-engage'
 import type { CrmNewsletterWhatsAppRecipientDTO } from '@/src/schemas/crm-newsletter-engage.schema'
@@ -89,6 +92,11 @@ export function IssueWhatsAppSection({
     issueId,
     query,
   )
+  const resume = useResumeCrmNewsletterWhatsApp(
+    workspaceId,
+    newsletterId,
+    issueId,
+  )
   const data = report.data
   if (report.isLoading) return <Skeleton className='h-32 w-full' />
   if (!data || (!data.enabled && data.stats.total === 0)) return null
@@ -134,6 +142,24 @@ export function IssueWhatsAppSection({
           ]}
         />
       </div>
+      {data.pausedReason ? (
+        <div className='flex flex-col items-start gap-2'>
+          <QualityBlockNotice reason={data.pausedReason} className='w-full' />
+          <Button
+            size='sm'
+            disabled={resume.isPending}
+            onClick={() =>
+              resume.mutate(undefined, {
+                onSuccess: () => notify.success('Envio retomado'),
+                onError: (error) =>
+                  notify.error(error, 'Não foi possível continuar'),
+              })
+            }
+          >
+            Continuar envio no WhatsApp
+          </Button>
+        </div>
+      ) : null}
       {data.stats.total === 0 ? (
         <p className='text-muted-foreground text-sm'>
           O WhatsApp sai quando o envio por e-mail terminar, para os assinantes

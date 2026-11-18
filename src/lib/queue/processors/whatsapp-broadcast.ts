@@ -34,6 +34,16 @@ async function processSendBroadcastMessage(
     return
   }
 
+  if (outcome.status === 'paused') {
+    // Quality gate: nothing sent, the recipient stays PENDING for the resume.
+    logger.warn('queue.whatsapp_broadcast.paused', {
+      ...base,
+      broadcastListId,
+      reason: outcome.reason,
+    })
+    return
+  }
+
   logger.info('queue.whatsapp_broadcast.processed', {
     ...base,
     ok: outcome.status === 'sent',

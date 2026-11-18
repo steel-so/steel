@@ -65,6 +65,7 @@ const POLLS: CrmNewsletterIssuePollsDTO = {
 const WHATSAPP: CrmNewsletterWhatsAppReportDTO = {
   enabled: true,
   provider: 'ZAPI',
+  pausedReason: null,
   stats: {
     total: 3,
     pending: 0,

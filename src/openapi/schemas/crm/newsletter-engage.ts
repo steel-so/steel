@@ -105,6 +105,10 @@ export const CrmNewsletterWhatsAppReportDTO = dto(
   z.object({
     enabled: z.boolean(),
     provider: z.enum(['META', 'ZAPI']).nullable(),
+    pausedReason: z.string().nullable().meta({
+      description:
+        'Preenchido enquanto o envio no WhatsApp está parado pela qualidade Baixa na Meta (começa com "Envios bloqueados pela qualidade:"); os números seguem pendentes até alguém continuar.',
+    }),
     stats: z.object({
       total: z.number().int(),
       pending: z.number().int(),

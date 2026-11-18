@@ -190,3 +190,56 @@ describe('CrmCampaignDashboard', () => {
     )
   })
 })
+
+describe('CrmCampaignDashboard quality gate', () => {
+  const REASON =
+    'Envios bloqueados pela qualidade: o número desta conexão está com qualidade "Baixa" (vermelha) na Meta.'
+
+  function render_(status: 'PAUSED' | 'SENDING', pausedReason: string | null) {
+    const c = campaign({
+      status,
+      pausedReason,
+      whatsappEnabled: true,
+      startAt: '2026-10-09T13:00:00.000Z',
+    })
+    mockFetch([
+      { match: '/crm/campaigns/c1/stats', data: stats() },
+      {
+        match: '/crm/campaigns/c1/recipients',
+        data: { items: [], total: 0, page: 1, pageSize: 20 },
+      },
+    ])
+    renderWithQuery(
+      <CrmCampaignDashboard
+        workspaceId={WS}
+        workspaceSlug={SLUG}
+        campaign={c}
+      />,
+    )
+  }
+
+  it('should say why a campaign paused itself and offer to resume it', () => {
+    render_('PAUSED', REASON)
+    expect(
+      screen.getByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/O número desta conexão está com qualidade/),
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Retomar/ })).toBeTruthy()
+  })
+
+  it('should not show the notice for a manual pause or a running campaign', () => {
+    render_('PAUSED', null)
+    expect(
+      screen.queryByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeNull()
+  })
+
+  it('should hide a stale reason once the campaign runs again', () => {
+    render_('SENDING', REASON)
+    expect(
+      screen.queryByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeNull()
+  })
+})

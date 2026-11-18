@@ -60,6 +60,27 @@ describe('processWhatsappBroadcast', () => {
     )
   })
 
+  it.each(['quality_blocked', 'list_paused'] as const)(
+    'logs a quality pause (%s) without throwing, so BullMQ does not retry',
+    async (reason) => {
+      sendMock.mockResolvedValue({
+        ok: true,
+        value: { status: 'paused', reason },
+      })
+
+      await expect(processWhatsappBroadcast(sendJob())).resolves.toBeUndefined()
+
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        'queue.whatsapp_broadcast.paused',
+        expect.objectContaining({ broadcastListId: 'list1', reason }),
+      )
+      expect(loggerMock.info).not.toHaveBeenCalledWith(
+        'queue.whatsapp_broadcast.processed',
+        expect.anything(),
+      )
+    },
+  )
+
   it('logs LGPD opt-out skips', async () => {
     sendMock.mockResolvedValue({
       ok: true,
