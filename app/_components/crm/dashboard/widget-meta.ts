@@ -15,6 +15,11 @@ import {
   SD_SOURCE_LABELS,
   SD_SOURCE_PATH,
 } from '@/app/_components/servicedesk/dashboards/sd-source-fields'
+import {
+  WA_SOURCE_FIELDS,
+  WA_SOURCE_LABELS,
+  WA_SOURCE_PATH,
+} from '@/app/_components/whatsapp/dashboards/wa-source-fields'
 import type {
   Aggregation,
   ChartSource,
@@ -178,6 +183,7 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'scheduledAt', label: 'Agendado para' },
     { key: 'createdAt', label: 'Criado em' },
   ],
+  ...WA_SOURCE_FIELDS,
   ...SD_SOURCE_FIELDS,
 }
 
@@ -191,6 +197,7 @@ export const VIEW_SOURCE_LABELS: Record<ViewSource, string> = {
   forms: 'Formulários',
   'whatsapp-conversations': 'Conversas do WhatsApp',
   'whatsapp-broadcasts': 'Transmissões do WhatsApp',
+  ...WA_SOURCE_LABELS,
   ...SD_SOURCE_LABELS,
 }
 
@@ -215,6 +222,7 @@ export const SOURCE_MODULE: Record<
   forms: 'CRM',
   'whatsapp-conversations': 'COMMUNICATION',
   'whatsapp-broadcasts': 'COMMUNICATION',
+  'whatsapp-ai-campaign-recipients': 'COMMUNICATION',
   'sd-tickets': 'SERVICE_DESK',
   'sd-ticket-costs': 'SERVICE_DESK',
   'sd-ticket-events': 'SERVICE_DESK',
@@ -260,6 +268,7 @@ const SOURCE_PATH: Record<ViewSource, string> = {
   forms: 'crm/forms',
   'whatsapp-conversations': 'whatsapp/conversations',
   'whatsapp-broadcasts': 'whatsapp/broadcasts',
+  ...WA_SOURCE_PATH,
   ...SD_SOURCE_PATH,
 }
 
