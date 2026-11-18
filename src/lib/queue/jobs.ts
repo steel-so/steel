@@ -69,6 +69,8 @@ export const QueueName = {
   DocumentsExpiry: 'documents-expiry',
   DocumentsAnalytics: 'documents-analytics',
   DocumentsLegacyImport: 'documents-legacy-import',
+  // site-ai fidelity: Chromium capture of a reference page (docs/site-ai-fidelity.md)
+  SiteReferenceCapture: 'site-reference-capture',
 } as const
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName]
@@ -1333,4 +1335,24 @@ export type DocumentsLegacyImportJob =
 export type DocumentsLegacyImportJobPayload = {
   [DocumentsLegacyImportJob.Run]: Record<string, never>
   [DocumentsLegacyImportJob.ImportWorkspace]: { workspaceId: string }
+}
+
+/**
+ * site-reference-capture: captures one reference page (desktop + mobile
+ * strips and DOM blocks) for the fidelity site generation. The result goes
+ * to Redis (`site-ai:capture:<requestId>`, 15 min), never to disk or S3.
+ */
+export const SiteReferenceCaptureJob = {
+  Capture: 'capture',
+} as const
+
+export type SiteReferenceCaptureJob =
+  (typeof SiteReferenceCaptureJob)[keyof typeof SiteReferenceCaptureJob]
+
+export type SiteReferenceCaptureJobPayload = {
+  [SiteReferenceCaptureJob.Capture]: {
+    workspaceId: string
+    url: string
+    requestId: string
+  }
 }

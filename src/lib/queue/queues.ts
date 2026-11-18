@@ -100,6 +100,8 @@ import {
   type ServicedeskTaskRemindersJobPayload,
   type SitePostsJob,
   type SitePostsJobPayload,
+  type SiteReferenceCaptureJob,
+  type SiteReferenceCaptureJobPayload,
   type StatusCollectJob,
   type StatusCollectJobPayload,
   type SteelAgentsJob,
@@ -204,6 +206,7 @@ let crmWorkflowDelayQueue: Queue | null = null
 let whatsappArchiveQueue: Queue | null = null
 let sendingDomainsQueue: Queue | null = null
 let documentsPdfQueue: Queue | null = null
+let siteReferenceCaptureQueue: Queue | null = null
 let documentsAiQueue: Queue | null = null
 
 export function getDataRetentionQueue(): Queue<
@@ -988,6 +991,7 @@ export async function closeQueues(): Promise<void> {
     whatsappArchiveQueue?.close(),
     sendingDomainsQueue?.close(),
     documentsPdfQueue?.close(),
+    siteReferenceCaptureQueue?.close(),
     documentsAiQueue?.close(),
   ])
   dataRetentionQueue = null
@@ -1041,6 +1045,7 @@ export async function closeQueues(): Promise<void> {
   whatsappArchiveQueue = null
   sendingDomainsQueue = null
   documentsPdfQueue = null
+  siteReferenceCaptureQueue = null
   documentsAiQueue = null
 }
 
@@ -1440,6 +1445,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.DocumentsExpiry]: getDocumentsExpiryQueue,
   [QueueName.DocumentsAnalytics]: getDocumentsAnalyticsQueue,
   [QueueName.DocumentsLegacyImport]: getDocumentsLegacyImportQueue,
+  [QueueName.SiteReferenceCapture]: getSiteReferenceCaptureQueue,
 }
 
 /** Resolves a queue singleton by name, for code that is generic over queues. */
@@ -1756,5 +1762,31 @@ export function getDocumentsLegacyImportQueue(): Queue<
     DocumentsLegacyImportJobPayload[DocumentsLegacyImportJob],
     unknown,
     DocumentsLegacyImportJob
+  >
+}
+
+/**
+ * site-reference-capture: one attempt, the caller (the site generation)
+ * decides what to do with a failed link; a blind retry would relaunch Chromium.
+ */
+export function getSiteReferenceCaptureQueue(): Queue<
+  SiteReferenceCaptureJobPayload[SiteReferenceCaptureJob],
+  unknown,
+  SiteReferenceCaptureJob
+> {
+  if (!siteReferenceCaptureQueue) {
+    siteReferenceCaptureQueue = new Queue(QueueName.SiteReferenceCapture, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        ...defaultJobOptions,
+        attempts: 1,
+        removeOnComplete: { age: 60 * 15, count: 100 },
+      },
+    })
+  }
+  return siteReferenceCaptureQueue as Queue<
+    SiteReferenceCaptureJobPayload[SiteReferenceCaptureJob],
+    unknown,
+    SiteReferenceCaptureJob
   >
 }
