@@ -67,6 +67,7 @@ import {
 import type { WhatsAppBroadcastListDTO } from '@/types/whatsapp-broadcast'
 import type { WhatsAppBroadcastImportResultDTO } from '@/types/whatsapp-broadcast-import'
 import { formatBrl } from '../costs/whatsapp-costs-format'
+import { useNumberValidationState } from '../number-validation/use-number-validation-state'
 import { WhatsappNumberValidationProgress } from '../number-validation/whatsapp-number-validation-dialog'
 import { TemplateNameWithQuality } from '../template-quality-badge'
 import { BroadcastMediaPreview } from './broadcast-media-preview'
@@ -117,32 +118,32 @@ function downloadModelCsv(variableCount: number) {
   URL.revokeObjectURL(url)
 }
 
-/** Interruptor "Pular números sem WhatsApp" (só faz sentido com Z-API). */
+/** Interruptor "Pular números sem WhatsApp" (precisa da validação disponível). */
 function SkipNoWhatsappSwitch({
   id,
   checked,
   onCheckedChange,
-  hasZapi,
+  workspaceId,
 }: {
   id: string
   checked: boolean
   onCheckedChange: (checked: boolean) => void
-  hasZapi: boolean
+  workspaceId: string
 }) {
+  const validation = useNumberValidationState(workspaceId)
   return (
     <div className='flex items-start justify-between gap-3 rounded-md border p-3'>
       <div>
         <Label htmlFor={id}>Pular números sem WhatsApp</Label>
         <p className='text-muted-foreground text-xs'>
-          {hasZapi
-            ? 'Quem a checagem "Validar base" marcou sem WhatsApp não recebe e aparece nos contadores. Quem ainda não foi verificado recebe normalmente.'
-            : 'Disponível só com uma conexão Z-API (a API oficial da Meta não oferece a checagem "tem WhatsApp?").'}
+          {validation.unavailableHint ??
+            'Quem a checagem "Validar base" marcou sem WhatsApp não recebe e aparece nos contadores. Quem ainda não foi verificado recebe normalmente.'}
         </p>
       </div>
       <Switch
         id={id}
         checked={checked}
-        disabled={!hasZapi}
+        disabled={!validation.available}
         onCheckedChange={onCheckedChange}
       />
     </div>
@@ -170,9 +171,6 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
   const connections = useWhatsAppConnections(workspaceId)
   const selectedConnection = (connections.data ?? []).find(
     (connection) => connection.id === connectionId,
-  )
-  const hasZapi = (connections.data ?? []).some(
-    (connection) => connection.provider === 'ZAPI',
   )
   const contacts = useWhatsAppContacts(workspaceId)
   const createBroadcast = useCreateWhatsAppBroadcast(workspaceId)
@@ -403,7 +401,7 @@ function CreateBroadcastDialog({ workspaceId }: { workspaceId: string }) {
             id='broadcastSkipNoWhatsapp'
             checked={skipNoWhatsapp}
             onCheckedChange={setSkipNoWhatsapp}
-            hasZapi={hasZapi}
+            workspaceId={workspaceId}
           />
 
           <div className='space-y-1.5'>
@@ -520,9 +518,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
     selectedTemplate && findTemplateFlowButton(selectedTemplate.components),
   )
   const importBroadcast = useImportWhatsAppBroadcast(workspaceId)
-  const importHasZapi = (connections.data ?? []).some(
-    (connection) => connection.provider === 'ZAPI',
-  )
+  const importValidation = useNumberValidationState(workspaceId)
   const variableCount = selectedTemplate
     ? extractTemplateFillableFields(
         parseMetaTemplateComponents(selectedTemplate.components),
@@ -834,7 +830,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               <Checkbox
                 id='importValidate'
                 checked={validateWhatsapp}
-                disabled={!importHasZapi}
+                disabled={!importValidation.available}
                 onCheckedChange={(checked) =>
                   setValidateWhatsapp(checked === true)
                 }
@@ -842,7 +838,8 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               <span>
                 Validar se tem WhatsApp depois de importar
                 <span className='block text-muted-foreground text-xs'>
-                  Usa a sua conexão Z-API e não consome o limite do plano.
+                  {importValidation.unavailableHint ??
+                    `${importValidation.info ?? ''} Não consome o limite do plano.`.trim()}
                 </span>
               </span>
             </label>
@@ -850,7 +847,7 @@ function ImportBroadcastDialog({ workspaceId }: { workspaceId: string }) {
               id='importSkipNoWhatsapp'
               checked={skipNoWhatsapp}
               onCheckedChange={setSkipNoWhatsapp}
-              hasZapi={importHasZapi}
+              workspaceId={workspaceId}
             />
 
             <div className='space-y-1.5'>
