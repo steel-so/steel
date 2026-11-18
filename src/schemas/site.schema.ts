@@ -124,6 +124,16 @@ export const SiteSettingsSchema = z.object({
    * verification (see `site-search.schema.ts`). A malformed block reads as
    * absent instead of resetting every setting. */
   search: SiteSearchSettingsSchema.optional().catch(undefined),
+  /** How the AI generator built the site (ADR 0071): the model chosen for
+   * the generation and how many inspiration links it read. Informational. */
+  aiGeneration: z
+    .object({
+      modelKey: z.string().trim().max(120),
+      inspirationLinks: z.number().int().min(0).max(10).default(0),
+      inspirationRead: z.number().int().min(0).max(10).default(0),
+    })
+    .optional()
+    .catch(undefined),
 })
 
 export type SiteSettingsDTO = z.infer<typeof SiteSettingsSchema>

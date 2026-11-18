@@ -22,7 +22,7 @@ import {
   readCitations,
   STEEL_SEARCH_TOOL_NAME,
 } from '@/src/lib/ai/knowledge/citations'
-import { AI_PROVIDER_LABELS, findAiModel } from '@/src/lib/ai/models'
+import { findAiModel } from '@/src/lib/ai/models'
 import { addAiUsage, currentPeriodStart } from '@/src/lib/ai/quota'
 import {
   capHistory,
@@ -60,8 +60,6 @@ import type {
 import { err, ok, type Result } from '@/src/lib/result'
 import { toAiToolCallDTO } from '@/src/mappers/ai-conversation.mapper'
 import { toAiPendingActionDTO } from '@/src/mappers/ai-pending-action.mapper'
-import type { toEffectiveAiSettings } from '@/src/mappers/ai-settings.mapper'
-import { toAiModelPriceDTOs } from '@/src/mappers/platform-ai-settings.mapper'
 import { AiAttachmentRepository } from '@/src/repositories/ai-attachment.repository'
 import {
   AiConversationRepository,
@@ -75,7 +73,6 @@ import { WorkspaceRepository } from '@/src/repositories/workspace.repository'
 import type { SendAiMessageInput } from '@/src/schemas/steel-ai.schema'
 import type {
   AiCapabilitiesDTO,
-  AiChatModelDTO,
   AiMessageDTO,
   AiModuleDTO,
   AiPendingActionDTO,
@@ -84,10 +81,9 @@ import type {
 } from '@/types/steel-ai'
 import { AiAttachmentService } from './ai-attachment.service'
 import { checkSteelAiMode } from './ai-conversation.service'
+import { listUsableAiModels } from './ai-model-options'
 import { executeAutopilotWrite } from './ai-pending-action.service'
-import { isModelUsable } from './ai-settings.service'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
-import { PlatformAiSettingsService } from './platform-ai-settings.service'
 
 /** Tool rounds per user message (the last one is forced to answer in text). */
 export const STEEL_AI_MAX_TOOL_ROUNDS = 8
@@ -131,23 +127,6 @@ export function dominantModule(
     if (best === null || count > (counts.get(best) as number)) best = module
   }
   return best
-}
-
-/** Picker list: enabled + usable models, charged price (provider × margin). */
-async function chatModels(
-  settings: ReturnType<typeof toEffectiveAiSettings>,
-): Promise<AiChatModelDTO[]> {
-  const margin = await PlatformAiSettingsService.getCostMargin()
-  return toAiModelPriceDTOs(margin)
-    .filter((price) => isModelUsable(settings, price.key))
-    .map((price) => ({
-      key: price.key,
-      provider: price.provider,
-      providerLabel: AI_PROVIDER_LABELS[price.provider],
-      label: price.label,
-      inputUsdPer1M: price.chargedInputUsdPer1M,
-      outputUsdPer1M: price.chargedOutputUsdPer1M,
-    }))
 }
 
 const ATTACHMENT_LIMITS: AiCapabilitiesDTO['attachments'] = {
@@ -686,7 +665,9 @@ export const SteelAiChatService = {
       autopilotEnabled: agentModeEnabled && autopilotEnabled,
       modules: sortModules(access.value.modules),
       modelKey: aiEnabled ? (resolved.value.model?.key ?? null) : null,
-      models: aiEnabled ? await chatModels(resolved.value.settings) : [],
+      models: aiEnabled
+        ? await listUsableAiModels(resolved.value.settings)
+        : [],
       attachments: ATTACHMENT_LIMITS,
       quota: {
         usedUsd: Math.round(usage.value.costUsd * 100) / 100,

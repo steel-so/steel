@@ -68193,6 +68193,28 @@
                             }
                           }
                         }
+                      },
+                      "aiGeneration": {
+                        "type": "object",
+                        "properties": {
+                          "modelKey": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "inspirationLinks": {
+                            "default": 0,
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          },
+                          "inspirationRead": {
+                            "default": 0,
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          }
+                        },
+                        "required": ["modelKey"]
                       }
                     }
                   }
@@ -68304,7 +68326,7 @@
         "tags": ["CRM · Sites"],
         "summary": "Gerar site com IA (stream)",
         "operationId": "postWorkspacesByIdCrmSitesAiGenerate",
-        "description": "Cria um site em rascunho a partir do briefing: tema (paleta e fontes a partir da marca), páginas pedidas (Início sempre) montadas com as seções prontas do catálogo e textos em pt-BR, título e descrição de SEO por página, cabeçalho e rodapé globais e o formulário do CRM na seção de contato (um escolhido, um novo \"Contato pelo site\" ou nenhum).\n\nResponde em **`text/event-stream`**, um frame por evento `event: <type>\\ndata: <json>\\n\\n` no formato `SiteAiEvent` (`types/site-ai.d.ts`): `steps` (lista de etapas) → `step` (`running`/`done`/`failed`)* → `done` (site criado, custo e avisos) ou `error`. Comentários `: ping` mantêm a conexão viva. Nada é gravado antes de todas as páginas ficarem prontas, e todo documento passa pela validação do catálogo.\n\nErros detectados **antes** do stream (permissão, plano, cota, limite de sites, formulário) voltam no envelope JSON.\n\nUsa a IA do CRM do workspace e consome a cota mensal; a resposta do modelo é conferida e, se vier fora do formato, volta para ele corrigir (até 3 chamadas). Limite próprio: o de mensagens de IA por usuário.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Cria um site em rascunho a partir do briefing: tema (paleta e fontes a partir da marca), páginas pedidas (Início sempre) montadas com as seções prontas do catálogo e textos em pt-BR, título e descrição de SEO por página, cabeçalho e rodapé globais e o formulário do CRM na seção de contato (um escolhido, um novo \"Contato pelo site\" ou nenhum).\n\nResponde em **`text/event-stream`**, um frame por evento `event: <type>\\ndata: <json>\\n\\n` no formato `SiteAiEvent` (`types/site-ai.d.ts`): `steps` (lista de etapas) → `step` (`running`/`done`/`failed`)* → `done` (site criado, custo e avisos) ou `error`. Comentários `: ping` mantêm a conexão viva. Nada é gravado antes de todas as páginas ficarem prontas, e todo documento passa pela validação do catálogo.\n\n**Inspiração** (`inspirationLinks`, até 5): o servidor lê cada link (nunca o navegador), extrai um resumo de design — títulos, ordem das seções, cores, fontes, tom e layout — e passa só esse resumo ao modelo, que aproveita estrutura e estilo e escreve textos originais. Endereços http/https nas portas 80/443; hosts privados, loopback e de metadados são recusados (a política vale também para cada redirecionamento, no máximo 3), com limite de 8 s e 1,5 MB por página. Um link que não pôde ser lido não derruba a geração: o evento `link` informa o estado de cada um (`reading`/`read`/`failed`) e o `done` traz a lista final em `links`. O HTML lido nunca é guardado.\n\n**Modelo** (`modelKey`, `provedor:modelo`): precisa estar habilitado no workspace e com chave configurada neste ambiente; sem ele vale o padrão do workspace. O escolhido fica em `settings.aiGeneration` do site e no registro de uso de IA.\n\nErros detectados **antes** do stream (permissão, plano, cota, limite de sites, formulário, modelo indisponível, limite de leitura de links) voltam no envelope JSON.\n\nUsa a IA do CRM do workspace e consome a cota mensal; a resposta do modelo é conferida e, se vier fora do formato, volta para ele corrigir (até 3 chamadas). Limite próprio: o de mensagens de IA por usuário.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `landing-pages` × `CREATE` no perfil (OWNER/ADMIN sempre passam).\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -68389,6 +68411,33 @@
                     "default": "",
                     "type": "string",
                     "maxLength": 1000
+                  },
+                  "inspirationLinks": {
+                    "default": [],
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 2000
+                    }
+                  },
+                  "inspirationFocus": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "modelKey": {
+                    "type": "string",
+                    "enum": [
+                      "openai:gpt-4o-mini",
+                      "openai:gpt-4.1-mini",
+                      "openai:gpt-5-mini",
+                      "openai:gpt-5",
+                      "anthropic:claude-haiku-4-5",
+                      "anthropic:claude-sonnet-5",
+                      "anthropic:claude-opus-5"
+                    ]
                   }
                 },
                 "required": ["name", "business", "goal", "tone"]
@@ -68403,7 +68452,10 @@
                 "style": "auto",
                 "primaryColor": "#AA3300",
                 "productIds": ["ckw1prod0000ab7d3k1e5xyz"],
-                "createContactForm": true
+                "createContactForm": true,
+                "inspirationLinks": ["https://exemplo.com.br/padaria"],
+                "inspirationFocus": "cores e ordem das seções",
+                "modelKey": "anthropic:claude-sonnet-5"
               }
             }
           }
@@ -69364,6 +69416,28 @@
                             }
                           }
                         }
+                      },
+                      "aiGeneration": {
+                        "type": "object",
+                        "properties": {
+                          "modelKey": {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          "inspirationLinks": {
+                            "default": 0,
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          },
+                          "inspirationRead": {
+                            "default": 0,
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                          }
+                        },
+                        "required": ["modelKey"]
                       }
                     }
                   },
@@ -256435,6 +256509,28 @@
                   }
                 },
                 "required": ["business", "crawlers", "llms", "indexNow", "verification"]
+              },
+              "aiGeneration": {
+                "type": "object",
+                "properties": {
+                  "modelKey": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "inspirationLinks": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10
+                  },
+                  "inspirationRead": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10
+                  }
+                },
+                "required": ["modelKey", "inspirationLinks", "inspirationRead"]
               }
             },
             "required": ["seo", "tracking", "cookieBanner"]
@@ -256652,6 +256748,84 @@
                 "type": "null"
               }
             ]
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "example": "anthropic:claude-sonnet-5"
+                },
+                "provider": {
+                  "type": "string",
+                  "enum": ["openai", "anthropic"]
+                },
+                "providerLabel": {
+                  "type": "string",
+                  "example": "Anthropic (Claude)"
+                },
+                "label": {
+                  "type": "string",
+                  "example": "Claude Sonnet 5"
+                },
+                "inputUsdPer1M": {
+                  "type": "number",
+                  "example": 2
+                },
+                "outputUsdPer1M": {
+                  "type": "number",
+                  "example": 10
+                }
+              },
+              "required": ["key", "provider", "providerLabel", "label", "inputUsdPer1M", "outputUsdPer1M"]
+            },
+            "description": "Modelos que \"Gerar com\" oferece: habilitados no workspace e com chave configurada (mesma lista do seletor do Steel AI)."
+          },
+          "estimates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "planUsd": {
+                  "type": "number",
+                  "example": 0.017
+                },
+                "pageUsd": {
+                  "type": "number",
+                  "example": 0.04
+                },
+                "sectionUsd": {
+                  "type": "number",
+                  "example": 0.03
+                },
+                "rewriteUsd": {
+                  "type": "number",
+                  "example": 0.047
+                },
+                "imagesUsd": {
+                  "type": "number",
+                  "example": 0.022
+                },
+                "model": {
+                  "type": "string"
+                }
+              },
+              "required": ["planUsd", "pageUsd", "sectionUsd", "rewriteUsd", "imagesUsd", "model"]
+            },
+            "description": "Custo estimado por chave de `models`."
+          },
+          "defaultModelKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Padrão do workspace, pré-selecionado."
           }
         },
         "required": [
@@ -256662,7 +256836,10 @@
           "forms",
           "canCreateForm",
           "quota",
-          "estimate"
+          "estimate",
+          "models",
+          "estimates",
+          "defaultModelKey"
         ],
         "description": "Dados que preenchem o formulário \"Gerar com IA\" (marca do e-mail, produtos do CRM, formulários publicados, depoimentos), a cota mensal de IA e o custo estimado de cada ação com o modelo do workspace."
       },

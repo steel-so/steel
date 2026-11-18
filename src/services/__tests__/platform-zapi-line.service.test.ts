@@ -127,6 +127,8 @@ describe('authorization (platform admin only)', () => {
       await PlatformZapiLineService.save('u1', {
         instanceId: 'abc',
         token: 'tok',
+        clientToken: undefined,
+        label: undefined,
       }),
       await PlatformZapiLineService.refreshStatus('u1'),
       await PlatformZapiLineService.getQrCode('u1'),
@@ -207,6 +209,8 @@ describe('save()', () => {
       await PlatformZapiLineService.save('admin1', {
         instanceId: 'NEWINSTANCE1',
         token: 'new-token',
+        clientToken: undefined,
+        label: undefined,
       }),
     )
     expect(repo.upsertCredentials).toHaveBeenCalledWith(
@@ -226,6 +230,8 @@ describe('save()', () => {
       await PlatformZapiLineService.save('admin1', {
         instanceId: 'abc',
         token: 'tok',
+        clientToken: undefined,
+        label: undefined,
       }),
       'DATABASE_ERROR',
     )
@@ -238,6 +244,8 @@ describe('save()', () => {
       await PlatformZapiLineService.save('admin1', {
         instanceId: 'abc',
         token: 'tok',
+        clientToken: undefined,
+        label: undefined,
       }),
       'DATABASE_ERROR',
     )

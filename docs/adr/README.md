@@ -88,3 +88,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0068 | [Remover o editor antigo de landing pages e apagar as não migradas](./0068-remove-legacy-landing-pages.md) | Aceita | 2026-11-14 |
 | 0069 | [Linha Z-API da plataforma, gerida no admin, para validar números de qualquer workspace](./0069-instancia-zapi-da-plataforma-para-validar-numeros.md) | Aceita | 2026-11-18 |
 | 0070 | [Bloqueio das campanhas de IA por qualidade vermelha do número ou template](./0070-bloqueio-de-campanhas-de-ia-por-qualidade-do-numero.md) | Aceita | 2026-11-18 |
+| 0071 | [Leitura de links de inspiração e escolha do modelo na geração de sites](./0071-leitura-de-links-de-inspiracao-e-escolha-do-modelo-na-geracao-de-sites.md) | Aceita | 2026-11-18 |

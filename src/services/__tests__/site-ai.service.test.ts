@@ -14,6 +14,7 @@ import {
   databaseError,
   featureNotEnabled,
   forbidden,
+  rateLimited,
   storageError,
 } from '@/src/errors'
 import type { AiChatRequest, AiChatResponse } from '@/src/lib/ai/types'
@@ -47,6 +48,18 @@ vi.mock('@/src/services/crm-form.service')
 vi.mock('@/src/services/platform-ai-settings.service')
 vi.mock('@/src/services/site-media.service')
 vi.mock('@/lib/axiom/audit')
+vi.mock('@/src/lib/rate-limit', () => ({
+  consume: vi.fn(),
+  siteInspirationUserLimiter: { name: 'user' },
+  siteInspirationWorkspaceLimiter: { name: 'workspace' },
+}))
+vi.mock('@/src/services/ai-model-options', () => ({
+  listUsableAiModels: vi.fn(),
+}))
+vi.mock('@/src/lib/site-inspiration/read', async (original) => ({
+  ...(await original<typeof import('@/src/lib/site-inspiration/read')>()),
+  readInspirationLink: vi.fn(),
+}))
 vi.mock('@/src/lib/sites/document', async (original) => {
   const actual = await original<typeof import('@/src/lib/sites/document')>()
   return {
@@ -61,12 +74,15 @@ vi.mock('@/src/lib/ai', async (original) => ({
 
 import { auditMutation } from '@/lib/axiom/audit'
 import { isAiProviderConfigured } from '@/src/lib/ai'
+import { consume } from '@/src/lib/rate-limit'
+import { readInspirationLink } from '@/src/lib/site-inspiration/read'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
 import { CrmEmailBuilderRepository } from '@/src/repositories/crm-email-builder.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { SiteRepository } from '@/src/repositories/site.repository'
 import { SiteAiRepository } from '@/src/repositories/site-ai.repository'
 import { SitePageRepository } from '@/src/repositories/site-page.repository'
+import { listUsableAiModels } from '@/src/services/ai-model-options'
 import { AiUsageService } from '@/src/services/ai-usage.service'
 import { CrmFormService } from '@/src/services/crm-form.service'
 import { assertFeature } from '@/src/services/feature-flag.service'
@@ -87,6 +103,9 @@ const forms = vi.mocked(CrmFormService)
 const platform = vi.mocked(PlatformAiSettingsService)
 const media = vi.mocked(SiteMediaService)
 const audit = vi.mocked(auditMutation)
+const limiter = vi.mocked(consume)
+const readLink = vi.mocked(readInspirationLink)
+const usableModels = vi.mocked(listUsableAiModels)
 const providerConfigured = vi.mocked(isAiProviderConfigured)
 const validate = vi.mocked(validateSiteDocument)
 const invalid = () => err(['Documento inválido'])
@@ -189,6 +208,23 @@ const chat = vi.fn(async (request: AiChatRequest) => {
 
 const provider = { id: 'anthropic' as const, chat, chatStream: vi.fn() }
 
+const CLAUDE_MODEL = {
+  key: 'anthropic:claude-sonnet-5',
+  provider: 'anthropic' as const,
+  providerLabel: 'Anthropic (Claude)',
+  label: 'Claude Sonnet 5',
+  inputUsdPer1M: 2,
+  outputUsdPer1M: 10,
+}
+const GPT_MODEL = {
+  key: 'openai:gpt-5-mini',
+  provider: 'openai' as const,
+  providerLabel: 'OpenAI',
+  label: 'GPT-5 mini',
+  inputUsdPer1M: 0.25,
+  outputUsdPer1M: 2,
+}
+
 function asRole(role: Role) {
   membership.findByUserAndWorkspace.mockResolvedValue(
     ok(createFakeMembership({ role })),
@@ -196,6 +232,8 @@ function asRole(role: Role) {
 }
 
 beforeEach(() => {
+  limiter.mockResolvedValue(ok(undefined))
+  usableModels.mockResolvedValue([CLAUDE_MODEL, GPT_MODEL])
   for (const key of Object.keys(overrides)) delete overrides[key]
   validate.mockImplementation(actualDocument.validateSiteDocument)
   asRole('MEMBER')
@@ -794,6 +832,385 @@ describe('SiteAiService.generateSite', () => {
     sites.isSlugTaken.mockResolvedValueOnce(err(databaseError()))
     expectErr(await SiteAiService.generateSite(ACTOR, WS, brief()))
     expect(chat).not.toHaveBeenCalled()
+  })
+})
+
+// ─── inspiration links and model choice (ADR 0071) ───────────────────────
+
+const REF_BRIEF = {
+  title: 'Ref',
+  description: '',
+  language: 'pt',
+  headings: [{ level: 1 as const, text: 'Título da referência' }],
+  sections: ['hero' as const, 'pricing' as const],
+  colors: {
+    themeColor: '#1a73e8',
+    variables: [],
+    dominant: ['#1a73e8'],
+    background: '#ffffff',
+    dark: false,
+  },
+  fonts: ['Poppins'],
+  tone: 'frases curtas e diretas.',
+  layout: 'cabeçalho com menu de navegação.',
+  truncated: false,
+}
+
+const readOk = (url: string) => ({
+  url,
+  status: 'read' as const,
+  message: null,
+  brief: REF_BRIEF,
+})
+const readFailed = (url: string) => ({
+  url,
+  status: 'failed' as const,
+  message: 'O site demorou demais para responder.',
+  brief: null,
+})
+
+describe('SiteAiService.generateSite — inspiration links', () => {
+  const LINKS = ['https://ref.example/a?utm=1', 'https://slow.example/']
+
+  beforeEach(() => {
+    readLink.mockImplementation(async (url: string) =>
+      url.includes('slow')
+        ? readFailed('https://slow.example')
+        : readOk('https://ref.example/a'),
+    )
+  })
+
+  it('reads the links, reports each one and quotes the briefs as data', async () => {
+    const stream = expectOk(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({
+          inspirationLinks: LINKS,
+          inspirationFocus: 'cores e ordem das seções',
+        }),
+      ),
+    )
+    const events = await collect(stream)
+    expect(events[0]).toMatchObject({ type: 'steps' })
+    const first = events[0]
+    if (first.type === 'steps') {
+      expect(first.steps.slice(0, 2).map((step) => step.id)).toEqual([
+        'inspiration',
+        'theme',
+      ])
+    }
+    const linkEvents = events.filter((event) => event.type === 'link')
+    // two "reading" announcements, then one result per link
+    expect(linkEvents).toHaveLength(4)
+    expect(linkEvents[0]).toMatchObject({
+      link: { status: 'reading', url: 'https://ref.example/a' },
+    })
+
+    const done = events.at(-1)
+    expect(done).toMatchObject({
+      type: 'done',
+      links: [
+        { url: 'https://ref.example/a', status: 'read', message: null },
+        { url: 'https://slow.example', status: 'failed' },
+      ],
+    })
+    if (done?.type !== 'done') return
+    expect(done.warnings.join(' ')).toContain('https://slow.example')
+
+    // the plan call and every page call carry the quoted brief
+    const requests = chat.mock.calls.map(([request]) => request)
+    const planCall = requests.find(
+      (request) => request.jsonSchema?.name === 'site_plan',
+    )
+    const planMessage = String(planCall?.messages[0].content)
+    expect(planMessage).toContain(
+      '<untrusted_content source="web_inspiration">',
+    )
+    expect(planMessage).toContain('Título da referência')
+    expect(planMessage).toContain(
+      'O que aproveitar, segundo o cliente: cores e ordem das seções',
+    )
+    expect(planCall?.system).toContain('Nunca copie')
+    const pageCalls = requests.filter(
+      (request) => request.jsonSchema?.name === 'site_page_copy',
+    )
+    expect(pageCalls.length).toBeGreaterThan(0)
+    for (const request of pageCalls) {
+      expect(String(request.messages[0].content)).toContain('web_inspiration')
+      expect(request.system).toContain('ORIGINAIS')
+      // the brief travels as data in the user turn, never in the system prompt
+      expect(request.system).not.toContain('Título da referência')
+    }
+  })
+
+  it('keeps generating when every link fails, and sends no inspiration', async () => {
+    readLink.mockResolvedValue(readFailed('https://slow.example'))
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationLinks: ['https://slow.example/'] }),
+        ),
+      ),
+    )
+    expect(events.at(-1)).toMatchObject({ type: 'done' })
+    const finished = events.find(
+      (event) =>
+        event.type === 'step' &&
+        event.id === 'inspiration' &&
+        event.status !== 'running',
+    )
+    expect(finished).toMatchObject({ status: 'failed' })
+    for (const [request] of chat.mock.calls) {
+      expect(String(request.messages[0].content)).not.toContain(
+        'web_inspiration',
+      )
+      expect(request.system).not.toContain('Nunca copie')
+    }
+  })
+
+  it('does not touch the network or the limiter without links', async () => {
+    await collect(
+      expectOk(await SiteAiService.generateSite(ACTOR, WS, brief())),
+    )
+    expect(readLink).not.toHaveBeenCalled()
+    expect(limiter).not.toHaveBeenCalled()
+  })
+
+  it('spends one limiter point per link, per user and per workspace', async () => {
+    await SiteAiService.generateSite(
+      ACTOR,
+      WS,
+      brief({ inspirationLinks: LINKS }),
+    )
+    expect(limiter).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'user' }),
+      `user:${ACTOR}`,
+      2,
+    )
+    expect(limiter).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'workspace' }),
+      `workspace:${WS}`,
+      2,
+    )
+  })
+
+  it('rejects before reading anything when the link budget is spent', async () => {
+    limiter.mockResolvedValueOnce(err(rateLimited(30)))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ inspirationLinks: LINKS }),
+      ),
+      'RATE_LIMITED',
+    )
+    expect(readLink).not.toHaveBeenCalled()
+    expect(chat).not.toHaveBeenCalled()
+  })
+
+  it('stores the counts, not the pages: settings and audit', async () => {
+    await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ inspirationLinks: LINKS }),
+        ),
+      ),
+    )
+    expect(created().site.settings).toMatchObject({
+      aiGeneration: {
+        modelKey: 'anthropic:claude',
+        inspirationLinks: 2,
+        inspirationRead: 1,
+      },
+    })
+    const logged = JSON.stringify(audit.mock.calls)
+    expect(logged).toContain('"inspirationLinks":2')
+    expect(logged).toContain('"inspirationRead":1')
+    expect(logged).not.toContain('utm=1')
+    expect(logged).not.toContain('ref.example')
+    expect(JSON.stringify(created())).not.toContain('Título da referência')
+  })
+})
+
+describe('SiteAiService.generateSite — model choice', () => {
+  const resolved = (key: string | null) =>
+    ok({
+      settings: { monthlyQuotaUsd: 10 } as never,
+      model: key
+        ? ({
+            key,
+            provider: key.split(':')[0],
+            model: key.split(':')[1],
+            label: key,
+          } as never)
+        : null,
+    })
+
+  it('passes the chosen model to the AI layer and records it', async () => {
+    ai.resolveModel.mockResolvedValue(resolved('openai:gpt-5-mini'))
+    ai.prepare.mockResolvedValue(
+      ok({
+        feature: 'CRM_ASSISTANT',
+        provider: provider as never,
+        model: {
+          key: 'openai:gpt-5-mini',
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          label: 'GPT-5 mini',
+        } as never,
+      }),
+    )
+    const events = await collect(
+      expectOk(
+        await SiteAiService.generateSite(
+          ACTOR,
+          WS,
+          brief({ modelKey: 'openai:gpt-5-mini' }),
+        ),
+      ),
+    )
+    expect(ai.resolveModel).toHaveBeenCalledWith(WS, 'CRM_ASSISTANT', ACTOR, [
+      'openai:gpt-5-mini',
+    ])
+    expect(ai.prepare).toHaveBeenCalledWith(WS, 'CRM_ASSISTANT', ACTOR, [
+      'openai:gpt-5-mini',
+    ])
+    expect(events.at(-1)).toMatchObject({
+      type: 'done',
+      modelKey: 'openai:gpt-5-mini',
+    })
+    expect(created().site.settings).toMatchObject({
+      aiGeneration: { modelKey: 'openai:gpt-5-mini' },
+    })
+    expect(JSON.stringify(audit.mock.calls)).toContain('openai:gpt-5-mini')
+  })
+
+  it('uses the workspace default when no model is chosen', async () => {
+    await SiteAiService.generateSite(ACTOR, WS, brief())
+    expect(ai.resolveModel).not.toHaveBeenCalled()
+    expect(ai.prepare).toHaveBeenCalledWith(WS, 'CRM_ASSISTANT', ACTOR)
+  })
+
+  it('rejects a model the workspace cannot use instead of falling back', async () => {
+    // resolution skipped the choice (disabled, or provider without a key)
+    ai.resolveModel.mockResolvedValue(resolved('anthropic:claude-sonnet-5'))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ modelKey: 'openai:gpt-5' }),
+      ),
+      'AI_PROVIDER_UNAVAILABLE',
+    )
+    ai.resolveModel.mockResolvedValue(resolved(null))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ modelKey: 'openai:gpt-5' }),
+      ),
+      'AI_PROVIDER_UNAVAILABLE',
+    )
+    expect(ai.prepare).not.toHaveBeenCalled()
+    expect(chat).not.toHaveBeenCalled()
+  })
+
+  it('propagates the quota error of the chosen model', async () => {
+    ai.resolveModel.mockResolvedValue(resolved('openai:gpt-5-mini'))
+    ai.prepare.mockResolvedValueOnce(err(aiQuotaExceeded(10, 10)))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ modelKey: 'openai:gpt-5-mini' }),
+      ),
+      'AI_QUOTA_EXCEEDED',
+    )
+  })
+
+  it('checks the plan feature before resolving the model', async () => {
+    feature.mockResolvedValueOnce(err(featureNotEnabled()))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ modelKey: 'openai:gpt-5-mini' }),
+      ),
+      'FEATURE_NOT_ENABLED',
+    )
+    expect(ai.resolveModel).not.toHaveBeenCalled()
+  })
+
+  it('propagates a settings read error', async () => {
+    ai.resolveModel.mockResolvedValue(err(databaseError()))
+    expectErr(
+      await SiteAiService.generateSite(
+        ACTOR,
+        WS,
+        brief({ modelKey: 'openai:gpt-5-mini' }),
+      ),
+    )
+  })
+})
+
+describe('SiteAiService.context — model list', () => {
+  beforeEach(() => {
+    brandRepo.findBrand.mockResolvedValue(ok(null))
+    brandRepo.findWorkspaceIdentity.mockResolvedValue(
+      ok({ name: 'Padaria', logoUrl: '' }),
+    )
+    forms.list.mockResolvedValue(ok([]))
+    ai.resolveModel.mockResolvedValue(
+      ok({
+        settings: { monthlyQuotaUsd: 10 } as never,
+        model: {
+          key: CLAUDE_MODEL.key,
+          provider: 'anthropic',
+          model: 'claude-sonnet-5',
+          label: 'Claude Sonnet 5',
+          pricing: { inputUsdPer1M: 2, outputUsdPer1M: 10 },
+        } as never,
+      }),
+    )
+    usageRepo.sumSince.mockResolvedValue(
+      ok({ costUsd: 0, inputTokens: 0, outputTokens: 0 } as never),
+    )
+    platform.getCostMargin.mockResolvedValue(1)
+    providerConfigured.mockReturnValue(true)
+  })
+
+  it('offers the usable models, preselects the default and prices each one', async () => {
+    const context = expectOk(await SiteAiService.context(ACTOR, WS))
+    expect(context.models.map((model) => model.key)).toEqual([
+      CLAUDE_MODEL.key,
+      GPT_MODEL.key,
+    ])
+    expect(context.defaultModelKey).toBe(CLAUDE_MODEL.key)
+    expect(Object.keys(context.estimates)).toEqual([
+      CLAUDE_MODEL.key,
+      GPT_MODEL.key,
+    ])
+    expect(context.estimates[GPT_MODEL.key].pageUsd).toBeLessThan(
+      context.estimates[CLAUDE_MODEL.key].pageUsd,
+    )
+  })
+
+  it('falls back to the first usable model when the default is not pickable', async () => {
+    usableModels.mockResolvedValue([GPT_MODEL])
+    const context = expectOk(await SiteAiService.context(ACTOR, WS))
+    expect(context.defaultModelKey).toBe(GPT_MODEL.key)
+  })
+
+  it('offers nothing when the plan lacks the AI', async () => {
+    feature.mockResolvedValue(err(featureNotEnabled()))
+    const context = expectOk(await SiteAiService.context(ACTOR, WS))
+    expect(context.models).toEqual([])
+    expect(context.defaultModelKey).toBeNull()
   })
 })
 

@@ -45,6 +45,38 @@ export const SiteAiContextDTOSchema = dto(
           model: z.string().meta({ example: 'Claude Sonnet 4.5' }),
         })
         .nullable(),
+      models: z
+        .array(
+          z.object({
+            key: z.string().meta({ example: 'anthropic:claude-sonnet-5' }),
+            provider: z.enum(['openai', 'anthropic']),
+            providerLabel: z.string().meta({ example: 'Anthropic (Claude)' }),
+            label: z.string().meta({ example: 'Claude Sonnet 5' }),
+            inputUsdPer1M: usd(2),
+            outputUsdPer1M: usd(10),
+          }),
+        )
+        .meta({
+          description:
+            'Modelos que "Gerar com" oferece: habilitados no workspace e com chave configurada (mesma lista do seletor do Steel AI).',
+        }),
+      estimates: z
+        .record(
+          z.string(),
+          z.object({
+            planUsd: usd(0.017),
+            pageUsd: usd(0.04),
+            sectionUsd: usd(0.03),
+            rewriteUsd: usd(0.047),
+            imagesUsd: usd(0.022),
+            model: z.string(),
+          }),
+        )
+        .meta({ description: 'Custo estimado por chave de `models`.' }),
+      defaultModelKey: z
+        .string()
+        .nullable()
+        .meta({ description: 'Padrão do workspace, pré-selecionado.' }),
     })
     .meta({
       description:

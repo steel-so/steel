@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { SITE_ICON_NAMES } from '@/src/lib/canvas-site/icons'
 import { SITE_FONTS } from '@/src/lib/canvas-site/theme'
+import { INSPIRATION_RULES } from '@/src/lib/site-inspiration/read'
 import {
   type GenerateSiteDTO,
   SITE_AI_GOAL_LABELS,
@@ -73,7 +74,10 @@ export function briefLines(
 
 // ─── plan ─────────────────────────────────────────────────────────────────
 
-export function buildPlanSystem(kinds: SitePageKind[]): string {
+export function buildPlanSystem(
+  kinds: SitePageKind[],
+  withInspiration = false,
+): string {
   return [
     'Você é um web designer e estrategista de conteúdo brasileiro que planeja sites de empresas.',
     'Planeje o site a partir do briefing e devolva só o JSON pedido.',
@@ -87,6 +91,12 @@ export function buildPlanSystem(kinds: SitePageKind[]): string {
     ...SITE_AI_SECTIONS.map(
       (type) => `  - ${type}: ${SITE_AI_SECTION_HINTS[type]}`,
     ),
+    ...(withInspiration
+      ? [
+          'Use as referências de inspiração do briefing para decidir a ordem das seções, o estilo, a paleta e as fontes; as cores e fontes das referências servem de ponto de partida, mas respeite a cor da marca quando houver.',
+          ...INSPIRATION_RULES,
+        ]
+      : []),
     'Regras das seções: a página home começa com hero; as outras começam com intro; contact tem o formulário (fica na página contact, ou no fim da home se não houver página de contato); products e testimonials só quando o briefing tiver esses dados; countdown só para evento com data; de 3 a 6 seções por página.',
     ...RULES,
   ].join('\n')
@@ -176,6 +186,7 @@ export function buildPageCopySystem(input: {
   brief: string[]
   pageTitle: string
   testimonials: SiteAiTestimonialData[]
+  withInspiration?: boolean
 }): string {
   return [
     `Você é o redator do site descrito abaixo. Escreva os textos da página "${input.pageTitle}".`,
@@ -186,6 +197,12 @@ export function buildPageCopySystem(input: {
     ICONS_LINE,
     'Textos alternativos de imagem descrevem a foto ideal para aquele lugar, em uma frase.',
     'Devolva JSON com seoTitle (até 60 caracteres, com o nome da empresa), seoDescription (até 155 caracteres) e fields com TODOS os ids da lista, cada um com o texto final.',
+    ...(input.withInspiration
+      ? [
+          'A mensagem traz referências de inspiração: use-as só para o tom e a hierarquia dos textos.',
+          ...INSPIRATION_RULES,
+        ]
+      : []),
     ...(input.testimonials.length > 0
       ? [
           'Depoimentos reais (cite só estes, nunca invente outros):',

@@ -74,7 +74,9 @@ export const crmSiteAiRoutes: RouteConfig[] = [
     description: describe(
       'Cria um site em rascunho a partir do briefing: tema (paleta e fontes a partir da marca), páginas pedidas (Início sempre) montadas com as seções prontas do catálogo e textos em pt-BR, título e descrição de SEO por página, cabeçalho e rodapé globais e o formulário do CRM na seção de contato (um escolhido, um novo "Contato pelo site" ou nenhum).',
       'Responde em **`text/event-stream`**, um frame por evento `event: <type>\\ndata: <json>\\n\\n` no formato `SiteAiEvent` (`types/site-ai.d.ts`): `steps` (lista de etapas) → `step` (`running`/`done`/`failed`)* → `done` (site criado, custo e avisos) ou `error`. Comentários `: ping` mantêm a conexão viva. Nada é gravado antes de todas as páginas ficarem prontas, e todo documento passa pela validação do catálogo.',
-      'Erros detectados **antes** do stream (permissão, plano, cota, limite de sites, formulário) voltam no envelope JSON.',
+      '**Inspiração** (`inspirationLinks`, até 5): o servidor lê cada link (nunca o navegador), extrai um resumo de design — títulos, ordem das seções, cores, fontes, tom e layout — e passa só esse resumo ao modelo, que aproveita estrutura e estilo e escreve textos originais. Endereços http/https nas portas 80/443; hosts privados, loopback e de metadados são recusados (a política vale também para cada redirecionamento, no máximo 3), com limite de 8 s e 1,5 MB por página. Um link que não pôde ser lido não derruba a geração: o evento `link` informa o estado de cada um (`reading`/`read`/`failed`) e o `done` traz a lista final em `links`. O HTML lido nunca é guardado.',
+      '**Modelo** (`modelKey`, `provedor:modelo`): precisa estar habilitado no workspace e com chave configurada neste ambiente; sem ele vale o padrão do workspace. O escolhido fica em `settings.aiGeneration` do site e no registro de uso de IA.',
+      'Erros detectados **antes** do stream (permissão, plano, cota, limite de sites, formulário, modelo indisponível, limite de leitura de links) voltam no envelope JSON.',
       COMMON,
       crmAccess('landing-pages', 'CREATE'),
     ),
@@ -93,6 +95,9 @@ export const crmSiteAiRoutes: RouteConfig[] = [
         primaryColor: '#AA3300',
         productIds: ['ckw1prod0000ab7d3k1e5xyz'],
         createContactForm: true,
+        inspirationLinks: ['https://exemplo.com.br/padaria'],
+        inspirationFocus: 'cores e ordem das seções',
+        modelKey: 'anthropic:claude-sonnet-5',
       },
     },
     responses: {
@@ -107,6 +112,10 @@ export const crmSiteAiRoutes: RouteConfig[] = [
     },
     errors: [
       ...CRM_ERRORS,
+      {
+        code: 'RATE_LIMITED',
+        when: 'Limite de leitura de links de inspiração (15 a cada 10 min por usuário, 40 por hora por workspace)',
+      },
       { code: 'SITE_LIMIT_REACHED', when: 'O workspace já tem 100 sites' },
       {
         code: 'VALIDATION_ERROR',

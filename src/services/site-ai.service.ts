@@ -2,9 +2,9 @@ import { createId } from '@paralleldrive/cuid2'
 import type { Prisma, Site } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
-import { validationError } from '@/src/errors'
+import { aiProviderUnavailable, validationError } from '@/src/errors'
 import { type AppError, appError } from '@/src/errors/app-error'
-import { isAiProviderConfigured } from '@/src/lib/ai'
+import { findAiModel, isAiProviderConfigured } from '@/src/lib/ai'
 import { aiModelPricing } from '@/src/lib/ai/models'
 import {
   currentPeriodStart,
@@ -23,7 +23,13 @@ import {
 } from '@/src/lib/canvas-site/constants'
 import { SITE_KITS } from '@/src/lib/canvas-site/presets/kits'
 import { parseSiteTheme } from '@/src/lib/canvas-site/theme'
+import {
+  consume,
+  siteInspirationUserLimiter,
+  siteInspirationWorkspaceLimiter,
+} from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
+import { stripUrlForDisplay } from '@/src/lib/safe-fetch/fetch-html'
 import {
   buildGlobalDocuments,
   buildPageDocument,
@@ -82,6 +88,11 @@ import {
   collectSlots,
   type TextSlot,
 } from '@/src/lib/site-ai/slots'
+import {
+  buildInspirationBlock,
+  type InspirationLinkResult,
+  readInspirationLink,
+} from '@/src/lib/site-inspiration/read'
 import { validateSiteDocument } from '@/src/lib/sites/document'
 import { siteSlugFromName } from '@/src/lib/sites/slug'
 import {
@@ -109,13 +120,16 @@ import {
 } from '@/src/schemas/site-ai.schema'
 import type {
   SiteAiContextDTO,
+  SiteAiEstimateDTO,
   SiteAiEvent,
   SiteAiImagesResultDTO,
+  SiteAiLinkDTO,
   SiteAiNodeChange,
   SiteAiRewriteResultDTO,
   SiteAiSectionResultDTO,
   SiteAiStep,
 } from '@/types/site-ai'
+import { listUsableAiModels } from './ai-model-options'
 import { AiUsageService, type PreparedAiCall } from './ai-usage.service'
 import { assertModuleMember } from './authz'
 import { CrmFormService } from './crm-form.service'
@@ -149,6 +163,8 @@ const IMAGES_MAX_TOKENS = 3_000
 export const PAGE_CONCURRENCY = 3
 /** Most text fields one rewrite sends to the model. */
 export const MAX_REWRITE_SLOTS = 150
+/** Inspiration links read at the same time. */
+export const INSPIRATION_CONCURRENCY = 3
 
 const json = (value: unknown) => value as Prisma.InputJsonValue
 const round = (value: number) => Math.round(value * 10_000) / 10_000
@@ -161,10 +177,33 @@ const aiFailed = (
 async function prepareCall(
   actorId: string,
   workspaceId: string,
+  modelKey?: string,
 ): Promise<Result<PreparedAiCall>> {
   const feature = await assertFeature(workspaceId, 'crm.aiAssistant')
   if (!feature.ok) return feature
-  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+  if (!modelKey) {
+    return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId)
+  }
+  // The chosen model must be usable here (enabled for the workspace, with a
+  // key in this environment): resolution would silently fall back to the
+  // default, so an unusable choice is refused instead.
+  const resolved = await AiUsageService.resolveModel(
+    workspaceId,
+    'CRM_ASSISTANT',
+    actorId,
+    [modelKey],
+  )
+  if (!resolved.ok) return resolved
+  if (resolved.value.model?.key !== modelKey) {
+    return err(
+      aiProviderUnavailable(
+        'O modelo de IA escolhido não está disponível neste workspace. Escolha outro em "Gerar com".',
+      ),
+    )
+  }
+  return AiUsageService.prepare(workspaceId, 'CRM_ASSISTANT', actorId, [
+    modelKey,
+  ])
 }
 
 /** Records every provider call and keeps the running cost. */
@@ -389,6 +428,8 @@ async function writePage(input: {
   page: SitePlan['pages'][number]
   ctx: SectionContext
   brief: string[]
+  /** Quoted inspiration briefs (empty = no references). */
+  inspiration: string[]
   testimonials: SiteAiTestimonialData[]
   workspaceId: string
 }): Promise<PageResult> {
@@ -403,10 +444,12 @@ async function writePage(input: {
       brief: input.brief,
       pageTitle: page.title,
       testimonials: input.testimonials,
+      withInspiration: input.inspiration.length > 0,
     }),
     message: [
       `Página: ${page.title}`,
       `Botão principal do site: ${input.plan.ctaLabel}`,
+      ...(input.inspiration.length > 0 ? ['', ...input.inspiration] : []),
       '',
       'Campos:',
       describeSlots(slots),
@@ -491,9 +534,19 @@ async function* runGeneration(input: {
   slug: string
 }): AsyncGenerator<SiteAiEvent> {
   const { actorId, workspaceId, dto, call, data } = input
+  const hasLinks = dto.inspirationLinks.length > 0
   const meter = usageMeter(call, workspaceId, actorId)
   const kinds = requestedKinds(dto)
   const steps: SiteAiStep[] = [
+    ...(hasLinks
+      ? [
+          {
+            id: 'inspiration',
+            label: 'Lendo as referências…',
+            status: 'pending',
+          } satisfies SiteAiStep,
+        ]
+      : []),
     { id: 'theme', label: 'Criando tema…', status: 'pending' },
     ...kinds.map(
       (kind): SiteAiStep => ({
@@ -512,6 +565,61 @@ async function* runGeneration(input: {
     testimonials: data.testimonials,
     eventDate: dto.eventDate ?? null,
   })
+  // 0. Inspiration links, read here (never in the browser). A link that
+  // cannot be read is reported and skipped; the generation goes on.
+  const links: InspirationLinkResult[] = []
+  const linkStates: SiteAiLinkDTO[] = dto.inspirationLinks.map((url) => ({
+    url: stripUrlForDisplay(url),
+    status: 'reading',
+    message: null,
+  }))
+  if (hasLinks) {
+    yield {
+      type: 'step',
+      id: 'inspiration',
+      label: 'Lendo as referências…',
+      status: 'running',
+    }
+    const linkEvents = channel<SiteAiEvent>()
+    for (const [index, link] of linkStates.entries()) {
+      linkEvents.push({ type: 'link', index, link })
+    }
+    const reading = pool(
+      dto.inspirationLinks.map((url, index) => async () => {
+        const result = await readInspirationLink(url)
+        links[index] = result
+        linkStates[index] = {
+          url: result.url,
+          status: result.status,
+          message: result.message,
+        }
+        linkEvents.push({ type: 'link', index, link: linkStates[index] })
+      }),
+      INSPIRATION_CONCURRENCY,
+    ).finally(() => linkEvents.close())
+    yield* linkEvents.drain()
+    await reading
+    const readCount = links.filter((link) => link?.status === 'read').length
+    for (const link of links) {
+      if (link?.status === 'failed') {
+        warnings.push(
+          `Não foi possível ler a referência ${link.url}: ${link.message ?? 'erro desconhecido'}`,
+        )
+      }
+    }
+    yield {
+      type: 'step',
+      id: 'inspiration',
+      label:
+        readCount === links.length
+          ? 'Referências lidas'
+          : `${readCount} de ${links.length} referências lidas`,
+      status: readCount > 0 ? 'done' : 'failed',
+    }
+  }
+  const inspiration = buildInspirationBlock(links, dto.inspirationFocus)
+  const withInspiration = inspiration.length > 0
+
   const availability = {
     products: data.products.length > 0,
     testimonials: data.testimonials.length > 0,
@@ -523,8 +631,8 @@ async function* runGeneration(input: {
   const planned = await structuredCall({
     provider: call.provider,
     model: call.model.model,
-    system: buildPlanSystem(kinds),
-    message: ['Briefing:', ...brief].join('\n'),
+    system: buildPlanSystem(kinds, withInspiration),
+    message: ['Briefing:', ...brief, ...inspiration].join('\n'),
     schemaName: 'site_plan',
     jsonSchema: SITE_PLAN_JSON_SCHEMA,
     schema: SitePlanOutputSchema,
@@ -601,6 +709,7 @@ async function* runGeneration(input: {
             contactLink: contactLinkFor(page.kind, pageIds),
           },
           brief,
+          inspiration,
           testimonials: data.testimonials,
           workspaceId,
         })
@@ -722,6 +831,12 @@ async function* runGeneration(input: {
           description: clip(plan.tagline, 320),
           organizationName: clip(dto.name, 120),
         },
+        aiGeneration: {
+          modelKey: call.model.key,
+          inspirationLinks: dto.inspirationLinks.length,
+          inspirationRead: links.filter((link) => link.status === 'read')
+            .length,
+        },
       }),
     },
     pages: draftPages,
@@ -734,7 +849,11 @@ async function* runGeneration(input: {
       actorId,
       outcome: 'failure',
       reason: created.error.code,
-      meta: { ai: true },
+      meta: {
+        ai: true,
+        modelKey: call.model.key,
+        inspirationLinks: dto.inspirationLinks.length,
+      },
     })
     yield {
       type: 'step',
@@ -761,6 +880,11 @@ async function* runGeneration(input: {
       ai: true,
       pages: draftPages.length,
       kit: plan.kit,
+      modelKey: call.model.key,
+      // Counts only: neither the URLs' query strings nor any page content
+      // is stored or logged (ADR 0071).
+      inspirationLinks: dto.inspirationLinks.length,
+      inspirationRead: links.filter((link) => link.status === 'read').length,
     },
   })
   logger.info('site_ai.generated', {
@@ -772,6 +896,7 @@ async function* runGeneration(input: {
     warnings: warnings.length,
     costUsd: meter.cost(),
     model: call.model.key,
+    inspirationLinks: dto.inspirationLinks.length,
   })
   yield { type: 'step', id: 'save', label: 'Site salvo', status: 'done' }
   yield {
@@ -779,6 +904,8 @@ async function* runGeneration(input: {
     site: toPublicSiteDTO(site),
     costUsd: meter.cost(),
     warnings,
+    links: linkStates,
+    modelKey: call.model.key,
   }
 }
 
@@ -849,6 +976,19 @@ export const SiteAiService = {
     if (!usage.ok) return usage
 
     const model = resolved.value.model
+    const models = feature.ok
+      ? await listUsableAiModels(resolved.value.settings)
+      : []
+    const estimates: Record<string, SiteAiEstimateDTO> = {}
+    for (const item of models) {
+      const definition = findAiModel(item.key)
+      if (definition) {
+        estimates[item.key] = {
+          ...estimateSiteAi(aiModelPricing(definition), margin),
+          model: definition.label,
+        }
+      }
+    }
     const quotaUsd = resolved.value.settings.monthlyQuotaUsd
     const usedUsd = usage.value.costUsd
     const usable = model !== null && isAiProviderConfigured(model.provider)
@@ -879,6 +1019,12 @@ export const SiteAiService = {
         remainingUsd: remainingUsd(usedUsd, quotaUsd),
         exceeded: isQuotaExceeded(usedUsd, quotaUsd),
       },
+      models,
+      estimates,
+      defaultModelKey:
+        model && models.some((item) => item.key === model.key)
+          ? model.key
+          : (models[0]?.key ?? null),
       estimate: model
         ? {
             ...estimateSiteAi(aiModelPricing(model), margin),
@@ -916,8 +1062,26 @@ export const SiteAiService = {
       )
     }
 
-    const call = await prepareCall(actorId, workspaceId)
+    const call = await prepareCall(actorId, workspaceId, dto.modelKey)
     if (!call.ok) return call
+
+    // Reading links is an outbound request per link: budget per user and
+    // per workspace, spent before anything is fetched.
+    if (dto.inspirationLinks.length > 0) {
+      const points = dto.inspirationLinks.length
+      const byUser = await consume(
+        siteInspirationUserLimiter,
+        `user:${actorId}`,
+        points,
+      )
+      if (!byUser.ok) return byUser
+      const byWorkspace = await consume(
+        siteInspirationWorkspaceLimiter,
+        `workspace:${workspaceId}`,
+        points,
+      )
+      if (!byWorkspace.ok) return byWorkspace
+    }
 
     const data = await loadGenerationData(actorId, workspaceId, dto)
     if (!data.ok) return data
@@ -933,6 +1097,7 @@ export const SiteAiService = {
       style: dto.style,
       products: data.value.products.length,
       model: call.value.model.key,
+      inspirationLinks: dto.inspirationLinks.length,
     })
     return ok(
       runGeneration({
