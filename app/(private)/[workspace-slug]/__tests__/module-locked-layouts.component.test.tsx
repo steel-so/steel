@@ -21,7 +21,11 @@ vi.mock('@/src/lib/module-access-guard', () => guard)
 const params = Promise.resolve({ 'workspace-slug': 'acme' })
 
 function hrefOf(label: string) {
-  return screen.getByText(label).closest('a')?.getAttribute('href')
+  // A sub-menu may share its label with its first item: take the link.
+  return screen
+    .getAllByText(label)
+    .map((element) => element.closest('a')?.getAttribute('href'))
+    .find(Boolean)
 }
 
 describe('module-locked layouts', () => {
@@ -51,7 +55,7 @@ describe('module-locked layouts', () => {
     render(await CrmLayout({ children: <p>conteúdo CRM</p>, params }))
 
     expect(screen.getByText('conteúdo CRM')).toBeTruthy()
-    expect(hrefOf('Leads')).toBe('/acme/crm/leads')
+    expect(hrefOf('Todos os leads')).toBe('/acme/crm/leads')
     expect(hrefOf('Oportunidades')).toBe('/acme/crm/opportunities')
     expect(hrefOf('Empresas')).toBe('/acme/crm/companies')
     expect(hrefOf('Pessoas')).toBe('/acme/crm/people')
@@ -62,7 +66,9 @@ describe('module-locked layouts', () => {
     const { unmount } = render(
       await CrmLayout({ children: <p>conteúdo</p>, params }),
     )
-    expect(hrefOf('Registro de e-mails')).toBe('/acme/crm/email-sync')
+    expect(hrefOf('Registro e histórico de e-mails')).toBe(
+      '/acme/crm/email-sync',
+    )
     expect(screen.queryByText('Chaves de API')).toBeNull()
     expect(guard.isWorkspacePrivileged).toHaveBeenCalledWith('acme')
     unmount()

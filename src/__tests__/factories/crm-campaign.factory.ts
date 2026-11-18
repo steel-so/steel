@@ -110,7 +110,6 @@ export function createFakeCrmCampaignConversion(
     leadId: null,
     personId: null,
     siteId: null,
-    externalUrl: null,
     sitePageId: null,
     formId: null,
     createdAt: new Date('2026-10-09T12:00:00.000Z'),

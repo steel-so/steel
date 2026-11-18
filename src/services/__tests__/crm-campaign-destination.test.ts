@@ -24,6 +24,7 @@ function fields(
     formId: null,
     siteId: 'site1',
     sitePageId: 'home',
+    externalUrl: null,
     ...overrides,
   }
 }

@@ -151,10 +151,10 @@ describe('DestinationStep', () => {
     })
   })
 
-  it('should only offer sites and forms as destinations', () => {
+  it('should offer sites, forms and an external link as destinations', () => {
     renderDestination(campaign({ destinationType: null, formId: null }))
     expect(screen.queryByRole('tab', { name: /Landing pages/ })).toBeNull()
-    expect(screen.getAllByRole('tab')).toHaveLength(2)
+    expect(screen.getAllByRole('tab')).toHaveLength(3)
   })
 })
 

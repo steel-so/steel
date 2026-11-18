@@ -286,6 +286,7 @@ describe('toGenerateInput — inspiration and model', () => {
     eventDate: '',
     extra: '',
     inspirationLinks: ['https://a.example.com/'],
+    inspirationImages: [],
     inspirationFocus: ' cores ',
     modelKey: GPT.key,
   }
