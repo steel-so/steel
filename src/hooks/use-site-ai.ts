@@ -14,6 +14,7 @@ import type {
   SiteAiContextDTO,
   SiteAiEvent,
   SiteAiImagesResultDTO,
+  SiteAiLinkDTO,
   SiteAiRewriteResultDTO,
   SiteAiSectionResultDTO,
   SiteAiStep,
@@ -71,10 +72,12 @@ export function useSiteAiContext(workspaceId: string, enabled = true) {
 
 export type SiteAiGenerationState =
   | { status: 'idle' }
-  | { status: 'running'; steps: SiteAiStep[] }
+  | { status: 'running'; steps: SiteAiStep[]; links: SiteAiLinkDTO[] }
   | {
       status: 'done'
       steps: SiteAiStep[]
+      links: SiteAiLinkDTO[]
+      modelKey: string
       site: SiteDTO
       costUsd: number
       warnings: string[]
@@ -82,6 +85,7 @@ export type SiteAiGenerationState =
   | {
       status: 'error'
       steps: SiteAiStep[]
+      links: SiteAiLinkDTO[]
       code: string | null
       message: string
     }
@@ -92,12 +96,19 @@ export function applySiteAiEvent(
   event: SiteAiEvent,
 ): SiteAiGenerationState {
   const steps = state.status === 'idle' ? [] : state.steps
+  const links = state.status === 'idle' ? [] : state.links
   switch (event.type) {
     case 'steps':
-      return { status: 'running', steps: event.steps }
+      return { status: 'running', steps: event.steps, links }
+    case 'link': {
+      const next = [...links]
+      next[event.index] = event.link
+      return { status: 'running', steps, links: next }
+    }
     case 'step':
       return {
         status: 'running',
+        links,
         steps: steps.map((step) =>
           step.id === event.id
             ? { ...step, label: event.label, status: event.status }
@@ -108,6 +119,8 @@ export function applySiteAiEvent(
       return {
         status: 'done',
         steps,
+        links: event.links,
+        modelKey: event.modelKey,
         site: event.site,
         costUsd: event.costUsd,
         warnings: event.warnings,
@@ -116,6 +129,7 @@ export function applySiteAiEvent(
       return {
         status: 'error',
         steps,
+        links,
         code: event.code,
         message: event.message,
       }
@@ -165,7 +179,11 @@ export function useSiteAiGeneration(workspaceId: string) {
     async (dto: GenerateSiteInput): Promise<SiteAiGenerationState> => {
       if (running.current) return state
       running.current = true
-      let current: SiteAiGenerationState = { status: 'running', steps: [] }
+      let current: SiteAiGenerationState = {
+        status: 'running',
+        steps: [],
+        links: [],
+      }
       // Read through a typed getter: the stream callback reassigns
       // `current`, which control-flow narrowing cannot see.
       const latest = (): SiteAiGenerationState => current
@@ -183,7 +201,7 @@ export function useSiteAiGeneration(workspaceId: string) {
           const error = res.ok
             ? { code: null, message: 'Resposta vazia do servidor.' }
             : await readError(res)
-          current = { status: 'error', steps: [], ...error }
+          current = { status: 'error', steps: [], links: [], ...error }
         } else {
           await readSteelAiStream(res.body, (raw) => {
             current = applySiteAiEvent(current, raw as unknown as SiteAiEvent)
@@ -194,6 +212,7 @@ export function useSiteAiGeneration(workspaceId: string) {
             current = {
               status: 'error',
               steps: last.steps,
+              links: last.links,
               code: null,
               message: 'A conexão caiu antes do fim. Confira a lista de sites.',
             }
@@ -204,6 +223,7 @@ export function useSiteAiGeneration(workspaceId: string) {
         current = {
           status: 'error',
           steps: last.status === 'idle' ? [] : last.steps,
+          links: last.status === 'idle' ? [] : last.links,
           code: null,
           message: 'A conexão caiu antes do fim. Confira a lista de sites.',
         }

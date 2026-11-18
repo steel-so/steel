@@ -1,4 +1,5 @@
 import z from 'zod'
+import { AI_MODEL_KEYS } from '@/src/lib/ai/models'
 import { SiteDocumentInputSchema } from './site-page.schema'
 
 /**
@@ -85,6 +86,9 @@ export const SITE_AI_LENGTH_LABELS: Record<SiteAiLength, string> = {
 /** Most pages and products one generation takes. */
 export const SITE_AI_MAX_PRODUCTS = 6
 
+/** Most inspiration links one generation reads (ADR 0071). */
+export const SITE_AI_MAX_INSPIRATION_LINKS = 5
+
 // ─── shared pieces ────────────────────────────────────────────────────────
 
 const hexColor = z
@@ -102,6 +106,34 @@ const logoUrl = z
   })
 
 const id = z.string().trim().min(1).max(64)
+
+/**
+ * Inspiration link: `http(s)://host/...`, no credentials, standard ports.
+ * Syntax only — the server-side reader re-checks the host, its DNS answer
+ * and every redirect before any request (ADR 0071).
+ */
+export const InspirationLinkSchema = z
+  .string()
+  .trim()
+  .min(1, 'Cole um endereço')
+  .max(2000, 'Endereço longo demais')
+  .refine(
+    (value) => {
+      try {
+        const url = new URL(value)
+        return (
+          (url.protocol === 'https:' || url.protocol === 'http:') &&
+          url.hostname.includes('.') &&
+          !url.username &&
+          !url.password &&
+          (url.port === '' || url.port === '80' || url.port === '443')
+        )
+      } catch {
+        return false
+      }
+    },
+    { message: 'Use um endereço completo, como https://exemplo.com.br' },
+  )
 
 // ─── "Gerar com IA" ───────────────────────────────────────────────────────
 
@@ -137,6 +169,23 @@ export const GenerateSiteSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
       .optional(),
     extra: z.string().trim().max(1000).default(''),
+    /** Sites the AI takes as inspiration (structure and style, never the
+     * copy). Duplicates are dropped. */
+    inspirationLinks: z
+      .array(InspirationLinkSchema)
+      .max(
+        SITE_AI_MAX_INSPIRATION_LINKS,
+        `Até ${SITE_AI_MAX_INSPIRATION_LINKS} links de inspiração`,
+      )
+      .default([])
+      .transform((links) => [...new Set(links)]),
+    /** What to take from the references ("cores", "estrutura", "tom"). */
+    inspirationFocus: z.string().trim().max(300).default(''),
+    /** Model chosen for this generation (`provider:model`); absent = the
+     * workspace default. Must be enabled and usable in the workspace. */
+    modelKey: z
+      .enum(AI_MODEL_KEYS, { error: 'Modelo de IA desconhecido' })
+      .optional(),
   })
   .refine((data) => !(data.contactFormId && data.createContactForm), {
     message: 'Escolha um formulário ou peça um novo, não os dois',

@@ -1,5 +1,6 @@
 import type { CanvasFragment } from '@/src/lib/canvas/types'
 import type { SiteDTO } from './site'
+import type { AiChatModelDTO } from './steel-ai'
 
 /** Monthly AI quota of the workspace (ADR 0007), in US$. */
 export interface SiteAiQuotaDTO {
@@ -58,6 +59,24 @@ export interface SiteAiContextDTO {
   canCreateForm: boolean
   quota: SiteAiQuotaDTO
   estimate: SiteAiEstimateDTO | null
+  /** Models "Gerar com" offers: enabled in the workspace and with a key
+   * in this environment (same list as the Steel AI picker). */
+  models: AiChatModelDTO[]
+  /** Cost estimate per model key of `models`. */
+  estimates: Record<string, SiteAiEstimateDTO>
+  /** Workspace default for site generation (preselected). */
+  defaultModelKey: string | null
+}
+
+export type SiteAiLinkStatus = 'reading' | 'read' | 'failed'
+
+/** State of one inspiration link during and after the generation. */
+export interface SiteAiLinkDTO {
+  /** Origin + path as shown to the user (never the query string). */
+  url: string
+  status: SiteAiLinkStatus
+  /** pt-BR reason when `status` is `failed`. */
+  message: string | null
 }
 
 export type SiteAiStepStatus = 'pending' | 'running' | 'done' | 'failed'
@@ -87,7 +106,12 @@ export type SiteAiEvent =
       costUsd: number
       /** pt-BR notes (a section left with sample copy, no form…). */
       warnings: string[]
+      /** Final state of the inspiration links (empty = none given). */
+      links: SiteAiLinkDTO[]
+      /** Model that wrote the site (`provider:model`). */
+      modelKey: string
     }
+  | { type: 'link'; index: number; link: SiteAiLinkDTO }
   | { type: 'error'; code: string; message: string }
 
 export interface SiteAiSectionResultDTO {

@@ -78,6 +78,9 @@ function context(overrides: Partial<SiteAiContextDTO> = {}): SiteAiContextDTO {
       imagesUsd: 0.002,
       model: 'Claude',
     },
+    models: [],
+    estimates: {},
+    defaultModelKey: null,
     ...overrides,
   }
 }
@@ -106,6 +109,8 @@ function setupDialog(
         site: fakeSite({ id: 'site_ai' }),
         costUsd: 0.1,
         warnings: ['Revise a seção Contato.'],
+        links: [],
+        modelKey: 'anthropic:claude',
       },
     ]),
 ) {
@@ -174,6 +179,8 @@ describe('Gerar com IA', () => {
           site: fakeSite({ id: 'site_ok' }),
           costUsd: 0.1,
           warnings: [],
+          links: [],
+          modelKey: 'anthropic:claude',
         },
       ]),
     )
@@ -280,6 +287,9 @@ describe('toGenerateInput', () => {
     form: 'new',
     eventDate: '2026-12-01',
     extra: '',
+    inspirationLinks: [],
+    inspirationFocus: '',
+    modelKey: '',
   }
 
   it('maps the form choices to the API body', () => {
