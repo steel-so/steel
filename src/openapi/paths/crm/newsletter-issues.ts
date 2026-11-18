@@ -241,6 +241,10 @@ export const crmNewsletterIssueRoutes: RouteConfig[] = [
         when: 'A audiência não cabe no saldo de e-mails do mês (a mensagem traz os números)',
       },
       { code: 'VALIDATION_ERROR', when: 'Agendamento a menos de 5 minutos' },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'O envio ou agendamento com a versão no WhatsApp é recusado quando a Meta classifica o número (ou o template) como qualidade Baixa (vermelha). Na hora marcada o e-mail sai de qualquer forma e o envio no WhatsApp fica parado até alguém continuar',
+      },
     ],
   },
   {

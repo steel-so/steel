@@ -113,6 +113,29 @@ export const CrmNewsletterWhatsAppRepository = {
     }
   },
 
+  /** Quality gate: holds (reason) or releases (null) the WhatsApp send. */
+  async setPausedReason(
+    issueId: string,
+    pausedReason: string | null,
+  ): Promise<Result<boolean>> {
+    try {
+      const updated = await prisma.crmNewsletterIssueWhatsApp.updateMany({
+        where: {
+          issueId,
+          ...(pausedReason === null
+            ? { pausedReason: { not: null } }
+            : { pausedReason: null }),
+        },
+        data: { pausedReason },
+      })
+      return ok(updated.count > 0)
+    } catch (error) {
+      return err(
+        dbError('Failed to update CRM newsletter WhatsApp pause', error),
+      )
+    }
+  },
+
   /**
    * Marks the snapshot as taken; only the first caller wins (`true`), so a
    * retried start never snapshots twice.

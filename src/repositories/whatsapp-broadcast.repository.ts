@@ -366,6 +366,41 @@ export const WhatsAppBroadcastRepository = {
   },
 
   /**
+   * Quality gate: holds a QUEUED/RUNNING list as PAUSED with the reason. Only
+   * one caller wins (conditional update); recipients are left untouched.
+   */
+  async pauseIfActive(
+    id: string,
+    pausedReason: string,
+  ): Promise<Result<WhatsAppBroadcastList | null>> {
+    try {
+      const [list] = await prisma.whatsAppBroadcastList.updateManyAndReturn({
+        where: { id, status: { in: ['QUEUED', 'RUNNING'] } },
+        data: { status: 'PAUSED', pausedReason },
+      })
+      return ok(list ?? null)
+    } catch (error) {
+      return err(dbError('Failed to pause whatsapp broadcast', error))
+    }
+  },
+
+  /** Leaves PAUSED (conditional) and clears the reason. */
+  async resumePaused(
+    id: string,
+    status: Extract<WhatsAppBroadcastStatus, 'QUEUED' | 'RUNNING'>,
+  ): Promise<Result<WhatsAppBroadcastList | null>> {
+    try {
+      const [list] = await prisma.whatsAppBroadcastList.updateManyAndReturn({
+        where: { id, status: 'PAUSED' },
+        data: { status, pausedReason: null },
+      })
+      return ok(list ?? null)
+    } catch (error) {
+      return err(dbError('Failed to resume whatsapp broadcast', error))
+    }
+  },
+
+  /**
    * zap-spend-cap (ADR 0064): the number's spending cap blocked the send, so
    * every recipient still PENDING fails with the same reason.
    */

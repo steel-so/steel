@@ -10,6 +10,7 @@ import {
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
 import { useState } from 'react'
+import { QualityBlockNotice } from '@/app/_components/whatsapp/quality-block-notice'
 import { SteelIcon } from '@/components/icon/icon'
 import {
   AlertDialog,
@@ -546,6 +547,10 @@ export function CrmCampaignDashboard({
           ) : null}
         </div>
       </div>
+
+      {campaign.status === 'PAUSED' ? (
+        <QualityBlockNotice reason={campaign.pausedReason} />
+      ) : null}
 
       {campaign.destination ? (
         <p className='min-w-0 truncate text-muted-foreground text-sm'>

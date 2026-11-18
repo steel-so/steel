@@ -16,6 +16,11 @@ vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
 vi.mock('../whatsapp-contact-validation.service')
 
+const { numberQuality } = vi.hoisted(() => ({ numberQuality: vi.fn() }))
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: numberQuality,
+}))
+
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppBroadcastRepository } from '@/src/repositories/whatsapp-broadcast.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
@@ -91,6 +96,83 @@ describe('WhatsAppBroadcastImportService.import()', () => {
         }),
       ],
     )
+  })
+
+  describe('quality gate', () => {
+    const input = {
+      name: 'Lembretes',
+      connectionId: 'conn1',
+      templateId: 'tmpl1',
+      sendOffsetHours: 24,
+      csv: validCsv,
+    }
+
+    function metaWith(
+      template: { quality: 'RED' | 'GREEN' } = {
+        quality: 'GREEN',
+      },
+    ) {
+      mockHappyPathDeps()
+      mockedConnectionRepo.findById.mockResolvedValue(
+        ok(createFakeWhatsAppConnection({ id: 'conn1', provider: 'META' })),
+      )
+      mockedTemplateRepo.findById.mockResolvedValue(
+        ok(
+          createFakeWhatsAppTemplate({
+            id: 'tmpl1',
+            name: 'lembrete',
+            status: 'APPROVED',
+            components: [{ type: 'BODY', text: 'Olá {{1}}' }],
+            quality: template.quality,
+          }),
+        ),
+      )
+    }
+
+    beforeEach(() => {
+      mockedBroadcastRepo.createScheduled.mockClear()
+      numberQuality.mockReset()
+      numberQuality.mockResolvedValue('GREEN')
+    })
+
+    it('refuses to schedule while the number is RED', async () => {
+      metaWith()
+      numberQuality.mockResolvedValue('RED')
+
+      const error = expectErr(
+        await WhatsAppBroadcastImportService.import('u1', 'ws1', input),
+        'WHATSAPP_QUALITY_BLOCKED',
+      )
+      expect(error.message).toContain('as transmissões ficam bloqueadas')
+      expect(mockedContactRepo.upsertByWaId).not.toHaveBeenCalled()
+      expect(mockedBroadcastRepo.createScheduled).not.toHaveBeenCalled()
+    })
+
+    it('refuses to schedule while the template is RED', async () => {
+      metaWith({ quality: 'RED' })
+
+      const error = expectErr(
+        await WhatsAppBroadcastImportService.import('u1', 'ws1', input),
+        'WHATSAPP_QUALITY_BLOCKED',
+      )
+      expect(error.message).toContain('o template "lembrete"')
+      expect(mockedBroadcastRepo.createScheduled).not.toHaveBeenCalled()
+    })
+
+    it('schedules when the number is GREEN', async () => {
+      metaWith()
+
+      expectOk(await WhatsAppBroadcastImportService.import('u1', 'ws1', input))
+      expect(mockedBroadcastRepo.createScheduled).toHaveBeenCalled()
+    })
+
+    it('never gates a non-Meta connection', async () => {
+      mockHappyPathDeps()
+      numberQuality.mockResolvedValue('RED')
+
+      expectOk(await WhatsAppBroadcastImportService.import('u1', 'ws1', input))
+      expect(numberQuality).not.toHaveBeenCalled()
+    })
   })
 
   it('should only preview on a dry run, without touching contacts', async () => {

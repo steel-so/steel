@@ -50,6 +50,31 @@ describe('toWhatsAppBroadcastListDTO()', () => {
     )
   })
 
+  it('should expose why a paused list is held, with the recipients untouched', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts(
+      {
+        id: 'b7',
+        status: 'PAUSED',
+        pausedReason: 'Envios bloqueados pela qualidade: o número',
+      },
+      [{ status: 'SENT' }, { status: 'PENDING' }],
+    )
+
+    const dto = toWhatsAppBroadcastListDTO(list)
+    expect(dto.status).toBe('PAUSED')
+    expect(dto.pausedReason).toBe('Envios bloqueados pela qualidade: o número')
+    expect(dto.failedCount).toBe(0)
+    expect(dto.failureReason).toBeNull()
+  })
+
+  it('should have no pause reason on a running list', () => {
+    const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b8' }, [
+      { status: 'SENT' },
+    ])
+
+    expect(toWhatsAppBroadcastListDTO(list).pausedReason).toBeNull()
+  })
+
   it('should have no failure reason when nothing failed', () => {
     const list = createFakeWhatsAppBroadcastListWithCounts({ id: 'b5' }, [
       { status: 'SENT' },

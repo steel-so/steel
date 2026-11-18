@@ -152,6 +152,29 @@ export const crmNewsletterEngageRoutes: RouteConfig[] = [
   },
   {
     method: 'post',
+    path: `${BASE}/whatsapp/resume`,
+    tags: TAGS,
+    summary: 'Continuar envio no WhatsApp',
+    description: describe(
+      'Continua o envio da versão no WhatsApp que o worker segurou porque a Meta passou o número ou o template para qualidade Baixa (`pausedReason` em "Entrega no WhatsApp"; os números seguem pendentes, sem falha). Recusado enquanto a qualidade continuar Baixa; nunca retoma sozinho. Auditado.',
+      crmAccess('email', 'EDIT'),
+    ),
+    params: ISSUE_PARAMS,
+    responses: { 200: { description: 'Envio retomado.', schema: null } },
+    errors: [
+      ...ISSUE_ERRORS,
+      {
+        code: 'CRM_NEWSLETTER_WHATSAPP_UNAVAILABLE',
+        when: 'O envio no WhatsApp da edição não está pausado',
+      },
+      {
+        code: 'WHATSAPP_QUALITY_BLOCKED',
+        when: 'Continuar é recusado enquanto a Meta classifica o número (ou o template) do WhatsApp da edição como qualidade Baixa (vermelha). Sem WhatsApp, com Z-API ou sem template nunca é bloqueado, e uma consulta à Meta que falha não bloqueia',
+      },
+    ],
+  },
+  {
+    method: 'post',
     path: '/newsletters/polls/{token}',
     tags: ['CRM público · Newsletter'],
     summary: 'Votar na enquete',

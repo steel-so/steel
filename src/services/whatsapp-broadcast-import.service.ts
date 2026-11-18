@@ -10,6 +10,7 @@ import {
   parseBroadcastImportCsv,
   validateBroadcastImportRows,
 } from '@/src/lib/whatsapp/broadcast-import'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import {
   extractTemplateFillableFields,
   parseMetaTemplateComponents,
@@ -58,6 +59,16 @@ export const WhatsAppBroadcastImportService = {
     if (!template.value) return err(whatsappTemplateNotFound())
     if (template.value.status !== 'APPROVED') {
       return err(whatsappTemplateNotApproved())
+    }
+
+    // Quality gate: no scheduling while the number or template is RED.
+    if (connection.value.provider === 'META') {
+      const allowed = await assertCampaignSendAllowed(
+        connection.value,
+        template.value,
+        'BROADCAST',
+      )
+      if (!allowed.ok) return allowed
     }
 
     const { rows, parseErrors } = parseBroadcastImportCsv(dto.csv)

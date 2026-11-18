@@ -468,7 +468,7 @@ const BroadcastBase = z.object({
   mediaUrl: z.string().nullable(),
   mediaType: z.enum(['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT']).nullable(),
   mediaFileName: z.string().nullable(),
-  status: z.enum(['DRAFT', 'QUEUED', 'RUNNING', 'DONE', 'FAILED']),
+  status: z.enum(['DRAFT', 'QUEUED', 'RUNNING', 'PAUSED', 'DONE', 'FAILED']),
   scheduledAt: nullableDateTime().meta({
     description:
       'Envio agendado (listas importadas por CSV); o worker dispara no tick de 5 min.',
@@ -492,6 +492,10 @@ const BroadcastBase = z.object({
   failureReason: z.string().nullable().meta({
     description:
       'Motivo da primeira falha de envio (ex.: limite de gasto atingido), quando houver.',
+  }),
+  pausedReason: z.string().nullable().meta({
+    description:
+      'Por que a lista está `PAUSED` (qualidade Baixa na Meta; começa com "Envios bloqueados pela qualidade:"), `null` nos demais casos.',
   }),
   createdAt: dateTime(),
   updatedAt: dateTime(),

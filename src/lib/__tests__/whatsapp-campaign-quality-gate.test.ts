@@ -78,6 +78,21 @@ describe('assertCampaignSendAllowed', () => {
     expectOk(await assertCampaignSendAllowed(connection, template))
   })
 
+  it.each([
+    ['BROADCAST', 'as transmissões ficam bloqueadas'],
+    ['NEWSLETTER', 'o envio da newsletter no WhatsApp fica bloqueado'],
+    ['CRM_CAMPAIGN', 'as campanhas do CRM com WhatsApp ficam bloqueadas'],
+  ] as const)('words the %s refusal for that sender', async (sender, text) => {
+    numberQuality.mockResolvedValue('RED')
+
+    const error = expectErr(
+      await assertCampaignSendAllowed(connection, template, sender),
+      'WHATSAPP_QUALITY_BLOCKED',
+    )
+    expect(error.message).toContain(text)
+    expect(isQualityBlockReason(error.message)).toBe(true)
+  })
+
   it('does not take other pause reasons for a quality block', () => {
     expect(isQualityBlockReason('Limite de gasto atingido')).toBe(false)
     expect(isQualityBlockReason(null)).toBe(false)

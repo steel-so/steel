@@ -46,6 +46,7 @@ export function createFakeCrmCampaign(
     launchedAt: null,
     startAt: null,
     completedAt: null,
+    pausedReason: null,
     createdById: createId(),
     updatedById: null,
     createdAt: now,

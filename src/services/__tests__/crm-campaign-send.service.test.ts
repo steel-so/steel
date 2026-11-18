@@ -32,6 +32,10 @@ vi.mock('@/src/lib/whatsapp/send', () => ({
     buttons: vi.fn(),
   },
 }))
+const { numberQuality } = vi.hoisted(() => ({ numberQuality: vi.fn() }))
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: numberQuality,
+}))
 const add = vi.fn()
 const addBulk = vi.fn()
 vi.mock('@/src/lib/queue/queues', () => ({
@@ -51,6 +55,7 @@ import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-a
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import { SendingDomainRepository } from '@/src/repositories/sending-domain.repository'
 import {
+  assertCampaignWhatsAppQuality,
   buildCampaignEmail,
   CrmCampaignSendService,
   channelStartAt,
@@ -1051,5 +1056,199 @@ describe('tick()', () => {
     recipients.releaseStuck.mockResolvedValue(ok(0))
     campaigns.listRunnable.mockResolvedValue(err(databaseError('x')))
     expectErr(await CrmCampaignSendService.tick(NOW), 'DATABASE_ERROR')
+  })
+})
+
+describe('WhatsApp quality gate', () => {
+  const metaCampaign = (overrides?: Partial<CrmCampaign>) =>
+    campaign({
+      whatsappEnabled: true,
+      whatsappConnectionId: 'conn1',
+      whatsappTemplateId: 'wt1',
+      ...overrides,
+    })
+
+  function withMetaRecipient(overrides?: Partial<CrmCampaign>) {
+    lookup.findConnection.mockResolvedValue(
+      ok(connection({ provider: 'META' })),
+    )
+    recipients.findWithCampaign.mockResolvedValue(
+      ok({
+        ...createFakeCrmCampaignRecipient({
+          id: 'r1',
+          campaignId: 'c1',
+          name: 'Ana Souza',
+          waId: '5511999990000',
+          whatsappStatus: 'PENDING',
+        }),
+        campaign: metaCampaign(overrides),
+      }),
+    )
+  }
+
+  beforeEach(() => {
+    numberQuality.mockReset()
+    numberQuality.mockResolvedValue('GREEN')
+  })
+
+  it('pauses the campaign when the number turns RED, leaving the recipient PENDING', async () => {
+    numberQuality.mockResolvedValue('RED')
+    withMetaRecipient()
+
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW)),
+    ).toEqual({ status: 'skipped', reason: 'quality_blocked' })
+
+    expect(campaigns.transition).toHaveBeenCalledWith('c1', ['SENDING'], {
+      status: 'PAUSED',
+      pausedReason: expect.stringContaining(
+        'Envios bloqueados pela qualidade: o número desta conexão',
+      ),
+    })
+    expect(recipients.claim).not.toHaveBeenCalled()
+    expect(recipients.markFailed).not.toHaveBeenCalled()
+    expect(recipients.markSkipped).not.toHaveBeenCalled()
+    expect(wa.template).not.toHaveBeenCalled()
+  })
+
+  it('pauses the campaign when the template is RED', async () => {
+    lookup.findWhatsAppTemplate.mockResolvedValue(
+      ok({ ...metaTemplate, quality: 'RED' } as WhatsAppTemplate),
+    )
+    withMetaRecipient()
+
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW)),
+    ).toEqual({ status: 'skipped', reason: 'quality_blocked' })
+    expect(campaigns.transition).toHaveBeenCalledWith(
+      'c1',
+      ['SENDING'],
+      expect.objectContaining({
+        pausedReason: expect.stringContaining('o template "promo"'),
+      }),
+    )
+    expect(wa.template).not.toHaveBeenCalled()
+  })
+
+  it.each(['GREEN', 'YELLOW', 'UNKNOWN'] as const)(
+    'sends when the number is %s',
+    async (quality) => {
+      numberQuality.mockResolvedValue(quality)
+      withMetaRecipient()
+
+      expect(
+        expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW))
+          .status,
+      ).toBe('sent')
+      expect(wa.template).toHaveBeenCalled()
+    },
+  )
+
+  it('never gates the e-mail channel or a Z-API campaign', async () => {
+    numberQuality.mockResolvedValue('RED')
+    recipients.findWithCampaign.mockResolvedValue(
+      ok({
+        ...createFakeCrmCampaignRecipient({
+          id: 'r1',
+          campaignId: 'c1',
+          email: 'ana@example.com',
+          emailStatus: 'PENDING',
+        }),
+        campaign: metaCampaign(),
+      }),
+    )
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'EMAIL', NOW))
+        .status,
+    ).toBe('sent')
+
+    lookup.findConnection.mockResolvedValue(ok(connection()))
+    recipients.findWithCampaign.mockResolvedValue(
+      ok({
+        ...createFakeCrmCampaignRecipient({
+          id: 'r1',
+          campaignId: 'c1',
+          name: 'Ana',
+          waId: '5511999990000',
+          whatsappStatus: 'PENDING',
+        }),
+        campaign: metaCampaign({ whatsappText: 'Oi {link}' }),
+      }),
+    )
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW))
+        .status,
+    ).toBe('sent')
+    expect(numberQuality).not.toHaveBeenCalled()
+  })
+
+  it('does not audit twice when another job already paused it', async () => {
+    numberQuality.mockResolvedValue('RED')
+    withMetaRecipient()
+    campaigns.transition.mockResolvedValue(ok(null))
+
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW)),
+    ).toEqual({ status: 'skipped', reason: 'quality_blocked' })
+    expect(auditMutation).not.toHaveBeenCalled()
+  })
+
+  it('leaves a paused campaign untouched on the next jobs', async () => {
+    withMetaRecipient({ status: 'PAUSED' })
+
+    expect(
+      expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW)),
+    ).toEqual({ status: 'skipped', reason: 'inactive' })
+    expect(recipients.claim).not.toHaveBeenCalled()
+  })
+
+  describe('assertCampaignWhatsAppQuality()', () => {
+    it('blocks a RED number with the CRM campaign wording', async () => {
+      numberQuality.mockResolvedValue('RED')
+      lookup.findConnection.mockResolvedValue(
+        ok(connection({ provider: 'META' })),
+      )
+      const error = expectErr(
+        await assertCampaignWhatsAppQuality(metaCampaign()),
+        'WHATSAPP_QUALITY_BLOCKED',
+      )
+      expect(error.message).toContain('as campanhas do CRM com WhatsApp')
+    })
+
+    it('lets through a campaign without WhatsApp, template, or on Z-API', async () => {
+      numberQuality.mockResolvedValue('RED')
+      expectOk(
+        await assertCampaignWhatsAppQuality(
+          metaCampaign({ whatsappEnabled: false }),
+        ),
+      )
+      expectOk(
+        await assertCampaignWhatsAppQuality(
+          metaCampaign({ whatsappTemplateId: null }),
+        ),
+      )
+      lookup.findConnection.mockResolvedValue(ok(connection()))
+      expectOk(await assertCampaignWhatsAppQuality(metaCampaign()))
+      expect(numberQuality).not.toHaveBeenCalled()
+    })
+
+    it('lets through a missing template (the send reports it) and propagates database errors', async () => {
+      lookup.findConnection.mockResolvedValue(
+        ok(connection({ provider: 'META' })),
+      )
+      lookup.findWhatsAppTemplate.mockResolvedValue(ok(null))
+      expectOk(await assertCampaignWhatsAppQuality(metaCampaign()))
+
+      lookup.findWhatsAppTemplate.mockResolvedValue(err(databaseError('x')))
+      expectErr(
+        await assertCampaignWhatsAppQuality(metaCampaign()),
+        'DATABASE_ERROR',
+      )
+      lookup.findConnection.mockResolvedValue(err(databaseError('x')))
+      expectErr(
+        await assertCampaignWhatsAppQuality(metaCampaign()),
+        'DATABASE_ERROR',
+      )
+    })
   })
 })

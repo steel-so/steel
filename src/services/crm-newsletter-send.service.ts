@@ -111,6 +111,7 @@ export async function preSendChecks(
   issue: CrmNewsletterIssue,
   newsletter: NewsletterWithWorkspace,
   now: Date,
+  options: { enforceWhatsAppQuality?: boolean } = {},
 ): Promise<Result<PreSendCheck & { base: IssueRenderBase }>> {
   if (newsletter.status !== 'ACTIVE') return err(crmNewsletterArchived())
 
@@ -133,9 +134,13 @@ export async function preSendChecks(
   if (error) return err(crmNewsletterIssueIncomplete(error.message))
 
   // nl2-engage: an enabled WhatsApp version must be ready too.
+  // The quality gate refuses a member's send/schedule; a due schedule or a
+  // system send goes out and the WhatsApp dispatch holds itself instead, so
+  // a RED number never costs the e-mail.
   const whatsapp = await CrmNewsletterWhatsAppService.preSendCheck(
     issue,
     newsletter,
+    { enforceQuality: options.enforceWhatsAppQuality ?? true },
   )
   if (!whatsapp.ok) return whatsapp
 
@@ -737,7 +742,9 @@ export const CrmNewsletterSendService = {
     if (found.value?.status !== 'SCHEDULED') return ok('lost')
     const { newsletter, ...current } = found.value
 
-    const checked = await preSendChecks(current, newsletter, now)
+    const checked = await preSendChecks(current, newsletter, now, {
+      enforceWhatsAppQuality: false,
+    })
     if (!checked.ok) {
       if (checked.error.code === 'DATABASE_ERROR') return checked
       const failed = await CrmNewsletterIssueRepository.transition(
@@ -790,7 +797,9 @@ export const CrmNewsletterSendService = {
       return ok({ started: false, refused: crmNewsletterIssueLocked().message })
     }
     const { newsletter, ...issue } = found.value
-    const checked = await preSendChecks(issue, newsletter, now)
+    const checked = await preSendChecks(issue, newsletter, now, {
+      enforceWhatsAppQuality: false,
+    })
     if (!checked.ok) {
       if (checked.error.code === 'DATABASE_ERROR') return checked
       return ok({ started: false, refused: checked.error.message })

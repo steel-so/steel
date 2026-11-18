@@ -635,3 +635,122 @@ describe('buildImportModelCsv()', () => {
     ])
   })
 })
+
+describe('<WhatsappSettingsBroadcasts /> quality gate', () => {
+  const REASON =
+    'Envios bloqueados pela qualidade: o número desta conexão está com qualidade "Baixa" (vermelha) na Meta. Aguarde a Meta recuperar a classificação do número e depois continue a transmissão.'
+
+  function paused() {
+    return broadcast({
+      id: 'bc_3',
+      name: 'Cobrança',
+      status: 'PAUSED',
+      sentCount: 4,
+      pausedReason: REASON,
+    })
+  }
+
+  it('shows why a paused broadcast stopped, with the recipients untouched', async () => {
+    setup([], [paused()])
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    expect(await screen.findByText('Pausada')).toBeTruthy()
+    expect(
+      screen.getByText('Envios bloqueados pela qualidade do WhatsApp'),
+    ).toBeTruthy()
+    expect(
+      screen.getByText(/O número desta conexão está com qualidade/),
+    ).toBeTruthy()
+    expect(screen.getByText('4/10 enviados')).toBeTruthy()
+    expect(screen.queryByText(/falhas/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Cancelar envio' })).toBeTruthy()
+  })
+
+  it('continues a paused broadcast', async () => {
+    const fetchSpy = setup(
+      [{ method: 'POST', match: `${API}/broadcasts/bc_3/resume`, data: null }],
+      [paused()],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Continuar envio' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.success).toHaveBeenCalledWith('Envio retomado'),
+    )
+    expect(
+      fetchSpy.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'POST' && String(url).endsWith('/bc_3/resume'),
+      ),
+    ).toBe(true)
+  })
+
+  it('shows the refusal when continuing is still blocked', async () => {
+    setup(
+      [
+        {
+          method: 'POST',
+          match: `${API}/broadcasts/bc_3/resume`,
+          status: 409,
+          error: REASON,
+        },
+      ],
+      [paused()],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Continuar envio' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: REASON }),
+        'Não foi possível continuar',
+      ),
+    )
+  })
+
+  it('shows the refusal toast when starting is blocked', async () => {
+    setup([
+      {
+        method: 'POST',
+        match: `${API}/broadcasts/bc_1/start`,
+        status: 409,
+        error: REASON,
+      },
+    ])
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Iniciar' }))
+    const alert = await screen.findByRole('alertdialog')
+    fireEvent.click(
+      within(alert).getByRole('button', { name: 'Iniciar envio' }),
+    )
+
+    await waitFor(() =>
+      expect(notify.error).toHaveBeenCalledWith(
+        expect.objectContaining({ message: REASON }),
+        'Não foi possível iniciar',
+      ),
+    )
+    expect(notify.success).not.toHaveBeenCalledWith('Envio iniciado')
+  })
+
+  it('does not offer continuing to a running or finished broadcast', async () => {
+    setup(
+      [],
+      [
+        broadcast({ id: 'bc_4', name: 'A', status: 'RUNNING' }),
+        broadcast({ id: 'bc_5', name: 'B', status: 'DONE' }),
+      ],
+    )
+    renderWithQuery(<WhatsappSettingsBroadcasts workspaceId='ws_1' />)
+
+    await screen.findByText('A')
+    expect(screen.queryByRole('button', { name: 'Continuar envio' })).toBeNull()
+  })
+})

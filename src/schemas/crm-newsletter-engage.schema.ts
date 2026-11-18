@@ -206,6 +206,8 @@ export type CrmNewsletterWhatsAppRecipientDTO = {
 export type CrmNewsletterWhatsAppReportDTO = {
   enabled: boolean
   provider: 'META' | 'ZAPI' | null
+  /** Quality-gate hold reason (fixed prefix) while the send waits for a resume. */
+  pausedReason: string | null
   stats: CrmNewsletterWhatsAppStatsDTO
   items: CrmNewsletterWhatsAppRecipientDTO[]
   total: number
