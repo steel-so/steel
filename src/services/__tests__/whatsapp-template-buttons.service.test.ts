@@ -23,6 +23,9 @@ vi.mock('@/src/lib/crypto', () => ({
     envelope.replace(/^enc:/, ''),
   ),
 }))
+vi.mock('@/src/lib/whatsapp/meta-number-quality', () => ({
+  metaNumberQualityOf: vi.fn(async () => 'UNKNOWN'),
+}))
 vi.mock('@/src/lib/whatsapp/meta-templates', () => ({
   fetchMetaTemplates: vi.fn(),
   createMetaTemplate: vi.fn(),
