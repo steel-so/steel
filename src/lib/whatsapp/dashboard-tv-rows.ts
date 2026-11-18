@@ -38,7 +38,7 @@ const SAFE_KEYS: Record<
       .filter((key) => !excluded.has(key))
     return [source, new Set<string>(['id', ...keys])]
   }),
-) as Record<WaDashboardSource, ReadonlySet<string>>
+) as unknown as Record<WaDashboardSource, ReadonlySet<string>>
 
 export function isWaDashboardSource(
   source: string,

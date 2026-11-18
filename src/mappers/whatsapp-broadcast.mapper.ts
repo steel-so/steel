@@ -100,6 +100,7 @@ export function toWhatsAppBroadcastListDetailDTO(
     ).length,
     skipNoWhatsapp: list.skipNoWhatsapp,
     failureReason: failureReason(recipients),
+    pausedReason: list.pausedReason,
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString(),
     recipients,
