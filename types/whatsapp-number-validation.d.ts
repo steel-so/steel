@@ -38,3 +38,13 @@ export interface WhatsAppImportValidationDTO {
   /** Why the step did not run (e.g. no Z-API connection); null when it did. */
   validationUnavailable: string | null
 }
+
+/**
+ * Whether "tem WhatsApp?" can run for a workspace. `WORKSPACE`: its own
+ * connected Z-API connection answers; `PLATFORM`: the server-side shared
+ * instance does (e.g. Meta-only workspaces). Credentials are never exposed.
+ */
+export interface NumberValidationAvailabilityDTO {
+  available: boolean
+  source: 'WORKSPACE' | 'PLATFORM' | null
+}

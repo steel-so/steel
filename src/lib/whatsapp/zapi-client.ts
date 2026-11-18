@@ -386,6 +386,12 @@ export interface ZapiPhonesBatchOptions {
   batchSize?: number
   pauseMs?: number
   retryDelayMs?: number
+  /**
+   * Called before every chunk goes out (platform throttle). Returning false
+   * skips the request: the chunk's numbers are reported in `failed`, i.e.
+   * "not checked" — never as "no WhatsApp".
+   */
+  beforeChunk?: (size: number) => Promise<boolean> | boolean
   /** Called after every chunk, so callers can persist progress. */
   onChunk?: (chunk: {
     results: ZapiPhoneCheck[]
@@ -507,7 +513,11 @@ export async function checkZapiPhonesBatch(
     const chunk = valid.slice(start, start + batchSize)
 
     let answered: { results: ZapiPhoneCheck[]; unanswered: string[] }
+    const allowed = options.beforeChunk
+      ? await options.beforeChunk(chunk.length)
+      : true
     try {
+      if (!allowed) throw new Error('Chunk skipped by the throttle')
       try {
         answered = await postPhonesChunk(credentials, chunk)
       } catch {

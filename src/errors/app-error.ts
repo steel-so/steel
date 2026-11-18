@@ -274,7 +274,7 @@ export const whatsappBroadcastNoRecipients = (
  * endpoint), so a workspace without one cannot validate numbers.
  */
 export const whatsappValidationUnavailable = (
-  message = 'A checagem "tem WhatsApp?" só funciona com uma conexão Z-API. A API oficial da Meta não oferece esse recurso. Conecte uma instância Z-API para validar a base.',
+  message = 'A validação de números não está disponível para este workspace no momento. Tente novamente mais tarde ou fale com o suporte.',
 ): AppError => appError('WHATSAPP_VALIDATION_UNAVAILABLE', message)
 
 export const whatsappValidationNotFound = (): AppError =>

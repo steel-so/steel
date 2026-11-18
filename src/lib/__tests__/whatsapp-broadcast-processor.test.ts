@@ -304,12 +304,44 @@ describe('processWhatsappBroadcast — AI campaign follow-up', () => {
 
       await processWhatsappBroadcast(job)
 
-      expect(validateMock).toHaveBeenCalledWith('run1')
+      expect(validateMock).toHaveBeenCalledWith('run1', {
+        finalAttempt: true,
+      })
       expect(loggerMock.info).toHaveBeenCalledWith(
         'queue.whatsapp_number_validation.completed',
         expect.objectContaining({ validationId: 'run1', outcome: 'DONE' }),
       )
     })
+
+    it('flags the last attempt so the service can fail the run for good', async () => {
+      validateMock.mockResolvedValue({ ok: true, value: { status: 'DONE' } })
+      const retried = {
+        ...job,
+        attemptsMade: 1,
+        opts: { attempts: 5 },
+      } as unknown as Job
+
+      await processWhatsappBroadcast(retried)
+      expect(validateMock).toHaveBeenLastCalledWith('run1', {
+        finalAttempt: false,
+      })
+
+      await processWhatsappBroadcast({
+        ...retried,
+        attemptsMade: 4,
+      } as unknown as Job)
+      expect(validateMock).toHaveBeenLastCalledWith('run1', {
+        finalAttempt: true,
+      })
+    })
+
+    it.each(['deferred', 'retry'])(
+      'throws on %s so BullMQ retries with backoff',
+      async (status) => {
+        validateMock.mockResolvedValue({ ok: true, value: { status } })
+        await expect(processWhatsappBroadcast(job)).rejects.toThrow(status)
+      },
+    )
 
     it('throws on a database failure', async () => {
       validateMock.mockResolvedValue({

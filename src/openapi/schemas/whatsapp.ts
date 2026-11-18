@@ -412,13 +412,25 @@ export const WhatsAppGroupMessageDTO = dto(
   }),
 )
 
+export const NumberValidationAvailabilityDTO = dto(
+  'NumberValidationAvailability',
+  z.object({
+    available: z.boolean(),
+    source: z.enum(['WORKSPACE', 'PLATFORM']).nullable().meta({
+      description:
+        '`WORKSPACE`: a conexão Z-API própria do workspace responde; `PLATFORM`: a instância compartilhada do servidor responde (ex.: workspace só com Meta); `null`: indisponível.',
+    }),
+  }),
+)
+
 export const WhatsAppNumberValidationDTO = dto(
   'WhatsAppNumberValidation',
   z.object({
     id: z.string(),
     workspaceId: z.string(),
     connectionId: z.string().meta({
-      description: 'Conexão Z-API consultada (a Meta não tem essa checagem).',
+      description:
+        'Conexão Z-API do workspace consultada, ou `platform` quando a instância Z-API da plataforma respondeu (a Meta não tem essa checagem).',
     }),
     scope: z.enum(['CONTACTS', 'BROADCAST', 'AI_CAMPAIGN', 'IMPORT']),
     scopeId: z.string().nullable().meta({

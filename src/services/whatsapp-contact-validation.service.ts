@@ -18,11 +18,21 @@ import { WhatsappBroadcastJob } from '@/src/lib/queue/jobs'
 import { getWhatsappBroadcastQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
+  maskPhone,
   NUMBER_CHECK_DEFAULT_TTL_DAYS,
   NUMBER_CHECK_INLINE_MAX,
   NUMBER_CHECK_MAX_CONTACTS,
   needsWhatsappCheck,
 } from '@/src/lib/whatsapp/number-check'
+import {
+  getPlatformZapiCredentials,
+  PLATFORM_VALIDATION_CONNECTION_ID,
+} from '@/src/lib/whatsapp/validation-instance'
+import {
+  acquirePlatformLease,
+  type PlatformLease,
+  reservePlatformBudget,
+} from '@/src/lib/whatsapp/validation-throttle'
 import {
   checkZapiPhonesBatch,
   type ZapiCredentials,
@@ -34,12 +44,18 @@ import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connec
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppNumberValidationRepository } from '@/src/repositories/whatsapp-number-validation.repository'
 import type { StartWhatsAppNumberValidationDTO } from '@/src/schemas/whatsapp-number-validation.schema'
-import type { WhatsAppNumberValidationDTO } from '@/types/whatsapp-number-validation'
+import type {
+  NumberValidationAvailabilityDTO,
+  WhatsAppNumberValidationDTO,
+} from '@/types/whatsapp-number-validation'
 import { assertModuleMember } from './authz'
 import { WhatsAppSettingsService } from './whatsapp-settings.service'
 
 const NO_ZAPI_CREDENTIALS_MESSAGE =
-  'A instância Z-API não está conectada. Reconecte a instância para validar a base.'
+  'A instância Z-API não está conectada e a validação padrão da plataforma não está disponível. Reconecte a instância para validar a base.'
+
+/** Queue attempts of a validation job (exponential backoff from 30 s). */
+export const VALIDATION_JOB_ATTEMPTS = 5
 
 export interface InternalValidationInput {
   scope: WhatsAppNumberValidationScope
@@ -49,16 +65,32 @@ export interface InternalValidationInput {
   force?: boolean
 }
 
+export type ValidationSourceKind = 'WORKSPACE' | 'PLATFORM'
+
+export interface ValidationSource {
+  kind: ValidationSourceKind
+  /** Connection id stored on the run; the platform sentinel for PLATFORM. */
+  connectionId: string
+}
+
 /**
- * Picks the Z-API connection that answers the check. The check is about the
- * phone number, not the sending connection, so any connected Z-API instance of
- * the workspace works (even when the list/campaign sends through Meta). Meta's
- * Cloud API has no equivalent endpoint and is never called.
+ * THE connection selection rule for "has WhatsApp?" checks (routes, inline
+ * runs and the worker all go through here). The check is about the phone
+ * number, not the sending connection, so a Meta-only workspace works too:
+ *
+ *   1. the workspace's own CONNECTED Z-API connection wins (no load on the
+ *      shared instance);
+ *   2. otherwise the platform instance (ZAPI_VALIDATION_*), when configured;
+ *   3. otherwise validation is unavailable (error says so).
+ *
+ * An explicit `preferredId` forces rule 1 for that connection: it must be a
+ * connected Z-API connection of the workspace, there is no silent fallback.
+ * Meta's Cloud API has no such endpoint and is never called.
  */
-async function resolveZapiConnection(
+export async function resolveValidationSource(
   workspaceId: string,
   preferredId?: string,
-): Promise<Result<WhatsAppConnection>> {
+): Promise<Result<ValidationSource>> {
   const connections =
     await WhatsAppConnectionRepository.listByWorkspace(workspaceId)
   if (!connections.ok) return connections
@@ -77,13 +109,22 @@ async function resolveZapiConnection(
       connection.encryptedZapiToken &&
       (!preferredId || connection.id === preferredId),
   )
-  if (zapi.length === 0) return err(whatsappValidationUnavailable())
-
   const connected = zapi.find((connection) => connection.status === 'CONNECTED')
-  if (!connected) {
+  if (connected) {
+    return ok({ kind: 'WORKSPACE', connectionId: connected.id })
+  }
+
+  if (!preferredId && getPlatformZapiCredentials()) {
+    return ok({
+      kind: 'PLATFORM',
+      connectionId: PLATFORM_VALIDATION_CONNECTION_ID,
+    })
+  }
+
+  if (zapi.length > 0) {
     return err(whatsappValidationUnavailable(NO_ZAPI_CREDENTIALS_MESSAGE))
   }
-  return ok(connected)
+  return err(whatsappValidationUnavailable())
 }
 
 async function credentialsOf(
@@ -193,11 +234,11 @@ export const WhatsAppContactValidationService = {
       )
     }
 
-    const connection = await resolveZapiConnection(
+    const source = await resolveValidationSource(
       workspaceId,
       input.connectionId,
     )
-    if (!connection.ok) return connection
+    if (!source.ok) return source
 
     const active =
       await WhatsAppNumberValidationRepository.findActive(workspaceId)
@@ -212,7 +253,7 @@ export const WhatsAppContactValidationService = {
 
     const created = await WhatsAppNumberValidationRepository.create({
       workspaceId,
-      connectionId: connection.value.id,
+      connectionId: source.value.connectionId,
       requestedById: actorId,
       scope: input.scope,
       scopeId: input.scopeId,
@@ -233,6 +274,7 @@ export const WhatsAppContactValidationService = {
         total: contactIds.length,
         force: input.force ?? false,
         inline,
+        source: source.value.kind,
       },
     })
 
@@ -241,20 +283,28 @@ export const WhatsAppContactValidationService = {
         created.value.id,
       )
       if (!executed.ok) return executed
-      const fresh = await WhatsAppNumberValidationRepository.findById(
-        created.value.id,
-        workspaceId,
-      )
-      if (!fresh.ok) return fresh
-      return ok(toWhatsAppNumberValidationDTO(fresh.value ?? created.value))
+      // The shared instance is busy: hand the run to the queue instead.
+      if (executed.value.status !== 'deferred') {
+        const fresh = await WhatsAppNumberValidationRepository.findById(
+          created.value.id,
+          workspaceId,
+        )
+        if (!fresh.ok) return fresh
+        return ok(toWhatsAppNumberValidationDTO(fresh.value ?? created.value))
+      }
     }
 
     try {
       await getWhatsappBroadcastQueue().add(
         WhatsappBroadcastJob.ValidateWhatsappNumbers,
         { validationId: created.value.id },
-        // One attempt: a retry would count the same contacts twice.
-        { attempts: 1, jobId: `whatsapp-validation-${created.value.id}` },
+        // Retries are safe: execute() resets the counters when it restarts and
+        // already-checked contacts are served from the cache.
+        {
+          attempts: VALIDATION_JOB_ATTEMPTS,
+          backoff: { type: 'exponential', delay: 30_000 },
+          jobId: `whatsapp-validation-${created.value.id}`,
+        },
       )
     } catch (error) {
       logger.error('whatsapp.validation.enqueue_failed', {
@@ -294,14 +344,47 @@ export const WhatsAppContactValidationService = {
     return ok(toWhatsAppNumberValidationDTO(run.value))
   },
 
+  /** Whether "tem WhatsApp?" can run for this workspace, and through what. */
+  async availability(
+    actorId: string,
+    workspaceId: string,
+  ): Promise<Result<NumberValidationAvailabilityDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'contacts', action: 'VIEW' },
+    )
+    if (!membership.ok) return membership
+
+    const source = await resolveValidationSource(workspaceId)
+    if (!source.ok) {
+      // Only "unavailable" is an answer; a database failure is an error.
+      if (source.error.code === 'WHATSAPP_VALIDATION_UNAVAILABLE') {
+        return ok({ available: false, source: null })
+      }
+      return source
+    }
+    return ok({ available: true, source: source.value.kind })
+  },
+
   /**
    * Runs a check (worker or inline). System flow: no actor. Asks Z-API only
-   * for contacts without a fresh result, saves every chunk as it arrives and
-   * tolerates partial failures.
+   * for contacts without a fresh result (cache by TTL unless forced), saves
+   * every chunk as it arrives and tolerates partial failures: a number the
+   * provider could not answer stays "not checked" (failed), never "no
+   * WhatsApp". Runs on the platform instance share a Redis lease and a
+   * numbers-per-minute budget across all workspaces.
+   *
+   * `finalAttempt` false lets the queue retry: a busy instance returns
+   * `deferred` (nothing touched) and a total provider outage returns `retry`
+   * (run left RUNNING, restarted from zero next time).
    */
   async execute(
     validationId: string,
-  ): Promise<Result<{ status: 'DONE' | 'FAILED' | 'skipped' }>> {
+    options: { finalAttempt?: boolean } = {},
+  ): Promise<Result<{ status: ExecuteStatus }>> {
+    const finalAttempt = options.finalAttempt ?? true
     const found =
       await WhatsAppNumberValidationRepository.findByIdRaw(validationId)
     if (!found.ok) return found
@@ -310,14 +393,54 @@ export const WhatsAppContactValidationService = {
       return ok({ status: 'skipped' })
     }
 
-    const started = await WhatsAppNumberValidationRepository.markRunning(run.id)
-    if (!started.ok) return started
+    let credentials: ZapiCredentials | null = null
+    let lease: PlatformLease | null = null
 
-    const failRun = async (message: string) => {
-      await WhatsAppNumberValidationRepository.finish(run.id, 'FAILED', message)
-      return ok({ status: 'FAILED' as const })
+    if (run.connectionId === PLATFORM_VALIDATION_CONNECTION_ID) {
+      credentials = getPlatformZapiCredentials()
+      if (!credentials) {
+        await WhatsAppNumberValidationRepository.finish(
+          run.id,
+          'FAILED',
+          'A validação de números não está disponível no momento.',
+        )
+        return ok({ status: 'FAILED' })
+      }
+      lease = await acquirePlatformLease()
+      if (!lease) return ok({ status: 'deferred' })
     }
 
+    try {
+      return await runValidation(run, credentials, lease, finalAttempt)
+    } finally {
+      await lease?.release()
+    }
+  },
+}
+
+type ExecuteStatus = 'DONE' | 'FAILED' | 'skipped' | 'deferred' | 'retry'
+
+async function runValidation(
+  run: WhatsAppNumberValidation,
+  platformCredentials: ZapiCredentials | null,
+  lease: PlatformLease | null,
+  finalAttempt: boolean,
+): Promise<Result<{ status: ExecuteStatus }>> {
+  // A restarted run (queue retry) recounts from zero; contacts checked in the
+  // previous attempt come back as cached.
+  if (run.status === 'RUNNING') {
+    await WhatsAppNumberValidationRepository.resetProgress(run.id)
+  }
+  const started = await WhatsAppNumberValidationRepository.markRunning(run.id)
+  if (!started.ok) return started
+
+  const failRun = async (message: string) => {
+    await WhatsAppNumberValidationRepository.finish(run.id, 'FAILED', message)
+    return ok({ status: 'FAILED' as const })
+  }
+
+  let credentials = platformCredentials
+  if (!credentials) {
     const connection = await WhatsAppConnectionRepository.findById(
       run.connectionId,
       run.workspaceId,
@@ -326,123 +449,143 @@ export const WhatsAppContactValidationService = {
     if (connection.value?.provider !== 'ZAPI') {
       return failRun('Conexão Z-API não encontrada.')
     }
-    const credentials = await credentialsOf(connection.value)
+    credentials = await credentialsOf(connection.value)
     if (!credentials) return failRun(NO_ZAPI_CREDENTIALS_MESSAGE)
+  }
 
-    const settings = await WhatsAppSettingsService.getEffective(run.workspaceId)
-    const ttlDays = settings.ok
-      ? settings.value.whatsappCheckTtlDays
-      : NUMBER_CHECK_DEFAULT_TTL_DAYS
+  const settings = await WhatsAppSettingsService.getEffective(run.workspaceId)
+  const ttlDays = settings.ok
+    ? settings.value.whatsappCheckTtlDays
+    : NUMBER_CHECK_DEFAULT_TTL_DAYS
 
-    const contacts = await WhatsAppContactRepository.listForWhatsappCheck(
-      run.workspaceId,
-      run.contactIds,
-    )
-    if (!contacts.ok) return contacts
+  const contacts = await WhatsAppContactRepository.listForWhatsappCheck(
+    run.workspaceId,
+    run.contactIds,
+  )
+  if (!contacts.ok) return contacts
 
-    const now = new Date()
-    const stale = contacts.value.filter((contact) =>
-      needsWhatsappCheck(contact, { ttlDays, now, force: run.force }),
-    )
-    const cached = contacts.value.length - stale.length
-    // Ids that vanished since the run was created count as processed too.
-    const missing = run.contactIds.length - contacts.value.length
-    if (cached + missing > 0) {
-      await WhatsAppNumberValidationRepository.addProgress(run.id, {
-        processed: cached + missing,
-        withWhatsapp: 0,
-        withoutWhatsapp: 0,
-        failed: 0,
-        cached,
-      })
-    }
-
-    const byPhone = new Map<string, string>()
-    for (const contact of stale) {
-      byPhone.set(contact.waId.replace(/\D/g, ''), contact.id)
-    }
-
-    let answered = 0
-    const batch = await checkZapiPhonesBatch(
-      credentials,
-      stale.map((contact) => contact.waId),
-      {
-        onChunk: async ({ results, failed }) => {
-          const checks = results.flatMap((result) => {
-            const id = byPhone.get(result.phone)
-            return id
-              ? [{ id, hasWhatsapp: result.exists, lid: result.lid }]
-              : []
-          })
-          const saved = await WhatsAppContactRepository.applyWhatsappChecks(
-            run.workspaceId,
-            checks,
-            new Date(),
-          )
-          if (!saved.ok) {
-            logger.error('whatsapp.validation.save_failed', {
-              component: 'WhatsAppContactValidationService',
-              validationId: run.id,
-              reason: saved.error.code,
-            })
-          }
-          const storedCount = saved.ok ? checks.length : 0
-          answered += storedCount
-          const withWhatsapp = saved.ok
-            ? checks.filter((check) => check.hasWhatsapp).length
-            : 0
-          await WhatsAppNumberValidationRepository.addProgress(run.id, {
-            processed: results.length + failed.length,
-            withWhatsapp,
-            withoutWhatsapp: storedCount - withWhatsapp,
-            failed: failed.length + (results.length - storedCount),
-            cached: 0,
-          })
-        },
-      },
-    )
-    if (batch.invalid.length > 0) {
-      await WhatsAppNumberValidationRepository.addProgress(run.id, {
-        processed: batch.invalid.length,
-        withWhatsapp: 0,
-        withoutWhatsapp: 0,
-        failed: batch.invalid.length,
-        cached: 0,
-      })
-    }
-
-    const providerDown = stale.length > 0 && answered === 0
-    if (!providerDown) await applyScopeEffects(run)
-
-    await WhatsAppNumberValidationRepository.finish(
-      run.id,
-      providerDown ? 'FAILED' : 'DONE',
-      providerDown
-        ? 'Não foi possível consultar a Z-API. Tente novamente mais tarde.'
-        : null,
-    )
-
-    const final = await WhatsAppNumberValidationRepository.findByIdRaw(run.id)
-    const totals = final.ok ? final.value : null
-    auditMutation({
-      entity: 'whatsapp_number_validation',
-      action: 'update',
-      actorId: run.requestedById,
-      targetId: run.id,
-      meta: {
-        workspaceId: run.workspaceId,
-        scope: run.scope,
-        status: providerDown ? 'FAILED' : 'DONE',
-        total: run.contactIds.length,
-        withWhatsapp: totals?.withWhatsapp,
-        withoutWhatsapp: totals?.withoutWhatsapp,
-        failed: totals?.failed,
-        cached,
-      },
+  const now = new Date()
+  const stale = contacts.value.filter((contact) =>
+    needsWhatsappCheck(contact, { ttlDays, now, force: run.force }),
+  )
+  const cached = contacts.value.length - stale.length
+  // Ids that vanished since the run was created count as processed too.
+  const missing = run.contactIds.length - contacts.value.length
+  if (cached + missing > 0) {
+    await WhatsAppNumberValidationRepository.addProgress(run.id, {
+      processed: cached + missing,
+      withWhatsapp: 0,
+      withoutWhatsapp: 0,
+      failed: 0,
+      cached,
     })
+  }
 
-    return ok({ status: providerDown ? 'FAILED' : 'DONE' })
-  },
+  // The lookup is keyed by the number exactly as stored (WhatsApp resolves the
+  // Brazilian ninth digit on its side) and only hasWhatsapp / LID are saved:
+  // the reply never rewrites a contact's waId.
+  const byPhone = new Map<string, string>()
+  for (const contact of stale) {
+    byPhone.set(contact.waId.replace(/\D/g, ''), contact.id)
+  }
+
+  let answered = 0
+  const batch = await checkZapiPhonesBatch(
+    credentials,
+    stale.map((contact) => contact.waId),
+    {
+      beforeChunk: lease
+        ? async (size) => {
+            await lease.renew()
+            return reservePlatformBudget(size)
+          }
+        : undefined,
+      onChunk: async ({ results, failed }) => {
+        const checks = results.flatMap((result) => {
+          const id = byPhone.get(result.phone)
+          return id ? [{ id, hasWhatsapp: result.exists, lid: result.lid }] : []
+        })
+        const saved = await WhatsAppContactRepository.applyWhatsappChecks(
+          run.workspaceId,
+          checks,
+          new Date(),
+        )
+        if (!saved.ok) {
+          logger.error('whatsapp.validation.save_failed', {
+            component: 'WhatsAppContactValidationService',
+            validationId: run.id,
+            reason: saved.error.code,
+          })
+        }
+        const storedCount = saved.ok ? checks.length : 0
+        answered += storedCount
+        const withWhatsapp = saved.ok
+          ? checks.filter((check) => check.hasWhatsapp).length
+          : 0
+        await WhatsAppNumberValidationRepository.addProgress(run.id, {
+          processed: results.length + failed.length,
+          withWhatsapp,
+          withoutWhatsapp: storedCount - withWhatsapp,
+          failed: failed.length + (results.length - storedCount),
+          cached: 0,
+        })
+      },
+    },
+  )
+  if (batch.invalid.length > 0) {
+    logger.warn('whatsapp.validation.invalid_numbers', {
+      component: 'WhatsAppContactValidationService',
+      validationId: run.id,
+      count: batch.invalid.length,
+      sample: batch.invalid.slice(0, 3).map(maskPhone),
+    })
+    await WhatsAppNumberValidationRepository.addProgress(run.id, {
+      processed: batch.invalid.length,
+      withWhatsapp: 0,
+      withoutWhatsapp: 0,
+      failed: batch.invalid.length,
+      cached: 0,
+    })
+  }
+
+  const providerDown = stale.length > 0 && answered === 0
+  // Total outage with attempts left: leave the run RUNNING for the retry.
+  if (providerDown && !finalAttempt) return ok({ status: 'retry' })
+
+  if (!providerDown) await applyScopeEffects(run)
+
+  await WhatsAppNumberValidationRepository.finish(
+    run.id,
+    providerDown ? 'FAILED' : 'DONE',
+    providerDown
+      ? 'Não foi possível consultar a Z-API. Tente novamente mais tarde.'
+      : null,
+  )
+
+  const final = await WhatsAppNumberValidationRepository.findByIdRaw(run.id)
+  const totals = final.ok ? final.value : null
+  auditMutation({
+    entity: 'whatsapp_number_validation',
+    action: 'update',
+    actorId: run.requestedById,
+    targetId: run.id,
+    meta: {
+      workspaceId: run.workspaceId,
+      scope: run.scope,
+      status: providerDown ? 'FAILED' : 'DONE',
+      source:
+        run.connectionId === PLATFORM_VALIDATION_CONNECTION_ID
+          ? 'PLATFORM'
+          : 'WORKSPACE',
+      total: run.contactIds.length,
+      withWhatsapp: totals?.withWhatsapp,
+      withoutWhatsapp: totals?.withoutWhatsapp,
+      failed: totals?.failed,
+      cached,
+    },
+  })
+
+  return ok({ status: providerDown ? 'FAILED' : 'DONE' })
 }
 
 /**

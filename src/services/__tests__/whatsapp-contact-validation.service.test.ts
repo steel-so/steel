@@ -20,6 +20,15 @@ vi.mock('@/src/lib/whatsapp/zapi-client', () => ({
   checkZapiPhonesBatch: vi.fn(),
 }))
 
+vi.mock('@/src/lib/whatsapp/validation-instance', () => ({
+  PLATFORM_VALIDATION_CONNECTION_ID: 'platform',
+  getPlatformZapiCredentials: vi.fn(() => null),
+}))
+vi.mock('@/src/lib/whatsapp/validation-throttle', () => ({
+  acquirePlatformLease: vi.fn(),
+  reservePlatformBudget: vi.fn(async () => true),
+}))
+
 const { add } = vi.hoisted(() => ({ add: vi.fn(async () => ({})) }))
 vi.mock('@/src/lib/queue/queues', () => ({
   getWhatsappBroadcastQueue: vi.fn(() => ({ add })),
@@ -129,7 +138,7 @@ describe('start() authorization and sources', () => {
       contactIds: ['c1'],
     })
     const error = expectErr(result, 'WHATSAPP_VALIDATION_UNAVAILABLE')
-    expect(error.message).toContain('Z-API')
+    expect(error.message).toContain('não está disponível')
     expect(batch).not.toHaveBeenCalled()
     expect(runRepo.create).not.toHaveBeenCalled()
   })
@@ -386,7 +395,7 @@ describe('start() authorization and sources', () => {
 })
 
 describe('start() inline vs background', () => {
-  it('queues big sets as a background job (one attempt) and returns the queued run', async () => {
+  it('queues big sets as a background job (retried with backoff) and returns the queued run', async () => {
     const ids = Array.from({ length: 201 }, (_, i) => `c${i}`)
     const result = await WhatsAppContactValidationService.start('u1', 'ws1', {
       scope: 'CONTACTS',
@@ -396,7 +405,11 @@ describe('start() inline vs background', () => {
     expect(add).toHaveBeenCalledWith(
       'validate-whatsapp-numbers',
       { validationId: 'run1' },
-      { attempts: 1, jobId: 'whatsapp-validation-run1' },
+      {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 30_000 },
+        jobId: 'whatsapp-validation-run1',
+      },
     )
     expect(batch).not.toHaveBeenCalled()
   })
