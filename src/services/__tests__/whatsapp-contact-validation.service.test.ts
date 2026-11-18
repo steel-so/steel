@@ -1,23 +1,38 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeMembership } from '@/src/__tests__/factories/membership.factory'
 import { createFakeWhatsAppBroadcastList } from '@/src/__tests__/factories/whatsapp-broadcast.factory'
-import { createFakeWhatsAppConnection } from '@/src/__tests__/factories/whatsapp-connection.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { databaseError } from '@/src/errors'
+import { databaseError, whatsappValidationUnavailable } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/membership.repository')
-vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
 vi.mock('@/src/repositories/whatsapp-ai-campaign.repository')
 vi.mock('@/src/repositories/whatsapp-number-validation.repository')
 vi.mock('../whatsapp-settings.service')
-vi.mock('@/src/lib/crypto', () => ({
-  decryptConnectionSecret: vi.fn(async (value: string) => `dec:${value}`),
-}))
 vi.mock('@/src/lib/whatsapp/zapi-client', () => ({
   checkZapiPhonesBatch: vi.fn(),
+}))
+
+const { line, acquireLease, release, renew } = vi.hoisted(() => ({
+  line: {
+    isAvailable: vi.fn(),
+    acquireForValidation: vi.fn(),
+    isLineLost: vi.fn(),
+  },
+  acquireLease: vi.fn(),
+  release: vi.fn(async () => {}),
+  renew: vi.fn(async () => {}),
+}))
+vi.mock('../platform-zapi-line.service', () => ({
+  PLATFORM_LINE_UNAVAILABLE_MESSAGE:
+    'A linha de verificação da plataforma está desconectada; peça a um administrador da plataforma para reconectar.',
+  PlatformZapiLineService: line,
+}))
+vi.mock('@/src/lib/whatsapp/validation-throttle', () => ({
+  acquirePlatformLease: acquireLease,
+  reservePlatformBudget: vi.fn(async () => true),
 }))
 
 const { add } = vi.hoisted(() => ({ add: vi.fn(async () => ({})) }))
@@ -29,14 +44,12 @@ import { checkZapiPhonesBatch } from '@/src/lib/whatsapp/zapi-client'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppAiCampaignRepository } from '@/src/repositories/whatsapp-ai-campaign.repository'
 import { WhatsAppBroadcastRepository } from '@/src/repositories/whatsapp-broadcast.repository'
-import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppNumberValidationRepository } from '@/src/repositories/whatsapp-number-validation.repository'
 import { WhatsAppContactValidationService } from '../whatsapp-contact-validation.service'
 import { WhatsAppSettingsService } from '../whatsapp-settings.service'
 
 const membershipRepo = vi.mocked(MembershipRepository)
-const connectionRepo = vi.mocked(WhatsAppConnectionRepository)
 const contactRepo = vi.mocked(WhatsAppContactRepository)
 const broadcastRepo = vi.mocked(WhatsAppBroadcastRepository)
 const campaignRepo = vi.mocked(WhatsAppAiCampaignRepository)
@@ -44,28 +57,18 @@ const runRepo = vi.mocked(WhatsAppNumberValidationRepository)
 const settingsService = vi.mocked(WhatsAppSettingsService)
 const batch = vi.mocked(checkZapiPhonesBatch)
 
-const zapi = createFakeWhatsAppConnection({
-  id: 'conn-z',
-  workspaceId: 'ws1',
-  provider: 'ZAPI',
-  status: 'CONNECTED',
-  encryptedZapiClientToken: 'enc:client',
-})
-const meta = createFakeWhatsAppConnection({
-  id: 'conn-m',
-  workspaceId: 'ws1',
-  provider: 'META',
-  status: 'CONNECTED',
-  zapiInstanceId: null,
-  encryptedZapiToken: null,
-})
+const CREDS = {
+  instanceId: 'platform-inst',
+  token: 'platform-token',
+  clientToken: 'platform-client',
+}
 
 function run(overrides: Record<string, unknown> = {}) {
   const now = new Date('2026-10-22T12:00:00.000Z')
   return {
     id: 'run1',
     workspaceId: 'ws1',
-    connectionId: 'conn-z',
+    connectionId: 'platform',
     requestedById: 'u1',
     scope: 'CONTACTS' as const,
     scopeId: null,
@@ -95,10 +98,12 @@ function asMember(role: 'MEMBER' | 'ADMIN' = 'MEMBER') {
 beforeEach(() => {
   vi.clearAllMocks()
   asMember()
-  connectionRepo.listByWorkspace.mockResolvedValue(ok([zapi]))
+  line.isAvailable.mockResolvedValue(ok(true))
+  line.acquireForValidation.mockResolvedValue(ok(CREDS))
+  line.isLineLost.mockResolvedValue(false)
+  acquireLease.mockResolvedValue({ release, renew })
   batch.mockReset()
   batch.mockResolvedValue({ results: [], failed: [], invalid: [] })
-  connectionRepo.findById.mockResolvedValue(ok(zapi))
   runRepo.findActive.mockResolvedValue(ok(null))
   runRepo.create.mockImplementation(async (data) =>
     ok(run({ contactIds: data.contactIds, total: data.contactIds.length })),
@@ -122,65 +127,35 @@ describe('start() authorization and sources', () => {
     expect(runRepo.create).not.toHaveBeenCalled()
   })
 
-  it('refuses without a Z-API connection and never calls a provider (Meta only)', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(ok([meta]))
+  it('refuses when the platform line is disconnected and never calls a provider', async () => {
+    line.isAvailable.mockResolvedValue(ok(false))
     const result = await WhatsAppContactValidationService.start('u1', 'ws1', {
       scope: 'CONTACTS',
       contactIds: ['c1'],
     })
     const error = expectErr(result, 'WHATSAPP_VALIDATION_UNAVAILABLE')
-    expect(error.message).toContain('Z-API')
+    expect(error.message).toContain('peça a um administrador da plataforma')
     expect(batch).not.toHaveBeenCalled()
     expect(runRepo.create).not.toHaveBeenCalled()
   })
 
-  it('refuses when the only Z-API instance is disconnected', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(
-      ok([{ ...zapi, status: 'DISCONNECTED' }]),
-    )
-    const result = await WhatsAppContactValidationService.start('u1', 'ws1', {
-      scope: 'CONTACTS',
-      contactIds: ['c1'],
-    })
-    expectErr(result, 'WHATSAPP_VALIDATION_UNAVAILABLE')
-  })
-
-  it('refuses an explicit Meta connection and an unknown one', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(ok([zapi, meta]))
-    expectErr(
-      await WhatsAppContactValidationService.start('u1', 'ws1', {
-        scope: 'CONTACTS',
-        contactIds: ['c1'],
-        connectionId: 'conn-m',
-      }),
-      'WHATSAPP_VALIDATION_UNAVAILABLE',
-    )
-    expectErr(
-      await WhatsAppContactValidationService.start('u1', 'ws1', {
-        scope: 'CONTACTS',
-        contactIds: ['c1'],
-        connectionId: 'nope',
-      }),
-      'WHATSAPP_CONNECTION_NOT_FOUND',
-    )
-  })
-
-  it('uses the Z-API instance even when a Meta one exists', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(ok([meta, zapi]))
+  it('always runs on the platform line, whatever connection the workspace has', async () => {
     contactRepo.listForWhatsappCheck.mockResolvedValue(ok([]))
     runRepo.findByIdRaw.mockResolvedValue(ok(run()))
     runRepo.findById.mockResolvedValue(ok(run({ status: 'DONE' })))
     await WhatsAppContactValidationService.start('u1', 'ws1', {
       scope: 'CONTACTS',
       contactIds: ['c1'],
-    })
+      // A legacy client may still send it; it is ignored.
+      connectionId: 'conn-z',
+    } as never)
     expect(runRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ connectionId: 'conn-z' }),
+      expect.objectContaining({ connectionId: 'platform' }),
     )
   })
 
-  it('propagates a connection listing failure', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(err(databaseError('x')))
+  it('propagates a failure reading the platform line', async () => {
+    line.isAvailable.mockResolvedValue(err(databaseError('x')))
     expectErr(
       await WhatsAppContactValidationService.start('u1', 'ws1', {
         scope: 'CONTACTS',
@@ -386,7 +361,7 @@ describe('start() authorization and sources', () => {
 })
 
 describe('start() inline vs background', () => {
-  it('queues big sets as a background job (one attempt) and returns the queued run', async () => {
+  it('queues big sets as a background job (retried with backoff) and returns the queued run', async () => {
     const ids = Array.from({ length: 201 }, (_, i) => `c${i}`)
     const result = await WhatsAppContactValidationService.start('u1', 'ws1', {
       scope: 'CONTACTS',
@@ -396,7 +371,11 @@ describe('start() inline vs background', () => {
     expect(add).toHaveBeenCalledWith(
       'validate-whatsapp-numbers',
       { validationId: 'run1' },
-      { attempts: 1, jobId: 'whatsapp-validation-run1' },
+      {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 30_000 },
+        jobId: 'whatsapp-validation-run1',
+      },
     )
     expect(batch).not.toHaveBeenCalled()
   })
@@ -514,13 +493,12 @@ describe('execute()', () => {
       'DATABASE_ERROR',
     )
 
-    connectionRepo.findById.mockResolvedValue(err(databaseError('x')))
+    line.acquireForValidation.mockResolvedValueOnce(err(databaseError('x')))
     expectErr(
       await WhatsAppContactValidationService.execute('run1'),
       'DATABASE_ERROR',
     )
 
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(err(databaseError('x')))
     expectErr(
       await WhatsAppContactValidationService.execute('run1'),
@@ -528,37 +506,28 @@ describe('execute()', () => {
     )
   })
 
-  it('fails the run when the connection vanished or is not Z-API', async () => {
+  it('fails the run as not checked when the platform line is gone, touching no contact', async () => {
     runRepo.findByIdRaw.mockResolvedValue(ok(run()))
-    connectionRepo.findById.mockResolvedValue(ok(null))
+    line.acquireForValidation.mockResolvedValue(
+      err(whatsappValidationUnavailable('linha desconectada')),
+    )
     expect(
       expectOk(await WhatsAppContactValidationService.execute('run1')).status,
     ).toBe('FAILED')
-    connectionRepo.findById.mockResolvedValue(ok(meta))
-    await WhatsAppContactValidationService.execute('run1')
     expect(batch).not.toHaveBeenCalled()
+    expect(contactRepo.applyWhatsappChecks).not.toHaveBeenCalled()
+    expect(runRepo.markRunning).not.toHaveBeenCalled()
     expect(runRepo.finish).toHaveBeenCalledWith(
       'run1',
       'FAILED',
-      expect.any(String),
+      expect.stringContaining('desconectada'),
     )
-  })
-
-  it('fails the run when the Z-API credentials are missing', async () => {
-    runRepo.findByIdRaw.mockResolvedValue(ok(run()))
-    connectionRepo.findById.mockResolvedValue(
-      ok({ ...zapi, encryptedZapiToken: null }),
-    )
-    expect(
-      expectOk(await WhatsAppContactValidationService.execute('run1')).status,
-    ).toBe('FAILED')
   })
 
   it('checks only stale contacts, stores the answers and counts the cached ones', async () => {
     runRepo.findByIdRaw.mockResolvedValue(
       ok(run({ contactIds: ['c1', 'c2', 'c3', 'gone'] })),
     )
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
         { id: 'c1', waId: '5511999990001', ...stale },
@@ -590,11 +559,7 @@ describe('execute()', () => {
 
     expect(expectOk(result).status).toBe('DONE')
     expect(batch).toHaveBeenCalledWith(
-      {
-        instanceId: 'instance-1',
-        token: 'dec:enc:token',
-        clientToken: 'dec:enc:client',
-      },
+      CREDS,
       ['5511999990001', '5511999990002'],
       expect.any(Object),
     )
@@ -627,7 +592,6 @@ describe('execute()', () => {
     runRepo.findByIdRaw.mockResolvedValue(
       ok(run({ force: true, contactIds: ['c3'] })),
     )
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
         {
@@ -650,7 +614,6 @@ describe('execute()', () => {
   it('uses the default TTL when the settings cannot be read', async () => {
     settingsService.getEffective.mockResolvedValue(err(databaseError('x')))
     runRepo.findByIdRaw.mockResolvedValue(ok(run({ contactIds: ['c1'] })))
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
         {
@@ -671,7 +634,6 @@ describe('execute()', () => {
     runRepo.findByIdRaw.mockResolvedValue(
       ok(run({ contactIds: ['c1', 'c2', 'c3'] })),
     )
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
         { id: 'c1', waId: '5511999990001', ...stale },
@@ -710,7 +672,6 @@ describe('execute()', () => {
 
   it('does not count answers it failed to save', async () => {
     runRepo.findByIdRaw.mockResolvedValue(ok(run({ contactIds: ['c1', 'c2'] })))
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
         { id: 'c1', waId: '5511999990001', ...stale },
@@ -741,7 +702,6 @@ describe('execute()', () => {
 
   it('fails the run when Z-API answers nothing', async () => {
     runRepo.findByIdRaw.mockResolvedValue(ok(run({ contactIds: ['c1'] })))
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([{ id: 'c1', waId: '5511999990001', ...stale }]),
     )
@@ -766,7 +726,6 @@ describe('execute()', () => {
       runRepo.findByIdRaw.mockResolvedValue(
         ok(run({ scope: 'BROADCAST', scopeId: 'b1', contactIds: ['c1'] })),
       )
-      connectionRepo.findById.mockResolvedValue(ok(zapi))
       contactRepo.listForWhatsappCheck.mockResolvedValue(
         ok([{ id: 'c1', waId: '5511999990001', ...stale }]),
       )
@@ -849,50 +808,7 @@ describe('edge cases', () => {
     )
   })
 
-  it('accepts an explicit Z-API connection', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(ok([meta, zapi]))
-    runRepo.findByIdRaw.mockResolvedValue(ok(run()))
-    contactRepo.listForWhatsappCheck.mockResolvedValue(ok([]))
-    runRepo.findById.mockResolvedValue(ok(run({ status: 'DONE' })))
-    expectOk(
-      await WhatsAppContactValidationService.start('u1', 'ws1', {
-        scope: 'CONTACTS',
-        contactIds: ['c1'],
-        connectionId: 'conn-z',
-      }),
-    )
-  })
-
-  it('ignores Z-API connections without credentials', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(
-      ok([{ ...zapi, encryptedZapiToken: null }]),
-    )
-    expectErr(
-      await WhatsAppContactValidationService.start('u1', 'ws1', {
-        scope: 'CONTACTS',
-        contactIds: ['c1'],
-      }),
-      'WHATSAPP_VALIDATION_UNAVAILABLE',
-    )
-    connectionRepo.listByWorkspace.mockResolvedValue(
-      ok([{ ...zapi, zapiInstanceId: null }]),
-    )
-    expectErr(
-      await WhatsAppContactValidationService.start('u1', 'ws1', {
-        scope: 'CONTACTS',
-        contactIds: ['c1'],
-      }),
-      'WHATSAPP_VALIDATION_UNAVAILABLE',
-    )
-  })
-
-  it('works without a client token and falls back to the created run', async () => {
-    connectionRepo.listByWorkspace.mockResolvedValue(
-      ok([{ ...zapi, encryptedZapiClientToken: null }]),
-    )
-    connectionRepo.findById.mockResolvedValue(
-      ok({ ...zapi, encryptedZapiClientToken: null }),
-    )
+  it('falls back to the created run when the finished one cannot be read', async () => {
     runRepo.findByIdRaw.mockResolvedValue(ok(run({ contactIds: ['c1'] })))
     contactRepo.listForWhatsappCheck.mockResolvedValue(
       ok([
@@ -915,11 +831,7 @@ describe('edge cases', () => {
 
     expectOk(result)
     expect(batch).toHaveBeenCalledWith(
-      {
-        instanceId: 'instance-1',
-        token: 'dec:enc:token',
-        clientToken: undefined,
-      },
+      CREDS,
       ['5511999990001'],
       expect.any(Object),
     )
@@ -941,7 +853,6 @@ describe('edge cases', () => {
     runRepo.findByIdRaw
       .mockResolvedValueOnce(ok(run({ contactIds: [] })))
       .mockResolvedValueOnce(err(databaseError('x')))
-    connectionRepo.findById.mockResolvedValue(ok(zapi))
     contactRepo.listForWhatsappCheck.mockResolvedValue(ok([]))
     expect(
       expectOk(await WhatsAppContactValidationService.execute('run1')).status,

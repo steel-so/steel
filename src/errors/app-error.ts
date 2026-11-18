@@ -1,3 +1,4 @@
+import { QUALITY_BLOCK_PREFIX } from '@/src/lib/whatsapp/quality-block'
 import type { ErrorCode } from './codes'
 
 export interface AppError {
@@ -274,7 +275,7 @@ export const whatsappBroadcastNoRecipients = (
  * endpoint), so a workspace without one cannot validate numbers.
  */
 export const whatsappValidationUnavailable = (
-  message = 'A checagem "tem WhatsApp?" só funciona com uma conexão Z-API. A API oficial da Meta não oferece esse recurso. Conecte uma instância Z-API para validar a base.',
+  message = 'A validação de números não está disponível para este workspace no momento. Tente novamente mais tarde ou fale com o suporte.',
 ): AppError => appError('WHATSAPP_VALIDATION_UNAVAILABLE', message)
 
 export const whatsappValidationNotFound = (): AppError =>
@@ -958,6 +959,23 @@ export const whatsappSpendCapReached = (cap: number, spent: number): AppError =>
     'WHATSAPP_SPEND_CAP_REACHED',
     `O limite de gasto mensal deste número foi atingido (${SPEND_BRL.format(spent)} de ${SPEND_BRL.format(cap)} neste mês, pelos dados da Meta). Mensagens de template (pagas) estão bloqueadas; respostas dentro da janela de 24 horas continuam liberadas. Para liberar agora, um administrador pode aumentar o limite ou mudar o modo para "só avisar" em Comunicação > Relatórios > Custos.`,
     { cap, spent },
+  )
+
+/**
+ * zap-quality-gate: AI campaign template sends refused because Meta rates the
+ * number (or the campaign template) RED. The message starts with the fixed
+ * prefix the UI uses to tell this pause from the others.
+ */
+export const whatsappQualityBlocked = (
+  subject: 'NUMBER' | 'TEMPLATE',
+  templateName?: string,
+): AppError =>
+  appError(
+    'WHATSAPP_QUALITY_BLOCKED',
+    subject === 'NUMBER'
+      ? `${QUALITY_BLOCK_PREFIX} o número desta conexão está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando templates em massa piora a nota e reduz o limite de mensagens, então as campanhas da IA ficam bloqueadas. Aguarde a Meta recuperar a classificação do número e depois continue a campanha; enquanto isso, fale com os contatos diretamente pelos atendentes.`
+      : `${QUALITY_BLOCK_PREFIX} o template "${templateName ?? ''}" está com qualidade "Baixa" (vermelha) na Meta. Continuar enviando-o piora a nota e pode reduzir o limite de mensagens, então a campanha da IA fica bloqueada. Aguarde a Meta recuperar a classificação do template ou troque o template da campanha; enquanto isso, fale com os contatos diretamente pelos atendentes.`,
+    { subject },
   )
 
 /** zap-block-contacts: send refused, the recipient is blocked on the number. */

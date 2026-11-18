@@ -9873,6 +9873,36 @@ model WhatsAppNumberValidation {
   @@map("whatsapp_number_validations")
 }
 
+/// Connection state of the platform verification line (ADR 0069).
+enum PlatformZapiLineStatus {
+  DISCONNECTED
+  AWAITING_QR
+  CONNECTED
+  ERROR
+}
+
+/// The ONE Z-API line (managed in the global admin) that answers the "has
+/// WhatsApp?" check of every workspace (ADR 0069). Singleton: the row id is
+/// always `default`. Tokens are encrypted with CONNECTION_SECRETS.
+model PlatformZapiLine {
+  id                   String                 @id @default("default")
+  instanceId           String                 @map("instance_id")
+  encryptedToken       String                 @map("encrypted_token")
+  encryptedClientToken String?                @map("encrypted_client_token")
+  label                String?
+  /// Digits of the paired WhatsApp number, known once connected.
+  phone                String?
+  status               PlatformZapiLineStatus @default(DISCONNECTED)
+  statusError          String?                @map("status_error")
+  connectedAt          DateTime?              @map("connected_at")
+  statusCheckedAt      DateTime?              @map("status_checked_at")
+  updatedById          String?                @map("updated_by_id")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  @@map("platform_zapi_lines")
+}
+
 enum WorkspaceAccessOutcome {
   ALLOWED
   BLOCKED

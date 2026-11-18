@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useNumberValidationState } from '@/app/_components/whatsapp/number-validation/use-number-validation-state'
 import { WhatsappNumberValidationDialog } from '@/app/_components/whatsapp/number-validation/whatsapp-number-validation-dialog'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { Button } from '@/components/ui/button'
@@ -8,7 +9,6 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { notify } from '@/lib/notify'
 import { useUpdateWhatsAppAiCampaign } from '@/src/hooks/use-whatsapp-ai-campaigns'
-import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import type { WhatsAppAiCampaignDTO } from '@/types/whatsapp-ai-campaign'
 
 /**
@@ -24,13 +24,9 @@ export function AiCampaignNoWhatsapp({
 }) {
   const canEdit = useCan('broadcasts', 'EDIT')
   const canValidate = useCan('contacts', 'EDIT')
-  const connections = useWhatsAppConnections(workspaceId)
+  const validation = useNumberValidationState(workspaceId)
   const update = useUpdateWhatsAppAiCampaign(workspaceId, campaign.id)
   const [validateOpen, setValidateOpen] = useState(false)
-
-  const hasZapi = (connections.data ?? []).some(
-    (connection) => connection.provider === 'ZAPI',
-  )
 
   return (
     <div className='space-y-2 border-t pt-3'>
@@ -40,15 +36,14 @@ export function AiCampaignNoWhatsapp({
             Pular números sem WhatsApp
           </Label>
           <p className='text-muted-foreground text-xs'>
-            {hasZapi || connections.data === undefined
-              ? 'Pula quem a checagem marcou sem WhatsApp; quem não foi verificado recebe normalmente.'
-              : 'Disponível só com uma conexão Z-API (a API oficial da Meta não oferece a checagem).'}
+            {validation.unavailableHint ??
+              'Pula quem a checagem marcou sem WhatsApp; quem não foi verificado recebe normalmente.'}
           </p>
         </div>
         <Switch
           id='campaignSkipNoWhatsapp'
           checked={campaign.skipNoWhatsapp}
-          disabled={!canEdit || update.isPending || !hasZapi}
+          disabled={!canEdit || update.isPending || !validation.available}
           onCheckedChange={(checked) =>
             update.mutate(
               { skipNoWhatsapp: checked },

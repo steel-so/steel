@@ -70,8 +70,8 @@ cabeçalhos, com estes nomes, em um dos dois formatos:
 
 ### Tem WhatsApp? (validar a base)
 
-Com uma conexão **Z-API**, o Steel confere quais números da sua base têm
-WhatsApp. É uma limpeza de base, feita de tempos em tempos ou depois de
+O Steel confere quais números da sua base têm WhatsApp, qualquer que seja a
+conexão do workspace (Meta ou Z-API). É uma limpeza de base, feita de tempos em tempos ou depois de
 importar uma planilha. Não use como conferência a cada mensagem: a Z-API já
 valida o número no envio.
 
@@ -88,8 +88,12 @@ valida o número no envio.
   importar**.
 
 A checagem não envia mensagem nenhuma e não consome o limite do plano. Ela
-usa a conexão Z-API conectada do workspace; com a API oficial da Meta o recurso
-não existe (a Meta não oferece essa consulta), então nada é consultado nela.
+usa a **linha de verificação da Stratus**, um número de WhatsApp mantido pela
+plataforma e igual para todos os workspaces (não usa as conexões do seu
+workspace). Só o número do contato é enviado, nunca o nome. Se a linha estiver
+desconectada, o botão avisa que a validação está indisponível e pede para um
+administrador da plataforma reconectar; números que sobrarem quando a linha cai
+no meio da checagem ficam como **Não verificado**.
 
 <Callout type='admin'>
   O dono e os administradores definem a validade do resultado em

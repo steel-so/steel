@@ -8,7 +8,6 @@ export interface StartNumberValidationInput {
   all?: boolean
   broadcastId?: string
   campaignId?: string
-  connectionId?: string
   force?: boolean
 }
 

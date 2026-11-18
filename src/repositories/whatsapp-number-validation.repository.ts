@@ -114,6 +114,25 @@ export const WhatsAppNumberValidationRepository = {
     }
   },
 
+  /** Zeroes the counters before a retried run starts over (idempotent retry). */
+  async resetProgress(id: string): Promise<Result<void>> {
+    try {
+      await prisma.whatsAppNumberValidation.update({
+        where: { id },
+        data: {
+          processed: 0,
+          withWhatsapp: 0,
+          withoutWhatsapp: 0,
+          failed: 0,
+          cached: 0,
+        },
+      })
+      return ok(undefined)
+    } catch (error) {
+      return err(dbError('Failed to reset whatsapp number validation', error))
+    }
+  },
+
   async finish(
     id: string,
     status: Extract<WhatsAppNumberValidationStatus, 'DONE' | 'FAILED'>,

@@ -586,6 +586,11 @@ export const TAG_GROUPS = [
         description:
           'Margem da plataforma sobre o preço real dos modelos de IA (ADR 0019).',
       },
+      {
+        name: 'Admin · Linha de verificação',
+        description:
+          'Linha Z-API da plataforma que confere, para todos os workspaces, se um número tem WhatsApp (ADR 0069): credenciais, QR Code, status, reinício e desconexão.',
+      },
     ],
   },
   {

@@ -386,6 +386,12 @@ export interface ZapiPhonesBatchOptions {
   batchSize?: number
   pauseMs?: number
   retryDelayMs?: number
+  /**
+   * Called before every chunk goes out (platform throttle). Returning false
+   * skips the request: the chunk's numbers are reported in `failed`, i.e.
+   * "not checked" — never as "no WhatsApp".
+   */
+  beforeChunk?: (size: number) => Promise<boolean> | boolean
   /** Called after every chunk, so callers can persist progress. */
   onChunk?: (chunk: {
     results: ZapiPhoneCheck[]
@@ -507,7 +513,11 @@ export async function checkZapiPhonesBatch(
     const chunk = valid.slice(start, start + batchSize)
 
     let answered: { results: ZapiPhoneCheck[]; unanswered: string[] }
+    const allowed = options.beforeChunk
+      ? await options.beforeChunk(chunk.length)
+      : true
     try {
+      if (!allowed) throw new Error('Chunk skipped by the throttle')
       try {
         answered = await postPhonesChunk(credentials, chunk)
       } catch {
@@ -531,4 +541,53 @@ export async function checkZapiPhonesBatch(
   }
 
   return { results, failed, invalid }
+}
+
+// ---------------------------------------------------------------------------
+// Instance management (platform verification line, ADR 0069)
+//   GET /status      -> { connected, smartphoneConnected, error? }
+//   GET /device      -> { phone, name, device: {...} }  (only once paired)
+//   GET /disconnect  -> { value: true }
+//   GET /restart     -> { value: true }
+// ---------------------------------------------------------------------------
+
+export interface ZapiInstanceStatus {
+  connected: boolean
+  /** Reason Z-API gives while not connected (e.g. "You are not connected."). */
+  error: string | null
+}
+
+export async function getZapiInstanceStatus(
+  credentials: ZapiCredentials,
+): Promise<ZapiInstanceStatus> {
+  const body = await zapiRequest<unknown>(credentials, '/status')
+  const item = asRecord(body)
+  return {
+    connected: item?.connected === true,
+    error: optionalString(item?.error),
+  }
+}
+
+/** Digits of the number paired to the instance, or null when unknown. */
+export async function getZapiInstancePhone(
+  credentials: ZapiCredentials,
+): Promise<string | null> {
+  const body = await zapiRequest<unknown>(credentials, '/device')
+  const phone = optionalString(asRecord(body)?.phone)
+  const digits = phone ? digitsOnly(phone) : ''
+  return digits.length > 0 ? digits : null
+}
+
+/** Unpairs the phone: the instance needs a new QR scan afterwards. */
+export async function disconnectZapiInstance(
+  credentials: ZapiCredentials,
+): Promise<void> {
+  await zapiRequest<unknown>(credentials, '/disconnect')
+}
+
+/** Restarts the instance session (keeps the pairing when it is healthy). */
+export async function restartZapiInstance(
+  credentials: ZapiCredentials,
+): Promise<void> {
+  await zapiRequest<unknown>(credentials, '/restart')
 }

@@ -29,8 +29,9 @@ async function seedMetaConnection(workspaceId: string, userId: string) {
 }
 
 describe('POST /api/workspaces/[id]/whatsapp/number-validations', () => {
-  it('should refuse with 422 when the workspace only has the Meta Cloud API', async () => {
+  it('should refuse with 422 while the platform verification line is not connected', async () => {
     const { user, workspace } = await authenticatedOwner()
+    await prisma.platformZapiLine.deleteMany()
     await seedMetaConnection(workspace.id, user.id)
     const contact = await prisma.whatsAppContact.create({
       data: { workspaceId: workspace.id, waId: '5511988887777' },
@@ -45,8 +46,24 @@ describe('POST /api/workspaces/[id]/whatsapp/number-validations', () => {
     expect(res.status).toBe(422)
     const body = await res.json()
     expect(body.error.code).toBe('WHATSAPP_VALIDATION_UNAVAILABLE')
-    expect(body.message ?? body.error.message).toContain('Z-API')
+    expect(body.message ?? body.error.message).toContain(
+      'linha de verificação da plataforma',
+    )
     expect(await prisma.whatsAppNumberValidation.count()).toBe(0)
+  })
+
+  it('should report the validation as unavailable without a connected platform line', async () => {
+    const { user, workspace } = await authenticatedOwner()
+    await prisma.platformZapiLine.deleteMany()
+
+    const res = await getJson(
+      `/api/workspaces/${workspace.id}/whatsapp/number-validation/availability`,
+      user.cookie,
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.data).toEqual({ available: false, source: null })
   })
 
   it('should return 422 for an invalid payload', async () => {
@@ -76,11 +93,11 @@ describe('POST /api/workspaces/[id]/whatsapp/number-validations', () => {
 describe('GET /api/workspaces/[id]/whatsapp/number-validations/[validationId]', () => {
   it('should return the progress of a run of the workspace', async () => {
     const { user, workspace } = await authenticatedOwner()
-    const connection = await seedMetaConnection(workspace.id, user.id)
+    await seedMetaConnection(workspace.id, user.id)
     const run = await prisma.whatsAppNumberValidation.create({
       data: {
         workspaceId: workspace.id,
-        connectionId: connection.id,
+        connectionId: 'platform',
         requestedById: user.id,
         scope: 'CONTACTS',
         contactIds: ['c1', 'c2'],
@@ -111,14 +128,11 @@ describe('GET /api/workspaces/[id]/whatsapp/number-validations/[validationId]', 
   it('should not expose a run of another workspace', async () => {
     const { user, workspace } = await authenticatedOwner()
     const other = await authenticatedOwner()
-    const connection = await seedMetaConnection(
-      other.workspace.id,
-      other.user.id,
-    )
+    await seedMetaConnection(other.workspace.id, other.user.id)
     const run = await prisma.whatsAppNumberValidation.create({
       data: {
         workspaceId: other.workspace.id,
-        connectionId: connection.id,
+        connectionId: 'platform',
         scope: 'CONTACTS',
         contactIds: [],
       },

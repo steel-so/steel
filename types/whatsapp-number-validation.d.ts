@@ -38,3 +38,14 @@ export interface WhatsAppImportValidationDTO {
   /** Why the step did not run (e.g. no Z-API connection); null when it did. */
   validationUnavailable: string | null
 }
+
+/**
+ * Whether "tem WhatsApp?" can run. Validation is global (ADR 0069): the one
+ * platform verification line, managed in the admin, answers for every
+ * workspace, so `source` is `PLATFORM` when it is connected and null when it
+ * is not. Credentials are never exposed.
+ */
+export interface NumberValidationAvailabilityDTO {
+  available: boolean
+  source: 'PLATFORM' | null
+}

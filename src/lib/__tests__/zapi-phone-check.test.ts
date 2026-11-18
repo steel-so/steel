@@ -243,4 +243,20 @@ describe('checkZapiPhonesBatch()', () => {
       vi.useRealTimers()
     }
   })
+
+  it('reports a chunk the throttle refused as failed, without calling Z-API', async () => {
+    const onChunk = vi.fn()
+    const result = await checkZapiPhonesBatch(credentials, ['5511999990001'], {
+      ...fast,
+      beforeChunk: async () => false,
+      onChunk,
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(result.results).toEqual([])
+    expect(result.failed).toEqual(['5511999990001'])
+    expect(onChunk).toHaveBeenCalledWith({
+      results: [],
+      failed: ['5511999990001'],
+    })
+  })
 })

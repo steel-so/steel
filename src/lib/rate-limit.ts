@@ -381,6 +381,21 @@ export const documentTrackLimiter = new RateLimiterRedis({
   duration: DOCUMENT_TRACK_DURATION_SECONDS,
 })
 
+// Platform-wide budget of the shared Z-API validation instance: points are
+// phone numbers, one global key for every tenant (see
+// src/lib/whatsapp/validation-throttle.ts and ADR 0069).
+export const ZAPI_PLATFORM_CHECK_POINTS = 3000
+export const ZAPI_PLATFORM_CHECK_DURATION_SECONDS = 60
+
+export const zapiPlatformCheckLimiter = new RateLimiterRedis({
+  storeClient: redis,
+  storeType: 'redis',
+  useRedisPackage: true,
+  keyPrefix: 'rl:zapi_platform_check',
+  points: ZAPI_PLATFORM_CHECK_POINTS,
+  duration: ZAPI_PLATFORM_CHECK_DURATION_SECONDS,
+})
+
 export type Limiter = RateLimiterRedis
 
 const limiterNames = new WeakMap<Limiter, string>([
@@ -412,6 +427,7 @@ const limiterNames = new WeakMap<Limiter, string>([
   [widgetSessionLimiter, 'widget_session'],
   [widgetSendLimiter, 'widget_send'],
   [documentTrackLimiter, 'document_track'],
+  [zapiPlatformCheckLimiter, 'zapi_platform_check'],
 ])
 
 let connectionEnsured: Promise<unknown> | null = null

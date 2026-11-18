@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { notify } from '@/lib/notify'
-import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
 import {
   useImportWhatsAppContacts,
   useWhatsAppContactFields,
@@ -31,6 +30,7 @@ import {
   contactImportTemplateCsv,
 } from '@/src/lib/whatsapp/contact-import'
 import type { WhatsAppContactImportResultDTO } from '@/types/whatsapp-contact-import'
+import { useNumberValidationState } from './number-validation/use-number-validation-state'
 import { WhatsappNumberValidationProgress } from './number-validation/whatsapp-number-validation-dialog'
 
 function downloadTemplate(fieldLabels: string[]) {
@@ -63,10 +63,7 @@ export function WhatsAppContactImportDialog({
   const fieldLabels = (useWhatsAppContactFields(workspaceId).data ?? []).map(
     (field) => field.label,
   )
-  const connections = useWhatsAppConnections(workspaceId)
-  const hasZapi = (connections.data ?? []).some(
-    (connection) => connection.provider === 'ZAPI',
-  )
+  const validation = useNumberValidationState(workspaceId)
   const [validateWhatsapp, setValidateWhatsapp] = useState(false)
   const [csv, setCsv] = useState<string | null>(null)
   const [fileName, setFileName] = useState('')
@@ -175,7 +172,7 @@ export function WhatsAppContactImportDialog({
             <Checkbox
               id='contact-import-validate'
               checked={validateWhatsapp}
-              disabled={connections.data !== undefined && !hasZapi}
+              disabled={validation.loaded && !validation.available}
               onCheckedChange={(checked) =>
                 setValidateWhatsapp(checked === true)
               }
@@ -183,9 +180,8 @@ export function WhatsAppContactImportDialog({
             <span>
               Validar se tem WhatsApp depois de importar
               <span className='block text-muted-foreground text-xs'>
-                {connections.data !== undefined && !hasZapi
-                  ? 'Disponível só com uma conexão Z-API (a API oficial da Meta não oferece essa checagem).'
-                  : 'Usa a sua conexão Z-API e não consome o limite do plano.'}
+                {validation.unavailableHint ??
+                  `${validation.info ?? ''} Não consome o limite do plano.`.trim()}
               </span>
             </span>
           </label>
