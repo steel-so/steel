@@ -81,6 +81,9 @@ const serverEnv = {
   SLACK_CLIENT_ID: process.env.SLACK_CLIENT_ID,
   SLACK_CLIENT_SECRET: process.env.SLACK_CLIENT_SECRET,
   SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
+  ZAPI_VALIDATION_INSTANCE_ID: process.env.ZAPI_VALIDATION_INSTANCE_ID,
+  ZAPI_VALIDATION_TOKEN: process.env.ZAPI_VALIDATION_TOKEN,
+  ZAPI_VALIDATION_CLIENT_TOKEN: process.env.ZAPI_VALIDATION_CLIENT_TOKEN,
   AXIOM_QUERY_TOKEN: process.env.AXIOM_QUERY_TOKEN,
   AXIOM_QUERY_URL: process.env.AXIOM_QUERY_URL,
   ANALYTICS_FIXTURES: process.env.ANALYTICS_FIXTURES,
@@ -428,6 +431,13 @@ export const serverEnvSchema = z.object({
   // "Signing Secret" do app do Slack: assina todo request que o Slack manda
   // (eventos, atalhos, slash commands). Sem ele o webhook recusa tudo.
   SLACK_SIGNING_SECRET: blankOptional,
+  // Instância Z-API da plataforma, usada só para o "tem WhatsApp?" dos
+  // workspaces que não têm Z-API própria (ex.: só Meta). Tudo opcional: sem o
+  // id e o token a validação por instância da plataforma fica inerte e o app
+  // sobe como antes. O Client-Token é opcional na Z-API (segurança da conta).
+  ZAPI_VALIDATION_INSTANCE_ID: blankOptional,
+  ZAPI_VALIDATION_TOKEN: blankOptional,
+  ZAPI_VALIDATION_CLIENT_TOKEN: blankOptional,
   // Credenciais de **build** do Sentry: só servem para subir source maps, o
   // que acontece apenas no build de imagem do CD. Sem as três, o plugin do
   // `next.config.ts` fica inerte (nenhum release criado, nenhum upload) e o
@@ -597,6 +607,9 @@ export const {
   SLACK_CLIENT_ID,
   SLACK_CLIENT_SECRET,
   SLACK_SIGNING_SECRET,
+  ZAPI_VALIDATION_INSTANCE_ID,
+  ZAPI_VALIDATION_TOKEN,
+  ZAPI_VALIDATION_CLIENT_TOKEN,
   SENTRY_ORG,
   SENTRY_PROJECT,
   SENTRY_AUTH_TOKEN,

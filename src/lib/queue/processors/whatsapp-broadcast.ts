@@ -105,11 +105,21 @@ async function processValidateWhatsappNumbers(
   job: Job<WhatsappBroadcastJobPayload['validate-whatsapp-numbers']>,
 ): Promise<void> {
   const { validationId } = job.data
-  const result = await WhatsAppContactValidationService.execute(validationId)
+  const maxAttempts = job.opts?.attempts ?? 1
+  const result = await WhatsAppContactValidationService.execute(validationId, {
+    finalAttempt: (job.attemptsMade ?? 0) + 1 >= maxAttempts,
+  })
   // Database failure: throw so the job shows as failed in the dashboard.
   if (!result.ok) {
     throw new Error(
       `Failed to run the WhatsApp number validation: ${result.error.code}`,
+    )
+  }
+  // Shared Z-API instance busy or provider outage: throw so BullMQ retries
+  // with exponential backoff (nothing was marked as "no WhatsApp").
+  if (result.value.status === 'deferred' || result.value.status === 'retry') {
+    throw new Error(
+      `WhatsApp number validation will be retried: ${result.value.status}`,
     )
   }
   logger.info('queue.whatsapp_number_validation.completed', {
