@@ -149,7 +149,12 @@ export function toGenerateInput(
         }
       : {}),
     ...(brief.modelKey && context.models.some((m) => m.key === brief.modelKey)
-      ? { modelKey: brief.modelKey }
+      ? // The picker only offers keys of the catalog, so the string is one.
+        {
+          modelKey: brief.modelKey as NonNullable<
+            GenerateSiteInput['modelKey']
+          >,
+        }
       : {}),
   }
 }
