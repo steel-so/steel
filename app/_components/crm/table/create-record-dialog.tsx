@@ -175,9 +175,20 @@ export function CreateRecordDialog({
                     col={col}
                     value={values[col.key]}
                     commit={(next) => setValue(col.key, next)}
-                    autofill={(extra) =>
+                    autofill={(extra) => {
                       setValues((cur) => ({ ...cur, ...extra }))
-                    }
+                      // Plain inputs show `texts`, so mirror what was filled.
+                      setTexts((cur) => {
+                        const next = { ...cur }
+                        for (const field of fields) {
+                          if (!PLAIN_INPUT_KINDS.has(field.kind)) continue
+                          const filled = extra[field.key]
+                          if (filled === undefined || filled === null) continue
+                          next[field.key] = String(filled)
+                        }
+                        return next
+                      })
+                    }}
                     slug={slug}
                     lookups={lookups}
                     workspaceId={workspaceId}

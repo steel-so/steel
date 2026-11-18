@@ -136,6 +136,53 @@ describe('<CrmCompaniesTable />', { timeout: 15_000 }, () => {
     expect(fetchBody(fetchSpy, /\/crm\/companies$/)).not.toHaveProperty('cnpj')
   })
 
+  it('shows a company created from the dialog with a CNPJ autofill', async () => {
+    const created = {
+      ...COMPANY,
+      id: 'c9',
+      name: 'SOCIEDADE VISCONDE DE S LEOPOLDO',
+      cnpj: '58191008000162',
+      customFields: {},
+    }
+    mockFetch([
+      ...baseRoutes([]),
+      {
+        method: 'POST',
+        match: '/crm/companies/cnpj-lookup',
+        handler: () => ({
+          cnpj: '58191008000162',
+          legalName: 'SOCIEDADE VISCONDE DE S LEOPOLDO',
+          tradeName: null,
+          address: null,
+        }),
+      },
+      { method: 'POST', match: /\/crm\/companies$/, data: created },
+    ])
+    renderTable()
+    await screen.findByText('Nada por aqui ainda')
+    fireEvent.click(screen.getAllByText(/^Nov[oa] empresa$/)[0])
+    const dialog = await screen.findByRole('dialog')
+
+    const input = within(dialog).getByPlaceholderText('00.000.000/0000-00')
+    fireEvent.change(input, { target: { value: '58191008000162' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(notify.success).toHaveBeenCalled())
+    await waitFor(() =>
+      expect(
+        (within(dialog).getByLabelText('Nome') as HTMLInputElement).value,
+      ).toBe('SOCIEDADE VISCONDE DE S LEOPOLDO'),
+    )
+    const submit = within(dialog).getByRole('button', { name: 'Criar' })
+    await waitFor(() =>
+      expect((submit as HTMLButtonElement).disabled).toBe(false),
+    )
+    fireEvent.click(submit)
+
+    expect(
+      (await screen.findAllByText('SOCIEDADE VISCONDE DE S LEOPOLDO')).length,
+    ).toBeGreaterThan(0)
+  })
+
   it('rejects an invalid CNPJ without saving', async () => {
     const fetchSpy = mockFetch(baseRoutes())
     renderTable()
