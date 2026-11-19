@@ -464,6 +464,8 @@ model Workspace {
   suspendedById     String?               @map("suspended_by_id")
   /// Wiki do workspace: desligada até um OWNER/ADMIN ativar em Ajustes > Wiki.
   wikiEnabled       Boolean               @default(false) @map("wiki_enabled")
+  /// Workspace beta: recebe as feature flags marcadas com `betaEnabled`.
+  beta              Boolean               @default(false)
   /// Quadro-branco (Excalidraw): ligado por padrão; OWNER/ADMIN desliga em
   /// Ajustes > Quadro-branco.
   whiteboardEnabled Boolean               @default(true) @map("whiteboard_enabled")
@@ -488,6 +490,7 @@ model Workspace {
   moduleConnections WorkspaceModuleConnection[]
   moduleAccess      WorkspaceModuleAccess[]
   featureOverrides  WorkspaceFeatureOverride[]
+  featureFlagGrants FeatureFlagWorkspace[]
   moduleUsage       ModuleUsageDaily[]
 
   whatsappConnections          WhatsAppConnection[]
@@ -1082,6 +1085,39 @@ model WorkspaceFeatureOverride {
   @@unique([workspaceId, key])
   @@index([workspaceId])
   @@map("workspace_feature_overrides")
+}
+
+/// Feature flag da plataforma (liga/desliga), gerida em /admin/feature-flags.
+/// Vale para um workspace se `enabled` (global) OU houver liberação em
+/// `FeatureFlagWorkspace` OU (`betaEnabled` e o workspace for beta).
+/// Independe do catálogo por plano (`WorkspaceFeatureOverride`).
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  betaEnabled Boolean  @default(false) @map("beta_enabled")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspaces FeatureFlagWorkspace[]
+
+  @@map("feature_flags")
+}
+
+/// Liberação de uma flag para um workspace específico.
+model FeatureFlagWorkspace {
+  flagId      String   @map("flag_id")
+  workspaceId String   @map("workspace_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  flag      FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([flagId, workspaceId])
+  @@index([workspaceId])
+  @@map("feature_flag_workspaces")
 }
 
 /// Agregado diário de uso por workspace × módulo, para o painel de métricas

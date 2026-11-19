@@ -23,6 +23,7 @@ export type AuditEntity =
   | 'workspace_module_connection'
   | 'workspace_module_access'
   | 'workspace_feature_override'
+  | 'platform_feature_flag'
   | 'changelog'
   | 'whatsapp_connection'
   | 'whatsapp_contact'
