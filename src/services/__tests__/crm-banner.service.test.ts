@@ -227,6 +227,9 @@ describe('CrmBannerService CRUD', () => {
   })
 
   it('soft deletes after checking ownership by workspace', async () => {
+    membership.findByUserAndWorkspace.mockResolvedValue(
+      ok(createFakeMembership({ role: 'ADMIN' })),
+    )
     repo.findById.mockResolvedValue(ok(row()))
     repo.softDelete.mockResolvedValue(ok(undefined))
     expectOk(await CrmBannerService.remove(ACTOR, WS, 'b1'))
@@ -289,7 +292,7 @@ describe('CrmBannerService.generateCopy()', () => {
   })
 
   it('fails when the feature is off, without calling the provider', async () => {
-    feature.mockResolvedValue(err(aiQuotaExceeded()))
+    feature.mockResolvedValue(err(aiQuotaExceeded(1, 1)))
     expectErr(
       await CrmBannerService.generateCopy(ACTOR, WS, brief()),
       'AI_QUOTA_EXCEEDED',

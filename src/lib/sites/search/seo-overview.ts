@@ -1,9 +1,8 @@
 import type { CanvasDocument } from '@/src/lib/canvas/types'
 import type { SiteSettingsDTO } from '@/src/schemas/site.schema'
-import type { SearchPageAnalysis } from './analyze'
 import type { PageContent } from './content'
 import { countWords, normalizeText } from './text'
-import type { SearchCheck } from './types'
+import type { SearchCheck, SearchPageAnalysis } from './types'
 
 /**
  * Pure helpers of CRM > SEO: the technical checklist aggregated over the

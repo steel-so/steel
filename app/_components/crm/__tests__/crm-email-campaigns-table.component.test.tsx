@@ -187,7 +187,7 @@ describe('<CrmEmailCampaignsTable /> composer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enviar agora' }))
     expect(
       await screen.findByText(
-        'Escolha pelo menos um contato, uma lista ou um e-mail avulso.',
+        'Escolha pelo menos um contato, uma lista, um segmento ou um e-mail avulso.',
       ),
     ).toBeTruthy()
   })

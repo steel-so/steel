@@ -176,6 +176,7 @@ beforeEach(() => {
   lookup.findConnection.mockResolvedValue(ok(connection()))
   lookup.findWhatsAppTemplate.mockResolvedValue(ok(null))
   lookup.mailingListsExist.mockResolvedValue(ok(true))
+  lookup.segmentsExist.mockResolvedValue(ok(true))
   audience.collectCandidates.mockResolvedValue(
     ok([
       {

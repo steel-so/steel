@@ -47,6 +47,7 @@ const REVIEWED_PUBLIC: Record<string, string> = {
   '/api/pabx/voice-agent': 'voice agent shared secret',
   '/api/crm/proposals': 'proposal link token',
   '/api/documents': 'document link token (rate limited by IP)',
+  '/api/b': 'public link-in-bio page view counter (rate limited by IP)',
   '/api/crm/forms': 'public form id + rate limit',
   '/api/crm/integrations': 'integration key',
   '/api/crm/apollo/webhook': 'webhook secret',
@@ -112,6 +113,7 @@ const OPEN_ENDPOINTS: Record<string, string> = {
 const REDIRECTS_WITHOUT_SESSION = [
   'GET /api/servicedesk/integrations/oauth/slack',
   'GET /api/social/callback/[platform]',
+  'GET /api/google-business/callback',
 ]
 
 // GitHub answers 200 to `ping` and unknown events before it reads anything.
