@@ -15,6 +15,13 @@ import { UpdateCrmNewsletterSettingsSchema } from '@/src/schemas/crm-newsletter.
 import { SetFeatureOverrideSchema } from '@/src/schemas/feature-flag.schema'
 import { UpdatePlatformAiSettingsSchema } from '@/src/schemas/platform-ai-settings.schema'
 import {
+  CreatePlatformFlagSchema,
+  ListFlagWorkspacesQuerySchema,
+  SetFlagWorkspaceSchema,
+  SetWorkspaceBetaSchema,
+  UpdatePlatformFlagSchema,
+} from '@/src/schemas/platform-flag.schema'
+import {
   PlatformZapiLineActionSchema,
   SavePlatformZapiLineSchema,
 } from '@/src/schemas/platform-zapi-line.schema'
@@ -39,6 +46,7 @@ import {
   AdminMetricsDTO,
   AdminOperationDTO,
   AdminOverviewDTO,
+  AdminServerDTO,
   AdminWorkspaceDetailDTO,
   AdminWorkspaceRecordDTO,
   AdminWorkspaceSummaryDTO,
@@ -46,6 +54,8 @@ import {
   ChangelogReleaseDraftDTO,
   ChangelogSummaryDTO,
   PlatformAiSettingsDTO,
+  PlatformFlagDTO,
+  PlatformFlagWorkspaceDTO,
   PlatformZapiLineDTO,
   PlatformZapiLineQrCodeDTO,
 } from '../schemas/admin'
@@ -98,6 +108,112 @@ const SetProfileSchema = z.object({
 })
 
 const routes: RouteConfig[] = [
+  admin({
+    method: 'get',
+    path: '/admin/server',
+    tags: ['Admin · Servidor'],
+    summary: 'Análise do servidor',
+    description:
+      'Foto atual do servidor: CPU, memória, disco e rede do host, containers Docker (quando o socket está montado), PostgreSQL e Redis.',
+    responses: { 200: { description: 'Snapshot.', schema: AdminServerDTO } },
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/feature-flags',
+    tags: ['Admin · Feature flags'],
+    summary: 'Listar flags da plataforma',
+    responses: {
+      200: { description: 'Flags.', schema: z.array(PlatformFlagDTO) },
+    },
+  }),
+  admin({
+    method: 'post',
+    path: '/admin/feature-flags',
+    tags: ['Admin · Feature flags'],
+    summary: 'Criar flag da plataforma',
+    consent: true,
+    body: {
+      schema: CreatePlatformFlagSchema,
+      example: {
+        key: 'crm.new-editor',
+        name: 'Novo editor',
+        enabled: false,
+        betaEnabled: true,
+      },
+    },
+    responses: {
+      201: { description: 'Flag criada.', schema: PlatformFlagDTO },
+    },
+    errors: ['CONFLICT'],
+  }),
+  admin({
+    method: 'patch',
+    path: '/admin/feature-flags/{id}',
+    params: { id: 'ID da flag.' },
+    tags: ['Admin · Feature flags'],
+    summary: 'Atualizar flag da plataforma',
+    consent: true,
+    body: UpdatePlatformFlagSchema,
+    responses: {
+      200: { description: 'Flag atualizada.', schema: PlatformFlagDTO },
+    },
+    errors: ['RESOURCE_NOT_FOUND'],
+  }),
+  admin({
+    method: 'delete',
+    path: '/admin/feature-flags/{id}',
+    params: { id: 'ID da flag.' },
+    tags: ['Admin · Feature flags'],
+    summary: 'Excluir flag da plataforma',
+    consent: true,
+    responses: {
+      200: {
+        description: 'Flag excluída.',
+        schema: z.object({ id: z.string() }),
+      },
+    },
+    errors: ['RESOURCE_NOT_FOUND'],
+  }),
+  admin({
+    method: 'put',
+    path: '/admin/feature-flags/{id}/workspaces',
+    params: { id: 'ID da flag.' },
+    tags: ['Admin · Feature flags'],
+    summary: 'Liberar ou retirar a flag de um workspace',
+    consent: true,
+    body: SetFlagWorkspaceSchema,
+    responses: {
+      200: { description: 'Flag atualizada.', schema: PlatformFlagDTO },
+    },
+    errors: ['RESOURCE_NOT_FOUND'],
+  }),
+  admin({
+    method: 'get',
+    path: '/admin/feature-flags/workspaces',
+    tags: ['Admin · Feature flags'],
+    summary: 'Workspaces para liberar flags',
+    description:
+      'Busca por nome ou slug. Com `flagId`, cada item traz `granted` (a flag está liberada para ele).',
+    query: ListFlagWorkspacesQuerySchema,
+    responses: {
+      200: {
+        description: 'Workspaces.',
+        schema: z.array(PlatformFlagWorkspaceDTO),
+      },
+    },
+  }),
+  admin({
+    method: 'patch',
+    path: '/admin/feature-flags/workspaces',
+    tags: ['Admin · Feature flags'],
+    summary: 'Marcar ou desmarcar um workspace como beta',
+    consent: true,
+    body: SetWorkspaceBetaSchema,
+    responses: {
+      200: { description: 'Workspace.', schema: PlatformFlagWorkspaceDTO },
+    },
+    errors: [WORKSPACE_NOT_FOUND],
+  }),
   admin({
     method: 'get',
     path: '/admin/overview',

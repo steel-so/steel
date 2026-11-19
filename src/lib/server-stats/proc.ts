@@ -44,7 +44,9 @@ export function parseLoadavg(text: string): [number, number, number] | null {
 
 /** /proc/uptime → seconds since the host booted. */
 export function parseUptime(text: string): number | null {
-  const n = Number(text.trim().split(/\s+/)[0])
+  const first = text.trim().split(/\s+/)[0]
+  if (!first) return null
+  const n = Number(first)
   return Number.isFinite(n) ? n : null
 }
 

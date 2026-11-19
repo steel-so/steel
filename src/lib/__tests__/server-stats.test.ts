@@ -8,6 +8,7 @@ import {
   parseDockerMemory,
 } from '../server-stats/docker'
 import {
+  type CpuTimes,
   cpuPercentBetween,
   parseCpuStat,
   parseLoadavg,
@@ -60,12 +61,12 @@ describe('/proc parsers', () => {
   })
 
   it('should compute cpu percent between two samples (idle includes iowait)', () => {
-    const a = parseCpuStat(STAT_A)
-    const b = parseCpuStat(STAT_B)
+    const a = parseCpuStat(STAT_A) as CpuTimes
+    const b = parseCpuStat(STAT_B) as CpuTimes
     expect(a).toEqual({ total: 1000, idle: 800 })
-    // delta total 150, delta idle 50 -> 100/150 busy
-    expect(cpuPercentBetween(a!, b!)).toBeCloseTo(66.67, 1)
-    expect(cpuPercentBetween(a!, a!)).toBeNull()
+    // delta total 200, delta idle 50 -> 150/200 busy
+    expect(cpuPercentBetween(a, b)).toBeCloseTo(75, 1)
+    expect(cpuPercentBetween(a, a)).toBeNull()
     expect(parseCpuStat('nothing')).toBeNull()
   })
 

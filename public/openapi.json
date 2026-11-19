@@ -477,6 +477,14 @@
       "description": "Backups FULL/por workspace, download assinado, restauração e acompanhamento de operações assíncronas."
     },
     {
+      "name": "Admin · Feature flags",
+      "description": "Flags da plataforma: ligar para todos, para os workspaces beta ou para workspaces escolhidos."
+    },
+    {
+      "name": "Admin · Servidor",
+      "description": "Análise ao vivo do servidor: host, containers Docker, PostgreSQL e Redis."
+    },
+    {
       "name": "Admin · Métricas",
       "description": "Visão geral e métricas de uso da plataforma."
     },
@@ -665,6 +673,8 @@
       "tags": [
         "Admin · Workspaces",
         "Admin · Backups e operações",
+        "Admin · Feature flags",
+        "Admin · Servidor",
         "Admin · Métricas",
         "Admin · Changelog",
         "Admin · Steel IA",
@@ -1948,6 +1958,537 @@
         ]
       }
     },
+    "/admin/feature-flags": {
+      "get": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Listar flags da plataforma",
+        "operationId": "getAdminFeatureFlags",
+        "description": "Só admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PlatformFlag"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Criar flag da plataforma",
+        "operationId": "postAdminFeatureFlags",
+        "description": "Só admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_.-]{1,63}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "betaEnabled": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": ["key", "name"]
+              },
+              "example": {
+                "key": "crm.new-editor",
+                "name": "Novo editor",
+                "enabled": false,
+                "betaEnabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Flag criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformFlag"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CONFLICT_11"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/feature-flags/workspaces": {
+      "get": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Workspaces para liberar flags",
+        "operationId": "getAdminFeatureFlagsWorkspaces",
+        "description": "Busca por nome ou slug. Com `flagId`, cada item traz `granted` (a flag está liberada para ele).\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "flagId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspaces.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/PlatformFlagWorkspace"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Marcar ou desmarcar um workspace como beta",
+        "operationId": "patchAdminFeatureFlagsWorkspaces",
+        "description": "Só admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "beta": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["workspaceId", "beta"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformFlagWorkspace"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/feature-flags/{id}": {
+      "patch": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Atualizar flag da plataforma",
+        "operationId": "patchAdminFeatureFlagsById",
+        "description": "Só admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da flag.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "betaEnabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flag atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformFlag"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Excluir flag da plataforma",
+        "operationId": "deleteAdminFeatureFlagsById",
+        "description": "Só admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da flag.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flag excluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["id"]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/feature-flags/{id}/workspaces": {
+      "put": {
+        "tags": ["Admin · Feature flags"],
+        "summary": "Liberar ou retirar a flag de um workspace",
+        "operationId": "putAdminFeatureFlagsByIdWorkspaces",
+        "description": "Só admin global da plataforma.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID da flag.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workspaceId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "granted": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["workspaceId", "granted"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flag atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/PlatformFlag"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_2"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/admin/metrics": {
       "get": {
         "tags": ["Admin · Métricas"],
@@ -2101,7 +2642,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -2135,6 +2676,52 @@
                       "properties": {
                         "data": {
                           "$ref": "#/components/schemas/AdminOverview"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/server": {
+      "get": {
+        "tags": ["Admin · Servidor"],
+        "summary": "Análise do servidor",
+        "operationId": "getAdminServer",
+        "description": "Foto atual do servidor: CPU, memória, disco e rede do host, containers Docker (quando o socket está montado), PostgreSQL e Redis.\n\nSó admin global da plataforma.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "responses": {
+          "200": {
+            "description": "Snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AdminServer"
                         }
                       }
                     }
@@ -12083,7 +12670,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -12149,7 +12736,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -13222,7 +13809,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_6"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -13288,7 +13875,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_6"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -29301,7 +29888,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -37375,7 +37962,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -37444,7 +38031,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37518,7 +38105,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
@@ -37584,7 +38171,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37665,7 +38252,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_COMPETITOR_NO_POSTS"
@@ -37748,7 +38335,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
@@ -40046,7 +40633,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40152,7 +40739,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -40221,7 +40808,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40287,7 +40874,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_25"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40369,7 +40956,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -40515,7 +41102,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -41168,7 +41755,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_SALES_WIDGET_UNSUPPORTED"
@@ -41304,7 +41891,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -46641,7 +47228,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47353,7 +47940,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_CRM_EMAIL_CANVAS_HTML_FORBIDDEN_3"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_EMAIL_TEMPLATE_NOT_BUILDER_2"
@@ -47425,7 +48012,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47542,7 +48129,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_BUILDER_STRUCTURE_LOCKED_CRM_EMAIL_CANVAS_INVALID"
@@ -47660,7 +48247,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_EMAIL_BUILDER_STRUCTURE_LOCKED_CRM_EMAIL_CANVAS_INVALID"
@@ -47732,7 +48319,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47812,7 +48399,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_4"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_5"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_EMAIL_TEMPLATE_NOT_BUILDER"
@@ -48414,7 +49001,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -48620,7 +49207,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_25"
@@ -48690,7 +49277,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -48754,7 +49341,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -48816,7 +49403,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -48883,7 +49470,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -55089,7 +55676,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -55158,7 +55745,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -55224,7 +55811,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -55313,7 +55900,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_MAILING_LIST_MEMBER_CONFLICT"
@@ -55396,7 +55983,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_8"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -72863,7 +73450,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -72948,7 +73535,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_SCHEDULED_POST_ALREADY_PUBLISHED"
@@ -73020,7 +73607,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -73086,7 +73673,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -73149,7 +73736,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_SCHEDULED_POST_ALREADY_PUBLISHED_2"
@@ -73235,7 +73822,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_9"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -91062,6 +91649,65 @@
                     "crm.socialPublishing": false,
                     "communication.broadcasts": true
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/flags": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Flags da plataforma ativas",
+        "operationId": "getWorkspacesByIdFlags",
+        "description": "Chaves das flags da plataforma ligadas para o workspace (globais, beta ou liberadas individualmente), para a UI esconder o que ainda não está disponível.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chaves ativas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "success": true,
+                  "statusCode": 200,
+                  "data": ["crm.new-editor"]
                 }
               }
             }
@@ -109704,7 +110350,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -109766,7 +110412,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -109829,7 +110475,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -109895,7 +110541,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -110535,7 +111181,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -110651,7 +111297,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -155833,7 +156479,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_10"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_3"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -187469,6 +188115,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_4": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Dashboard inexistente no workspace",
                 "value": {
                   "success": false,
@@ -187483,7 +188152,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_4": {
+      "404_RESOURCE_NOT_FOUND_5": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187506,7 +188175,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_5": {
+      "404_RESOURCE_NOT_FOUND_6": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187529,7 +188198,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_6": {
+      "404_RESOURCE_NOT_FOUND_7": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187552,7 +188221,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_7": {
+      "404_RESOURCE_NOT_FOUND_8": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187575,7 +188244,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_8": {
+      "404_RESOURCE_NOT_FOUND_9": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187598,7 +188267,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_9": {
+      "404_RESOURCE_NOT_FOUND_10": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -187612,29 +188281,6 @@
                   "success": false,
                   "statusCode": 404,
                   "message": "CrmScheduledPost not found",
-                  "error": {
-                    "code": "RESOURCE_NOT_FOUND"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "404_RESOURCE_NOT_FOUND_10": {
-        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "RESOURCE_NOT_FOUND": {
-                "summary": "RESOURCE_NOT_FOUND",
-                "value": {
-                  "success": false,
-                  "statusCode": 404,
-                  "message": "Recurso não encontrado",
                   "error": {
                     "code": "RESOURCE_NOT_FOUND"
                   }
@@ -195792,6 +196438,28 @@
                   "success": false,
                   "statusCode": 409,
                   "message": "Transfira a posse dos workspaces onde você é único OWNER antes de excluir a conta",
+                  "error": {
+                    "code": "CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CONFLICT_11": {
+        "description": "Conflito com o estado atual: `CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CONFLICT": {
+                "summary": "CONFLICT",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
                   "error": {
                     "code": "CONFLICT"
                   }
@@ -213344,6 +214012,420 @@
           "recentBackups",
           "operations"
         ]
+      },
+      "AdminServer": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "host": {
+            "type": "object",
+            "properties": {
+              "hostname": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string"
+              },
+              "cpuCount": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "uptimeSeconds": {
+                "type": "number"
+              },
+              "cpuPercent": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "loadAvg": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "memory": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "totalBytes": {
+                        "type": "number"
+                      },
+                      "usedBytes": {
+                        "type": "number"
+                      },
+                      "availableBytes": {
+                        "type": "number"
+                      },
+                      "swapTotalBytes": {
+                        "type": "number"
+                      },
+                      "swapUsedBytes": {
+                        "type": "number"
+                      },
+                      "percent": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "totalBytes",
+                      "usedBytes",
+                      "availableBytes",
+                      "swapTotalBytes",
+                      "swapUsedBytes",
+                      "percent"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "disk": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "totalBytes": {
+                        "type": "number"
+                      },
+                      "usedBytes": {
+                        "type": "number"
+                      },
+                      "freeBytes": {
+                        "type": "number"
+                      },
+                      "percent": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["path", "totalBytes", "usedBytes", "freeBytes", "percent"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "network": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "rxBytesPerSec": {
+                        "type": "number"
+                      },
+                      "txBytesPerSec": {
+                        "type": "number"
+                      },
+                      "rxBytes": {
+                        "type": "number"
+                      },
+                      "txBytes": {
+                        "type": "number"
+                      },
+                      "interfaces": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": ["rxBytesPerSec", "txBytesPerSec", "rxBytes", "txBytes", "interfaces"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "hostname",
+              "platform",
+              "cpuCount",
+              "uptimeSeconds",
+              "cpuPercent",
+              "loadAvg",
+              "memory",
+              "disk",
+              "network"
+            ]
+          },
+          "docker": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "containers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "health": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": ["healthy", "unhealthy", "starting"]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "restartCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "cpuPercent": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "memUsageBytes": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "memLimitBytes": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "memPercent": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "image",
+                    "state",
+                    "status",
+                    "health",
+                    "restartCount",
+                    "cpuPercent",
+                    "memUsageBytes",
+                    "memLimitBytes",
+                    "memPercent"
+                  ]
+                }
+              }
+            },
+            "required": ["available", "reason", "containers"]
+          },
+          "postgres": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              },
+              "latencyMs": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "databaseSizeBytes": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "connections": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "maxConnections": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["ok", "latencyMs", "databaseSizeBytes", "connections", "maxConnections", "error"]
+          },
+          "redis": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              },
+              "latencyMs": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "usedMemoryBytes": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "connectedClients": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "uptimeSeconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "error": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "ok",
+              "latencyMs",
+              "usedMemoryBytes",
+              "connectedClients",
+              "version",
+              "uptimeSeconds",
+              "error"
+            ]
+          }
+        },
+        "required": ["generatedAt", "host", "docker", "postgres", "redis"]
       },
       "AdminWorkspaceDetail": {
         "type": "object",
@@ -248367,6 +249449,86 @@
           "taskModels",
           "failoverEnabled"
         ]
+      },
+      "PlatformFlag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "example": "crm.new-editor"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Ligada para todos os workspaces."
+          },
+          "betaEnabled": {
+            "type": "boolean",
+            "description": "Ligada para os workspaces marcados como beta."
+          },
+          "workspaceCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Workspaces com liberação individual."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "name",
+          "description",
+          "enabled",
+          "betaEnabled",
+          "workspaceCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PlatformFlagWorkspace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "beta": {
+            "type": "boolean"
+          },
+          "granted": {
+            "description": "Só com `flagId`: a flag está liberada para ele.",
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "name", "slug", "beta"]
       },
       "PlatformZapiLine": {
         "type": "object",

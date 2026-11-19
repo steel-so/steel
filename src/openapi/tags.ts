@@ -598,6 +598,16 @@ export const TAG_GROUPS = [
           'Backups FULL/por workspace, download assinado, restauração e acompanhamento de operações assíncronas.',
       },
       {
+        name: 'Admin · Feature flags',
+        description:
+          'Flags da plataforma: ligar para todos, para os workspaces beta ou para workspaces escolhidos.',
+      },
+      {
+        name: 'Admin · Servidor',
+        description:
+          'Análise ao vivo do servidor: host, containers Docker, PostgreSQL e Redis.',
+      },
+      {
         name: 'Admin · Métricas',
         description: 'Visão geral e métricas de uso da plataforma.',
       },

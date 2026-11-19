@@ -996,6 +996,22 @@ const workspaces: RouteConfig[] = [
   },
   {
     method: 'get',
+    path: '/workspaces/{id}/flags',
+    tags: ['Configurações do workspace'],
+    summary: 'Flags da plataforma ativas',
+    description:
+      'Chaves das flags da plataforma ligadas para o workspace (globais, beta ou liberadas individualmente), para a UI esconder o que ainda não está disponível.',
+    responses: {
+      200: {
+        description: 'Chaves ativas.',
+        schema: z.array(z.string()),
+        example: ['crm.new-editor'],
+      },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'get',
     path: '/workspaces/{id}/features',
     tags: ['Configurações do workspace'],
     summary: 'Feature flags efetivas',

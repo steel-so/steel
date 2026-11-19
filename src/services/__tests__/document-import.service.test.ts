@@ -43,6 +43,7 @@ vi.mock('@/src/lib/document-ai/pages', () => ({
   renderPdfPages: vi.fn(),
 }))
 vi.mock('@/src/services/media/crm-email-media.service', () => ({
+  CRM_EMAIL_IMAGE_BUCKET: 'crm-email-images',
   persistCrmEmailImage: vi.fn(),
 }))
 vi.mock('@/src/lib/canvas-document/outline', async (original) => ({
@@ -779,13 +780,8 @@ describe('DocumentImportService.run()', () => {
     const [, document] = imports.complete.mock.calls[0]
     expect(document.kind).toBe('CONTRACT')
     expect(document.title).toBe('Proposta comercial')
-    expect(requests[0].messages[0].content).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: 'text',
-          text: expect.stringContaining('CONTRACT (Contrato)'),
-        }),
-      ]),
+    expect(String(requests[0].messages[0].content)).toContain(
+      'CONTRACT (Contrato)',
     )
   })
 
@@ -882,6 +878,10 @@ describe('DocumentImportService.run()', () => {
         'failed',
       )
       expect(imports.complete).not.toHaveBeenCalled()
+      expect(remove).toHaveBeenCalledWith({
+        bucket: 'crm-email-images',
+        key: 'a.png',
+      })
     })
   })
 

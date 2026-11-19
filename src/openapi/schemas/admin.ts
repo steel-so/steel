@@ -465,3 +465,120 @@ export const PlatformAiSettingsDTO = dto(
     }),
   }),
 )
+
+export const PlatformFlagDTO = dto(
+  'PlatformFlag',
+  z.object({
+    id: z.string(),
+    key: z.string().meta({ example: 'crm.new-editor' }),
+    name: z.string(),
+    description: z.string().nullable(),
+    enabled: z
+      .boolean()
+      .meta({ description: 'Ligada para todos os workspaces.' }),
+    betaEnabled: z
+      .boolean()
+      .meta({ description: 'Ligada para os workspaces marcados como beta.' }),
+    workspaceCount: z
+      .number()
+      .int()
+      .meta({ description: 'Workspaces com liberação individual.' }),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
+  }),
+)
+
+export const PlatformFlagWorkspaceDTO = dto(
+  'PlatformFlagWorkspace',
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string(),
+    beta: z.boolean(),
+    granted: z
+      .boolean()
+      .optional()
+      .meta({ description: 'Só com `flagId`: a flag está liberada para ele.' }),
+  }),
+)
+
+const nullableNumber = () => z.number().nullable()
+
+export const AdminServerDTO = dto(
+  'AdminServer',
+  z.object({
+    generatedAt: dateTime(),
+    host: z.object({
+      hostname: z.string(),
+      platform: z.string(),
+      cpuCount: z.number().int(),
+      uptimeSeconds: z.number(),
+      cpuPercent: nullableNumber(),
+      loadAvg: z.tuple([z.number(), z.number(), z.number()]).nullable(),
+      memory: z
+        .object({
+          totalBytes: z.number(),
+          usedBytes: z.number(),
+          availableBytes: z.number(),
+          swapTotalBytes: z.number(),
+          swapUsedBytes: z.number(),
+          percent: z.number(),
+        })
+        .nullable(),
+      disk: z
+        .object({
+          path: z.string(),
+          totalBytes: z.number(),
+          usedBytes: z.number(),
+          freeBytes: z.number(),
+          percent: z.number(),
+        })
+        .nullable(),
+      network: z
+        .object({
+          rxBytesPerSec: z.number(),
+          txBytesPerSec: z.number(),
+          rxBytes: z.number(),
+          txBytes: z.number(),
+          interfaces: z.number().int(),
+        })
+        .nullable(),
+    }),
+    docker: z.object({
+      available: z.boolean(),
+      reason: z.string().nullable(),
+      containers: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          image: z.string(),
+          state: z.string(),
+          status: z.string(),
+          health: z.enum(['healthy', 'unhealthy', 'starting']).nullable(),
+          restartCount: z.number().int(),
+          cpuPercent: nullableNumber(),
+          memUsageBytes: nullableNumber(),
+          memLimitBytes: nullableNumber(),
+          memPercent: nullableNumber(),
+        }),
+      ),
+    }),
+    postgres: z.object({
+      ok: z.boolean(),
+      latencyMs: nullableNumber(),
+      databaseSizeBytes: nullableNumber(),
+      connections: nullableNumber(),
+      maxConnections: nullableNumber(),
+      error: z.string().nullable(),
+    }),
+    redis: z.object({
+      ok: z.boolean(),
+      latencyMs: nullableNumber(),
+      usedMemoryBytes: nullableNumber(),
+      connectedClients: nullableNumber(),
+      version: z.string().nullable(),
+      uptimeSeconds: nullableNumber(),
+      error: z.string().nullable(),
+    }),
+  }),
+)
