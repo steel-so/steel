@@ -57,6 +57,16 @@ vi.mock('@/src/services/crm-form.service')
 vi.mock('@/src/services/platform-ai-settings.service')
 vi.mock('@/src/services/site-media.service')
 vi.mock('@/lib/axiom/audit')
+// No worker in unit tests: the capture fails fast and the text summary of
+// each link is used, as when no capture is available.
+vi.mock('@/src/lib/site-ai/fidelity/capture/queue-port', () => ({
+  queueCapturePort: () => ({
+    capture: async () => ({
+      ok: false,
+      error: { code: 'INTERNAL_SERVER_ERROR', message: 'sem worker' },
+    }),
+  }),
+}))
 vi.mock('@/src/lib/rate-limit', () => ({
   consume: vi.fn(),
   siteInspirationUserLimiter: { name: 'user' },
@@ -1690,7 +1700,7 @@ describe('SiteAiService.generateSite — reference-faithful path', () => {
     }
     // the form drawn for the contact section points at the CRM form
     const forms = Object.values(
-      (input.pages[2].document as CanvasDocument).nodes,
+      (input.pages[2].document as unknown as CanvasDocument).nodes,
     ).filter((node) => node.type === SITE_TYPES.form)
     expect(forms).toHaveLength(1)
     expect(forms[0].props.formToken).toBe('tok_form1')
