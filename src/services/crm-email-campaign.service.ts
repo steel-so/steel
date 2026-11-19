@@ -59,6 +59,7 @@ import { assertModuleMember } from './authz'
 import { renderTemplateForCampaign } from './crm-email-builder.service'
 import { snapshotTemplateVersion } from './crm-email-template-history'
 import { notifyCrmCampaignFinished } from './crm-notifications'
+import { CrmSegmentService } from './crm-segment.service'
 
 export const CrmEmailCampaignService = {
   async list(
@@ -115,6 +116,7 @@ export const CrmEmailCampaignService = {
       dto.recipientScope,
       {
         mailingListIds: dto.mailingListIds,
+        segmentIds: dto.segmentIds,
         personIds: dto.personIds,
         extraEmails: dto.extraEmails,
       },
@@ -564,6 +566,7 @@ async function resolveRecipients(
   scope: 'ALL' | 'SELECTED',
   input: {
     mailingListIds?: string[]
+    segmentIds?: string[]
     personIds?: string[]
     extraEmails?: string[]
   },
@@ -586,12 +589,14 @@ async function collectCandidates(
   scope: 'ALL' | 'SELECTED',
   input: {
     mailingListIds?: string[]
+    segmentIds?: string[]
     personIds?: string[]
     extraEmails?: string[]
   },
 ): Promise<Result<Recipient[]>> {
   const hasSelection =
     (input.mailingListIds?.length ?? 0) > 0 ||
+    (input.segmentIds?.length ?? 0) > 0 ||
     (input.personIds?.length ?? 0) > 0 ||
     (input.extraEmails?.length ?? 0) > 0
 
@@ -645,6 +650,21 @@ async function collectCandidates(
         personId: member.personId ?? undefined,
       })
     }
+  }
+
+  // Segments are resolved now, at the moment of use (never a frozen list).
+  const segmentMembers = await CrmSegmentService.resolveCandidates(
+    workspaceId,
+    input.segmentIds ?? [],
+  )
+  if (!segmentMembers.ok) return segmentMembers
+  for (const member of segmentMembers.value) {
+    if (!member.email) continue
+    candidates.push({
+      email: member.email,
+      name: member.name,
+      personId: member.personId ?? undefined,
+    })
   }
 
   for (const email of input.extraEmails ?? []) {

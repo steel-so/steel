@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCrmEmailOptOuts } from '@/src/hooks/use-crm-email-marketing'
 import { useCrmResourceList } from '@/src/hooks/use-crm-resource-list'
+import { useCrmSegments } from '@/src/hooks/use-crm-segments'
 import type { CrmMailingListDTO } from '@/types/crm-email-marketing'
 import type { CrmPersonDTO } from '@/types/crm-person'
 
@@ -21,6 +22,8 @@ export type RecipientSelection = {
   scope: 'ALL' | 'SELECTED'
   personIds: string[]
   mailingListIds: string[]
+  /** Dynamic segments, resolved when the campaign is created. */
+  segmentIds?: string[]
   extraEmails: string[]
 }
 
@@ -46,6 +49,7 @@ export function CrmEmailCampaignRecipientPicker({
       <TabsList variant='line' className='mb-2 w-full justify-start'>
         <TabsTrigger value='contacts'>Contatos</TabsTrigger>
         <TabsTrigger value='lists'>Listas</TabsTrigger>
+        <TabsTrigger value='segments'>Segmentos</TabsTrigger>
         <TabsTrigger value='extra'>Avulsos</TabsTrigger>
       </TabsList>
 
@@ -59,6 +63,14 @@ export function CrmEmailCampaignRecipientPicker({
 
       <TabsContent value='lists'>
         <MailingListsTab
+          workspaceId={workspaceId}
+          value={value}
+          onChange={onChange}
+        />
+      </TabsContent>
+
+      <TabsContent value='segments'>
+        <SegmentsTab
           workspaceId={workspaceId}
           value={value}
           onChange={onChange}
@@ -298,6 +310,69 @@ function MailingListsTab({ workspaceId, value, onChange }: Props) {
       {selectedIds.size > 0 ? (
         <p className='text-muted-foreground text-xs'>
           {selectedIds.size} lista(s) selecionada(s)
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function SegmentsTab({ workspaceId, value, onChange }: Props) {
+  const { data, isLoading } = useCrmSegments(workspaceId)
+  const segments = (data ?? []).filter((segment) => segment.valid)
+  const selectedIds = new Set(value.segmentIds ?? [])
+
+  function toggle(id: string) {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    onChange({ ...value, scope: 'SELECTED', segmentIds: Array.from(next) })
+  }
+
+  return (
+    <div className='flex flex-col gap-3'>
+      <p className='text-muted-foreground text-xs'>
+        Os contatos de cada segmento são calculados agora, na criação do envio.
+        Quem pediu descadastro nunca recebe.
+      </p>
+
+      <div className='max-h-64 overflow-auto rounded-md border border-border'>
+        {isLoading ? (
+          <div className='p-4 text-muted-foreground text-sm'>Carregando…</div>
+        ) : segments.length === 0 ? (
+          <div className='p-4 text-muted-foreground text-sm'>
+            Nenhum segmento criado. Crie em Captar e qualificar → Segmentação.
+          </div>
+        ) : (
+          <ul className='divide-y divide-border'>
+            {segments.map((segment) => (
+              <li key={segment.id}>
+                <label className='flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-muted/40'>
+                  <input
+                    type='checkbox'
+                    className='size-4 accent-primary'
+                    checked={selectedIds.has(segment.id)}
+                    onChange={() => toggle(segment.id)}
+                  />
+                  <div className='min-w-0 flex-1'>
+                    <div className='truncate font-medium text-sm'>
+                      {segment.name}
+                    </div>
+                    {segment.description ? (
+                      <div className='truncate text-muted-foreground text-xs'>
+                        {segment.description}
+                      </div>
+                    ) : null}
+                  </div>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {selectedIds.size > 0 ? (
+        <p className='text-muted-foreground text-xs'>
+          {selectedIds.size} segmento(s) selecionado(s)
         </p>
       ) : null}
     </div>

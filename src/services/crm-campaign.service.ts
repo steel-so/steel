@@ -87,6 +87,7 @@ import {
   CrmCampaignSendService,
   sendCampaignWhatsApp,
 } from './crm-campaign-send.service'
+import { CrmSegmentService } from './crm-segment.service'
 
 type Action = 'VIEW' | 'CREATE' | 'EDIT' | 'DELETE'
 
@@ -279,6 +280,7 @@ export async function computeCampaignIssues(
   const audience = toCrmCampaignAudienceDTO(campaign.audience)
   if (
     audience.mailingListIds.length === 0 &&
+    (audience.segmentIds ?? []).length === 0 &&
     !audience.allPeople &&
     audience.leadStages.length === 0
   ) {
@@ -406,6 +408,13 @@ async function resolveAudience(
     },
   )
   if (!candidates.ok) return candidates
+  // Segments are resolved now, at the moment of use (never a frozen list).
+  const segmentCandidates = await CrmSegmentService.resolveCandidates(
+    workspaceId,
+    audience.segmentIds ?? [],
+  )
+  if (!segmentCandidates.ok) return segmentCandidates
+  candidates.value.push(...segmentCandidates.value)
   const emailOptOuts =
     await CrmCampaignAudienceRepository.emailOptOuts(workspaceId)
   if (!emailOptOuts.ok) return emailOptOuts
@@ -487,6 +496,12 @@ async function validateReferences(
     )
     if (!lists.ok) return lists
     if (!lists.value) return invalid('Lista de e-mail não encontrada')
+    const segments = await CrmCampaignLookupRepository.segmentsExist(
+      workspaceId,
+      dto.audience.segmentIds ?? [],
+    )
+    if (!segments.ok) return segments
+    if (!segments.value) return invalid('Segmento não encontrado')
   }
   const connectionId =
     dto.whatsappConnectionId === undefined
@@ -853,6 +868,7 @@ export const CrmCampaignService = {
         updatedAt: template.updatedAt.toISOString(),
       })),
       mailingLists: options.value.mailingLists,
+      segments: options.value.segments ?? [],
       whatsapp: {
         available: reason === null,
         reason,

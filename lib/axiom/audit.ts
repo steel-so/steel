@@ -299,6 +299,8 @@ export type AuditEntity =
   | 'crm_newsletter_settings'
   // Saved audience segments of a newsletter (newsletter2, nl2-segments)
   | 'crm_newsletter_segment'
+  | 'crm_segment'
+  | 'crm_customer'
   // Newsletter polls (CSV of voters) and the WhatsApp version (nl2-engage)
   | 'crm_newsletter_poll'
   | 'crm_newsletter_issue_whatsapp'

@@ -2,6 +2,7 @@ import { auditMutation } from '@/lib/axiom/audit'
 import {
   crmCadenceEnrollmentNotFound,
   crmCadenceStateConflict,
+  validationError,
 } from '@/src/errors'
 import { cadenceDelayMs } from '@/src/lib/crm-cadence/merge'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -11,16 +12,18 @@ import {
   CrmCadenceLookupRepository,
   CrmCadenceRepository,
 } from '@/src/repositories/crm-cadence.repository'
-import type {
-  CrmCadenceEnrollmentActionDTO,
-  EnrollCrmCadenceDTO,
-  ListCrmCadenceEnrollmentsDTO,
+import {
+  CRM_CADENCE_MAX_ENROLL_BATCH,
+  type CrmCadenceEnrollmentActionDTO,
+  type EnrollCrmCadenceDTO,
+  type ListCrmCadenceEnrollmentsDTO,
 } from '@/src/schemas/crm-cadence.schema'
 import type {
   CrmCadenceEnrollmentDTO,
   CrmCadenceEnrollResultDTO,
 } from '@/types/crm-cadence'
 import { assertModuleMember } from './authz'
+import { CrmSegmentService } from './crm-segment.service'
 
 export const CrmCadenceEnrollmentService = {
   async list(
@@ -69,7 +72,29 @@ export const CrmCadenceEnrollmentService = {
       return err(crmCadenceStateConflict('A cadência não tem passos'))
     }
 
-    const leadIds = [...new Set(dto.leadIds)]
+    // Segments are resolved now, at the moment of use; only lead segments
+    // contribute (people and companies are not enrolled in cadences).
+    const segmentMembers = await CrmSegmentService.resolveCandidates(
+      workspaceId,
+      dto.segmentIds ?? [],
+    )
+    if (!segmentMembers.ok) return segmentMembers
+    const leadIds = [
+      ...new Set([
+        ...dto.leadIds,
+        ...segmentMembers.value.flatMap((m) => (m.leadId ? [m.leadId] : [])),
+      ]),
+    ]
+    if (leadIds.length > CRM_CADENCE_MAX_ENROLL_BATCH) {
+      return err(
+        validationError(
+          `Inscreva no máximo ${CRM_CADENCE_MAX_ENROLL_BATCH} leads por vez (o segmento tem ${leadIds.length}). Refine as regras do segmento.`,
+        ),
+      )
+    }
+    if (leadIds.length === 0) {
+      return err(validationError('Os segmentos escolhidos não têm nenhum lead'))
+    }
     const leads = await CrmCadenceLookupRepository.findLeads(
       workspaceId,
       leadIds,

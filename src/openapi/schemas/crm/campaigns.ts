@@ -60,6 +60,7 @@ const campaignShape = {
   emailLegalBasis: legalBasis.nullable(),
   audience: z.object({
     mailingListIds: z.array(z.string()),
+    segmentIds: z.array(z.string()).optional(),
     allPeople: z.boolean(),
     leadStages: z.array(z.string()),
   }),
@@ -326,6 +327,15 @@ export const CrmCampaignOptionsDTO = dto(
       }),
     ),
     mailingLists: z.array(z.object({ id: z.string(), name: z.string() })),
+    segments: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          target: z.enum(['PERSON', 'LEAD', 'COMPANY']),
+        }),
+      )
+      .optional(),
     whatsapp: z.object({
       available: z.boolean(),
       reason: z.string().nullable(),

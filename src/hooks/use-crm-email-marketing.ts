@@ -157,6 +157,7 @@ export function useCreateCrmEmailCampaign(workspaceId: string) {
       fromAddress: string
       recipientScope: CrmCampaignRecipientScopeDTO
       mailingListIds?: string[]
+      segmentIds?: string[]
       personIds?: string[]
       extraEmails?: string[]
       scheduledAt?: string

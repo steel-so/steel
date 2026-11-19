@@ -23,6 +23,8 @@ export const CrmCampaignAudienceSchema = z.object({
   mailingListIds: z.array(z.string().min(1)).max(50).default([]),
   allPeople: z.boolean().default(false),
   leadStages: z.array(CrmLeadStageEnum).max(6).default([]),
+  /** Dynamic segments, resolved when the campaign is built (CRM > Segmentação). */
+  segmentIds: z.array(z.string().min(1)).max(50).optional(),
 })
 
 export type CrmCampaignAudience = z.infer<typeof CrmCampaignAudienceSchema>
