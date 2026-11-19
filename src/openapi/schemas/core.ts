@@ -590,6 +590,7 @@ export const NotificationListDTO = dto(
           'CRM_DOCUMENT_DECLINED',
           'CRM_DOCUMENT_EXPIRED',
           'CRM_DOCUMENT_VIEWED',
+          'CRM_GOOGLE_REVIEW_NEGATIVE',
         ]),
         title: z.string(),
         body: z.string(),

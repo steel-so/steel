@@ -655,6 +655,13 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'proposal',
     color: 'sky',
   },
+  // Google presence: a new 1-2 star review on the Business Profile.
+  CRM_GOOGLE_REVIEW_NEGATIVE: {
+    module: 'CRM',
+    label: 'Avaliação negativa no Google',
+    icon: 'star',
+    color: 'rose',
+  },
 }
 
 const MODULE_BY_PREFIX: [string, NotificationModule][] = [

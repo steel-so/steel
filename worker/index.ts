@@ -28,6 +28,7 @@ import { processCrmCnpjEnrichment } from '../src/lib/queue/processors/crm-cnpj-e
 import { processCrmCompetitorSync } from '../src/lib/queue/processors/crm-competitor-sync'
 import { processCrmDeals } from '../src/lib/queue/processors/crm-deals'
 import { processCrmDuplicates } from '../src/lib/queue/processors/crm-duplicates'
+import { processCrmGoogleSync } from '../src/lib/queue/processors/crm-google-sync'
 import { processCrmHealth } from '../src/lib/queue/processors/crm-health'
 import { processCrmNewsletter } from '../src/lib/queue/processors/crm-newsletter'
 import { processCrmNewsletterAutomation } from '../src/lib/queue/processors/crm-newsletter-automation'
@@ -92,6 +93,7 @@ import {
   scheduleCrmCompetitorSyncJobs,
   scheduleCrmDealsJobs,
   scheduleCrmDuplicatesJobs,
+  scheduleCrmGoogleSyncJobs,
   scheduleCrmHealthJobs,
   scheduleCrmNewsletterAutomationJobs,
   scheduleCrmNewsletterJobs,
@@ -283,6 +285,7 @@ async function main(): Promise<void> {
   workers.push(
     registerWorker(QueueName.CrmCompetitorSync, processCrmCompetitorSync),
   )
+  workers.push(registerWorker(QueueName.CrmGoogleSync, processCrmGoogleSync))
   workers.push(
     registerWorker(QueueName.CrmApolloImport, processCrmApolloImport),
     registerWorker(QueueName.CrmCnpjEnrichment, processCrmCnpjEnrichment),
@@ -410,6 +413,7 @@ async function main(): Promise<void> {
   await scheduleCrmScheduledSendJobs()
   await scheduleCrmWorkflowScheduleJobs()
   await scheduleCrmCompetitorSyncJobs()
+  await scheduleCrmGoogleSyncJobs()
   await unscheduleCrmProposalExpiryJobs()
   await scheduleCrmSocialPostsTickJobs()
   await scheduleWhatsappBroadcastJobs()

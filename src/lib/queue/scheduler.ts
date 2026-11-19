@@ -9,6 +9,7 @@ import {
   CrmCompetitorSyncJob,
   CrmDealsJob,
   CrmDuplicatesJob,
+  CrmGoogleSyncJob,
   CrmHealthJob,
   CrmNewsletterAutomationJob,
   CrmNewsletterJob,
@@ -58,6 +59,7 @@ import {
   getCrmCompetitorSyncQueue,
   getCrmDealsQueue,
   getCrmDuplicatesQueue,
+  getCrmGoogleSyncQueue,
   getCrmHealthQueue,
   getCrmNewsletterAutomationQueue,
   getCrmNewsletterQueue,
@@ -108,6 +110,7 @@ import {
   CrmCompetitorSyncCron,
   CrmDealsCron,
   CrmDuplicatesCron,
+  CrmGoogleSyncCron,
   CrmHealthCron,
   CrmNewsletterAbTickCron,
   CrmNewsletterAutomationCron,
@@ -332,6 +335,21 @@ export async function scheduleCrmCompetitorSyncJobs(): Promise<void> {
   logger.info('queue.scheduler.crm_competitor_sync_registered', {
     component: 'Worker',
     pattern: CrmCompetitorSyncCron,
+    timezone: RetentionTimezone,
+  })
+}
+
+export async function scheduleCrmGoogleSyncJobs(): Promise<void> {
+  const queue = getCrmGoogleSyncQueue()
+  await queue.upsertJobScheduler(
+    CrmGoogleSyncJob.RunTick,
+    { pattern: CrmGoogleSyncCron, tz: RetentionTimezone },
+    { name: CrmGoogleSyncJob.RunTick, data: {} },
+  )
+
+  logger.info('queue.scheduler.crm_google_sync_registered', {
+    component: 'Worker',
+    pattern: CrmGoogleSyncCron,
     timezone: RetentionTimezone,
   })
 }

@@ -27,6 +27,8 @@ import {
   type CrmDealsJobPayload,
   type CrmDuplicatesJob,
   type CrmDuplicatesJobPayload,
+  type CrmGoogleSyncJob,
+  type CrmGoogleSyncJobPayload,
   type CrmHealthJob,
   type CrmHealthJobPayload,
   type CrmNewsletterAutomationJob,
@@ -164,6 +166,7 @@ let whatsappConversationLifecycleQueue: Queue | null = null
 let crmScheduledSendQueue: Queue | null = null
 let crmWorkflowScheduleQueue: Queue | null = null
 let crmCompetitorSyncQueue: Queue | null = null
+let crmGoogleSyncQueue: Queue | null = null
 let crmApolloImportQueue: Queue | null = null
 let crmCnpjEnrichmentQueue: Queue | null = null
 let crmProposalExpiryQueue: Queue | null = null
@@ -512,6 +515,24 @@ export function getCrmCompetitorSyncQueue(): Queue<
     CrmCompetitorSyncJobPayload[CrmCompetitorSyncJob],
     unknown,
     CrmCompetitorSyncJob
+  >
+}
+
+export function getCrmGoogleSyncQueue(): Queue<
+  CrmGoogleSyncJobPayload[CrmGoogleSyncJob],
+  unknown,
+  CrmGoogleSyncJob
+> {
+  if (!crmGoogleSyncQueue) {
+    crmGoogleSyncQueue = new Queue(QueueName.CrmGoogleSync, {
+      connection: getQueueConnection(),
+      defaultJobOptions,
+    })
+  }
+  return crmGoogleSyncQueue as Queue<
+    CrmGoogleSyncJobPayload[CrmGoogleSyncJob],
+    unknown,
+    CrmGoogleSyncJob
   >
 }
 
@@ -953,6 +974,7 @@ export async function closeQueues(): Promise<void> {
     crmScheduledSendQueue?.close(),
     crmWorkflowScheduleQueue?.close(),
     crmCompetitorSyncQueue?.close(),
+    crmGoogleSyncQueue?.close(),
     crmApolloImportQueue?.close(),
     crmCnpjEnrichmentQueue?.close(),
     crmProposalExpiryQueue?.close(),
@@ -1007,6 +1029,7 @@ export async function closeQueues(): Promise<void> {
   whatsappConversationLifecycleQueue = null
   crmScheduledSendQueue = null
   crmCompetitorSyncQueue = null
+  crmGoogleSyncQueue = null
   crmApolloImportQueue = null
   crmCnpjEnrichmentQueue = null
   crmProposalExpiryQueue = null
@@ -1391,6 +1414,7 @@ const QUEUE_GETTERS: Record<QueueName, () => unknown> = {
   [QueueName.CrmScheduledSend]: getCrmScheduledSendQueue,
   [QueueName.CrmWorkflowSchedule]: getCrmWorkflowScheduleQueue,
   [QueueName.CrmCompetitorSync]: getCrmCompetitorSyncQueue,
+  [QueueName.CrmGoogleSync]: getCrmGoogleSyncQueue,
   [QueueName.CrmApolloImport]: getCrmApolloImportQueue,
   [QueueName.CrmCnpjEnrichment]: getCrmCnpjEnrichmentQueue,
   [QueueName.CrmSocialPostsTick]: getCrmSocialPostsTickQueue,

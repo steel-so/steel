@@ -581,6 +581,7 @@ model Workspace {
   crmEmailBrand             CrmEmailBrand?
   crmWorkflows              CrmWorkflow[]
   crmSocialConnections      CrmSocialConnection[]
+  crmGoogleBusiness         CrmGoogleBusinessConnection?
   crmScheduledPosts         CrmScheduledPost[]
   crmEmailAccounts          CrmEmailAccount[]
   crmEmailMessages          CrmEmailMessage[]
@@ -4267,6 +4268,93 @@ model CrmSocialConnection {
   @@map("crm_social_connections")
 }
 
+/// Google Business Profile of the workspace (CRM > Atrair > Presença no
+/// Google). One connection per workspace: the OAuth tokens are encrypted at
+/// rest like `CrmSocialConnection` (src/lib/social/crypto.ts) and never leave
+/// the server. `locationName` stays null until the user picks the location.
+model CrmGoogleBusinessConnection {
+  id                String                    @id @default(cuid())
+  workspaceId       String                    @unique @map("workspace_id")
+  googleEmail       String?                   @map("google_email")
+  accessToken       String                    @map("access_token")
+  refreshToken      String?                   @map("refresh_token")
+  tokenExpiresAt    DateTime?                 @map("token_expires_at")
+  scope             String?
+  status            CrmSocialConnectionStatus @default(CONNECTED)
+  /// "accounts/123" — owner of the chosen location.
+  accountName       String?                   @map("account_name")
+  /// "locations/456" — the Business Profile location being managed.
+  locationName      String?                   @map("location_name")
+  locationTitle     String?                   @map("location_title")
+  placeId           String?                   @map("place_id")
+  mapsUri           String?                   @map("maps_uri")
+  newReviewUri      String?                   @map("new_review_uri")
+  /// Free text the admins write to steer the AI reply tone.
+  replyTone         String?                   @map("reply_tone")
+  averageRating     Float?                    @map("average_rating")
+  totalReviewCount  Int?                      @map("total_review_count")
+  lastReviewsSyncAt DateTime?                 @map("last_reviews_sync_at")
+  lastMetricsSyncAt DateTime?                 @map("last_metrics_sync_at")
+  lastSyncError     String?                   @map("last_sync_error")
+  connectedById     String                    @map("connected_by_id")
+  createdAt         DateTime                  @default(now()) @map("created_at")
+  updatedAt         DateTime                  @updatedAt @map("updated_at")
+
+  workspace Workspace                      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reviews   CrmGoogleReview[]
+  metrics   CrmGoogleBusinessDailyMetric[]
+
+  @@index([status])
+  @@map("crm_google_business_connections")
+}
+
+/// Local cache of the location's Google reviews (synced by the worker and on
+/// demand). `alertedAt` guarantees one notification per negative review.
+model CrmGoogleReview {
+  id               String    @id @default(cuid())
+  connectionId     String    @map("connection_id")
+  workspaceId      String    @map("workspace_id")
+  googleReviewId   String    @map("google_review_id")
+  reviewerName     String    @map("reviewer_name")
+  reviewerPhotoUrl String?   @map("reviewer_photo_url")
+  starRating       Int       @map("star_rating")
+  comment          String?
+  reviewedAt       DateTime  @map("reviewed_at")
+  googleUpdatedAt  DateTime  @map("google_updated_at")
+  replyComment     String?   @map("reply_comment")
+  replyUpdatedAt   DateTime? @map("reply_updated_at")
+  alertedAt        DateTime? @map("alerted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  connection CrmGoogleBusinessConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, googleReviewId])
+  @@index([workspaceId, reviewedAt])
+  @@index([connectionId, starRating])
+  @@map("crm_google_reviews")
+}
+
+/// One day of Business Profile Performance metrics of the chosen location.
+model CrmGoogleBusinessDailyMetric {
+  id                       String   @id @default(cuid())
+  connectionId             String   @map("connection_id")
+  date                     DateTime @db.Date
+  impressionsMapsDesktop   Int      @default(0) @map("impressions_maps_desktop")
+  impressionsMapsMobile    Int      @default(0) @map("impressions_maps_mobile")
+  impressionsSearchDesktop Int      @default(0) @map("impressions_search_desktop")
+  impressionsSearchMobile  Int      @default(0) @map("impressions_search_mobile")
+  callClicks               Int      @default(0) @map("call_clicks")
+  directionRequests        Int      @default(0) @map("direction_requests")
+  websiteClicks            Int      @default(0) @map("website_clicks")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  connection CrmGoogleBusinessConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, date])
+  @@map("crm_google_business_daily_metrics")
+}
+
 /// Snapshot diário de métricas da própria conta conectada — contraparte de
 /// `CrmCompetitorMetricSnapshot`, necessário para comparar "nós vs.
 /// concorrente" na mesma escala de tempo. Gravado pelo mesmo job
@@ -5697,6 +5785,8 @@ enum NotificationKind {
   CRM_DOCUMENT_EXPIRED
   /// documents analytics: someone opened a document ("<Nome> abriu <documento> agora").
   CRM_DOCUMENT_VIEWED
+  /// Google presence: a new low-rated (1-2 stars) Google review arrived.
+  CRM_GOOGLE_REVIEW_NEGATIVE
 }
 
 /// Notificação no app (caixa de entrada do usuário no workspace).
