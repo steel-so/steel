@@ -471,10 +471,11 @@ function CampaignComposer({
       recipients.scope === 'SELECTED' &&
       recipients.personIds.length === 0 &&
       recipients.mailingListIds.length === 0 &&
+      (recipients.segmentIds?.length ?? 0) === 0 &&
       recipients.extraEmails.length === 0
     ) {
       next.recipients =
-        'Escolha pelo menos um contato, uma lista ou um e-mail avulso.'
+        'Escolha pelo menos um contato, uma lista, um segmento ou um e-mail avulso.'
     }
 
     let content: {
@@ -535,6 +536,10 @@ function CampaignComposer({
         mailingListIds:
           recipients.scope === 'SELECTED'
             ? recipients.mailingListIds
+            : undefined,
+        segmentIds:
+          recipients.scope === 'SELECTED' && recipients.segmentIds?.length
+            ? recipients.segmentIds
             : undefined,
         extraEmails:
           recipients.scope === 'SELECTED' ? recipients.extraEmails : undefined,

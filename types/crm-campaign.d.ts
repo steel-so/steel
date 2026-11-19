@@ -35,6 +35,7 @@ export type CrmCampaignWizardStep = 'destination' | 'content' | 'audience'
 
 export interface CrmCampaignAudienceDTO {
   mailingListIds: string[]
+  segmentIds?: string[]
   allPeople: boolean
   leadStages: string[]
 }
@@ -373,6 +374,7 @@ export interface CrmCampaignOptionsDTO {
     updatedAt: string
   }[]
   mailingLists: { id: string; name: string }[]
+  segments?: { id: string; name: string; target: 'PERSON' | 'LEAD' | 'COMPANY' }[]
   whatsapp: {
     available: boolean
     /** pt-BR reason when unavailable. */

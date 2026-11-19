@@ -200,6 +200,8 @@ export const CRM_ROUTE_RESOURCE: Record<string, PermissionResource> = {
   'email-templates': 'email',
   'mailing-lists': 'email',
   newsletters: 'email',
+  segments: 'email',
+  customers: 'companies',
   dashboards: 'dashboards',
   reports: 'reports',
   workflows: 'workflows',

@@ -208,6 +208,16 @@ export const TAG_GROUPS = [
           'Público das edições: segmentos salvos por newsletter (condições de assinante, engajamento e pessoa do CRM), público da edição e prévia ao vivo da audiência.',
       },
       {
+        name: 'CRM · Segmentação',
+        description:
+          'Segmentos dinâmicos de pessoas, leads e empresas: regras combináveis (E/OU, grupos), prévia ao vivo e uso como público de campanhas, e-mails e cadências.',
+      },
+      {
+        name: 'CRM · Clientes',
+        description:
+          'Visão calculada das empresas e pessoas com negócio ganho: totais, ticket médio, renovação, saúde, filtros e exportação em CSV.',
+      },
+      {
         name: 'CRM · Newsletter · Engajamento',
         description:
           'Enquetes das edições (resultado, votantes, CSV) e a versão da edição no WhatsApp (configuração e entrega por número).',

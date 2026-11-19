@@ -539,6 +539,7 @@ model Workspace {
   crmCompanies              CrmCompany[]
   crmPeople                 CrmPerson[]
   crmPipelines              CrmPipeline[]
+  crmSegments               CrmSegment[]
   crmProducts               CrmProduct[]
   crmOpportunities          CrmOpportunity[]
   crmLeads                  CrmLead[]
@@ -2792,6 +2793,7 @@ model CrmOpportunity {
   @@index([deletedAt])
   @@index([workspaceId, position])
   @@index([workspaceId, wonAt])
+  @@index([pointOfContactId])
   @@map("crm_opportunities")
   documents Document[]
 }
@@ -4802,6 +4804,8 @@ model CrmCampaignRecipient {
   @@index([campaignId, emailStatus])
   @@index([campaignId, whatsappStatus])
   @@index([workspaceId, waId])
+  @@index([workspaceId, personId])
+  @@index([workspaceId, leadId])
   @@map("crm_campaign_recipients")
 }
 
@@ -14072,4 +14076,32 @@ model BioLinkEvent {
   @@index([bioLinkId, createdAt])
   @@index([bioLinkId, kind, linkId])
   @@map("bio_link_events")
+}
+
+enum CrmSegmentTarget {
+  PERSON
+  LEAD
+  COMPANY
+}
+
+/// Dynamic contact segment: rules (AND/OR, groups) over people, leads or
+/// companies, resolved at read/send time (never a frozen list).
+model CrmSegment {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  name        String
+  description String?
+  target      CrmSegmentTarget @default(PERSON)
+  /// `CrmSegmentDefinitionSchema` (src/schemas/crm-segment.schema.ts).
+  definition  Json             @default("{}")
+  createdById String           @map("created_by_id")
+  updatedById String?          @map("updated_by_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, target])
+  @@map("crm_segments")
 }

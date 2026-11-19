@@ -132,13 +132,23 @@ export type ListCrmCadenceEnrollmentsDTO = z.infer<
   typeof ListCrmCadenceEnrollmentsSchema
 >
 
-export const EnrollCrmCadenceSchema = z.object({
-  cadenceId: z.string().min(1),
-  leadIds: z
-    .array(z.string().min(1))
-    .min(1, 'Escolha ao menos um lead')
-    .max(CRM_CADENCE_MAX_ENROLL_BATCH),
-})
+export const EnrollCrmCadenceSchema = z
+  .object({
+    cadenceId: z.string().min(1),
+    leadIds: z
+      .array(z.string().min(1))
+      .max(CRM_CADENCE_MAX_ENROLL_BATCH)
+      .default([]),
+    // Dynamic lead segments (CRM > Segmentação), expanded at enrollment time.
+    segmentIds: z.array(z.string().min(1)).max(10).optional(),
+  })
+  .refine(
+    (dto) => dto.leadIds.length > 0 || (dto.segmentIds?.length ?? 0) > 0,
+    {
+      message: 'Escolha ao menos um lead',
+      path: ['leadIds'],
+    },
+  )
 
 export type EnrollCrmCadenceDTO = z.infer<typeof EnrollCrmCadenceSchema>
 

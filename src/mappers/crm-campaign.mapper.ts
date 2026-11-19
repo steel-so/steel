@@ -29,8 +29,10 @@ export function toCrmCampaignAudienceDTO(raw: unknown): CrmCampaignAudienceDTO {
   >
   const strings = (v: unknown) =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  const segmentIds = strings((value as { segmentIds?: unknown }).segmentIds)
   return {
     mailingListIds: strings(value.mailingListIds),
+    ...(segmentIds.length > 0 ? { segmentIds } : {}),
     allPeople: value.allPeople === true,
     leadStages: strings(value.leadStages),
   }

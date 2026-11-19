@@ -1300,6 +1300,11 @@ export const ERROR_CODES = {
     code: 'CRM_NEWSLETTER_SEGMENT_INVALID',
     status: 422,
   },
+  // Dynamic contact segments (CRM > Segmentação).
+  CRM_SEGMENT_NOT_FOUND: { code: 'CRM_SEGMENT_NOT_FOUND', status: 404 },
+  CRM_SEGMENT_NAME_TAKEN: { code: 'CRM_SEGMENT_NAME_TAKEN', status: 409 },
+  CRM_SEGMENT_LIMIT_REACHED: { code: 'CRM_SEGMENT_LIMIT_REACHED', status: 422 },
+  CRM_SEGMENT_INVALID: { code: 'CRM_SEGMENT_INVALID', status: 422 },
   // nl2-engage: poll of an issue and its WhatsApp version.
   CRM_NEWSLETTER_POLL_NOT_FOUND: {
     code: 'CRM_NEWSLETTER_POLL_NOT_FOUND',

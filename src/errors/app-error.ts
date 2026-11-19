@@ -2030,6 +2030,22 @@ export const crmNewsletterSegmentInvalid = (
   message = 'O público desta edição não é mais válido: revise as condições',
 ): AppError => appError('CRM_NEWSLETTER_SEGMENT_INVALID', message)
 
+export const crmSegmentNotFound = (): AppError =>
+  appError('CRM_SEGMENT_NOT_FOUND', 'Segmento não encontrado')
+
+export const crmSegmentNameTaken = (): AppError =>
+  appError('CRM_SEGMENT_NAME_TAKEN', 'Já existe um segmento com este nome')
+
+export const crmSegmentLimitReached = (limit: number): AppError =>
+  appError(
+    'CRM_SEGMENT_LIMIT_REACHED',
+    `O workspace pode ter no máximo ${limit} segmentos`,
+  )
+
+export const crmSegmentInvalid = (
+  message = 'O segmento não é mais válido: revise as regras',
+): AppError => appError('CRM_SEGMENT_INVALID', message)
+
 /** `CRM_NEWSLETTER_NO_SUBSCRIBERS` when a segment leaves nobody. */
 export const crmNewsletterSegmentEmpty = (): AppError =>
   appError(

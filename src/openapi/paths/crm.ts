@@ -7,6 +7,7 @@ import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
 import { crmCustomer360Routes } from './crm/customer-360'
 import { crmCustomerLinkRoutes } from './crm/customer-links'
+import { crmCustomerRoutes } from './crm/customers'
 import { crmDealsRoutes } from './crm/deals'
 import { crmDocumentAnalyticsRoutes } from './crm/document-analytics'
 import { crmDocumentExportsRoutes } from './crm/document-exports'
@@ -34,6 +35,7 @@ import { crmPeopleRoutes } from './crm/people'
 import { crmProductsRoutes } from './crm/products'
 import { crmProposalsRoutes } from './crm/proposals'
 import { crmReportsRoutes } from './crm/reports'
+import { crmSegmentRoutes } from './crm/segments'
 import { crmSettingsRoutes } from './crm/settings'
 import { crmSiteAiRoutes } from './crm/site-ai'
 import { crmSiteBlogRoutes } from './crm/site-blog'
@@ -93,6 +95,8 @@ const routes: RouteConfig[] = [
   ...crmNewsletterIssueRoutes,
   ...crmNewsletterBridgeRoutes,
   ...crmNewsletterSegmentRoutes,
+  ...crmSegmentRoutes,
+  ...crmCustomerRoutes,
   ...crmNewsletterEngageRoutes,
   ...crmNewsletterAutomationRoutes,
   ...crmNewsletterDigestAiRoutes,

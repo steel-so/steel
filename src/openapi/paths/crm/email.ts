@@ -384,7 +384,7 @@ export const crmEmailRoutes: RouteConfig[] = [
         'Cria a campanha em `DRAFT` (ou `SCHEDULED` com `scheduledAt` — o worker dispara as agendadas vencidas a cada 5 min) e já grava a lista de destinatários:',
         '',
         '- `recipientScope: ALL` → todas as pessoas do CRM com e-mail (o primeiro e-mail de cada uma);',
-        '- `recipientScope: SELECTED` → união de `personIds`, membros de `mailingListIds` e `extraEmails`, sem duplicar endereços. Seleção vazia é erro (nunca cai em "todos").',
+        '- `recipientScope: SELECTED` → união de `personIds`, membros de `mailingListIds`, contatos de `segmentIds` (segmentos dinâmicos, resolvidos na criação) e `extraEmails`, sem duplicar endereços. Seleção vazia é erro (nunca cai em "todos").',
         '',
         'Descadastrados (opt-out LGPD, por e-mail ou por pessoa) são removidos. Sem nenhum destinatário elegível a campanha não é criada.',
       ].join('\n'),

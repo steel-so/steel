@@ -115,6 +115,12 @@ export function CampaignAudienceStep({
     onChange({ audience: { ...audience, mailingListIds: ids } })
   }
 
+  function toggleSegment(id: string, checked: boolean) {
+    const current = audience.segmentIds ?? []
+    const ids = checked ? [...current, id] : current.filter((x) => x !== id)
+    onChange({ audience: { ...audience, segmentIds: ids } })
+  }
+
   function toggleStage(stage: string, checked: boolean) {
     const stages = checked
       ? [...audience.leadStages, stage]
@@ -147,6 +153,31 @@ export function CampaignAudienceStep({
                   }
                 />
                 {list.name}
+              </Label>
+            ))
+          )}
+        </fieldset>
+
+        <fieldset className='flex flex-col gap-3'>
+          <legend className='mb-2 font-medium text-sm'>Segmentos</legend>
+          {(options.segments ?? []).length === 0 ? (
+            <p className='text-muted-foreground text-sm'>
+              Nenhum segmento criado. Crie um em Segmentação para falar só com
+              quem cumpre as regras, sempre atualizado no momento do envio.
+            </p>
+          ) : (
+            (options.segments ?? []).map((segment) => (
+              <Label
+                key={segment.id}
+                className='flex items-center gap-2 font-normal'
+              >
+                <Checkbox
+                  checked={(audience.segmentIds ?? []).includes(segment.id)}
+                  onCheckedChange={(checked) =>
+                    toggleSegment(segment.id, checked === true)
+                  }
+                />
+                {segment.name}
               </Label>
             ))
           )}

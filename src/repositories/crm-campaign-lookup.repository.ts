@@ -1,4 +1,5 @@
 import type {
+  CrmSegmentTarget,
   WhatsAppConnection,
   WhatsAppQuickReply,
   WhatsAppTemplate,
@@ -278,6 +279,7 @@ export const CrmCampaignLookupRepository = {
         updatedAt: Date
       }[]
       mailingLists: { id: string; name: string }[]
+      segments?: { id: string; name: string; target: CrmSegmentTarget }[]
       connections: (WhatsAppConnection & { templates: WhatsAppTemplate[] })[]
       sites: CampaignSiteRecord[]
       quickReplies: WhatsAppQuickReply[]
@@ -289,6 +291,7 @@ export const CrmCampaignLookupRepository = {
         emailTemplates,
         canvasTemplates,
         mailingLists,
+        segments,
         connections,
         sites,
         quickReplies,
@@ -321,6 +324,11 @@ export const CrmCampaignLookupRepository = {
         prisma.crmMailingList.findMany({
           where: { workspaceId, deletedAt: null },
           select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.crmSegment.findMany({
+          where: { workspaceId },
+          select: { id: true, name: true, target: true },
           orderBy: { name: 'asc' },
         }),
         prisma.whatsAppConnection.findMany({
@@ -358,6 +366,7 @@ export const CrmCampaignLookupRepository = {
           canvas: canvas.has(template.id),
         })),
         mailingLists,
+        segments,
         connections,
         sites: sites.map(toSiteRecord),
         quickReplies,
@@ -368,6 +377,21 @@ export const CrmCampaignLookupRepository = {
   },
 
   /** `true` when every id is a live mailing list of the workspace. */
+  async segmentsExist(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<boolean>> {
+    if (ids.length === 0) return ok(true)
+    try {
+      const count = await prisma.crmSegment.count({
+        where: { workspaceId, id: { in: ids } },
+      })
+      return ok(count === new Set(ids).size)
+    } catch (error) {
+      return err(dbError('Failed to check campaign segments', error))
+    }
+  },
+
   async mailingListsExist(
     workspaceId: string,
     ids: string[],

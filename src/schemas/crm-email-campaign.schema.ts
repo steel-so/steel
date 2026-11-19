@@ -19,6 +19,8 @@ export const CreateCrmEmailCampaignSchema = z
     // e-mail) — combinar pessoas + várias listas + e-mails avulsos numa
     // campanha só, igual ao original.
     mailingListIds: z.array(z.string()).optional(),
+    // Dynamic segments (CRM > Segmentação), resolved when the campaign is built.
+    segmentIds: z.array(z.string().min(1)).max(50).optional(),
     personIds: z.array(z.string()).optional(),
     extraEmails: z.array(z.email()).optional(),
     scheduledAt: z.coerce.date().optional(),
@@ -30,6 +32,7 @@ export const CreateCrmEmailCampaignSchema = z
       data.recipientScope === 'ALL' ||
       (data.personIds?.length ?? 0) > 0 ||
       (data.mailingListIds?.length ?? 0) > 0 ||
+      (data.segmentIds?.length ?? 0) > 0 ||
       (data.extraEmails?.length ?? 0) > 0,
     {
       message: 'Selecione ao menos um destinatário',
