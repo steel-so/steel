@@ -8845,6 +8845,8 @@ model Site {
   versions         SiteVersion[]      @relation("SiteVersions")
   views            SiteView[]
   redirects        SiteRedirect[]
+  seoKeywords      SiteSeoKeyword[]
+  seoSnapshots     SiteSeoSnapshot[]
   posts            SitePost[]
   blogCategories   SiteBlogCategory[]
   blogTags         SiteBlogTag[]
@@ -8973,6 +8975,43 @@ model SiteRedirect {
 
   @@unique([siteId, fromPath])
   @@map("site_redirects")
+}
+
+/// A keyword a site tracks in CRM > SEO (manual registration). `normalized`
+/// is the accent-free lower-case form used for uniqueness and matching.
+model SiteSeoKeyword {
+  id          String   @id @default(cuid())
+  siteId      String   @map("site_id")
+  term        String
+  normalized  String
+  createdById String?  @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, normalized])
+  @@map("site_seo_keywords")
+}
+
+/// Daily SEO/AEO/GEO average of a site (draft pages), written by the worker
+/// (`site-posts` queue, 05:10) or on the first CRM > SEO visit of the day.
+model SiteSeoSnapshot {
+  id        String   @id @default(cuid())
+  siteId    String   @map("site_id")
+  /// Day (UTC midnight) the snapshot stands for.
+  day       DateTime @db.Date
+  seo       Int
+  aeo       Int
+  geo       Int
+  pages     Int
+  /// Failed and warned checks across the site.
+  issues    Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, day])
+  @@map("site_seo_snapshots")
 }
 
 // ─── Site blog and collections (Sites wave S4, slice site-blog) ──────────

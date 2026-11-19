@@ -703,6 +703,31 @@ não o apagam: `keepStoredSearch` mantém o que estava salvo (site e página).
   site) e *Rastreadores e feeds* (robô por robô, treino × busca explicado,
   prévia do robots.txt, llms.txt, IndexNow e verificação).
 
+- **`/<ws>/crm/seo`** (Atrair > Site e SEO > SEO): visão central de todos os
+  sites do workspace. Cada site mostra nota geral e de SEO/AEO/GEO, variação
+  e linha dos últimos 30 dias, principais problemas, páginas piores e ações
+  rápidas (Otimizar com IA nas piores páginas, Reindexar, Baixar relatório
+  CSV, Abrir editor). `?site=<id>` abre o detalhe: *Resumo* (problemas e
+  páginas, com seleção para a IA), *Checklist técnico* (title, description,
+  H1, canônico, alt de imagens, visibilidade, links internos quebrados,
+  sitemap e robots, agregados por página), *Palavras-chave* (cadastro manual,
+  até 50 por site; onde cada termo aparece — título, descrição, H1, vezes,
+  densidade — e as lacunas), *Histórico* (90 dias) e *Posição no Google*.
+  Dados: `SiteSeoService` reaproveita `analyzeSiteDraft` (a mesma análise de
+  Buscadores); `site_seo_keywords` guarda os termos e `site_seo_snapshots` a
+  média diária. O snapshot é gravado pelo worker todo dia às 05:10 (job
+  `seo-snapshot` da fila `site-posts`, que também apaga o que passou de 400
+  dias) e na primeira visita do dia. "Reindexar" chama o IndexNow na hora
+  com a versão publicada (exige site publicado, IndexNow ligado e sem
+  `noindex`).
+- **Posição no Google — depende de aprovação externa.** Posição, cliques e
+  impressões vêm só do Google Search Console (OAuth do Google; o app precisa
+  de verificação). Nada disso está implementado: a aba explica o motivo e é o
+  ponto de extensão. Quando sair a aprovação, o caminho é uma conexão por
+  workspace (token criptografado como as outras integrações), uma tabela de
+  métricas por site/consulta/dia preenchida pelo worker e as colunas
+  "Posição" e "Cliques" na lista de palavras-chave.
+
 ### Runtime público
 
 | Arquivo | O quê |
