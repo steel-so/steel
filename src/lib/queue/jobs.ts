@@ -12,6 +12,7 @@ export const QueueName = {
   CrmScheduledSend: 'crm-scheduled-send',
   CrmWorkflowSchedule: 'crm-workflow-schedule',
   CrmCompetitorSync: 'crm-competitor-sync',
+  CrmGoogleSync: 'crm-google-sync',
   CrmSocialPostsTick: 'crm-social-posts-tick',
   CrmSocialPublish: 'crm-social-publish',
   CrmApolloImport: 'crm-apollo-import',
@@ -324,6 +325,17 @@ export type CrmApolloImportJob =
 
 export type CrmApolloImportJobPayload = {
   [CrmApolloImportJob.Run]: { importId: string }
+}
+
+export const CrmGoogleSyncJob = {
+  RunTick: 'run-tick',
+} as const
+
+export type CrmGoogleSyncJob =
+  (typeof CrmGoogleSyncJob)[keyof typeof CrmGoogleSyncJob]
+
+export type CrmGoogleSyncJobPayload = {
+  [CrmGoogleSyncJob.RunTick]: Record<string, never>
 }
 
 export const CrmCompetitorSyncJob = {

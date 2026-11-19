@@ -34,6 +34,9 @@ export const CrmWorkflowScheduleCron = '*/1 * * * *' as const
 /** Frequência do sync de métricas de concorrentes (Instagram/YouTube). */
 export const CrmCompetitorSyncCron = '0 4 * * *' as const
 
+/** Sync of Google reviews (and, twice a day, metrics) of connected workspaces. */
+export const CrmGoogleSyncCron = '*/30 * * * *' as const
+
 /**
  * Expiração diária de propostas: logo após a meia-noite (São Paulo), quando
  * termina o último dia de validade.

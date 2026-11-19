@@ -19,6 +19,7 @@ import { crmEmailRoutes } from './crm/email'
 import { crmEmailEditorRoutes } from './crm/email-editor'
 import { crmForecastRoutes } from './crm/forecast'
 import { crmFormsRoutes } from './crm/forms'
+import { crmGoogleRoutes } from './crm/google'
 import { crmHealthRoutes } from './crm/health'
 import { crmHookVaultRoutes } from './crm/hook-vault'
 import { crmImportRoutes } from './crm/import'
@@ -92,6 +93,7 @@ const routes: RouteConfig[] = [
   ...crmSiteSeoRoutes,
   ...crmSiteExperimentRoutes,
   ...crmSocialRoutes,
+  ...crmGoogleRoutes,
   ...crmWorkflowsRoutes,
   ...crmNewsletterRoutes,
   ...crmNewsletterIssueRoutes,

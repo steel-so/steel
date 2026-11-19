@@ -816,6 +816,27 @@ export const crmSocialScopeMissing = (): AppError =>
 export const crmSocialVideoInvalid = (message: string): AppError =>
   appError('CRM_SOCIAL_VIDEO_INVALID', message)
 
+export const crmGoogleLocationNotSelected = (): AppError =>
+  appError(
+    'CRM_GOOGLE_LOCATION_NOT_SELECTED',
+    'Escolha o local do Google Meu Negócio para continuar',
+  )
+
+export const crmGoogleApiFailed = (message?: string): AppError =>
+  appError(
+    'CRM_GOOGLE_API_FAILED',
+    message ?? 'O Google não respondeu como esperado. Tente novamente',
+  )
+
+export const crmGoogleReviewNotFound = (): AppError =>
+  appError('CRM_GOOGLE_REVIEW_NOT_FOUND', 'Avaliação não encontrada')
+
+export const crmGoogleAiFailed = (): AppError =>
+  appError(
+    'CRM_GOOGLE_AI_FAILED',
+    'Não foi possível gerar a sugestão agora. Tente novamente',
+  )
+
 export const crmCompetitorProfileNotFound = (): AppError =>
   appError(
     'CRM_COMPETITOR_PROFILE_NOT_FOUND',
