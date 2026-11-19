@@ -225,6 +225,8 @@ model User {
   workspaceExportsRequested WorkspaceExport[]          @relation("WorkspaceExportRequestedBy")
   integrationsCreated       WorkspaceIntegration[]     @relation("WorkspaceIntegrationCreatedBy")
   sitesCreated              Site[]                     @relation("SiteCreatedBy")
+  bioLinksCreated           BioLink[]                  @relation("BioLinkCreatedBy")
+  bioLinksUpdated           BioLink[]                  @relation("BioLinkUpdatedBy")
   sitesUpdated              Site[]                     @relation("SiteUpdatedBy")
   siteVersionsPublished     SiteVersion[]              @relation("SiteVersionPublishedBy")
   oauthClients              OauthClient[]
@@ -663,6 +665,7 @@ model Workspace {
   workspaceExports          WorkspaceExport[]
   integrations              WorkspaceIntegration[]
   sites                     Site[]
+  bioLinks                  BioLink[]
   canvasCollabStates        CanvasCollabState[]
   integrationGrants         IntegrationGrant[]
   apiTokens                 ApiToken[]
@@ -13957,4 +13960,77 @@ model CrmRetentionAction {
   @@unique([workspaceId, dedupeKey])
   @@index([workspaceId, createdAt])
   @@map("crm_retention_actions")
+}
+
+enum BioLinkStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum BioLinkEventKind {
+  VIEW
+  CLICK
+}
+
+/// "Link da bio" page (CRM > Atrair): a public one-column page of links served
+/// at `/b/<slug>`. Profile, theme and the ordered list of blocks (links,
+/// WhatsApp/social buttons, section headers, CRM form, YouTube video) are JSON
+/// validated by `src/schemas/bio-link.schema.ts`.
+model BioLink {
+  id          String        @id @default(cuid())
+  workspaceId String        @map("workspace_id")
+  name        String
+  slug        String        @unique
+  status      BioLinkStatus @default(DRAFT)
+  /// Name shown on the page (falls back to `name`).
+  title       String?
+  description String?
+  avatarUrl   String?       @map("avatar_url")
+  theme       Json          @default("{}")
+  blocks      Json          @default("[]")
+  /// Ask search engines not to index the page.
+  noIndex     Boolean       @default(false) @map("no_index")
+  publishedAt DateTime?     @map("published_at")
+  createdById String        @map("created_by_id")
+  updatedById String?       @map("updated_by_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("BioLinkCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?            @relation("BioLinkUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  events    BioLinkEvent[]
+
+  @@index([workspaceId])
+  @@map("bio_links")
+}
+
+/// Anonymous page view or link click of a bio page (LGPD: no cookie; the
+/// visitor is a daily server-side hash, the referrer keeps only its host and
+/// the country comes from the IP, which is never stored).
+model BioLinkEvent {
+  id          String           @id @default(cuid())
+  bioLinkId   String           @map("bio_link_id")
+  kind        BioLinkEventKind
+  /// Block id of a CLICK.
+  linkId      String?          @map("link_id")
+  /// Block title when clicked (the block may be renamed or removed later).
+  linkTitle   String?          @map("link_title")
+  visitorHash String           @map("visitor_hash")
+  referrer    String?
+  utmSource   String?          @map("utm_source")
+  utmMedium   String?          @map("utm_medium")
+  utmCampaign String?          @map("utm_campaign")
+  /// ISO 3166-1 alpha-2, when the IP could be located.
+  country     String?
+  /// desktop | mobile | tablet | unknown
+  device      String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  bioLink BioLink @relation(fields: [bioLinkId], references: [id], onDelete: Cascade)
+
+  @@index([bioLinkId, createdAt])
+  @@index([bioLinkId, kind, linkId])
+  @@map("bio_link_events")
 }

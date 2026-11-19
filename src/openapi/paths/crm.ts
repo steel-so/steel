@@ -1,6 +1,7 @@
 import type { OpenApiRegistry, RouteConfig } from '../registry'
 import { crmActivitiesRoutes } from './crm/activities'
 import { crmApolloRoutes } from './crm/apollo'
+import { crmBioLinksRoutes } from './crm/bio-links'
 import { crmCadenceRoutes } from './crm/cadences'
 import { crmCampaignRoutes } from './crm/campaigns'
 import { crmCnpjRoutes } from './crm/cnpj'
@@ -54,6 +55,7 @@ import { crmWorkflowsRoutes } from './crm/workflows'
 const routes: RouteConfig[] = [
   ...crmActivitiesRoutes,
   ...crmApolloRoutes,
+  ...crmBioLinksRoutes,
   ...crmCampaignRoutes,
   ...crmCnpjRoutes,
   ...crmCadenceRoutes,

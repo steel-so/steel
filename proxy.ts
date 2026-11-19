@@ -34,7 +34,11 @@ import {
   siteSlugFromPath,
 } from '@/src/lib/sites/host'
 import { PATHNAME_REQUEST_HEADER } from '@/src/lib/request-path'
-import { isPublicTvPath, TV_REQUEST_HEADER } from '@/src/lib/tv-request'
+import {
+  isPublicBioPath,
+  isPublicTvPath,
+  TV_REQUEST_HEADER,
+} from '@/src/lib/tv-request'
 import {
   newsletterArchivePage,
   newsletterNotFoundHtml,
@@ -112,6 +116,9 @@ const PUBLIC_ROUTES = [
   // CRM dashboard on a TV (sales room): read-only link, no session (the
   // random token in the URL is the credential; revoking it cuts the screen).
   '/tv', '/api/crm/tv',
+  // CRM > Link da bio: the public page `/b/<slug>`, its tracked redirect
+  // `/b/<slug>/l/<id>` and the view beacon. No session; the slug is the address.
+  '/b', '/api/b',
   // CRM > Documentos (ADR 0063): public page of a document (its API is
   // listed above). No session: the random token in the URL is the credential.
   '/d',
@@ -395,7 +402,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   requestHeaders.delete(SITE_VIA_HOST_HEADER)
   // Only the proxy says what is a public TV page (no cookie banner there).
   requestHeaders.delete(TV_REQUEST_HEADER)
-  if (isPublicTvPath(pathname)) requestHeaders.set(TV_REQUEST_HEADER, '1')
+  if (isPublicTvPath(pathname) || isPublicBioPath(pathname)) {
+    requestHeaders.set(TV_REQUEST_HEADER, '1')
+  }
   // Only the proxy says which path was hit (IP-restricted entry log).
   requestHeaders.set(PATHNAME_REQUEST_HEADER, pathname)
 
