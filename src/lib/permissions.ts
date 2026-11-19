@@ -205,6 +205,7 @@ export const CRM_ROUTE_RESOURCE: Record<string, PermissionResource> = {
   workflows: 'workflows',
   competitors: 'social',
   'hook-vault': 'social',
+  banners: 'social',
   leads: 'leads',
   cadences: 'leads',
   duplicates: 'people',
