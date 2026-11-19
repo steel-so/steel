@@ -14,7 +14,7 @@ type IconType = Parameters<typeof SteelIcon>[0]['icon']
 export function NavGroupAccordion({
   label,
   icon,
-  defaultOpen = true,
+  defaultOpen = false,
   action,
   nested = false,
   children,
