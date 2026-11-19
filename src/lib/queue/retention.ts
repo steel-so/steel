@@ -187,6 +187,9 @@ export const CrmCampaignsTickCron = '*/5 * * * *' as const
 /** Site blog: publish the scheduled posts that are due — every minute. */
 export const SitePostsPublishCron = '* * * * *' as const
 
+/** CRM > SEO: daily score snapshot of every site — 05:10. */
+export const SiteSeoSnapshotCron = '10 5 * * *' as const
+
 /**
  * Steel AI knowledge index full rebuild (ADR 0037): 02:45, after the 02:30
  * global search reindex and before the 03:00 retention and 03:15 backup.

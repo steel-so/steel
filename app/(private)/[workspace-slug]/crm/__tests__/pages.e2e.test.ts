@@ -29,6 +29,7 @@ const SEGMENTS = [
   'email-campaigns',
   'mailing-lists',
   'sites',
+  'seo',
   'workflows',
   'social',
   'email-sync',

@@ -1047,6 +1047,12 @@ export const ERROR_CODES = {
   SITE_REDIRECT_PATH_TAKEN: { code: 'SITE_REDIRECT_PATH_TAKEN', status: 409 },
   // The redirect points to itself or closes a loop with another one.
   SITE_REDIRECT_LOOP: { code: 'SITE_REDIRECT_LOOP', status: 422 },
+  // CRM > SEO: tracked keywords and the manual IndexNow ping.
+  SEO_KEYWORD_NOT_FOUND: { code: 'SEO_KEYWORD_NOT_FOUND', status: 404 },
+  SEO_KEYWORD_DUPLICATE: { code: 'SEO_KEYWORD_DUPLICATE', status: 409 },
+  SEO_KEYWORD_LIMIT_REACHED: { code: 'SEO_KEYWORD_LIMIT_REACHED', status: 409 },
+  SEO_NOT_PUBLISHED: { code: 'SEO_NOT_PUBLISHED', status: 422 },
+  SEO_INDEXNOW_OFF: { code: 'SEO_INDEXNOW_OFF', status: 422 },
   // Site blog and collections (slice site-blog).
   SITE_POST_NOT_FOUND: { code: 'SITE_POST_NOT_FOUND', status: 404 },
   SITE_POST_SLUG_TAKEN: { code: 'SITE_POST_SLUG_TAKEN', status: 409 },
