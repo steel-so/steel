@@ -44,7 +44,9 @@ export function NavGroupAccordion({
             </span>
           )}
         </AccordionTrigger>
+        {/* keepMounted: collapsed links stay in the DOM (SSR, tests, find-in-page). */}
         <AccordionContent
+          keepMounted
           className={nested ? 'pb-0 space-y-0.5 pl-3' : 'pb-0 space-y-0.5'}
         >
           {children}
