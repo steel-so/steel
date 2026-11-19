@@ -157,7 +157,9 @@ describe('DocumentImportDialog', () => {
     expect(screen.getByTestId('document-import-file')).toHaveTextContent(
       'proposta.pdf',
     )
-    expect(screen.getByTestId('site-ai-cost').textContent).toMatch(/0,14/)
+    // A PDF becomes page images: no AI cost line, just the explanation.
+    expect(screen.queryByTestId('site-ai-cost')).not.toBeInTheDocument()
+    expect(screen.getByText(/Cada página do PDF vira uma imagem/)).toBeVisible()
 
     fireEvent.click(screen.getByTestId('document-import-submit'))
 
@@ -258,7 +260,7 @@ describe('DocumentImportDialog', () => {
   it('should show the live steps while the build runs', async () => {
     const running = importDto({
       status: 'RUNNING',
-      progress: { step: 'structure', message: 'Entendendo', pct: 30 },
+      progress: { step: 'sections', message: 'Convertendo', pct: 30 },
     })
     setup({ frames: [running], latest: running })
     await screen.findByTestId('site-ai-cost')
@@ -277,9 +279,9 @@ describe('DocumentImportDialog', () => {
       'done',
       'running',
       'pending',
-      'pending',
     ])
-    expect(progress).toHaveTextContent('Entendendo a estrutura')
+    expect(progress).toHaveTextContent('Montando as seções')
+    expect(progress).not.toHaveTextContent('Entendendo a estrutura')
   })
 
   it('should tell where the document goes when closed mid-build', async () => {
@@ -320,14 +322,22 @@ describe('DocumentImportDialog', () => {
     expect(
       await screen.findByText('A IA do CRM não está incluída no plano.'),
     ).toBeInTheDocument()
-    pickFile(pdfFile())
+    pickFile(new File(['PK'], 'contrato.docx', { type: '' }))
     expect(submitButton().disabled).toBe(true)
   })
 
-  it('should warn when the model reads only the text', async () => {
-    setup({ ctx: context({ nativePdf: false }) })
+  it('should import a PDF even when the AI is unavailable', async () => {
+    setup({
+      ctx: context({
+        available: false,
+        unavailableReason: 'A IA do CRM não está incluída no plano.',
+      }),
+    })
+    await screen.findByText('A IA do CRM não está incluída no plano.')
 
-    expect(await screen.findByText(/lê só o texto do PDF/)).toBeInTheDocument()
+    pickFile(pdfFile())
+
+    expect(submitButton().disabled).toBe(false)
   })
 
   it('should report an API error and stay on the form', async () => {

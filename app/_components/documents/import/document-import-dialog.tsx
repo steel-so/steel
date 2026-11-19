@@ -102,6 +102,8 @@ const PROMPT_KIND_OPTIONS = kindOptions(DOCUMENT_KINDS)
 
 const INTRO =
   'A IA monta o documento com os blocos do editor: campos para preencher, tabela de preços e botão de aceite. Você revisa tudo antes de enviar.'
+const PDF_PAGES_HINT =
+  'Cada página do PDF vira uma imagem no documento, sem IA e sem custo. O texto não fica editável; você pode acrescentar campos e o botão de aceite por cima.'
 const RUNNING_HINT =
   'Leva de um a alguns minutos, conforme o tamanho. Você pode fechar esta janela: o documento aparece na lista quando ficar pronto.'
 const FAILED_HINT =
@@ -178,7 +180,11 @@ export function DocumentImportProgressPanel({
     (step && step !== 'failed' ? step : 'queued') as DocumentImportStep,
   )
   const pct = ready ? 100 : Math.max(2, Math.min(99, dto?.progress.pct ?? 0))
-  const visible = DOCUMENT_IMPORT_STEPS.filter((item) => item !== 'queued')
+  // A PDF is converted page by page: there is no "structure" step.
+  const visible = DOCUMENT_IMPORT_STEPS.filter(
+    (item) =>
+      item !== 'queued' && !(dto?.mode === 'PDF' && item === 'structure'),
+  )
 
   return (
     <div className='grid gap-4' data-testid='document-import-progress'>
@@ -196,15 +202,21 @@ export function DocumentImportProgressPanel({
           {ready
             ? (dto?.progress.message ?? 'Abrindo o editor…')
             : failed
-              ? (dto?.error ?? 'A IA não conseguiu montar o documento.')
-              : RUNNING_HINT}
+              ? (dto?.error ?? 'Não foi possível montar o documento.')
+              : dto?.mode === 'PDF'
+                ? 'Leva alguns segundos, conforme o número de páginas.'
+                : RUNNING_HINT}
         </DialogDescription>
       </DialogHeader>
 
       {failed ? (
         <p className='flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-destructive text-sm'>
           <SteelIcon icon={Alert02Icon} className='mt-0.5 size-4 shrink-0' />
-          <span>{FAILED_HINT}</span>
+          <span>
+            {dto?.mode === 'PDF'
+              ? 'Confira se o PDF abre normalmente e tente de novo.'
+              : FAILED_HINT}
+          </span>
         </p>
       ) : (
         <>
@@ -470,12 +482,16 @@ export function DocumentImportDialog({
           ctx.estimate,
           file ? guessPages(file.size, maxPages) : 1,
         )
-  const unavailable = ctx ? !ctx.available || ctx.quota.exceeded : false
+  // A PDF becomes one image per page: no AI, so no quota or model needed.
+  const pdfFile =
+    tab === 'file' && file !== null && importModeOf(file) === 'PDF'
+  const unavailable =
+    !pdfFile && ctx ? !ctx.available || ctx.quota.exceeded : false
   const busy = start.isPending
   const canSubmit =
     !busy &&
     !unavailable &&
-    Boolean(ctx) &&
+    (pdfFile || Boolean(ctx)) &&
     (tab === 'file'
       ? Boolean(file) && !problem
       : prompt.trim().length > 0 && prompt.length <= PROMPT_MAX)
@@ -630,6 +646,8 @@ export function DocumentImportDialog({
               <p className='text-destructive text-xs' role='alert'>
                 Não foi possível consultar a IA do workspace. Tente reabrir.
               </p>
+            ) : pdfFile ? (
+              <p className='text-muted-foreground text-xs'>{PDF_PAGES_HINT}</p>
             ) : ctx && !ctx.available ? (
               <p
                 className='flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground text-xs'
@@ -668,7 +686,9 @@ export function DocumentImportDialog({
                   ? 'Enviando…'
                   : tab === 'prompt'
                     ? 'Gerar documento'
-                    : 'Importar com IA'}
+                    : pdfFile
+                      ? 'Importar PDF'
+                      : 'Importar com IA'}
               </Button>
             </DialogFooter>
           </form>

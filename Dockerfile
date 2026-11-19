@@ -144,7 +144,8 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
 # versão do pacote tem que casar com o major do postgres:17-alpine usado em produção.
 # ffmpeg/ffprobe usados pelo worker para normalizar vídeo antes do publish no
 # Instagram (remove edit list e garante moov no início — exigência da Meta).
-RUN apk add --no-cache postgresql17-client ffmpeg
+# poppler-utils: pdftoppm renders each page of an imported PDF as a PNG (CRM > Documentos).
+RUN apk add --no-cache postgresql17-client ffmpeg poppler-utils
 
 # Headless Chromium + fonts for the PDF export of CRM > Documentos (ADR 0063).
 # Only the worker launches it (one browser per job, closed at the end); the app

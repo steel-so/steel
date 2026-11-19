@@ -180,24 +180,23 @@ Quatro chaves opcionais em `documents.settings` (JSON, sem migração; `null` li
   da marca d'água repete a cada folha no layout paginado; a imagem fica centrada
   e fixa. A inclinação vale só para o texto.
 
-## Imagens na importação de PDF
+## Importação de PDF (sem IA)
 
-`src/lib/document-ai/images.ts` percorre o conteúdo de cada página (inclusive
-formulários aninhados), acha as imagens desenhadas e a posição de cada uma.
-JPEG é mantido; pixels crus com máscara suave viram PNG; CMYK, máscaras e ícones
-(< 24 px) são ignorados. Até 40 imagens, 5 MB cada, 30 MB no total. As imagens
-vão para a biblioteca do workspace (`crm-email-images`) e o modelo recebe uma
-lista (`img-1`…, página, posição, se cobre a página ou se repete). Na resposta,
-`imageId` no bloco de imagem, `backgroundImageId` na seção (foto atrás da capa) e
-o objeto `page` (cabeçalho/rodapé/marca d'água vistos no arquivo, que viram
-`settings`). Imagens que o modelo não usou são apagadas ao fim; se a importação
-falha, todas são. PDF sem imagens ou ilegível importa como antes.
+Desde 19/11/2026 importar PDF não usa IA: cada página do arquivo vira um PNG e o
+documento sai com uma seção por página. O worker renderiza com `pdftoppm`
+(poppler-utils, instalado na imagem — `src/lib/document-ai/pages.ts`) a 130 dpi;
+a página cujo PNG passa de 5 MB é renderizada de novo a 80 dpi. Os PNGs vão para a
+biblioteca do workspace (`crm-email-images`). Página em proporção A4 vira a imagem
+de fundo da seção (preenche a folha); outras proporções (paisagem, Carta) entram
+como bloco de imagem. O texto não fica editável, mas campos, aceite e demais
+blocos podem ser acrescentados por cima. Não consome cota nem exige o recurso
+`crm.aiAssistant`. Falha ao renderizar ou guardar apaga as imagens já gravadas.
+DOCX e "Gerar com IA" continuam usando o modelo (abaixo).
 
 ## IA
 
-- Entrada: PDF ou DOCX até 20 MB e 60 páginas, ou um pedido em texto.
-- O PDF vai inteiro ao modelo quando o provedor aceita documento; senão, o
-  texto extraído. A saída é um plano estruturado (seções → blocos do catálogo),
+- Entrada: DOCX até 20 MB, ou um pedido em texto (PDF não passa pela IA, ver acima).
+- A saída é um plano estruturado (seções → blocos do catálogo),
   validado por Zod e montado com os presets, nunca HTML livre. Linhas como
   "Nome: ____" viram campos; valores e nomes, variáveis sugeridas.
 - Usa o provedor e a cota de IA do CRM; o progresso aparece ao vivo.

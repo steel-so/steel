@@ -36,11 +36,10 @@ import { estimateDocumentAi } from '@/src/lib/document-ai/estimate'
 import {
   countPdfPages,
   extractDocxText,
-  extractPdfPages,
   looksLikeDocx,
   looksLikePdf,
-  pagesAsText,
 } from '@/src/lib/document-ai/extract'
+import { renderPdfPages } from '@/src/lib/document-ai/pages'
 import {
   type DocumentImportProgress,
   failedProgress,
@@ -51,7 +50,6 @@ import {
   boundText,
   buildImportSystem,
   buildPromptSystem,
-  pdfImportContent,
   promptContent,
   textImportContent,
 } from '@/src/lib/document-ai/prompts'
@@ -83,10 +81,10 @@ import {
   dropImportImages,
   NO_IMPORT_IMAGES,
   type StoredImportImages,
-  storeImportImages,
   unusedImageUrls,
 } from './document-import-images'
 import { assertFeature } from './feature-flag.service'
+import { persistCrmEmailImage } from './media/crm-email-media.service'
 import { PlatformAiSettingsService } from './platform-ai-settings.service'
 
 /**
@@ -259,23 +257,9 @@ interface ModelInput {
   images: StoredImportImages
 }
 
-async function readPdfText(
-  buffer: Buffer,
-): Promise<Result<{ text: string; truncated: boolean }, string>> {
-  const pages = await extractPdfPages(buffer)
-  if (!pages.ok) return pages
-  if (pages.value.every((page) => !page)) {
-    return err(
-      'O PDF não tem texto selecionável (parece digitalizado) e o modelo de IA deste workspace não lê imagens de PDF.',
-    )
-  }
-  return ok(boundText(pagesAsText(pages.value)))
-}
-
 /** What the model reads: the PDF, its text, the DOCX text or the request. */
 async function buildModelInput(
   row: DocumentImport,
-  call: PreparedAiCall,
   title: string | undefined,
 ): Promise<Result<ModelInput, string>> {
   const kind = row.kind
@@ -299,70 +283,26 @@ async function buildModelInput(
   } catch {
     return err(READ_FAILED)
   }
+  // PDFs never reach the model: `runPdfPages` turns them into page images.
+  if (row.mode !== 'DOCX') return err(READ_FAILED)
+
   const fileName = row.fileName ?? 'arquivo'
-  const images =
-    row.mode === 'PDF'
-      ? await storeImportImages({
-          workspaceId: row.workspaceId,
-          importId: row.id,
-          buffer,
-          pageCount: row.pageCount,
-        })
-      : NO_IMPORT_IMAGES
-  const asText = (text: string) =>
-    textImportContent({
-      text,
+  const text = await extractDocxText(buffer)
+  if (!text.ok) return text
+  const bounded = boundText(text.value)
+  return ok({
+    system: buildImportSystem(),
+    content: textImportContent({
+      text: bounded.text,
       fileName,
       kind,
       title,
-      images: images.description,
-    })
-
-  if (row.mode === 'DOCX') {
-    const text = await extractDocxText(buffer)
-    if (!text.ok) return text
-    const bounded = boundText(text.value)
-    return ok({
-      system: buildImportSystem(),
-      content: asText(bounded.text),
-      fallback: null,
-      native: false,
-      truncated: bounded.truncated,
-      images,
-    })
-  }
-
-  if (acceptsPdfInput(call.model)) {
-    return ok({
-      system: buildImportSystem(),
-      content: pdfImportContent({
-        base64: buffer.toString('base64'),
-        fileName,
-        kind,
-        title,
-        images: images.description,
-      }),
-      fallback: async () => {
-        const text = await readPdfText(buffer)
-        return text.ok ? ok(asText(text.value.text)) : text
-      },
-      native: true,
-      truncated: false,
-      images,
-    })
-  }
-  const text = await readPdfText(buffer)
-  if (!text.ok) {
-    await dropImportImages(Object.values(images.urls))
-    return text
-  }
-  return ok({
-    system: buildImportSystem(),
-    content: asText(text.value.text),
+      images: '',
+    }),
     fallback: null,
     native: false,
-    truncated: text.value.truncated,
-    images,
+    truncated: bounded.truncated,
+    images: NO_IMPORT_IMAGES,
   })
 }
 
@@ -456,6 +396,148 @@ async function closeStale(row: DocumentImport): Promise<DocumentImport> {
       }
 }
 
+/** Width/height of a PNG, read from its IHDR chunk. */
+function pngSize(bytes: Buffer): { width: number; height: number } | null {
+  if (bytes.length < 24) return null
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
+}
+
+const A4_RATIO = 210 / 297
+/** A page this close to A4 portrait fills its section as a background. */
+const A4_TOLERANCE = 0.03
+
+/** One section per page: the PNG alone, with no padding games. */
+function pageSection(url: string, page: number, bytes: Buffer) {
+  const size = pngSize(bytes)
+  const ratio = size && size.height > 0 ? size.width / size.height : A4_RATIO
+  const a4 = Math.abs(ratio - A4_RATIO) / A4_RATIO <= A4_TOLERANCE
+  return {
+    name: `Página ${page}`,
+    ...(page > 1 && { pageBreakBefore: true }),
+    // Other formats (landscape, Letter) keep their proportion as an image.
+    ...(a4
+      ? { backgroundImage: url, blocks: [] }
+      : {
+          blocks: [{ type: 'image' as const, src: url, alt: `Página ${page}` }],
+        }),
+  }
+}
+
+/**
+ * PDF import: every page becomes a PNG (poppler in the worker image) kept in
+ * the image library, and the document is one section per page. No AI, no
+ * cost, no quota. DOCX and prompts still go through the model.
+ */
+async function runPdfPages(
+  row: DocumentImport,
+  titleOverride: string | undefined,
+): Promise<Result<DocumentImportRunResult>> {
+  let buffer: Buffer
+  try {
+    buffer = await getObject({
+      bucket: DOCUMENT_FILES_BUCKET,
+      key: row.fileKey ?? '',
+    })
+  } catch {
+    return ok(await fail(row, READ_FAILED, null))
+  }
+
+  const total = row.pageCount ?? 1
+  const urls: string[] = []
+  let current = row
+  try {
+    let lastSaved = 0
+    const pages = await renderPdfPages(buffer, total, async (done) => {
+      const now = Date.now()
+      if (now - lastSaved < PROGRESS_INTERVAL_MS) return
+      lastSaved = now
+      current = await saveProgress(current, {
+        step: 'sections',
+        message: `Convertendo as páginas (${done} de ${total})`,
+        pct: 10 + Math.round((done / total) * 75),
+      })
+    })
+
+    const sections = []
+    for (const page of pages) {
+      const stored = await persistCrmEmailImage({
+        workspaceId: row.workspaceId,
+        contentType: 'image/png',
+        byteSize: page.bytes.length,
+        readBody: async () => page.bytes,
+      })
+      if (!stored.ok) throw new Error(stored.error.message)
+      urls.push(stored.value.url)
+      sections.push(pageSection(stored.value.url, page.page, page.bytes))
+    }
+
+    const baseName = (row.fileName ?? 'Documento').replace(/\.pdf$/i, '')
+    const title = (titleOverride?.trim() || baseName).slice(0, 200)
+    const assembled = assemble({
+      title,
+      kind: row.kind === 'OTHER' ? 'OTHER' : row.kind,
+      sections,
+    })
+    if (!assembled.ok) throw new Error(assembled.error)
+
+    const completed = await DocumentImportRepository.complete(
+      row.id,
+      {
+        workspaceId: row.workspaceId,
+        kind: row.kind === 'OTHER' ? 'OTHER' : row.kind,
+        title,
+        source: 'PDF_IMPORT',
+        content: assembled.value.content,
+        theme: assembled.value.theme,
+        settings: { ...DEFAULT_DOCUMENT_SETTINGS, layout: 'paged' },
+        publicToken: randomBytes(18).toString('base64url'),
+        ownerId: row.createdById,
+      },
+      { progress: progressOf('done'), costUsd: 0, model: null },
+    )
+    if (!completed.ok) throw new Error(completed.error.message)
+
+    await publishDocumentImport(toDocumentImportDTO(completed.value.import))
+    await dropSourceFile(row)
+    auditMutation({
+      entity: 'document_import',
+      action: 'update',
+      actorId: row.createdById,
+      targetId: row.id,
+      meta: {
+        workspaceId: row.workspaceId,
+        documentId: completed.value.document.id,
+        mode: row.mode,
+        pages: pages.length,
+      },
+    })
+    logger.info('documents.import.ready', {
+      component: COMPONENT,
+      workspaceId: row.workspaceId,
+      importId: row.id,
+      documentId: completed.value.document.id,
+      mode: row.mode,
+      pages: pages.length,
+    })
+    return ok({ status: 'ready', documentId: completed.value.document.id })
+  } catch (cause) {
+    logger.error('documents.import.pages_failed', {
+      component: COMPONENT,
+      workspaceId: row.workspaceId,
+      importId: row.id,
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+    await dropImportImages(urls)
+    return ok(
+      await fail(
+        current,
+        'Não foi possível converter as páginas do PDF. Confira se o arquivo abre e tente de novo.',
+        null,
+      ),
+    )
+  }
+}
+
 export const DocumentImportService = {
   /** Quota, model and cost estimate shown before an import. */
   async context(
@@ -537,8 +619,10 @@ export const DocumentImportService = {
       )
     }
 
-    const call = await prepareCall(actorId, workspaceId)
-    if (!call.ok) return call
+    // A PDF becomes page images (no AI): only DOCX and prompts use the model.
+    const call =
+      input.mode === 'PDF' ? null : await prepareCall(actorId, workspaceId)
+    if (call && !call.ok) return call
 
     const id = createId()
     let fileKey: string | null = null
@@ -619,7 +703,7 @@ export const DocumentImportService = {
         mode: input.mode,
         kind: input.kind,
         pages: checked?.pageCount ?? null,
-        model: call.value.model.key,
+        model: call?.ok ? call.value.model.key : null,
       },
     })
     logger.info('documents.import.created', {
@@ -672,11 +756,12 @@ export const DocumentImportService = {
     let row = await saveProgress(loaded.value, progressOf('reading', prompt), {
       status: 'RUNNING',
     })
+    if (row.mode === 'PDF') return runPdfPages(row, options.title)
 
     const call = await prepareCall(row.createdById, row.workspaceId)
     if (!call.ok) return ok(await fail(row, call.error.message, null))
 
-    const input = await buildModelInput(row, call.value, options.title)
+    const input = await buildModelInput(row, options.title)
     if (!input.ok) return ok(await fail(row, input.error, null))
 
     const imageUrls = Object.values(input.value.images.urls)

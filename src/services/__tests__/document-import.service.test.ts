@@ -39,6 +39,12 @@ vi.mock('@/src/lib/document-ai/extract', async (original) => ({
   extractPdfPages: vi.fn(),
   extractDocxText: vi.fn(),
 }))
+vi.mock('@/src/lib/document-ai/pages', () => ({
+  renderPdfPages: vi.fn(),
+}))
+vi.mock('@/src/services/media/crm-email-media.service', () => ({
+  persistCrmEmailImage: vi.fn(),
+}))
 vi.mock('@/src/lib/canvas-document/outline', async (original) => ({
   ...(await original<typeof import('@/src/lib/canvas-document/outline')>()),
   outlineToDocument: vi.fn(),
@@ -56,6 +62,7 @@ import {
   extractDocxText,
   extractPdfPages,
 } from '@/src/lib/document-ai/extract'
+import { renderPdfPages } from '@/src/lib/document-ai/pages'
 import { publishDocumentImport } from '@/src/lib/document-ai/realtime'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
 import { deleteObject, getObject, putObject } from '@/src/lib/storage/s3'
@@ -64,6 +71,7 @@ import { DocumentImportRepository } from '@/src/repositories/document-import.rep
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { AiUsageService } from '@/src/services/ai-usage.service'
 import { assertFeature } from '@/src/services/feature-flag.service'
+import { persistCrmEmailImage } from '@/src/services/media/crm-email-media.service'
 import { PlatformAiSettingsService } from '@/src/services/platform-ai-settings.service'
 import { DocumentImportService } from '../document-import.service'
 
@@ -79,6 +87,8 @@ const toDocument = vi.mocked(outlineToDocument)
 const pageCount = vi.mocked(countPdfPages)
 const pdfPages = vi.mocked(extractPdfPages)
 const docxText = vi.mocked(extractDocxText)
+const renderPages = vi.mocked(renderPdfPages)
+const persistImage = vi.mocked(persistCrmEmailImage)
 const publish = vi.mocked(publishDocumentImport)
 const queue = vi.mocked(getDocumentsAiQueue)
 const download = vi.mocked(getObject)
@@ -213,10 +223,10 @@ function stored(overrides: Partial<DocumentImport> = {}) {
     id: 'imp1',
     workspaceId: WS,
     createdById: ACTOR,
-    mode: 'PDF',
+    mode: 'DOCX',
     status: 'PENDING',
-    fileKey: `${WS}/imports/imp1/proposta.pdf`,
-    fileName: 'proposta.pdf',
+    fileKey: `${WS}/imports/imp1/proposta.docx`,
+    fileName: 'proposta.docx',
     pageCount: 3,
     ...overrides,
   })
@@ -527,19 +537,33 @@ describe('DocumentImportService.create()', () => {
     expect(pageCount).not.toHaveBeenCalled()
   })
 
-  it('should stop on the plan feature and the quota', async () => {
+  it('should stop a DOCX on the plan feature and the quota', async () => {
+    const docx = { buffer: DOCX, contentType: '', fileName: 'a.docx' }
     feature.mockResolvedValueOnce(err(featureNotEnabled('crm.aiAssistant')))
     expectErr(
-      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      await DocumentImportService.create(ACTOR, WS, fileInput('DOCX'), docx),
       'FEATURE_NOT_ENABLED',
     )
 
     ai.prepare.mockResolvedValueOnce(err(aiQuotaExceeded(50, 50)))
     expectErr(
-      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+      await DocumentImportService.create(ACTOR, WS, fileInput('DOCX'), docx),
       'AI_QUOTA_EXCEEDED',
     )
     expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('should import a PDF without the AI plan or quota', async () => {
+    feature.mockResolvedValue(err(featureNotEnabled('crm.aiAssistant')))
+    ai.prepare.mockResolvedValue(err(aiQuotaExceeded(50, 50)))
+
+    const dto = expectOk(
+      await DocumentImportService.create(ACTOR, WS, fileInput('PDF'), pdf),
+    )
+
+    expect(dto.mode).toBe('PDF')
+    expect(ai.prepare).not.toHaveBeenCalled()
+    expect(add).toHaveBeenCalled()
   })
 
   it('should cap the imports a user runs at once', async () => {
@@ -672,7 +696,7 @@ function lastUpdate() {
 }
 
 describe('DocumentImportService.run()', () => {
-  it('should send the PDF natively and create the draft document', async () => {
+  it('should send the DOCX text and create the draft document', async () => {
     const result = expectOk(
       await DocumentImportService.run('imp1', { title: '  Proposta ACME  ' }),
     )
@@ -681,14 +705,8 @@ describe('DocumentImportService.run()', () => {
     const request = requests[0]
     expect(request.jsonSchema?.name).toBe('document_outline')
     expect(request.system).toMatch(/Keep the source text faithfully/)
-    const content = request.messages[0].content as { type: string }[]
-    expect(content[0]).toEqual(
-      expect.objectContaining({
-        type: 'document',
-        mediaType: 'application/pdf',
-        filename: 'proposta.pdf',
-        data: PDF.toString('base64'),
-      }),
+    expect(String(request.messages[0].content)).toContain(
+      'Contrato de prestação de serviços',
     )
     expect(imports.update.mock.calls[0][1]).toEqual(
       expect.objectContaining({
@@ -745,7 +763,7 @@ describe('DocumentImportService.run()', () => {
     expectOk(await DocumentImportService.run('imp1'))
     expect(remove).toHaveBeenCalledWith({
       bucket: 'documents',
-      key: `${WS}/imports/imp1/proposta.pdf`,
+      key: `${WS}/imports/imp1/proposta.docx`,
     })
 
     remove.mockRejectedValueOnce(new Error('minio down'))
@@ -769,6 +787,102 @@ describe('DocumentImportService.run()', () => {
         }),
       ]),
     )
+  })
+
+  describe('PDF as page images', () => {
+    const png = (width: number, height: number) => {
+      const bytes = Buffer.alloc(32)
+      bytes.writeUInt32BE(width, 16)
+      bytes.writeUInt32BE(height, 20)
+      return bytes
+    }
+
+    beforeEach(async () => {
+      imports.findForRun.mockResolvedValue(
+        ok(
+          stored({
+            mode: 'PDF',
+            fileKey: `${WS}/imports/imp1/proposta.pdf`,
+            fileName: 'proposta.pdf',
+            pageCount: 2,
+          }),
+        ),
+      )
+      renderPages.mockResolvedValue([
+        { page: 1, bytes: png(1075, 1520) },
+        { page: 2, bytes: png(1520, 1075) },
+      ])
+      persistImage.mockImplementation(async (input) =>
+        ok({ url: `https://s3/${input.byteSize}-${Math.random()}.png` }),
+      )
+      const actual = await vi.importActual<
+        typeof import('@/src/lib/canvas-document/outline')
+      >('@/src/lib/canvas-document/outline')
+      toDocument.mockImplementation(actual.outlineToDocument)
+    })
+
+    it('should make one section per page without calling the model', async () => {
+      const result = expectOk(
+        await DocumentImportService.run('imp1', { title: ' Contrato ' }),
+      )
+
+      expect(result).toEqual({ status: 'ready', documentId: 'doc1' })
+      expect(chatStream).not.toHaveBeenCalled()
+      expect(ai.prepare).not.toHaveBeenCalled()
+      expect(ai.record).not.toHaveBeenCalled()
+      expect(persistImage).toHaveBeenCalledTimes(2)
+      expect(persistImage.mock.calls[0][0]).toEqual(
+        expect.objectContaining({
+          workspaceId: WS,
+          contentType: 'image/png',
+        }),
+      )
+
+      const [, document, done] = imports.complete.mock.calls[0]
+      expect(document).toEqual(
+        expect.objectContaining({
+          source: 'PDF_IMPORT',
+          title: 'Contrato',
+          kind: 'OTHER',
+          settings: expect.objectContaining({ layout: 'paged' }),
+        }),
+      )
+      expect(done).toEqual(expect.objectContaining({ costUsd: 0, model: null }))
+      const content = JSON.stringify(document.content)
+      expect(content).toContain('Página 1')
+      expect(content).toContain('Página 2')
+      expect(content).toContain('https://s3/')
+      expect(remove).toHaveBeenCalledWith({
+        bucket: 'documents',
+        key: `${WS}/imports/imp1/proposta.pdf`,
+      })
+    })
+
+    it('should name the document after the file when there is no title', async () => {
+      expectOk(await DocumentImportService.run('imp1'))
+      expect(imports.complete.mock.calls[0][1].title).toBe('proposta')
+    })
+
+    it('should fail and clean up when a page cannot be rendered', async () => {
+      renderPages.mockRejectedValueOnce(new Error('pdftoppm: not found'))
+
+      expect(expectOk(await DocumentImportService.run('imp1')).status).toBe(
+        'failed',
+      )
+      expect(lastUpdate()?.error).toMatch(/converter as páginas/)
+      expect(imports.complete).not.toHaveBeenCalled()
+    })
+
+    it('should drop the stored pages when the library refuses one', async () => {
+      persistImage
+        .mockResolvedValueOnce(ok({ url: 'https://s3/crm-email-images/a.png' }))
+        .mockResolvedValueOnce(err(databaseError('x')))
+
+      expect(expectOk(await DocumentImportService.run('imp1')).status).toBe(
+        'failed',
+      )
+      expect(imports.complete).not.toHaveBeenCalled()
+    })
   })
 
   it('should write a document from a prompt as a web page', async () => {
@@ -834,38 +948,8 @@ describe('DocumentImportService.run()', () => {
     expect(chatStream).not.toHaveBeenCalled()
   })
 
-  it('should send the page text to a model without PDF input', async () => {
-    ai.prepare.mockResolvedValue(prepared(LEGACY))
-    pdfPages.mockResolvedValue(ok(['Cláusula 1', '']))
-
-    expectOk(await DocumentImportService.run('imp1'))
-
-    const content = String(requests[0].messages[0].content)
-    expect(content).toContain('<pagina numero="1">\nCláusula 1\n</pagina>')
-    expect(content).toContain('[página sem texto]')
-  })
-
-  it('should fail a scanned PDF for a model without PDF input', async () => {
-    ai.prepare.mockResolvedValue(prepared(LEGACY))
-    pdfPages.mockResolvedValue(ok(['', '']))
-
-    expect(expectOk(await DocumentImportService.run('imp1')).status).toBe(
-      'failed',
-    )
-    expect(lastUpdate()?.error).toMatch(/digitalizado/)
-  })
-
-  it('should fail an unreadable PDF for a text-only model', async () => {
-    ai.prepare.mockResolvedValue(prepared(LEGACY))
-    pdfPages.mockResolvedValue(err('Não foi possível ler este PDF.'))
-
-    expectOk(await DocumentImportService.run('imp1'))
-    expect(lastUpdate()?.error).toBe('Não foi possível ler este PDF.')
-  })
-
   it('should tell the user when a long text was cut', async () => {
-    ai.prepare.mockResolvedValue(prepared(LEGACY))
-    pdfPages.mockResolvedValue(ok(['x'.repeat(310_000)]))
+    docxText.mockResolvedValue(ok('x'.repeat(310_000)))
 
     expectOk(await DocumentImportService.run('imp1'))
 
@@ -873,24 +957,6 @@ describe('DocumentImportService.run()', () => {
     expect((done.progress as { message: string }).message).toMatch(
       /final ficou de fora/,
     )
-  })
-
-  it('should fall back to the text when the PDF is refused', async () => {
-    replies.push(new Error('400 PDF not supported'))
-
-    const result = expectOk(await DocumentImportService.run('imp1'))
-
-    expect(result.status).toBe('ready')
-    expect(requests).toHaveLength(2)
-    expect(String(requests[1].messages[0].content)).toContain('Página um')
-  })
-
-  it('should fail when the text fallback cannot read the PDF', async () => {
-    replies.push(new Error('400 PDF not supported'))
-    pdfPages.mockResolvedValue(err('Não foi possível ler este PDF.'))
-
-    expectOk(await DocumentImportService.run('imp1'))
-    expect(lastUpdate()?.error).toBe('Não foi possível ler este PDF.')
   })
 
   it('should fail with a pt-BR reason when the provider is down', async () => {
