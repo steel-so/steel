@@ -69,6 +69,51 @@ function draftPath(site: Site, page: Pick<SitePage, 'id' | 'path' | 'isHome'>) {
   return isHome ? '' : page.path
 }
 
+/** Analysis of every draft page of a site (shared with CRM > SEO). */
+export function analyzeSiteDraft(
+  site: Site,
+  pages: SitePage[],
+  globals: SiteGlobal[],
+  now: Date,
+) {
+  const settings = parseSiteSettings(site.settings)
+  const base = publicSiteUrl(site.slug)
+  const chromeText = chromeTextOf(globals)
+  const summaries = pages.map((page) => ({
+    id: page.id,
+    title: page.title,
+    seo: parseSitePageSeo(page.seo),
+  }))
+
+  return pages.map((page) => {
+    const path = draftPath(site, page)
+    return {
+      id: page.id,
+      title: page.title,
+      path: `/${path}`,
+      analysis: analyzeSearchPage({
+        page: {
+          id: page.id,
+          title: page.title,
+          slug: page.slug,
+          isHome: path === '',
+          seo: parseSitePageSeo(page.seo),
+          updatedAt: page.updatedAt.toISOString(),
+        },
+        document: page.document as unknown as CanvasDocument,
+        site: {
+          name: site.name,
+          settings,
+          pageUrl: sitePageUrl(base, path),
+        },
+        siblings: summaries.filter((other) => other.id !== page.id),
+        chromeText,
+        now,
+      }),
+    }
+  })
+}
+
 function view(
   site: Site,
   settings: SiteSearchSettingsDTO,
@@ -183,41 +228,12 @@ export const SiteSearchService = {
     if (!globals.ok) return globals
 
     const settings = parseSiteSettings(site.value.settings)
-    const base = publicSiteUrl(site.value.slug)
-    const chromeText = chromeTextOf(globals.value)
-    const summaries = pages.value.map((page) => ({
-      id: page.id,
-      title: page.title,
-      seo: parseSitePageSeo(page.seo),
-    }))
-
-    const analyzed = pages.value.map((page) => {
-      const path = draftPath(site.value, page)
-      return {
-        id: page.id,
-        title: page.title,
-        path: `/${path}`,
-        analysis: analyzeSearchPage({
-          page: {
-            id: page.id,
-            title: page.title,
-            slug: page.slug,
-            isHome: path === '',
-            seo: parseSitePageSeo(page.seo),
-            updatedAt: page.updatedAt.toISOString(),
-          },
-          document: page.document as unknown as CanvasDocument,
-          site: {
-            name: site.value.name,
-            settings,
-            pageUrl: sitePageUrl(base, path),
-          },
-          siblings: summaries.filter((other) => other.id !== page.id),
-          chromeText,
-          now,
-        }),
-      }
-    })
+    const analyzed = analyzeSiteDraft(
+      site.value,
+      pages.value,
+      globals.value,
+      now,
+    )
 
     return ok({
       ...buildSearchReport(analyzed),

@@ -952,12 +952,15 @@ export type CrmWorkflowDelayJobPayload = {
  */
 export const SitePostsJob = {
   PublishDue: 'publish-due',
+  /** CRM > SEO: daily SEO/AEO/GEO snapshot of every site (05:10). */
+  SeoSnapshot: 'seo-snapshot',
 } as const
 
 export type SitePostsJob = (typeof SitePostsJob)[keyof typeof SitePostsJob]
 
 export type SitePostsJobPayload = {
   [SitePostsJob.PublishDue]: Record<string, never>
+  [SitePostsJob.SeoSnapshot]: Record<string, never>
 }
 
 /**

@@ -139,6 +139,7 @@ import {
   ServicedeskSlaCron,
   ServicedeskTaskRemindersCron,
   SitePostsPublishCron,
+  SiteSeoSnapshotCron,
   StatusCollectCron,
   SteelAgentsTickCron,
   UsageRollupCron,
@@ -827,6 +828,11 @@ export async function scheduleSitePostsJobs(): Promise<void> {
     SitePostsJob.PublishDue,
     { pattern: SitePostsPublishCron, tz: RetentionTimezone },
     { name: SitePostsJob.PublishDue, data: {} },
+  )
+  await queue.upsertJobScheduler(
+    SitePostsJob.SeoSnapshot,
+    { pattern: SiteSeoSnapshotCron, tz: RetentionTimezone },
+    { name: SitePostsJob.SeoSnapshot, data: {} },
   )
 
   logger.info('queue.scheduler.site_posts_registered', {

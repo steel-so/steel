@@ -39,6 +39,7 @@ import { crmSiteBlogRoutes } from './crm/site-blog'
 import { crmSiteExperimentRoutes } from './crm/site-experiments'
 import { crmSitePlatformRoutes } from './crm/site-platform'
 import { crmSiteSearchRoutes } from './crm/site-search'
+import { crmSiteSeoRoutes } from './crm/site-seo'
 import { crmSiteStudioRoutes } from './crm/site-studio'
 import { crmSitesRoutes } from './crm/sites'
 import { crmSocialRoutes } from './crm/social'
@@ -82,6 +83,7 @@ const routes: RouteConfig[] = [
   ...crmSitePlatformRoutes,
   ...crmSiteBlogRoutes,
   ...crmSiteSearchRoutes,
+  ...crmSiteSeoRoutes,
   ...crmSiteExperimentRoutes,
   ...crmSocialRoutes,
   ...crmWorkflowsRoutes,

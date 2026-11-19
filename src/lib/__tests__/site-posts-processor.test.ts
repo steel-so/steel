@@ -7,11 +7,17 @@ vi.mock('@/src/services/site-post-schedule.service', () => ({
   SitePostScheduleService: { publishDue: vi.fn() },
 }))
 
+vi.mock('@/src/services/site-seo.service', () => ({
+  SiteSeoService: { recordDailySnapshots: vi.fn() },
+}))
+
 import { SitePostScheduleService } from '@/src/services/site-post-schedule.service'
+import { SiteSeoService } from '@/src/services/site-seo.service'
 import { SitePostsJob } from '../queue/jobs'
 import { processSitePosts } from '../queue/processors/site-posts'
 
 const publishDue = vi.mocked(SitePostScheduleService.publishDue)
+const recordSnapshots = vi.mocked(SiteSeoService.recordDailySnapshots)
 const job = (name: string) => ({ name, id: 'j1' }) as Job
 
 beforeEach(() => {
@@ -29,6 +35,21 @@ describe('processSitePosts', () => {
       published: 2,
       sites: 1,
     })
+  })
+
+  it('records the daily SEO snapshots', async () => {
+    recordSnapshots.mockResolvedValueOnce(
+      ok({ sites: 3, failed: 1, pruned: 4 }),
+    )
+    expect(await processSitePosts(job(SitePostsJob.SeoSnapshot))).toEqual({
+      sites: 3,
+      failed: 1,
+      pruned: 4,
+    })
+    recordSnapshots.mockResolvedValueOnce(err(databaseError()))
+    await expect(
+      processSitePosts(job(SitePostsJob.SeoSnapshot)),
+    ).rejects.toThrow(/Failed to record site SEO snapshots/)
   })
 
   it('throws so BullMQ retries, and on unknown jobs', async () => {
