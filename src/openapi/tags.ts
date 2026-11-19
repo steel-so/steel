@@ -188,6 +188,11 @@ export const TAG_GROUPS = [
           'Construtor de sites: sites, páginas, cabeçalho/rodapé/símbolos, publicação em versões, restauração.',
       },
       {
+        name: 'CRM · Link da bio',
+        description:
+          'Páginas de link da bio (`/b/<slug>`): itens, tema, publicação, QR code e métricas de visitas e cliques por link.',
+      },
+      {
         name: 'CRM · Newsletters',
         description:
           'Newsletters do CRM (ADR 0054): publicações com remetente no domínio do cliente, assinantes com prova de consentimento, importação e exportação em CSV.',
@@ -512,6 +517,11 @@ export const TAG_GROUPS = [
         name: 'CRM público · Sites',
         description:
           'Registro anônimo de visualizações dos sites publicados (sem sessão; o slug do site é o acesso).',
+      },
+      {
+        name: 'CRM público · Link da bio',
+        description:
+          'Registro anônimo de visitas nas páginas de link da bio publicadas (sem sessão; o endereço da página é o acesso).',
       },
       {
         name: 'CRM público · Modo TV',

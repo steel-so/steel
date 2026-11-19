@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { isPublicTvPath, TV_REQUEST_HEADER } from '@/src/lib/tv-request'
+import {
+  isPublicBioPath,
+  isPublicTvPath,
+  TV_REQUEST_HEADER,
+} from '@/src/lib/tv-request'
 
 describe('isPublicTvPath', () => {
   it('matches the public TV pages only', () => {
@@ -12,5 +16,16 @@ describe('isPublicTvPath', () => {
 
   it('uses a dedicated request header', () => {
     expect(TV_REQUEST_HEADER).toBe('x-steel-tv')
+  })
+})
+
+describe('isPublicBioPath', () => {
+  it('matches the public bio pages only', () => {
+    expect(isPublicBioPath('/b/minha-loja')).toBe(true)
+    expect(isPublicBioPath('/b/minha-loja/l/abc')).toBe(true)
+    expect(isPublicBioPath('/b')).toBe(false)
+    expect(isPublicBioPath('/b/')).toBe(false)
+    expect(isPublicBioPath('/blog/x')).toBe(false)
+    expect(isPublicBioPath('/stratus-lab/crm/bio-links')).toBe(false)
   })
 })

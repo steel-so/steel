@@ -235,6 +235,7 @@ export type AuditEntity =
   | 'whiteboard_settings'
   // Site builder (sites wave S1): sites, pages, header/footer/symbols
   | 'site'
+  | 'bio_link'
   | 'site_page'
   | 'site_global'
   // Site builder UI (site-ui): image library of the site editor

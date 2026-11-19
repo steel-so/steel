@@ -1670,6 +1670,13 @@ export const ERROR_CODES = {
     status: 404,
   },
 
+  // CRM > Link da bio
+  BIO_LINK_NOT_FOUND: { code: 'BIO_LINK_NOT_FOUND', status: 404 },
+  BIO_LINK_SLUG_TAKEN: { code: 'BIO_LINK_SLUG_TAKEN', status: 409 },
+  BIO_LINK_LIMIT_REACHED: { code: 'BIO_LINK_LIMIT_REACHED', status: 409 },
+  // A block points at a CRM form that is not published in this workspace.
+  BIO_LINK_FORM_INVALID: { code: 'BIO_LINK_FORM_INVALID', status: 422 },
+
   // ServiceDesk — ticket opened from a conversation / CRM record
   SD_TICKET_SOURCE_NOT_FOUND: {
     code: 'SD_TICKET_SOURCE_NOT_FOUND',
