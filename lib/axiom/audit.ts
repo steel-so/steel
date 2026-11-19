@@ -105,6 +105,7 @@ export type AuditEntity =
   | 'crm_calendar_event'
   | 'crm_ai_attachment'
   | 'crm_hook_vault_item'
+  | 'crm_banner'
   | 'crm_tracked_competitor'
   | 'crm_competitor_idea_set'
   | 'backup'
@@ -346,6 +347,7 @@ export type AuditEntity =
 
 export type AuditAction =
   | 'create'
+  | 'generate'
   | 'update'
   | 'delete'
   | 'activate'

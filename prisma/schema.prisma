@@ -589,6 +589,7 @@ model Workspace {
   crmEmailMessages          CrmEmailMessage[]
   crmCalendarEvents         CrmCalendarEvent[]
   crmHookVaultItems         CrmHookVaultItem[]
+  crmBanners                CrmBanner[]
   crmTrackedCompetitors     CrmTrackedCompetitor[]
   crmCampaigns              CrmCampaign[]
 
@@ -4313,6 +4314,30 @@ model CrmHookVaultItem {
   @@index([deletedAt])
   @@index([workspaceId, position])
   @@map("crm_hook_vault_items")
+}
+
+/// Banner / criativo de mídia display. `document` guarda os formatos (tamanho
+/// fixo cada) e os elementos de cada um (ver `src/schemas/crm-banner.schema.ts`);
+/// a renderização para imagem acontece no navegador. Pasta e etiquetas são
+/// simples (texto), sem tabela própria.
+model CrmBanner {
+  id          String    @id @default(cuid())
+  workspaceId String    @map("workspace_id")
+  name        String
+  folder      String    @default("")
+  tags        String[]  @default([])
+  objective   String?
+  document    Json
+  createdById String    @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, deletedAt, updatedAt])
+  @@map("crm_banners")
 }
 
 /// Status de sincronização automática de métricas de um concorrente.

@@ -170,6 +170,11 @@ export const TAG_GROUPS = [
           'Conexões sociais, posts agendados, tendências e concorrentes.',
       },
       {
+        name: 'CRM · Banners',
+        description:
+          'Biblioteca de banners e criativos de mídia display: formatos, modelos, texto com IA e imagem de apoio para exportação no navegador.',
+      },
+      {
         name: 'CRM · IA',
         description:
           'Hook Vault, análise de concorrentes e o mini chat de IA dos campos de texto.',
