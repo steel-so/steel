@@ -10,6 +10,7 @@ import {
   Flag01Icon,
   MailAtSign01Icon,
   QrCodeIcon,
+  ServerStack01Icon,
   SparklesIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import Link from 'next/link'
@@ -60,6 +61,7 @@ export const ADMIN_NAV: { title: string; items: NavEntry[] }[] = [
     title: 'Observabilidade',
     items: [
       { href: '/admin/analytics', label: 'Analytics', icon: Analytics01Icon },
+      { href: '/admin/server', label: 'Servidor', icon: ServerStack01Icon },
     ],
   },
 ]

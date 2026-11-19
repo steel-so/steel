@@ -15,6 +15,7 @@ checada no service, não só na UI.
 | **Detalhe** `/admin/workspaces/[id]` | ciclo de vida (suspender/reativar, plano, excluir), módulos, funcionalidades, membros e perfis, backups do workspace, histórico do admin |
 | **Métricas** `/admin/metrics` | ver [métricas da plataforma](./admin-metrics.md) |
 | **Backups** `/admin/backups` | backups completos e por workspace, disparo manual, download, restauração, progresso de exclusões/restaurações |
+| **Servidor** `/admin/server` | CPU, memória, disco, containers Docker, Postgres e Redis — ver [painel do servidor](./admin-servidor.md) |
 | **Changelog** `/admin/changelog` | e-mails de novidades |
 | **Analytics** `/admin/analytics` | tráfego, rotas, erros, acessos (país/cidade) e filas a partir dos logs no Axiom — ver [analytics](./admin-analytics.md) |
 
