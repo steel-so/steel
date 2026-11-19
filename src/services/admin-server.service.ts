@@ -1,9 +1,9 @@
 import { readFile, statfs } from 'node:fs/promises'
 import os from 'node:os'
 import { logger } from '@/lib/axiom/logger'
-import { ok, type Result } from '@/src/lib/result'
 import { prisma } from '@/src/lib/prisma'
 import { ensureRedisConnected } from '@/src/lib/redis'
+import { ok, type Result } from '@/src/lib/result'
 import { collectDocker } from '@/src/lib/server-stats/docker'
 import {
   type CpuTimes,

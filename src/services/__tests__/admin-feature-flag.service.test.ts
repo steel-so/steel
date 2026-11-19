@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createFakeUser } from '@/src/__tests__/factories/user.factory'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
-import { err, ok } from '@/src/lib/result'
 import { databaseError } from '@/src/errors'
+import { err, ok } from '@/src/lib/result'
 
 vi.mock('@/src/repositories/user.repository')
 vi.mock('@/src/repositories/platform-flag.repository')
@@ -13,8 +13,8 @@ vi.mock('@/src/lib/admin-audit', () => ({
 import { recordAdminAction } from '@/src/lib/admin-audit'
 import {
   getActiveFlagKeys,
-  isFeatureEnabled,
   invalidatePlatformFlagsCache,
+  isFeatureEnabled,
 } from '@/src/lib/platform-flags'
 import { PlatformFlagRepository } from '@/src/repositories/platform-flag.repository'
 import { UserRepository } from '@/src/repositories/user.repository'
