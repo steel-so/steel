@@ -6,6 +6,7 @@ import {
   DashboardSquare01Icon,
   DocumentValidationIcon,
   Facebook01Icon,
+  FilterIcon,
   FireIcon,
   FormIcon,
   FunnelIcon,
@@ -13,6 +14,8 @@ import {
   GoogleIcon,
   InstagramIcon,
   Key01Icon,
+  Link01Icon,
+  Location01Icon,
   Mail01Icon,
   MailReceive01Icon,
   MailSend01Icon,
@@ -20,15 +23,20 @@ import {
   MegaphoneIcon,
   NewsIcon,
   PackageIcon,
+  PaintBoardIcon,
   QuoteUpIcon,
   RepeatIcon,
   Route01Icon,
+  Search01Icon,
   Settings02Icon,
   Share08Icon,
+  StarIcon,
   StickyNote01Icon,
+  Store01Icon,
   TargetDollarIcon,
   TaskDone01Icon,
   TiktokIcon,
+  UserCircleIcon,
   UserGroup02Icon,
   UserMultipleIcon,
   UserSearch01Icon,
@@ -87,6 +95,9 @@ export default async function CrmLayout({
                 >
                   Google Analytics
                 </NavItem>
+                <NavItem href={`${base}/seo`} icon={Search01Icon}>
+                  SEO
+                </NavItem>
               </NavGroupAccordion>
               <NavGroupAccordion
                 nested
@@ -132,6 +143,29 @@ export default async function CrmLayout({
                 >
                   Google Ads
                 </NavItem>
+                <NavItem href={`${base}/banners`} icon={PaintBoardIcon}>
+                  Banners
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion
+                nested
+                label='Presença no Google'
+                icon={Store01Icon}
+              >
+                <NavItem href={`${base}/google/profile`} icon={UserCircleIcon}>
+                  Perfil da empresa
+                </NavItem>
+                <NavItem href={`${base}/google/maps`} icon={Location01Icon}>
+                  Google Maps
+                </NavItem>
+                <NavItem href={`${base}/google/reviews`} icon={StarIcon}>
+                  Avaliações
+                </NavItem>
+              </NavGroupAccordion>
+              <NavGroupAccordion nested label='Link da bio' icon={Link01Icon}>
+                <NavItem href={`${base}/bio-links`} icon={Link01Icon}>
+                  Gerenciar links
+                </NavItem>
               </NavGroupAccordion>
               <NavGroupAccordion
                 nested
@@ -176,6 +210,9 @@ export default async function CrmLayout({
                 </NavItem>
                 <NavItem href={`${base}/mailing-lists`} icon={UserGroup02Icon}>
                   Listas
+                </NavItem>
+                <NavItem href={`${base}/segments`} icon={FilterIcon}>
+                  Segmentação
                 </NavItem>
               </NavGroupAccordion>
               <NavGroupAccordion nested label='Prospecção' icon={Route01Icon}>
@@ -273,6 +310,9 @@ export default async function CrmLayout({
           </NavGroup>
           <NavGroup>
             <NavGroupAccordion label='Fidelizar' icon={RepeatIcon}>
+              <NavItem href={`${base}/customers`} icon={UserMultipleIcon}>
+                Clientes
+              </NavItem>
               <NavItem href={`${base}/renewals`} icon={RepeatIcon}>
                 Renovações
               </NavItem>
