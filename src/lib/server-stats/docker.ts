@@ -7,9 +7,9 @@ import type {
 import { percentOf } from './proc'
 
 /**
- * Cliente mínimo e SOMENTE LEITURA da Docker Engine API pelo socket unix.
- * O método é fixo em GET e só caminhos da lista abaixo são aceitos: mesmo que
- * o socket seja montado com escrita, este código nunca cria/para/remove nada.
+ * Minimal, READ-ONLY client for the Docker Engine API over the unix socket.
+ * The method is fixed to GET and only the paths listed below are accepted: even
+ * if the socket is mounted writable, this code never creates/stops/removes anything.
  */
 const ALLOWED_PATH =
   /^\/containers\/(json\?all=1|[0-9a-f]{12,64}\/(json|stats\?stream=false))$/
@@ -64,7 +64,7 @@ export function dockerGet<T>(path: string, socketPath = DOCKER_SOCKET_PATH) {
   })
 }
 
-/** Mensagem pt-BR para o motivo da indisponibilidade. */
+/** pt-BR message explaining why Docker data is unavailable. */
 export function dockerUnavailableReason(error: unknown): string {
   const code = error instanceof DockerUnavailableError ? error.code : ''
   if (code === 'ENOENT' || code === 'ECONNREFUSED') {
@@ -106,7 +106,7 @@ interface DockerStats {
   }
 }
 
-/** CPU% como o `docker stats` (pode passar de 100 em vários núcleos). */
+/** CPU% as in `docker stats` (can exceed 100 on multiple cores). */
 export function parseDockerCpuPercent(stats: DockerStats): number | null {
   const cpu = stats.cpu_stats
   const pre = stats.precpu_stats
@@ -128,7 +128,7 @@ export function parseDockerCpuPercent(stats: DockerStats): number | null {
   return (cpuDelta / sysDelta) * (cpu?.online_cpus ?? 1) * 100
 }
 
-/** Memória sem cache de página (inactive_file no cgroup v2, cache no v1). */
+/** Memory excluding page cache (inactive_file on cgroup v2, cache on v1). */
 export function parseDockerMemory(stats: DockerStats): {
   usageBytes: number
   limitBytes: number
@@ -157,7 +157,7 @@ function parseHealth(
   return null
 }
 
-/** Monta o DTO de um container a partir da lista, do inspect e do stats. */
+/** Builds a container DTO from the list, inspect and stats responses. */
 export function buildContainerDTO(
   item: DockerListItem,
   inspect: DockerInspect | null,
@@ -188,7 +188,7 @@ const settled = async <T>(p: Promise<T>): Promise<T | null> => {
   }
 }
 
-/** Lista os containers (inclusive parados) com inspect e stats. */
+/** Lists containers (including stopped ones) with inspect and stats. */
 export async function collectDocker(
   get: typeof dockerGet = dockerGet,
 ): Promise<ServerDockerDTO> {

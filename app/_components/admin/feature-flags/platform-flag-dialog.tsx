@@ -80,7 +80,9 @@ export function PlatformFlagDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{flag ? 'Editar flag' : 'Nova feature flag'}</DialogTitle>
+          <DialogTitle>
+            {flag ? 'Editar flag' : 'Nova feature flag'}
+          </DialogTitle>
           <DialogDescription>
             {flag
               ? 'A chave é a referência usada no código e não pode ser alterada.'

@@ -117,7 +117,11 @@ export function PlatformFlagsTable({
               </TableCell>
               <TableCell className='text-right'>
                 <div className='flex justify-end gap-1'>
-                  <Button variant='ghost' size='sm' onClick={() => onEdit(flag)}>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => onEdit(flag)}
+                  >
                     Editar
                   </Button>
                   <Button

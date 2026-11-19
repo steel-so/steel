@@ -1,7 +1,10 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { PlatformFlagDTO, PlatformFlagWorkspaceDTO } from '@/types/platform-flag'
+import type {
+  PlatformFlagDTO,
+  PlatformFlagWorkspaceDTO,
+} from '@/types/platform-flag'
 import { apiFetch } from './_fetch'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }

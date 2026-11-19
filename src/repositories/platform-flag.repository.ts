@@ -59,9 +59,7 @@ export const PlatformFlagRepository = {
     betaEnabled: boolean
   }): Promise<Result<FeatureFlagWithCount>> {
     try {
-      return ok(
-        await prisma.featureFlag.create({ data, include: WITH_COUNT }),
-      )
+      return ok(await prisma.featureFlag.create({ data, include: WITH_COUNT }))
     } catch (error) {
       return err(dbError('Failed to create feature flag', error))
     }

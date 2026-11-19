@@ -43,7 +43,11 @@ export const ADMIN_NAV: { title: string; items: NavEntry[] }[] = [
       { href: '/admin/metrics', label: 'Métricas', icon: ChartHistogramIcon },
       { href: '/admin/backups', label: 'Backups', icon: DatabaseSync01Icon },
       { href: '/admin/ai', label: 'Steel IA', icon: SparklesIcon },
-      { href: '/admin/feature-flags', label: 'Feature flags', icon: Flag01Icon },
+      {
+        href: '/admin/feature-flags',
+        label: 'Feature flags',
+        icon: Flag01Icon,
+      },
     ],
   },
   {

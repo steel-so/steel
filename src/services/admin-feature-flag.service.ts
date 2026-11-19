@@ -61,7 +61,8 @@ export const AdminFeatureFlagService = {
 
     const existing = await PlatformFlagRepository.findByKey(input.key)
     if (!existing.ok) return existing
-    if (existing.value) return err(conflict('Já existe uma flag com essa chave'))
+    if (existing.value)
+      return err(conflict('Já existe uma flag com essa chave'))
 
     const created = await PlatformFlagRepository.create(input)
     if (!created.ok) return created
