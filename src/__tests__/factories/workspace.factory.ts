@@ -17,6 +17,7 @@ export function createFakeWorkspace(overrides?: Partial<Workspace>): Workspace {
     suspendedById: null,
     wikiEnabled: false,
     whiteboardEnabled: true,
+    beta: false,
     logoUrl: null,
     allowedIps: [],
     companySize: null,

@@ -24,7 +24,10 @@ import {
 } from '../admin-server.service'
 
 const mockedUserRepo = vi.mocked(UserRepository)
-const admin = createFakeUser({ isPlatformAdmin: true })
+const admin = createFakeUser({
+  isPlatformAdmin: true,
+  email: 'admin@stratustelecom.com.br',
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -35,7 +38,11 @@ beforeEach(() => {
     containers: [],
   })
   vi.mocked(prisma.$queryRaw).mockResolvedValue([
-    { size: 1024n, connections: 7n, max_connections: '100' },
+    {
+      size: BigInt(1024),
+      connections: BigInt(7),
+      max_connections: '100',
+    },
   ])
   vi.mocked(ensureRedisConnected).mockResolvedValue({
     ping: vi.fn().mockResolvedValue('PONG'),

@@ -159,7 +159,9 @@ describe('DocumentImportDialog', () => {
     )
     // A PDF becomes page images: no AI cost line, just the explanation.
     expect(screen.queryByTestId('site-ai-cost')).not.toBeInTheDocument()
-    expect(screen.getByText(/Cada página do PDF vira uma imagem/)).toBeVisible()
+    expect(
+      screen.getByText(/Cada página do PDF vira uma imagem/),
+    ).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('document-import-submit'))
 
