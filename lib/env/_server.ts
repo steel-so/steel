@@ -96,6 +96,9 @@ const serverEnv = {
     process.env.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
   NEXT_CACHE_TAGS_TIMEOUT_MS: process.env.NEXT_CACHE_TAGS_TIMEOUT_MS,
   CHROMIUM_PATH: process.env.CHROMIUM_PATH,
+  FIDELITY_MAX_ROUNDS: process.env.FIDELITY_MAX_ROUNDS,
+  FIDELITY_TARGET_SCORE: process.env.FIDELITY_TARGET_SCORE,
+  FIDELITY_REFINE_BUDGET_MINUTES: process.env.FIDELITY_REFINE_BUDGET_MINUTES,
 }
 
 /** String opcional que trata `""` como ausente (não só `undefined`). */
@@ -506,6 +509,21 @@ export const serverEnvSchema = z.object({
   // (`/usr/bin/chromium` in the Docker image). Unset = Playwright's own
   // download (`pnpm exec playwright install chromium`), for local runs.
   CHROMIUM_PATH: blankOptional,
+  // Render-and-compare refinement of AI-generated sites (ADR 0072): rounds
+  // (0 turns it off), the similarity score (0-100) that ends it and the
+  // extra minutes it may take after the 20-minute drawing budget.
+  FIDELITY_MAX_ROUNDS: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().min(0).max(6).default(3),
+  ),
+  FIDELITY_TARGET_SCORE: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().min(50).max(100).default(85),
+  ),
+  FIDELITY_REFINE_BUDGET_MINUTES: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.coerce.number().int().min(1).max(60).default(25),
+  ),
 }).superRefine(requireBillingCredentials)
 
 const validatedServerEnv =
@@ -607,6 +625,9 @@ export const {
   NEXT_SERVER_ACTIONS_ENCRYPTION_KEY,
   NEXT_CACHE_TAGS_TIMEOUT_MS,
   CHROMIUM_PATH,
+  FIDELITY_MAX_ROUNDS,
+  FIDELITY_TARGET_SCORE,
+  FIDELITY_REFINE_BUDGET_MINUTES,
 } = validatedServerEnv
 
 /** The Steel Canvas playground opens in dev/test, and in production only

@@ -102,3 +102,26 @@ seções de cada página (`origins` diz se foi desenhada ou pronta) e
 `generateSectionBlueprint` / `buildFidelitySection` aceitam um
 `SectionRequest` para redesenhar uma seção; o blueprint anterior de cada seção
 ainda não é guardado (a frente C pode guardar `BuiltSection` por seção).
+
+## Frente C — o que foi entregue (refino por renderização)
+
+Decisão e detalhes de segurança/custo: ADR 0072. Código em
+`src/lib/site-ai/fidelity/refine/*`:
+
+- `preview-token.ts` / `preview-store.ts`: token assinado (HMAC, 20 min) e o
+  rascunho no Redis; rota `app/(sites)/site-preview/[token]` que o Chromium do
+  worker abre. O processor `site-reference-capture` só trata como interna uma
+  URL de prévia assinada do host do app (`captureReference(url, {
+  internalOrigin })`); o resto segue a política estrita.
+- `render.ts`: `createDraftRenderer` (rascunho para captura desktop+mobile).
+- `compare.ts`: `compareSection` (nota 0-100 e diferenças por seção).
+- `targets.ts`: `createSectionRecorder` (guarda pedido, contexto e blueprint de
+  cada seção durante o pipeline, via `deps.build`) e `buildRefineTargets`.
+- `refine.ts`: `refineDraft` (laço de rodadas, critérios de parada, desfaz a
+  troca que não melhorou); `run.ts`: `runRefinement`; `replace.ts`:
+  `swapSection`.
+- Variáveis: `FIDELITY_MAX_ROUNDS` (3; 0 desliga), `FIDELITY_TARGET_SCORE`
+  (85), `FIDELITY_REFINE_BUDGET_MINUTES` (25, além dos 20 min do desenho).
+- Integração em `site-ai.service.ts`: passo `refine` do SSE ("Comparando com a
+  referência…", "Ajustando a seção X (rodada N)…"), avisos ao parar cedo, notas
+  finais em `site_ai.refined` e na auditoria (`fidelity.refine`).

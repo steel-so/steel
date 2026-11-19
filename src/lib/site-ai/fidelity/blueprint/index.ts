@@ -17,6 +17,8 @@ export {
   buildFidelitySection,
   generateSectionBlueprint,
   type SectionOrigin,
+  type SectionRefinement,
+  type SectionRequest,
 } from './generate'
 export type { FidelityLlm } from './llm'
 export {

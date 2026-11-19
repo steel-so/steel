@@ -1,8 +1,14 @@
 import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
+import {
+  BETTER_AUTH_SECRET,
+  BETTER_AUTH_URL,
+  STATUS_APP_PROBE_URL,
+} from '@/lib/env/server'
 import { stripUrlForDisplay } from '@/src/lib/safe-fetch/fetch-html'
 import { captureReference } from '@/src/lib/site-ai/fidelity/capture/capture-reference'
 import { saveCapture } from '@/src/lib/site-ai/fidelity/capture/store'
+import { resolveInternalPreview } from '@/src/lib/site-ai/fidelity/refine/preview-token'
 import { getQueueConnection } from '../connection'
 import {
   SiteReferenceCaptureJob,
@@ -27,7 +33,17 @@ export async function handleSiteReferenceCaptureJob(
   const { workspaceId, url, requestId } =
     job.data as SiteReferenceCaptureJobPayload['capture']
 
-  const result = await captureReference(url)
+  // The refinement's draft previews (ADR 0072) are served by the app
+  // itself: a signed, unexpired preview URL is opened through the worker's
+  // own address for the app; anything else keeps the strict external policy.
+  const preview = resolveInternalPreview(url, {
+    publicOrigin: BETTER_AUTH_URL,
+    internalOrigin: STATUS_APP_PROBE_URL ?? BETTER_AUTH_URL,
+    secret: BETTER_AUTH_SECRET,
+  })
+  const result = preview
+    ? await captureReference(preview.url, { internalOrigin: preview.origin })
+    : await captureReference(url)
   await saveCapture(getQueueConnection(), requestId, result)
 
   if (result.ok) {
@@ -35,7 +51,7 @@ export async function handleSiteReferenceCaptureJob(
       component: 'Worker',
       workspaceId,
       requestId,
-      url: stripUrlForDisplay(url),
+      url: preview ? '[site-preview]' : stripUrlForDisplay(url),
       desktopStrips: result.value.desktop.strips.length,
       mobileStrips: result.value.mobile.strips.length,
     })
@@ -44,7 +60,7 @@ export async function handleSiteReferenceCaptureJob(
       component: 'Worker',
       workspaceId,
       requestId,
-      url: stripUrlForDisplay(url),
+      url: preview ? '[site-preview]' : stripUrlForDisplay(url),
       code: result.error.code,
     })
   }

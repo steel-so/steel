@@ -65,6 +65,28 @@ const CHROMIUM_ARGS = [
 export interface CaptureDeps {
   launchBrowser?: () => Promise<Browser>
   resolver?: Resolver
+  /**
+   * Origin of the app itself, set only by the worker for the signed draft
+   * previews of the refinement (ADR 0072). Requests to this exact origin
+   * (outside `/api/`) skip the host and DNS checks, which would refuse a
+   * private address; every other request keeps the strict policy.
+   */
+  internalOrigin?: string
+}
+
+/** True for a request the app's own origin may answer (preview page and
+ * its static assets), never for its API. */
+export function isInternalRequest(url: string, internalOrigin?: string) {
+  if (!internalOrigin) return false
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.origin === new URL(internalOrigin).origin &&
+      !parsed.pathname.startsWith('/api/')
+    )
+  } catch {
+    return false
+  }
 }
 
 /** Carries the user-facing error through the capture steps. */
@@ -85,6 +107,7 @@ class CaptureTimeout extends Error {
 interface Guard {
   bytes: number
   violation: AppError | null
+  internalOrigin?: string
 }
 
 async function launchChromium(): Promise<Browser> {
@@ -150,6 +173,10 @@ async function openContext(
   await context.route('**/*', async (route: Route) => {
     const request = route.request()
     const url = request.url()
+    if (isInternalRequest(url, guard.internalOrigin)) {
+      await route.continue().catch(() => undefined)
+      return
+    }
     const decision = await decideRoute(url, redirectDepth(request), resolver)
     if (!decision.allow) {
       const isDocument =
@@ -191,6 +218,7 @@ function watchPage(page: Page, guard: Guard): void {
       .serverAddr()
       .then((addr) => {
         // Chromium resolved DNS itself: reject a page served from a private IP.
+        if (isInternalRequest(response.url(), guard.internalOrigin)) return
         if (addr && !isServerAddressAllowed(addr.ipAddress)) {
           guard.violation = badRequest(SAFE_FETCH_MESSAGES.blocked_host)
         }
@@ -325,8 +353,9 @@ async function runCapture(
   url: string,
   deadline: number,
   resolver: Resolver | undefined,
+  internalOrigin?: string,
 ): Promise<ReferenceCapture> {
-  const guard: Guard = { bytes: 0, violation: null }
+  const guard: Guard = { bytes: 0, violation: null, internalOrigin }
 
   const desktop = await captureViewport(
     browser,
@@ -395,8 +424,16 @@ export async function captureReference(
   url: string,
   deps: CaptureDeps = {},
 ): Promise<Result<ReferenceCapture>> {
-  const checked = await validateFetchTarget(url, deps.resolver)
-  if (!checked.ok) return err(badRequest(SAFE_FETCH_MESSAGES[checked.reason]))
+  let target: URL
+  if (isInternalRequest(url, deps.internalOrigin)) {
+    target = new URL(url)
+  } else {
+    const checked = await validateFetchTarget(url, deps.resolver)
+    if (!checked.ok) {
+      return err(badRequest(SAFE_FETCH_MESSAGES[checked.reason]))
+    }
+    target = checked.url
+  }
 
   const deadline = Date.now() + CAPTURE_TOTAL_TIMEOUT_MS
   let browser: Browser | null = null
@@ -408,9 +445,10 @@ export async function captureReference(
           browser = await launch()
           return runCapture(
             browser,
-            checked.url.toString(),
+            target.toString(),
             deadline,
             deps.resolver,
+            deps.internalOrigin,
           )
         })(),
         CAPTURE_TOTAL_TIMEOUT_MS,

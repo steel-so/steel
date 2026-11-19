@@ -93,6 +93,19 @@ export function describeTokens(spec: DesignSpec): string {
   return JSON.stringify(tokens)
 }
 
+/** Render-and-compare correction of a section already drawn (ADR 0072). */
+export interface SectionRefinement {
+  /** Blueprint currently in the draft, when the section was drawn. */
+  previous: SectionBlueprint | null
+  /** Similarity to the reference, 0-100. */
+  score: number
+  /** What differs from the reference and how to fix it (pt-BR lines). */
+  differences: string[]
+  /** Pictures of the section as rendered now. */
+  draftImages: string[]
+  round: number
+}
+
 export interface SectionRequest {
   planned: PlannedSection
   pageTitle: string
@@ -106,6 +119,7 @@ export interface SectionRequest {
   focus: string
   companyName: string
   ctaLabel: string
+  refinement?: SectionRefinement
 }
 
 export function buildBlueprintMessage(request: SectionRequest): string[] {
@@ -155,6 +169,21 @@ export function buildBlueprintMessage(request: SectionRequest): string[] {
       'Não há seção de referência para esta: componha no mesmo estilo geral (cores, tipografia, botões, cartões, espaçamento) dos tokens.',
     )
   }
+  if (request.refinement) {
+    const { refinement } = request
+    lines.push(
+      '',
+      `AJUSTE FINO (rodada ${refinement.round}): esta seção já foi desenhada e renderizada. Um revisor comparou o resultado com a referência e deu nota ${refinement.score} de 100. As últimas imagens mostram o RESULTADO ATUAL; as anteriores são a referência. Redesenhe a seção corrigindo as diferenças abaixo, mantendo o que já está igual à referência e o conteúdo escrito para a empresa:`,
+      ...refinement.differences,
+    )
+    if (refinement.previous) {
+      lines.push(
+        '',
+        'SectionBlueprint atual (parta dele e altere só o necessário):',
+        JSON.stringify(refinement.previous),
+      )
+    }
+  }
   return lines
 }
 
@@ -164,8 +193,12 @@ export function sectionImages(request: SectionRequest): string[] {
   const reference = request.reference
   if (!reference) return []
   const capture = reference.source.capture
-  if (capture) return stripsFor(capture, reference.section ?? {})
-  return reference.source.images.slice(0, 1)
+  const own = capture
+    ? stripsFor(capture, reference.section ?? {})
+    : reference.source.images.slice(0, 1)
+  return request.refinement
+    ? [...own, ...request.refinement.draftImages.slice(0, 2)]
+    : own
 }
 
 /** `hex → hex` replacement over the whole blueprint (brand color wins

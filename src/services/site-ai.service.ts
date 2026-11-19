@@ -2,6 +2,14 @@ import { createId } from '@paralleldrive/cuid2'
 import type { Prisma, Site } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
+import { NODE_ENV } from '@/lib/env/env'
+import {
+  BETTER_AUTH_SECRET,
+  BETTER_AUTH_URL,
+  FIDELITY_MAX_ROUNDS,
+  FIDELITY_REFINE_BUDGET_MINUTES,
+  FIDELITY_TARGET_SCORE,
+} from '@/lib/env/server'
 import { aiProviderUnavailable, validationError } from '@/src/errors'
 import { type AppError, appError } from '@/src/errors/app-error'
 import { findAiModel, isAiProviderConfigured } from '@/src/lib/ai'
@@ -23,6 +31,7 @@ import {
 } from '@/src/lib/canvas-site/constants'
 import { SITE_KITS } from '@/src/lib/canvas-site/presets/kits'
 import { parseSiteTheme, type SiteTheme } from '@/src/lib/canvas-site/theme'
+import { getQueueConnection } from '@/src/lib/queue/connection'
 import {
   consume,
   siteInspirationUserLimiter,
@@ -52,6 +61,14 @@ import {
   type CapturePort,
   getCapturePort,
 } from '@/src/lib/site-ai/fidelity/capture-port'
+import {
+  createDraftRenderer,
+  createSectionRecorder,
+  type DraftRenderer,
+  getDraftRenderer,
+  resolveRefineConfig,
+  runRefinement,
+} from '@/src/lib/site-ai/fidelity/refine'
 import type { ReferenceCapture } from '@/src/lib/site-ai/fidelity/types'
 import {
   buildCandidates,
@@ -605,6 +622,21 @@ async function captureLink(
   }
 }
 
+/** Renders the draft for the refinement: the registered renderer, else the
+ * worker's browser through the capture queue. Under test there is none
+ * unless one is registered, so a unit test never reaches Redis. */
+function draftRendererFor(workspaceId: string): DraftRenderer | null {
+  const registered = getDraftRenderer()
+  if (registered) return registered
+  if (NODE_ENV === 'test') return null
+  return createDraftRenderer({
+    redis: getQueueConnection(),
+    port: queueCapturePort(workspaceId),
+    publicOrigin: BETTER_AUTH_URL,
+    secret: BETTER_AUTH_SECRET,
+  })
+}
+
 function defaultCtaLabel(goal: GenerateSiteDTO['goal']): string {
   if (goal === 'sales') return 'Quero comprar'
   return goal === 'event' ? 'Garantir minha vaga' : 'Fale com a gente'
@@ -653,6 +685,18 @@ async function* runGeneration(input: {
   const useFidelity = hasLinks || dto.inspirationImages.length > 0
   const meter = usageMeter(call, workspaceId, actorId)
   const kinds = requestedKinds(dto)
+  const refineConfig = resolveRefineConfig({
+    maxRounds: FIDELITY_MAX_ROUNDS,
+    targetScore: FIDELITY_TARGET_SCORE,
+    budgetMinutes: FIDELITY_REFINE_BUDGET_MINUTES,
+  })
+  // Without a renderer (or with the rounds set to 0) there is no refinement
+  // and no extra step.
+  const renderer =
+    useFidelity && refineConfig.maxRounds > 0
+      ? draftRendererFor(workspaceId)
+      : null
+  const refining = renderer !== null
   const steps: SiteAiStep[] = [
     ...(hasLinks
       ? [
@@ -681,6 +725,15 @@ async function* runGeneration(input: {
       }),
     ),
     { id: 'globals', label: 'Montando cabeçalho e rodapé…', status: 'pending' },
+    ...(refining
+      ? [
+          {
+            id: 'refine',
+            label: 'Comparando com a referência…',
+            status: 'pending',
+          } satisfies SiteAiStep,
+        ]
+      : []),
     { id: 'save', label: 'Salvando o site…', status: 'pending' },
   ]
   yield { type: 'steps', steps }
@@ -785,6 +838,7 @@ async function* runGeneration(input: {
     eventDate: dto.eventDate ?? null,
   })
   let fidelity: Extract<FidelityResult, { ok: true }> | null = null
+  const recorder = createSectionRecorder()
   if (useFidelity) {
     const sources = buildReferenceSources({
       links: dto.inspirationLinks.map((_, index) => {
@@ -835,6 +889,7 @@ async function* runGeneration(input: {
         overBudget: () =>
           input.quotaRemainingUsd !== null &&
           meter.cost() >= input.quotaRemainingUsd,
+        deps: { build: recorder.build },
       }).finally(() => progress.close())
       drawing.catch(() => undefined)
       yield* progress.drain()
@@ -1066,6 +1121,119 @@ async function* runGeneration(input: {
     status: 'done',
   }
 
+  // 3b. Refinement (ADR 0072): render the draft, compare every section with
+  // its reference and redraw the ones that diverge. Any failure keeps the
+  // draft as it is and warns; it never takes the generation down.
+  let refineStats: Record<string, unknown> | null = null
+  if (fidelity && renderer) {
+    const drawn = fidelity
+    yield {
+      type: 'step',
+      id: 'refine',
+      label: 'Comparando com a referência…',
+      status: 'running',
+    }
+    const refineEvents = channel<SiteAiEvent>()
+    const refined = runRefinement({
+      fidelity: drawn,
+      recorder,
+      llm: {
+        provider: call.provider,
+        model: call.model.model,
+        onUsage: meter.onUsage,
+      },
+      config: refineConfig,
+      theme,
+      header: globals.find((item) => item.kind === 'HEADER')?.doc ?? null,
+      footer: globals.find((item) => item.kind === 'FOOTER')?.doc ?? null,
+      pages: pages.map((page, index) => ({
+        title: plan.pages[index].title,
+        document: page.document,
+      })),
+      render: renderer,
+      prepare: (document) => {
+        if (data.form) attachForm(document, data.form)
+      },
+      onProgress: (label) =>
+        refineEvents.push({
+          type: 'step',
+          id: 'refine',
+          label,
+          status: 'running',
+        }),
+      overBudget: () =>
+        input.quotaRemainingUsd !== null &&
+        meter.cost() >= input.quotaRemainingUsd,
+    }).finally(() => refineEvents.close())
+    refined.catch(() => undefined)
+    yield* refineEvents.drain()
+    try {
+      const result = await refined
+      if (!result.ran) {
+        yield {
+          type: 'step',
+          id: 'refine',
+          label: 'Ajuste fino dispensado',
+          status: 'done',
+        }
+      } else {
+        const { outcome } = result
+        for (const [index, page] of pages.entries()) {
+          page.document = result.documents[index] ?? page.document
+        }
+        warnings.push(...outcome.warnings)
+        refineStats = {
+          rounds: outcome.rounds,
+          stoppedBy: outcome.stoppedBy,
+          averageBefore: outcome.averageBefore,
+          averageAfter: outcome.averageAfter,
+          replaced: outcome.replaced,
+          scores: outcome.sections.map((section) => section.finalScore),
+        }
+        logger.info('site_ai.refined', {
+          component: COMPONENT,
+          workspaceId,
+          model: call.model.key,
+          costUsd: meter.cost(),
+          ...refineStats,
+        })
+        yield {
+          type: 'step',
+          id: 'refine',
+          label:
+            outcome.averageBefore !== null && outcome.averageAfter !== null
+              ? `Ajuste fino concluído (semelhança ${outcome.averageBefore} → ${outcome.averageAfter} de 100)`
+              : 'Ajuste fino concluído',
+          status: outcome.averageAfter === null ? 'failed' : 'done',
+        }
+      }
+    } catch (cause) {
+      logger.error('site_ai.refine_failed', {
+        component: COMPONENT,
+        workspaceId,
+        model: call.model.key,
+        message: cause instanceof Error ? cause.message : String(cause),
+      })
+      warnings.push(
+        'Não foi possível fazer o ajuste fino com as referências; o site ficou como foi desenhado.',
+      )
+      yield {
+        type: 'step',
+        id: 'refine',
+        label: 'Ajuste fino falhou',
+        status: 'failed',
+      }
+    }
+  } else if (refining) {
+    // The layout could not follow the references: nothing to compare.
+    yield {
+      type: 'step',
+      id: 'refine',
+      label: 'Ajuste fino dispensado',
+      status: 'done',
+    }
+  }
+
   // 4. Contact form and the site rows.
   yield {
     type: 'step',
@@ -1173,6 +1341,7 @@ async function* runGeneration(input: {
             sum + page.origins.filter((origin) => origin === 'ready').length,
           0,
         ),
+        ...(refineStats ? { refine: refineStats } : {}),
       }
     : null
   auditMutation({

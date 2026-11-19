@@ -103,6 +103,9 @@ const PUBLIC_ROUTES = [
   // page-view beacon. Sites on <slug>.<SITES_ROOT_DOMAIN> are rewritten to
   // /s/<slug> before this check.
   '/s', '/api/sites',
+  // AI site refinement (ADR 0072): preview of a draft for the worker's
+  // browser; the signed, short-lived token in the URL is the access.
+  '/site-preview',
   // Site chat widget (E1): the pasted script and its public endpoints, no
   // session. A public key plus the allowed-origins list is the credential.
   '/steel-widget.js', '/api/widget',
@@ -421,6 +424,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
   const pathSlug = siteSlugFromPath(pathname)
+  const isSitePreview = pathname.startsWith('/site-preview/')
+  if (isSitePreview) {
+    requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
+  }
   if (pathSlug) {
     requestHeaders.set(SITE_REQUEST_HEADER, pathSlug)
     requestHeaders.set('Content-Security-Policy', cspFor(nonce, true))
@@ -451,7 +458,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     return withSecurityHeaders(
       NextResponse.next({ request: { headers: requestHeaders } }),
       nonce,
-      pathSlug !== null,
+      pathSlug !== null || isSitePreview,
     )
   }
 
