@@ -17,7 +17,9 @@ import {
   remainingUsd,
 } from '@/src/lib/ai/quota'
 import type { AiContentPart, AiUsageTokens } from '@/src/lib/ai/types'
+import type { CanvasDocument } from '@/src/lib/canvas/types'
 import { validateDocumentContent } from '@/src/lib/canvas-document/catalog'
+import { DOCUMENT_SECTION_TYPE } from '@/src/lib/canvas-document/constants'
 import {
   type DocumentOutline,
   outlineSettings,
@@ -396,31 +398,40 @@ async function closeStale(row: DocumentImport): Promise<DocumentImport> {
       }
 }
 
-/** Width/height of a PNG, read from its IHDR chunk. */
-function pngSize(bytes: Buffer): { width: number; height: number } | null {
-  if (bytes.length < 24) return null
-  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
-}
-
-const A4_RATIO = 210 / 297
-/** A page this close to A4 portrait fills its section as a background. */
-const A4_TOLERANCE = 0.03
-
-/** One section per page: the PNG alone, with no padding games. */
-function pageSection(url: string, page: number, bytes: Buffer) {
-  const size = pngSize(bytes)
-  const ratio = size && size.height > 0 ? size.width / size.height : A4_RATIO
-  const a4 = Math.abs(ratio - A4_RATIO) / A4_RATIO <= A4_TOLERANCE
+/** One section per page holding only the page image. */
+function pageSection(url: string, page: number) {
   return {
     name: `Página ${page}`,
     ...(page > 1 && { pageBreakBefore: true }),
-    // Other formats (landscape, Letter) keep their proportion as an image.
-    ...(a4
-      ? { backgroundImage: url, blocks: [] }
-      : {
-          blocks: [{ type: 'image' as const, src: url, alt: `Página ${page}` }],
-        }),
+    blocks: [{ type: 'image' as const, src: url, alt: `Página ${page}` }],
   }
+}
+
+const NO_PADDING = { top: 0, right: 0, bottom: 0, left: 0 }
+
+/**
+ * Makes the pages edge to edge: no section padding, and the image fills the
+ * width with square corners, so the document reads as the original pages.
+ */
+function flushPages(content: CanvasDocument): CanvasDocument {
+  const nodes = Object.fromEntries(
+    Object.entries(content.nodes).map(([id, node]) => {
+      if (node.type === DOCUMENT_SECTION_TYPE) {
+        return [id, { ...node, props: { ...node.props, padding: NO_PADDING } }]
+      }
+      if (node.type === 'image') {
+        return [
+          id,
+          {
+            ...node,
+            props: { ...node.props, width: 100, radius: 0, border: false },
+          },
+        ]
+      }
+      return [id, node]
+    }),
+  )
+  return { ...content, nodes }
 }
 
 /**
@@ -468,7 +479,7 @@ async function runPdfPages(
       })
       if (!stored.ok) throw new Error(stored.error.message)
       urls.push(stored.value.url)
-      sections.push(pageSection(stored.value.url, page.page, page.bytes))
+      sections.push(pageSection(stored.value.url, page.page))
     }
 
     const baseName = (row.fileName ?? 'Documento').replace(/\.pdf$/i, '')
@@ -479,6 +490,10 @@ async function runPdfPages(
       sections,
     })
     if (!assembled.ok) throw new Error(assembled.error)
+    const flushed = validateDocumentContent(
+      flushPages(assembled.value.content as CanvasDocument),
+    )
+    if (!flushed.ok) throw new Error(flushed.error)
 
     const completed = await DocumentImportRepository.complete(
       row.id,
@@ -487,7 +502,7 @@ async function runPdfPages(
         kind: row.kind === 'OTHER' ? 'OTHER' : row.kind,
         title,
         source: 'PDF_IMPORT',
-        content: assembled.value.content,
+        content: flushed.value,
         theme: assembled.value.theme,
         settings: { ...DEFAULT_DOCUMENT_SETTINGS, layout: 'paged' },
         publicToken: randomBytes(18).toString('base64url'),

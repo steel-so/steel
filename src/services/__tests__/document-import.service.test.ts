@@ -848,6 +848,12 @@ describe('DocumentImportService.run()', () => {
       expect(content).toContain('Página 1')
       expect(content).toContain('Página 2')
       expect(content).toContain('https://s3/')
+      // Edge to edge: no section padding, the image fills the width.
+      expect(content).toContain(
+        '"padding":{"top":0,"right":0,"bottom":0,"left":0}',
+      )
+      expect(content).toContain('"width":100')
+      expect(content).not.toContain('"background"')
       expect(remove).toHaveBeenCalledWith({
         bucket: 'documents',
         key: `${WS}/imports/imp1/proposta.pdf`,
