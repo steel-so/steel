@@ -47,8 +47,9 @@ import { SdContactService } from '../sd-contact.service'
 import { SdTicketEngine } from '../sd-ticket-engine'
 import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
-vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
-  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+vi.mock('@/src/services/whatsapp-crm-outbound.service', () => ({
+  recordCrmOutbound: async () => undefined,
+  fileCrmOutboundInConversation: async () => ({ ok: true, value: 0 }),
 }))
 
 const repo = vi.mocked(CrossEngineWhatsappRepository)

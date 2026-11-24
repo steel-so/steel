@@ -64,6 +64,11 @@ import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.r
 import { WhatsAppAdAttributionService } from '../whatsapp-ad-attribution.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
 
+vi.mock('@/src/services/whatsapp-crm-outbound.service', () => ({
+  recordCrmOutbound: async () => undefined,
+  fileCrmOutboundInConversation: async () => ({ ok: true, value: 0 }),
+}))
+
 const aiConfigRepo = vi.mocked(WhatsAppAiConfigRepository)
 const contactRepo = vi.mocked(WhatsAppContactRepository)
 const conversationRepo = vi.mocked(WhatsAppConversationRepository)

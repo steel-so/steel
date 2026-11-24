@@ -17,6 +17,8 @@ export const RetentionWindowMs = {
   workspaceAccessLogs: 5 * 365 * DAY_MS,
   /** Per-block chatbot metrics: the editor shows 30 days, 60 are kept. */
   chatbotNodeStats: 60 * DAY_MS,
+  /** CRM messages waiting for a reply are filed within 14 days; 30 are kept. */
+  crmOutbound: 30 * DAY_MS,
 } as const
 
 export const RetentionCron = {

@@ -495,6 +495,7 @@ model Workspace {
 
   whatsappConnections          WhatsAppConnection[]
   whatsappContacts             WhatsAppContact[]
+  whatsappCrmOutbound          WhatsAppCrmOutbound[]
   whatsappConversations        WhatsAppConversation[]
   whatsappPhoneCalls           WhatsAppPhoneCall[]
   voiceAgentSettings           VoiceAgentSettings?
@@ -1348,10 +1349,6 @@ model WhatsAppContact {
   // Descadastro LGPD de transmissões (opt-out). Preenchido quando o contato
   // responde uma palavra-chave (SAIR/PARAR/STOP/CANCELAR) ou quando um admin
   // registra o pedido; nulo = recebe transmissões.
-  /// Primeiro envio do CRM (campanha, cadência, workflow, newsletter,
-  /// documento…) a este contato. Depois disso a IA nunca responde a ele
-  /// (exceto numa campanha de IA, que conduz a conversa de propósito).
-  crmOutreachAt         DateTime?             @map("crm_outreach_at")
   broadcastOptedOutAt   DateTime?             @map("broadcast_opted_out_at")
   broadcastOptOutSource WhatsAppOptOutSource? @map("broadcast_opt_out_source")
   /// "Tem zap?" (Z-API): true/false = resultado da última checagem, nulo =
@@ -14262,4 +14259,27 @@ model CrmSegment {
   @@unique([workspaceId, name])
   @@index([workspaceId, target])
   @@map("crm_segments")
+}
+
+/// Mensagem que o CRM enviou direto pelo provedor (campanha, cadência,
+/// workflow, newsletter), sem passar por uma conversa. Quando o contato
+/// responde, ela entra na conversa como mensagem de saída (`importedAt`), para
+/// a equipe e a IA saberem a que o contato está respondendo.
+model WhatsAppCrmOutbound {
+  id                String              @id @default(cuid())
+  workspaceId       String              @map("workspace_id")
+  waId              String              @map("wa_id")
+  /// De onde veio: campaign, cadence, workflow ou newsletter.
+  source            String
+  type              WhatsAppMessageType @default(TEXT)
+  /// Texto já renderizado (template com as variáveis preenchidas).
+  text              String
+  providerMessageId String?             @map("provider_message_id")
+  sentAt            DateTime            @default(now()) @map("sent_at")
+  importedAt        DateTime?           @map("imported_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, waId, importedAt])
+  @@map("whatsapp_crm_outbound")
 }

@@ -59,7 +59,11 @@ import type {
   ListCrmNewsletterWhatsAppRecipientsQuery,
   UpdateCrmNewsletterIssueWhatsAppDTO,
 } from '@/src/schemas/crm-newsletter-engage.schema'
-import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
+import { templatePreview } from '@/src/services/whatsapp-automation-send.service'
+import {
+  recordCrmOutbound,
+  type SentCapture,
+} from '@/src/services/whatsapp-crm-outbound.service'
 import { assertModuleEnabled } from './authz'
 import { loadIssue, loadNewsletterScope } from './crm-newsletter-issue.service'
 
@@ -254,10 +258,33 @@ export async function sendIssueWhatsApp(input: {
   content: IssueWhatsAppContent
   to: CampaignMessageContext & { waId: string }
 }): Promise<Result<WhatsAppSendResult>> {
+  const capture: SentCapture = {}
+  const sent = await deliverIssueWhatsApp(input, capture)
+  if (sent.ok) {
+    // Kept so the contact's reply reaches people and the AI with its context.
+    await recordCrmOutbound({
+      workspaceId: input.connection.workspaceId,
+      waId: input.to.waId,
+      source: 'newsletter',
+      type: capture.type,
+      text: capture.text,
+      providerMessageId: sent.value.providerMessageId,
+    })
+  }
+  return sent
+}
+
+async function deliverIssueWhatsApp(
+  input: {
+    connection: WhatsAppConnection
+    template: WhatsAppTemplate | null
+    config: Pick<CrmNewsletterIssueWhatsApp, 'variables' | 'text'>
+    content: IssueWhatsAppContent
+    to: CampaignMessageContext & { waId: string }
+  },
+  capture: SentCapture,
+): Promise<Result<WhatsAppSendResult>> {
   const { connection, template, config, content, to } = input
-  // The AI never joins a conversation the CRM started: mark before sending.
-  const marked = await markCrmOutreach(connection.workspaceId, to.waId)
-  if (!marked.ok) return marked
   if (connection.provider === 'META') {
     if (template?.status !== 'APPROVED') {
       return err(
@@ -272,6 +299,12 @@ export async function sendIssueWhatsApp(input: {
       toCampaignVariables(toWhatsAppVariables(config.variables), content),
       to,
     )
+    const bodyVariables: string[] = []
+    for (const [slot, value] of Object.entries(values.body)) {
+      bodyVariables[Number(slot) - 1] = value
+    }
+    capture.type = 'TEMPLATE'
+    capture.text = templatePreview(template, bodyVariables)
     return WhatsAppSend.template(
       connection,
       {
@@ -286,14 +319,16 @@ export async function sendIssueWhatsApp(input: {
       { cost: { source: 'CRM_CAMPAIGN', templateCategory: template.category } },
     )
   }
+  const zapiText = renderZapiText(
+    applyIssueTextTokens(config.text ?? '', content),
+    to,
+  )
+  capture.text = zapiText
   return WhatsAppSend.text(
     connection,
     {
       to: to.waId,
-      text: renderZapiText(
-        applyIssueTextTokens(config.text ?? '', content),
-        to,
-      ),
+      text: zapiText,
     },
     { cost: { source: 'CRM_CAMPAIGN' } },
   )

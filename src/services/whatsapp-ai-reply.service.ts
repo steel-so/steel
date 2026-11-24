@@ -79,6 +79,13 @@ const KNOWLEDGE_BASE_CHAR_BUDGET = 20_000
 // workspace) e precisa ser buscado sob demanda.
 export const WHATSAPP_AI_HANDOFF_MARKER = '[[TRANSFERIR_ATENDENTE]]'
 const HANDOFF_SYSTEM_INSTRUCTION = `\n\nSe o cliente pedir para falar com uma pessoa/atendente, ou se você não conseguir ajudar com o que ele precisa, inclua o marcador exato ${WHATSAPP_AI_HANDOFF_MARKER} em algum ponto da sua resposta — o sistema o remove automaticamente antes de enviar a mensagem.`
+/**
+ * The history holds what the company already sent (campaigns, templates,
+ * cadences, documents) as the assistant's earlier messages. Short or vague
+ * answers must be read against the last one.
+ */
+const CONVERSATION_CONTEXT_INSTRUCTION =
+  '\n\nContexto da conversa: as mensagens enviadas pela empresa antes da resposta do cliente (campanhas, templates, cadências, documentos) aparecem no histórico como suas mensagens anteriores. Quando o cliente responder algo curto ou ambíguo ("sim", "ok", "pode ser", "vlw"), entenda como resposta à última mensagem da empresa e continue a partir dela — não recomece a conversa nem pergunte de novo o que já foi dito.'
 const HANDOFF_FALLBACK_MESSAGE =
   'Vou te transferir para um de nossos atendentes, só um momento.'
 
@@ -111,7 +118,6 @@ export type WhatsAppAiReplyOutcome =
         | 'contact_not_found'
         | 'outside_business_hours'
         | 'campaign_unavailable'
-        | 'crm_outreach'
     }
   | {
       /** Outside the WhatsApp business hours: answer at `retryAt`. */
@@ -402,18 +408,6 @@ export const WhatsAppAiReplyService = {
     if (!conversation) {
       return ok({ status: 'skipped', reason: 'conversation_not_found' })
     }
-    // The CRM wrote to this contact: the AI never answers (AI campaign
-    // conversations excepted). Also stops jobs queued before the mark.
-    if (!conversation.aiCampaignId) {
-      const owner = await WhatsAppContactRepository.findById(
-        conversation.contactId,
-        conversation.workspaceId,
-      )
-      if (!owner.ok) return owner
-      if (owner.value?.crmOutreachAt) {
-        return ok({ status: 'skipped', reason: 'crm_outreach' })
-      }
-    }
     if (!conversation.aiActive && !instruction) {
       return ok({ status: 'skipped', reason: 'ai_inactive' })
     }
@@ -551,6 +545,7 @@ export const WhatsAppAiReplyService = {
       config.systemPrompt +
       (zapTools ? ZAP_TOOLS_SYSTEM_SECTION : '') +
       HANDOFF_SYSTEM_INSTRUCTION +
+      CONVERSATION_CONTEXT_INSTRUCTION +
       (call.guardrails
         ? autoReplyLimitsInstruction(call.guardrails.limits)
         : '') +

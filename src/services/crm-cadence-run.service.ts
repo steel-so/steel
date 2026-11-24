@@ -25,7 +25,8 @@ import {
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmTaskRepository } from '@/src/repositories/crm-task.repository'
-import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
+import { templatePreview } from '@/src/services/whatsapp-automation-send.service'
+import { recordCrmOutbound } from '@/src/services/whatsapp-crm-outbound.service'
 
 /**
  * Runs the due steps of the sales cadences (worker tick, slice
@@ -393,18 +394,9 @@ async function runWhatsAppStep(
   const intent = await beginSend(enrollment, step, waId, now, false)
   if (intent.kind === 'settled') return intent.outcome
 
-  // The AI never joins a conversation the CRM started: mark before sending.
-  const marked = await markCrmOutreach(enrollment.workspaceId, waId)
-  if (!marked.ok) {
-    await dropIntent(intent)
-    return {
-      kind: 'retry',
-      delayMs: CADENCE_RETRY_MS,
-      reason: marked.error.message,
-    }
-  }
-
   let sent: Result<{ providerMessageId: string }>
+  let sentText: string
+  let sentType: 'TEXT' | 'TEMPLATE' = 'TEXT'
   if (template?.ok && template.value) {
     const approved = template.value
     const variables = step.templateVariables.map((value) =>
@@ -419,6 +411,8 @@ async function runWhatsAppStep(
             },
           ]
         : []
+    sentText = templatePreview(approved, variables)
+    sentType = 'TEMPLATE'
     sent = await WhatsAppSend.template(
       connection.value,
       {
@@ -430,9 +424,10 @@ async function runWhatsAppStep(
       { cost: { ...cost, templateCategory: approved.category } },
     )
   } else {
+    sentText = renderCadenceText(step.body, context)
     sent = await WhatsAppSend.text(
       connection.value,
-      { to: waId, text: renderCadenceText(step.body, context) },
+      { to: waId, text: sentText },
       { cost },
     )
   }
@@ -449,6 +444,14 @@ async function runWhatsAppStep(
     return failedRun(sent.error.message, intent.runId)
   }
   await rememberSent(intent.runId, sent.value.providerMessageId)
+  await recordCrmOutbound({
+    workspaceId: enrollment.workspaceId,
+    waId,
+    source: 'cadence',
+    type: sentType,
+    text: sentText,
+    providerMessageId: sent.value.providerMessageId,
+  })
   return {
     kind: 'done',
     status: 'SENT',

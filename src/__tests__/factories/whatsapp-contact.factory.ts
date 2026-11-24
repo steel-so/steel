@@ -15,7 +15,6 @@ export function createFakeWhatsAppContact(
     name: 'Maria Silva',
     avatarUrl: null,
     description: null,
-    crmOutreachAt: null,
     broadcastOptedOutAt: null,
     broadcastOptOutSource: null,
     hasWhatsapp: null,

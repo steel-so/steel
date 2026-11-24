@@ -12,6 +12,7 @@ import { createFakeWhatsAppMessage } from '@/src/__tests__/factories/whatsapp-me
 import { expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
+import { fileCrmOutboundInConversation } from '@/src/services/whatsapp-crm-outbound.service'
 import { SatisfactionSurveyService } from '../satisfaction-survey.service'
 
 // Fire-and-forget webhook: the real emitter would outlive the test.
@@ -102,6 +103,11 @@ import { notifyWhatsAppUsers } from '../whatsapp-notify'
 import { WhatsAppSlaService } from '../whatsapp-sla.service'
 import { WhatsAppUsageService } from '../whatsapp-usage.service'
 import { WhatsAppWebhookService } from '../whatsapp-webhook.service'
+
+vi.mock('@/src/services/whatsapp-crm-outbound.service', () => ({
+  recordCrmOutbound: async () => undefined,
+  fileCrmOutboundInConversation: vi.fn(async () => ({ ok: true, value: 0 })),
+}))
 
 const mockedAiConfigRepo = vi.mocked(WhatsAppAiConfigRepository)
 const mockedContactRepo = vi.mocked(WhatsAppContactRepository)
@@ -760,147 +766,36 @@ describe('WhatsAppWebhookService', () => {
       expect(mockedMessageRepo.create).toHaveBeenCalled()
     })
 
-    describe('contact the CRM wrote to', () => {
-      function arrangeCrmContact() {
-        mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
-        mockedContactRepo.upsertByWaId.mockResolvedValue(
-          ok(
-            createFakeWhatsAppContact({
-              id: 'contact1',
-              workspaceId: 'ws1',
-              crmOutreachAt: new Date(),
-            }),
-          ),
-        )
-        mockedAiConfigRepo.findByWorkspace.mockResolvedValue(
-          ok(createFakeWhatsAppAiConfig({ workspaceId: 'ws1', active: true })),
-        )
-        mockedMessageRepo.create.mockResolvedValue(
-          ok(
-            createFakeWhatsAppMessage({ id: 'msg1', conversationId: 'conv1' }),
-          ),
-        )
-        aiReplyAdd.mockClear()
-      }
-
-      it('should open the conversation with the AI off and not queue a reply', async () => {
-        arrangeCrmContact()
-        mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
-        mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
-          ok(null),
-        )
-        const created = createFakeWhatsAppConversationWithPreview({
-          id: 'conv1',
-          workspaceId: 'ws1',
-          contactId: 'contact1',
-          aiActive: false,
-        })
-        mockedConversationRepo.create.mockResolvedValue(ok(created))
-        mockedConversationRepo.findById.mockResolvedValue(ok(created))
-
-        expectOk(
-          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
-        )
-
-        expect(mockedConversationRepo.create).toHaveBeenCalledWith(
-          expect.objectContaining({ aiActive: false }),
-        )
-        expect(aiReplyAdd).not.toHaveBeenCalled()
+    it('should file the CRM messages sent to the number into the conversation before the AI answers', async () => {
+      mockedMessageRepo.findByProviderMessageId.mockResolvedValue(ok(null))
+      mockedContactRepo.upsertByWaId.mockResolvedValue(
+        ok(createFakeWhatsAppContact({ id: 'contact1', workspaceId: 'ws1' })),
+      )
+      mockedAiConfigRepo.findByWorkspace.mockResolvedValue(
+        ok(createFakeWhatsAppAiConfig({ workspaceId: 'ws1', active: true })),
+      )
+      mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
+      mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
+        ok(null),
+      )
+      const created = createFakeWhatsAppConversationWithPreview({
+        id: 'conv1',
+        workspaceId: 'ws1',
+        contactId: 'contact1',
+        aiActive: true,
       })
+      mockedConversationRepo.create.mockResolvedValue(ok(created))
+      mockedConversationRepo.findById.mockResolvedValue(ok(created))
+      mockedMessageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage({ conversationId: 'conv1' })),
+      )
 
-      it('should not switch the AI on for an unassigned conversation the CRM started', async () => {
-        arrangeCrmContact()
-        const open = createFakeWhatsAppConversation({
-          id: 'conv1',
-          workspaceId: 'ws1',
-          contactId: 'contact1',
-          aiActive: false,
-          aiHandoff: false,
-          assignedUserId: null,
-        })
-        mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(open))
-        mockedConversationRepo.update.mockResolvedValue(ok(open))
-        mockedConversationRepo.findById.mockResolvedValue(
-          ok(createFakeWhatsAppConversationWithPreview({ ...open })),
-        )
+      expectOk(await WhatsAppWebhookService.ingestInboundMessage(baseInbound()))
 
-        expectOk(
-          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
-        )
-
-        expect(mockedConversationRepo.update).toHaveBeenCalledWith(
-          'conv1',
-          expect.objectContaining({ aiActive: false }),
-        )
-        expect(aiReplyAdd).not.toHaveBeenCalled()
-      })
-
-      it('should turn the AI off on a conversation that already had it on', async () => {
-        arrangeCrmContact()
-        const open = createFakeWhatsAppConversation({
-          id: 'conv1',
-          workspaceId: 'ws1',
-          contactId: 'contact1',
-          aiActive: true,
-        })
-        mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(open))
-        mockedConversationRepo.update.mockResolvedValue(ok(open))
-        mockedConversationRepo.findById.mockResolvedValue(
-          ok(createFakeWhatsAppConversationWithPreview({ ...open })),
-        )
-
-        expectOk(
-          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
-        )
-
-        expect(aiReplyAdd).not.toHaveBeenCalled()
-      })
-
-      it('should keep an AI campaign conversation answered by the AI', async () => {
-        arrangeCrmContact()
-        const open = createFakeWhatsAppConversation({
-          id: 'conv1',
-          workspaceId: 'ws1',
-          contactId: 'contact1',
-          aiActive: true,
-          aiCampaignId: 'cp1',
-        })
-        mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(open))
-        mockedConversationRepo.update.mockResolvedValue(ok(open))
-        mockedConversationRepo.findById.mockResolvedValue(
-          ok(createFakeWhatsAppConversationWithPreview({ ...open })),
-        )
-
-        expectOk(
-          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
-        )
-
-        expect(aiReplyAdd).toHaveBeenCalled()
-      })
-
-      it('should reopen a closed conversation without the AI', async () => {
-        arrangeCrmContact()
-        mockedConversationRepo.findActiveByContact.mockResolvedValue(ok(null))
-        const closed = createFakeWhatsAppConversation({
-          id: 'closed1',
-          workspaceId: 'ws1',
-          contactId: 'contact1',
-          status: 'CLOSED',
-        })
-        mockedConversationRepo.findLatestClosedByContact.mockResolvedValue(
-          ok(closed),
-        )
-        mockedEventRepo.latestCloseSource.mockResolvedValue(ok('AGENT'))
-
-        expectOk(
-          await WhatsAppWebhookService.ingestInboundMessage(baseInbound()),
-        )
-
-        expect(mockedConversationRepo.update).toHaveBeenCalledWith(
-          'closed1',
-          expect.objectContaining({ aiActive: false }),
-        )
-        expect(aiReplyAdd).not.toHaveBeenCalled()
+      expect(fileCrmOutboundInConversation).toHaveBeenCalledWith({
+        workspaceId: 'ws1',
+        waId: baseInbound().waId,
+        conversationId: 'conv1',
       })
     })
 

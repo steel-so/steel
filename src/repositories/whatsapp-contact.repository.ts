@@ -114,29 +114,6 @@ export const WhatsAppContactRepository = {
    * contact keeps one row when its phone shows up later (the phone replaces
    * the BSUID as `waId`, unless another contact already owns that phone).
    */
-  /**
-   * Records that the CRM wrote to this number (creating the contact when
-   * needed). From then on the AI never answers the contact. Idempotent: the
-   * first timestamp is kept.
-   */
-  async markCrmOutreach(data: {
-    workspaceId: string
-    waId: string
-    name?: string
-  }): Promise<Result<WhatsAppContact>> {
-    const contact = await WhatsAppContactRepository.upsertByWaId(data)
-    if (!contact.ok || contact.value.crmOutreachAt) return contact
-    try {
-      const updated = await prisma.whatsAppContact.update({
-        where: { id: contact.value.id },
-        data: { crmOutreachAt: new Date() },
-      })
-      return ok(updated)
-    } catch (error) {
-      return err(dbError('Failed to mark CRM outreach on contact', error))
-    }
-  },
-
   async upsertByWaId(data: {
     workspaceId: string
     waId: string

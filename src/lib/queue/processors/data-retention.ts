@@ -2,6 +2,7 @@ import type { Job } from 'bullmq'
 import { logger } from '@/lib/axiom/logger'
 import { prisma } from '@/src/lib/prisma'
 import { WhatsAppChatbotNodeStatRepository } from '@/src/repositories/whatsapp-chatbot-node-stat.repository'
+import { WhatsAppCrmOutboundRepository } from '@/src/repositories/whatsapp-crm-outbound.repository'
 import { IntegrationGrantLifecycleService } from '@/src/services/integration-grant-lifecycle.service'
 import { PhoneCallRecordingService } from '@/src/services/phone-call-recording.service'
 import { WorkspaceAccessLogService } from '@/src/services/workspace-access-log.service'
@@ -114,6 +115,15 @@ async function cleanupChatbotNodeStats(): Promise<CleanupResult> {
   return { deleted: deleted.value, cutoff: cutoff.toISOString() }
 }
 
+/** CRM messages that never got a reply, past the filing window. */
+async function cleanupCrmOutbound(): Promise<CleanupResult> {
+  const cutoff = new Date(Date.now() - RetentionWindowMs.crmOutbound)
+  const deleted = await WhatsAppCrmOutboundRepository.deleteOlderThan(cutoff)
+  // Throw so BullMQ retries.
+  if (!deleted.ok) throw new Error(deleted.error.message)
+  return { deleted: deleted.value, cutoff: cutoff.toISOString() }
+}
+
 export async function processDataRetention(job: Job): Promise<CleanupResult> {
   switch (job.name) {
     case DataRetentionJob.CleanupExpiredSessions: {
@@ -200,6 +210,16 @@ export async function processDataRetention(job: Job): Promise<CleanupResult> {
     case DataRetentionJob.CleanupChatbotNodeStats: {
       const result = await cleanupChatbotNodeStats()
       logger.info('queue.data_retention.chatbot_node_stats_cleaned', {
+        component: 'Worker',
+        jobId: job.id,
+        deleted: result.deleted,
+        cutoff: result.cutoff,
+      })
+      return result
+    }
+    case DataRetentionJob.CleanupCrmOutbound: {
+      const result = await cleanupCrmOutbound()
+      logger.info('queue.data_retention.crm_outbound_cleaned', {
         component: 'Worker',
         jobId: job.id,
         deleted: result.deleted,

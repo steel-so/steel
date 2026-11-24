@@ -55,7 +55,11 @@ import {
 import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-audience.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import type { CrmCampaignWhatsAppVariables } from '@/src/schemas/crm-campaign.schema'
-import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
+import { templatePreview } from '@/src/services/whatsapp-automation-send.service'
+import {
+  recordCrmOutbound,
+  type SentCapture,
+} from '@/src/services/whatsapp-crm-outbound.service'
 import {
   notifyCrmCampaignSenderBlocked,
   notifyCrmMultichannelCampaignFinished,
@@ -289,15 +293,26 @@ export async function sendCampaignWhatsApp(
   campaign: CrmCampaign,
   to: CampaignMessageContext & { waId: string },
 ): Promise<Result<WhatsAppSendResult>> {
-  // The AI never joins a conversation the CRM started: mark before sending.
-  const marked = await markCrmOutreach(campaign.workspaceId, to.waId)
-  if (!marked.ok) return marked
-  return deliverCampaignWhatsApp(campaign, to)
+  const capture: SentCapture = {}
+  const sent = await deliverCampaignWhatsApp(campaign, to, capture)
+  if (sent.ok) {
+    // Kept so the contact's reply reaches people and the AI with its context.
+    await recordCrmOutbound({
+      workspaceId: campaign.workspaceId,
+      waId: to.waId,
+      source: 'campaign',
+      type: capture.type,
+      text: capture.text,
+      providerMessageId: sent.value.providerMessageId,
+    })
+  }
+  return sent
 }
 
 async function deliverCampaignWhatsApp(
   campaign: CrmCampaign,
   to: CampaignMessageContext & { waId: string },
+  capture: SentCapture,
 ): Promise<Result<WhatsAppSendResult>> {
   if (!campaign.whatsappConnectionId) {
     return err(crmCampaignWhatsappUnavailable('Conexão de WhatsApp ausente'))
@@ -336,6 +351,12 @@ async function deliverCampaignWhatsApp(
         null,
       to,
     )
+    const bodyVariables: string[] = []
+    for (const [slot, value] of Object.entries(values.body)) {
+      bodyVariables[Number(slot) - 1] = value
+    }
+    capture.type = 'TEMPLATE'
+    capture.text = templatePreview(template.value, bodyVariables)
     return WhatsAppSend.template(
       connection.value,
       {
@@ -372,6 +393,7 @@ async function deliverCampaignWhatsApp(
     mediaUrl = mediaUrl ?? reply.value.mediaUrl
     const buttons = parseStoredButtons(reply.value.buttons)
     if (buttons.length > 0) {
+      capture.text = text
       return sendQuickReplyButtons(connection.value, {
         to,
         text,
@@ -381,6 +403,7 @@ async function deliverCampaignWhatsApp(
       })
     }
   }
+  capture.text = text
   if (mediaUrl) {
     const kind = resolveBroadcastMediaKind({ url: mediaUrl }) ?? 'IMAGE'
     const type = kind.toLowerCase() as 'image' | 'video' | 'audio' | 'document'

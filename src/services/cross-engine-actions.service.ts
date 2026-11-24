@@ -19,7 +19,8 @@ import { CrmRetentionRepository } from '@/src/repositories/crm-retention.reposit
 import { CrmTaskRepository } from '@/src/repositories/crm-task.repository'
 import { CrossEngineWhatsappRepository } from '@/src/repositories/cross-engine-whatsapp.repository'
 import { SdWhatsappRepository } from '@/src/repositories/sd-whatsapp.repository'
-import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
+import { templatePreview } from '@/src/services/whatsapp-automation-send.service'
+import { recordCrmOutbound } from '@/src/services/whatsapp-crm-outbound.service'
 import type { SdContactDTO } from '@/types/sd-contact'
 import { assertModuleEnabled } from './authz'
 import { CrmLeadService } from './crm-lead.service'
@@ -220,12 +221,6 @@ export const CrossEngineActions = {
       })
     }
 
-    // A CRM workflow starts the conversation: the AI never joins it.
-    if (input.source === 'crm_workflow') {
-      const marked = await markCrmOutreach(input.workspaceId, waId)
-      if (!marked.ok) return marked
-    }
-
     const approved = template?.ok ? template.value : null
     const sent =
       decision.action === 'template' && approved
@@ -257,6 +252,21 @@ export const CrossEngineActions = {
         meta: { ...log, via: 'cross_engine' },
       })
       return sent
+    }
+    // A CRM workflow sends straight through the provider: keep what it said
+    // so the contact's reply reaches people and the AI with its context.
+    if (input.source === 'crm_workflow') {
+      const asTemplate = decision.action === 'template' && approved
+      await recordCrmOutbound({
+        workspaceId: input.workspaceId,
+        waId,
+        source: 'workflow',
+        type: asTemplate ? 'TEMPLATE' : 'TEXT',
+        text: asTemplate
+          ? templatePreview(asTemplate, input.variables ?? [])
+          : text,
+        providerMessageId: sent.value.providerMessageId,
+      })
     }
     auditMutation({
       entity: 'whatsapp_message',

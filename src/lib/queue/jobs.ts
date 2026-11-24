@@ -86,6 +86,7 @@ export const DataRetentionJob = {
   PurgeCallRecordings: 'purge-call-recordings',
   CleanupWorkspaceAccessLogs: 'cleanup-workspace-access-logs',
   CleanupChatbotNodeStats: 'cleanup-chatbot-node-stats',
+  CleanupCrmOutbound: 'cleanup-crm-outbound',
 } as const
 
 export type DataRetentionJob =
@@ -101,6 +102,7 @@ export type DataRetentionJobPayload = {
   [DataRetentionJob.PurgeCallRecordings]: Record<string, never>
   [DataRetentionJob.CleanupWorkspaceAccessLogs]: Record<string, never>
   [DataRetentionJob.CleanupChatbotNodeStats]: Record<string, never>
+  [DataRetentionJob.CleanupCrmOutbound]: Record<string, never>
 }
 
 export const AccountLifecycleJob = {

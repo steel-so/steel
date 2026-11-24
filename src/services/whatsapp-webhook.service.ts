@@ -45,6 +45,7 @@ import { WhatsAppConversationEventRepository } from '@/src/repositories/whatsapp
 import { WhatsAppGroupRepository } from '@/src/repositories/whatsapp-group.repository'
 import { WhatsAppGroupMessageRepository } from '@/src/repositories/whatsapp-group-message.repository'
 import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
+import { fileCrmOutboundInConversation } from '@/src/services/whatsapp-crm-outbound.service'
 import type { WhatsAppMessageTypeDTO } from '@/types/whatsapp-message'
 import { CrmCadenceReplyService } from './crm-cadence-reply.service'
 import { CrmCampaignTrackingService } from './crm-campaign-tracking.service'
@@ -316,15 +317,10 @@ export const WhatsAppWebhookService = {
       const conversation = existingConversation.value
       // No ServiceDesk a IA do zap nunca responde (o pré-atendimento é do
       // ServiceDesk e usa as próprias colunas `aiActive`/`aiHandoff`).
-      // A contact the CRM wrote to never reaches the AI (an AI campaign
-      // conversation excepted: that one is led by the AI on purpose).
-      const crmLocked =
-        !!contact.value.crmOutreachAt && !conversation.aiCampaignId
-      aiActive = serviceDesk || crmLocked ? false : conversation.aiActive
+      aiActive = serviceDesk ? false : conversation.aiActive
       // A conversation already assigned to a person is never switched back
       // to the AI by a new inbound message.
       if (
-        !crmLocked &&
         !aiActive &&
         !conversation.aiHandoff &&
         !conversation.assignedUserId &&
@@ -371,8 +367,7 @@ export const WhatsAppWebhookService = {
           closeSource.ok && closeSource.value === 'BUTTON_ACTION'
         const reopenAi =
           !closedByButton &&
-          (closed.value.aiCampaignId !== null ||
-            (aiConfigActive && !contact.value.crmOutreachAt))
+          (aiConfigActive || closed.value.aiCampaignId !== null)
         const reopened = await reopenWhatsAppConversation(closed.value, {
           actorUserId: null,
           source: 'CONTACT',
@@ -408,7 +403,7 @@ export const WhatsAppWebhookService = {
           connectionId: connection.id,
           contactId: contact.value.id,
           status: 'NEW',
-          aiActive: aiConfigActive && !contact.value.crmOutreachAt,
+          aiActive: aiConfigActive,
           aiHandoff: false,
           unreadCount: 1,
           lastMessageAt: new Date(),
@@ -418,7 +413,7 @@ export const WhatsAppWebhookService = {
         })
         if (!created.ok) return created
         conversationId = created.value.id
-        aiActive = aiConfigActive && !contact.value.crmOutreachAt
+        aiActive = aiConfigActive
         opening = true
         slaOwner = created.value
         waiting = { conversation: created.value, reason: 'new' }
@@ -686,6 +681,15 @@ export const WhatsAppWebhookService = {
         conversationId,
       )
     }
+
+    // What the CRM sent this number (campaign, cadence, workflow, newsletter)
+    // goes straight through the provider and never touched a conversation:
+    // file it now, so people and the AI read the reply with its context.
+    await fileCrmOutboundInConversation({
+      workspaceId,
+      waId: input.waId,
+      conversationId,
+    })
 
     // A confirmação do descadastro já é a resposta — a IA não responde.
     if (

@@ -200,48 +200,6 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     })
   })
 
-  it('should never answer a contact the CRM wrote to', async () => {
-    arrange()
-    mockedContactRepo.findById.mockResolvedValue(
-      ok(
-        createFakeWhatsAppContact({
-          id: 'contact1',
-          crmOutreachAt: new Date(),
-        }),
-      ),
-    )
-
-    const outcome = expectOk(
-      await WhatsAppAiReplyService.generateReply({
-        conversationId: CONV,
-        messageId: 'm1',
-      }),
-    )
-    expect(outcome).toEqual({ status: 'skipped', reason: 'crm_outreach' })
-    expect(mockedAiUsage.prepare).not.toHaveBeenCalled()
-  })
-
-  it('should not answer a CRM-written contact even on a button AI instruction', async () => {
-    arrange()
-    mockedContactRepo.findById.mockResolvedValue(
-      ok(
-        createFakeWhatsAppContact({
-          id: 'contact1',
-          crmOutreachAt: new Date(),
-        }),
-      ),
-    )
-
-    const outcome = expectOk(
-      await WhatsAppAiReplyService.generateReply({
-        conversationId: CONV,
-        messageId: 'm1',
-        instruction: 'Responda sobre o preço',
-      }),
-    )
-    expect(outcome).toEqual({ status: 'skipped', reason: 'crm_outreach' })
-  })
-
   it('should skip when AI is inactive on the conversation', async () => {
     arrange({ conversation: { aiActive: false } })
 
@@ -377,6 +335,45 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
       status: 'skipped',
       reason: 'ai_provider_unavailable',
     })
+  })
+
+  it('should read the reply against what the company sent first', async () => {
+    arrange()
+    mockedMessageRepo.listLatestByConversation.mockResolvedValue(
+      ok([
+        createFakeWhatsAppMessage({
+          id: 'm1',
+          conversationId: CONV,
+          direction: 'IN',
+          text: 'Sim',
+        }),
+        createFakeWhatsAppMessage({
+          id: 'm0',
+          conversationId: CONV,
+          direction: 'OUT',
+          type: 'TEMPLATE',
+          text: 'Olá Gusttavo, posso enviar nosso portfólio de serviços?',
+        }),
+      ]),
+    )
+    const chat = vi.fn(async () => response('Claro, segue o portfólio.'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+
+    const call = (
+      chat.mock.calls[0] as unknown as [
+        { system: string; messages: { role: string; content: string }[] },
+      ]
+    )[0]
+    expect(call.system).toContain('Contexto da conversa')
+    expect(call.messages.map((m) => m.role)).toEqual(['assistant', 'user'])
+    expect(call.messages[0].content).toContain('portfólio de serviços')
   })
 
   it('should send the reply, persist it as sentByAi and record usage', async () => {

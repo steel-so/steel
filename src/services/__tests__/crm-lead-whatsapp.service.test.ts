@@ -32,10 +32,6 @@ import {
   pickLeadConnection,
 } from '../crm-lead-whatsapp.service'
 
-vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
-  markCrmOutreach: async () => ({ ok: true, value: undefined }),
-}))
-
 const leadRepo = vi.mocked(CrmLeadRepository)
 const connRepo = vi.mocked(WhatsAppConnectionRepository)
 const contactRepo = vi.mocked(WhatsAppContactRepository)

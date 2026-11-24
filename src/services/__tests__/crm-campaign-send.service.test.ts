@@ -11,6 +11,7 @@ import {
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, rateLimited, whatsappProviderError } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
+import { recordCrmOutbound } from '@/src/services/whatsapp-crm-outbound.service'
 
 vi.mock('@/lib/axiom/audit')
 vi.mock('@/src/repositories/crm-campaign.repository')
@@ -68,8 +69,9 @@ import {
   notifyCrmMultichannelCampaignFinished,
 } from '../crm-notifications'
 
-vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
-  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+vi.mock('@/src/services/whatsapp-crm-outbound.service', () => ({
+  recordCrmOutbound: vi.fn(async () => undefined),
+  fileCrmOutboundInConversation: async () => ({ ok: true, value: 0 }),
 }))
 
 const campaigns = vi.mocked(CrmCampaignRepository)
@@ -692,6 +694,20 @@ describe('send() — WhatsApp', () => {
     expect(audience.isWhatsAppOptedOut).toHaveBeenCalledWith(
       'ws1',
       '5511999990000',
+    )
+  })
+
+  it('should log what the campaign sent so the reply can be answered in context', async () => {
+    withCampaign()
+    expectOk(await CrmCampaignSendService.send('c1', 'r1', 'WHATSAPP', NOW))
+    expect(recordCrmOutbound).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws1',
+        waId: '5511999990000',
+        source: 'campaign',
+        text: expect.stringMatching(/^Oi Ana: http/),
+        providerMessageId: 'wa-1',
+      }),
     )
   })
 

@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   sweepOrphanRecordings: vi.fn(),
   pruneAccessLogs: vi.fn(),
   pruneChatbotNodeStats: vi.fn(),
+  pruneCrmOutbound: vi.fn(),
   prisma: {
     session: { deleteMany: vi.fn() },
     verification: { deleteMany: vi.fn() },
@@ -67,6 +68,11 @@ vi.mock('@/src/services/workspace-access-log.service', () => ({
 vi.mock('@/src/repositories/whatsapp-chatbot-node-stat.repository', () => ({
   WhatsAppChatbotNodeStatRepository: {
     deleteBefore: mocks.pruneChatbotNodeStats,
+  },
+}))
+vi.mock('@/src/repositories/whatsapp-crm-outbound.repository', () => ({
+  WhatsAppCrmOutboundRepository: {
+    deleteOlderThan: mocks.pruneCrmOutbound,
   },
 }))
 vi.mock('@/src/services/crm-notifications', () => ({
@@ -159,6 +165,29 @@ describe('processTrialLifecycle', () => {
     })
     await expect(
       processDataRetention(fakeJob(DataRetentionJob.CleanupChatbotNodeStats)),
+    ).rejects.toThrow('db down')
+  })
+
+  it('deletes CRM outbound logs older than 30 days', async () => {
+    mocks.pruneCrmOutbound.mockResolvedValue({ ok: true, value: 12 })
+
+    const result = await processDataRetention(
+      fakeJob(DataRetentionJob.CleanupCrmOutbound),
+    )
+
+    expect(result.deleted).toBe(12)
+    const cutoff: Date = mocks.pruneCrmOutbound.mock.calls[0][0]
+    const days = (Date.now() - cutoff.getTime()) / 86_400_000
+    expect(Math.round(days)).toBe(30)
+  })
+
+  it('throws so BullMQ retries when pruning CRM outbound logs fails', async () => {
+    mocks.pruneCrmOutbound.mockResolvedValue({
+      ok: false,
+      error: { code: 'DATABASE_ERROR', message: 'db down' },
+    })
+    await expect(
+      processDataRetention(fakeJob(DataRetentionJob.CleanupCrmOutbound)),
     ).rejects.toThrow('db down')
   })
 
