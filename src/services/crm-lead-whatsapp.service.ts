@@ -6,6 +6,7 @@ import { toStoredPhone } from '@/src/lib/phone-br'
 import { err, ok, type Result } from '@/src/lib/result'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 import { assertModuleEnabled, assertModuleMember } from './authz'
 import { ensureLeadContact } from './crm-lead-contact-sync'
 import { WhatsAppConversationService } from './whatsapp-conversation.service'
@@ -71,6 +72,10 @@ export const CrmLeadWhatsappService = {
       ? connections.value.find((c) => c.id === input.connectionId)
       : pickLeadConnection(connections.value)
     if (!connection) return err(whatsappConnectionNotFound())
+
+    // The AI never joins a conversation the CRM started.
+    const marked = await markCrmOutreach(workspaceId, contact.value.waId)
+    if (!marked.ok) return marked
 
     const conversation = await WhatsAppConversationService.start(
       actorId,

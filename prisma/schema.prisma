@@ -1348,6 +1348,10 @@ model WhatsAppContact {
   // Descadastro LGPD de transmissões (opt-out). Preenchido quando o contato
   // responde uma palavra-chave (SAIR/PARAR/STOP/CANCELAR) ou quando um admin
   // registra o pedido; nulo = recebe transmissões.
+  /// Primeiro envio do CRM (campanha, cadência, workflow, newsletter,
+  /// documento…) a este contato. Depois disso a IA nunca responde a ele
+  /// (exceto numa campanha de IA, que conduz a conversa de propósito).
+  crmOutreachAt         DateTime?             @map("crm_outreach_at")
   broadcastOptedOutAt   DateTime?             @map("broadcast_opted_out_at")
   broadcastOptOutSource WhatsAppOptOutSource? @map("broadcast_opt_out_source")
   /// "Tem zap?" (Z-API): true/false = resultado da última checagem, nulo =

@@ -72,6 +72,10 @@ import {
   WEB_VERSION_GRACE_MS,
 } from '../crm-newsletter-whatsapp.service'
 
+vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
+  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+}))
+
 const repo = vi.mocked(CrmNewsletterWhatsAppRepository)
 const lookup = vi.mocked(CrmCampaignLookupRepository)
 const send = vi.mocked(WhatsAppSend)

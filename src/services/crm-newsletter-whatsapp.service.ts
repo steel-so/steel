@@ -59,6 +59,7 @@ import type {
   ListCrmNewsletterWhatsAppRecipientsQuery,
   UpdateCrmNewsletterIssueWhatsAppDTO,
 } from '@/src/schemas/crm-newsletter-engage.schema'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 import { assertModuleEnabled } from './authz'
 import { loadIssue, loadNewsletterScope } from './crm-newsletter-issue.service'
 
@@ -254,6 +255,9 @@ export async function sendIssueWhatsApp(input: {
   to: CampaignMessageContext & { waId: string }
 }): Promise<Result<WhatsAppSendResult>> {
   const { connection, template, config, content, to } = input
+  // The AI never joins a conversation the CRM started: mark before sending.
+  const marked = await markCrmOutreach(connection.workspaceId, to.waId)
+  if (!marked.ok) return marked
   if (connection.provider === 'META') {
     if (template?.status !== 'APPROVED') {
       return err(

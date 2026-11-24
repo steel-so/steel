@@ -316,10 +316,15 @@ export const WhatsAppWebhookService = {
       const conversation = existingConversation.value
       // No ServiceDesk a IA do zap nunca responde (o pré-atendimento é do
       // ServiceDesk e usa as próprias colunas `aiActive`/`aiHandoff`).
-      aiActive = serviceDesk ? false : conversation.aiActive
+      // A contact the CRM wrote to never reaches the AI (an AI campaign
+      // conversation excepted: that one is led by the AI on purpose).
+      const crmLocked =
+        !!contact.value.crmOutreachAt && !conversation.aiCampaignId
+      aiActive = serviceDesk || crmLocked ? false : conversation.aiActive
       // A conversation already assigned to a person is never switched back
       // to the AI by a new inbound message.
       if (
+        !crmLocked &&
         !aiActive &&
         !conversation.aiHandoff &&
         !conversation.assignedUserId &&
@@ -366,7 +371,8 @@ export const WhatsAppWebhookService = {
           closeSource.ok && closeSource.value === 'BUTTON_ACTION'
         const reopenAi =
           !closedByButton &&
-          (aiConfigActive || closed.value.aiCampaignId !== null)
+          (closed.value.aiCampaignId !== null ||
+            (aiConfigActive && !contact.value.crmOutreachAt))
         const reopened = await reopenWhatsAppConversation(closed.value, {
           actorUserId: null,
           source: 'CONTACT',
@@ -402,7 +408,7 @@ export const WhatsAppWebhookService = {
           connectionId: connection.id,
           contactId: contact.value.id,
           status: 'NEW',
-          aiActive: aiConfigActive,
+          aiActive: aiConfigActive && !contact.value.crmOutreachAt,
           aiHandoff: false,
           unreadCount: 1,
           lastMessageAt: new Date(),
@@ -412,7 +418,7 @@ export const WhatsAppWebhookService = {
         })
         if (!created.ok) return created
         conversationId = created.value.id
-        aiActive = aiConfigActive
+        aiActive = aiConfigActive && !contact.value.crmOutreachAt
         opening = true
         slaOwner = created.value
         waiting = { conversation: created.value, reason: 'new' }

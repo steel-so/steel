@@ -68,6 +68,10 @@ import {
   notifyCrmMultichannelCampaignFinished,
 } from '../crm-notifications'
 
+vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
+  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+}))
+
 const campaigns = vi.mocked(CrmCampaignRepository)
 const recipients = vi.mocked(CrmCampaignRecipientRepository)
 const audience = vi.mocked(CrmCampaignAudienceRepository)

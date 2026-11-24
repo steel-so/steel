@@ -27,6 +27,10 @@ import { DocumentRecipientRepository } from '@/src/repositories/document-recipie
 import { deliverDocument } from '../document-delivery'
 import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
+vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
+  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+}))
+
 const sendEmail = vi.mocked(sendDocumentSharedEmail)
 const whatsapp = vi.mocked(WhatsAppSend)
 const optOut = vi.mocked(checkWhatsAppOptOut)

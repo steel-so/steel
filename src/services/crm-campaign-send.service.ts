@@ -55,6 +55,7 @@ import {
 import { CrmCampaignAudienceRepository } from '@/src/repositories/crm-campaign-audience.repository'
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import type { CrmCampaignWhatsAppVariables } from '@/src/schemas/crm-campaign.schema'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 import {
   notifyCrmCampaignSenderBlocked,
   notifyCrmMultichannelCampaignFinished,
@@ -285,6 +286,16 @@ async function sendQuickReplyButtons(
 
 /** Sends the campaign's WhatsApp message to one number, per provider. */
 export async function sendCampaignWhatsApp(
+  campaign: CrmCampaign,
+  to: CampaignMessageContext & { waId: string },
+): Promise<Result<WhatsAppSendResult>> {
+  // The AI never joins a conversation the CRM started: mark before sending.
+  const marked = await markCrmOutreach(campaign.workspaceId, to.waId)
+  if (!marked.ok) return marked
+  return deliverCampaignWhatsApp(campaign, to)
+}
+
+async function deliverCampaignWhatsApp(
   campaign: CrmCampaign,
   to: CampaignMessageContext & { waId: string },
 ): Promise<Result<WhatsAppSendResult>> {

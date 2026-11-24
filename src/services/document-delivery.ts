@@ -12,6 +12,7 @@ import { documentLinkUrl } from '@/src/mappers/document.mapper'
 import { DocumentLookupRepository } from '@/src/repositories/document-lookup.repository'
 import { DocumentRecipientRepository } from '@/src/repositories/document-recipient.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 import type { DocumentDeliveryDTO } from '@/types/document'
 import {
   ensureConversation,
@@ -133,6 +134,11 @@ async function sendWhatsApp(
     }
   }
   const text = whatsappText(ctx, recipient)
+  // The AI never joins a conversation the CRM started: mark before sending.
+  const marked = await markCrmOutreach(ctx.workspaceId, waId)
+  if (!marked.ok) {
+    return { channel: 'LINK', delivered: false, message: WHATSAPP_FAILED }
+  }
   const sent = await WhatsAppSend.text(
     connection,
     { to: waId, text },

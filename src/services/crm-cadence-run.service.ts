@@ -25,6 +25,7 @@ import {
 import { CrmCampaignLookupRepository } from '@/src/repositories/crm-campaign-lookup.repository'
 import { CrmLeadRepository } from '@/src/repositories/crm-lead.repository'
 import { CrmTaskRepository } from '@/src/repositories/crm-task.repository'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 
 /**
  * Runs the due steps of the sales cadences (worker tick, slice
@@ -391,6 +392,17 @@ async function runWhatsAppStep(
   // WhatsApp has no provider idempotency: an interrupted attempt is never repeated.
   const intent = await beginSend(enrollment, step, waId, now, false)
   if (intent.kind === 'settled') return intent.outcome
+
+  // The AI never joins a conversation the CRM started: mark before sending.
+  const marked = await markCrmOutreach(enrollment.workspaceId, waId)
+  if (!marked.ok) {
+    await dropIntent(intent)
+    return {
+      kind: 'retry',
+      delayMs: CADENCE_RETRY_MS,
+      reason: marked.error.message,
+    }
+  }
 
   let sent: Result<{ providerMessageId: string }>
   if (template?.ok && template.value) {

@@ -35,6 +35,10 @@ import {
   CrmCadenceRunService,
 } from '../crm-cadence-run.service'
 
+vi.mock('@/src/services/whatsapp-crm-outreach.service', () => ({
+  markCrmOutreach: async () => ({ ok: true, value: undefined }),
+}))
+
 const repo = vi.mocked(CrmCadenceEnrollmentRepository)
 const lookup = vi.mocked(CrmCadenceLookupRepository)
 const campaignLookup = vi.mocked(CrmCampaignLookupRepository)

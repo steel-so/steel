@@ -200,6 +200,48 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     })
   })
 
+  it('should never answer a contact the CRM wrote to', async () => {
+    arrange()
+    mockedContactRepo.findById.mockResolvedValue(
+      ok(
+        createFakeWhatsAppContact({
+          id: 'contact1',
+          crmOutreachAt: new Date(),
+        }),
+      ),
+    )
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+    expect(outcome).toEqual({ status: 'skipped', reason: 'crm_outreach' })
+    expect(mockedAiUsage.prepare).not.toHaveBeenCalled()
+  })
+
+  it('should not answer a CRM-written contact even on a button AI instruction', async () => {
+    arrange()
+    mockedContactRepo.findById.mockResolvedValue(
+      ok(
+        createFakeWhatsAppContact({
+          id: 'contact1',
+          crmOutreachAt: new Date(),
+        }),
+      ),
+    )
+
+    const outcome = expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+        instruction: 'Responda sobre o preço',
+      }),
+    )
+    expect(outcome).toEqual({ status: 'skipped', reason: 'crm_outreach' })
+  })
+
   it('should skip when AI is inactive on the conversation', async () => {
     arrange({ conversation: { aiActive: false } })
 

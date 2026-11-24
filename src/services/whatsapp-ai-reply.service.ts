@@ -111,6 +111,7 @@ export type WhatsAppAiReplyOutcome =
         | 'contact_not_found'
         | 'outside_business_hours'
         | 'campaign_unavailable'
+        | 'crm_outreach'
     }
   | {
       /** Outside the WhatsApp business hours: answer at `retryAt`. */
@@ -400,6 +401,18 @@ export const WhatsAppAiReplyService = {
     const conversation = found.value
     if (!conversation) {
       return ok({ status: 'skipped', reason: 'conversation_not_found' })
+    }
+    // The CRM wrote to this contact: the AI never answers (AI campaign
+    // conversations excepted). Also stops jobs queued before the mark.
+    if (!conversation.aiCampaignId) {
+      const owner = await WhatsAppContactRepository.findById(
+        conversation.contactId,
+        conversation.workspaceId,
+      )
+      if (!owner.ok) return owner
+      if (owner.value?.crmOutreachAt) {
+        return ok({ status: 'skipped', reason: 'crm_outreach' })
+      }
     }
     if (!conversation.aiActive && !instruction) {
       return ok({ status: 'skipped', reason: 'ai_inactive' })

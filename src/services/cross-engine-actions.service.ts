@@ -19,6 +19,7 @@ import { CrmRetentionRepository } from '@/src/repositories/crm-retention.reposit
 import { CrmTaskRepository } from '@/src/repositories/crm-task.repository'
 import { CrossEngineWhatsappRepository } from '@/src/repositories/cross-engine-whatsapp.repository'
 import { SdWhatsappRepository } from '@/src/repositories/sd-whatsapp.repository'
+import { markCrmOutreach } from '@/src/services/whatsapp-crm-outreach.service'
 import type { SdContactDTO } from '@/types/sd-contact'
 import { assertModuleEnabled } from './authz'
 import { CrmLeadService } from './crm-lead.service'
@@ -217,6 +218,12 @@ export const CrossEngineActions = {
         reason: decision.reason,
         message: CROSS_ENGINE_SKIP_MESSAGE[decision.reason],
       })
+    }
+
+    // A CRM workflow starts the conversation: the AI never joins it.
+    if (input.source === 'crm_workflow') {
+      const marked = await markCrmOutreach(input.workspaceId, waId)
+      if (!marked.ok) return marked
     }
 
     const approved = template?.ok ? template.value : null
