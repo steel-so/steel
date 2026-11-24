@@ -4,6 +4,7 @@ import {
   BarChartIcon,
   Calculator01Icon,
   ChartLineData01Icon,
+  FilterIcon,
   GlobeIcon,
   PieChartIcon,
   PresentationBarChart01Icon,
@@ -100,6 +101,7 @@ export const CHART_TYPE_META: ChartTypeMeta[] = [
   { type: 'line', label: 'Linha', icon: ChartLineData01Icon },
   { type: 'pie', label: 'Pizza', icon: PieChartIcon },
   { type: 'aggregate', label: 'Agregação', icon: Calculator01Icon },
+  { type: 'funnel', label: 'Funil', icon: FilterIcon },
 ]
 
 export type ViewField = { key: string; label: string }

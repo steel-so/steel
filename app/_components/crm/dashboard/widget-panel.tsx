@@ -990,7 +990,7 @@ function ChartEditor({
 
       {isSocials ? null : type === 'aggregate' ? (
         <AggregateFields config={c} set={set} viewSource={viewSource} />
-      ) : type === 'pie' ? (
+      ) : type === 'pie' || type === 'funnel' ? (
         <PieFields config={c} set={set} viewSource={viewSource} />
       ) : (
         <BarLineFields

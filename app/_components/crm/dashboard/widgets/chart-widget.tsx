@@ -23,6 +23,7 @@ import {
   sourceNeedsLookups,
   sourceResource,
 } from '@/app/_components/crm/dashboard/widget-meta'
+import { FunnelChart } from '@/app/_components/crm/dashboard/widgets/funnel-chart'
 import { SteelIcon } from '@/components/icon/icon'
 import { cn } from '@/lib/utils'
 import { useDashboardLookups } from '@/src/hooks/use-crm-dashboard-tv'
@@ -309,6 +310,21 @@ export function ChartWidget({
         },
       ]
     : []
+
+  /* --------------------------------- funnel -------------------------------- */
+  if (config.chartType === 'funnel') {
+    return (
+      <FunnelChart
+        steps={data.categories.map((label) => ({
+          label,
+          value: data.totalOf(label),
+        }))}
+        config={config}
+        palette={palette}
+        tv={tv}
+      />
+    )
+  }
 
   /* ---------------------------------- pie ---------------------------------- */
   if (config.chartType === 'pie') {

@@ -117,3 +117,15 @@ describe('widgetConfigSchema()', () => {
     expect(widgetConfigSchema('RICH_TEXT')).toBe(RichTextConfigSchema)
   })
 })
+
+describe('ChartConfigSchema funnel', () => {
+  it('should accept the funnel chart type', () => {
+    const result = ChartConfigSchema.safeParse({
+      chartType: 'funnel',
+      source: 'opportunities',
+      xField: 'stageId',
+    })
+    expect(result.success).toBe(true)
+    expect(result.data?.chartType).toBe('funnel')
+  })
+})
