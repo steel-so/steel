@@ -38,6 +38,8 @@ export const CrmOpportunityDTO = dto(
     position: z.number(),
     createdAt: dateTime(),
     updatedAt: dateTime(),
+    wonAt: dateTime().nullable(),
+    stageChangedAt: dateTime().nullable(),
     customFields: z.record(z.string(), z.unknown()).optional().meta({
       description:
         'Valores de campos personalizados achatados, chave `cf_<definitionId>`.',

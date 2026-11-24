@@ -180,6 +180,8 @@ export function opportunity(
     position: 0,
     createdAt: T,
     updatedAt: T,
+    wonAt: null,
+    stageChangedAt: null,
     ...over,
   }
 }

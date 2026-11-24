@@ -67,6 +67,10 @@ export function refLabelsOf(
     createdById: users,
     updatedById: users,
     stage: new Map(LEAD_STAGE_LABELS),
+    closeResult: new Map([
+      ['WON', 'Ganho'],
+      ['LOST', 'Perdido'],
+    ]),
   }
 }
 

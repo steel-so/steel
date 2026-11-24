@@ -18,6 +18,10 @@ export interface CrmOpportunityDTO {
   position: number
   createdAt: string
   updatedAt: string
+  /** Quando entrou numa etapa ganha (limpo ao sair dela). */
+  wonAt: string | null
+  /** Última troca de etapa. */
+  stageChangedAt: string | null
   /** Valores de campos customizados achatados, chave `cf_<definitionId>`. */
   customFields?: Record<string, unknown>
 }

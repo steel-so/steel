@@ -27,6 +27,10 @@ export function toCrmOpportunityDTO(
     position: opportunity.position,
     createdAt: opportunity.createdAt.toISOString(),
     updatedAt: opportunity.updatedAt.toISOString(),
+    wonAt: opportunity.wonAt ? opportunity.wonAt.toISOString() : null,
+    stageChangedAt: opportunity.stageChangedAt
+      ? opportunity.stageChangedAt.toISOString()
+      : null,
   }
 }
 

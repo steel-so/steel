@@ -133,6 +133,9 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'probability', label: 'Probabilidade' },
     { key: 'source', label: 'Origem' },
     { key: 'closeDate', label: 'Fechamento' },
+    { key: 'companyId', label: 'Empresa' },
+    { key: 'wonAt', label: 'Ganha em' },
+    { key: 'stageChangedAt', label: 'Última troca de etapa' },
     { key: 'createdAt', label: 'Criado em' },
   ],
   leads: [
@@ -143,6 +146,10 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'stage', label: 'Etapa' },
     { key: 'ownerId', label: 'Responsável' },
     { key: 'score', label: 'Pontuação' },
+    { key: 'closeResult', label: 'Resultado do fechamento' },
+    { key: 'closedAmount', label: 'Valor fechado' },
+    { key: 'closedAt', label: 'Fechado em' },
+    { key: 'lostReason', label: 'Motivo da perda' },
     { key: 'createdAt', label: 'Criado em' },
   ],
   tasks: [
@@ -150,6 +157,7 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
     { key: 'status', label: 'Status' },
     { key: 'assigneeId', label: 'Responsável' },
     { key: 'dueDate', label: 'Vencimento' },
+    { key: 'opportunityId', label: 'Oportunidade' },
     { key: 'createdAt', label: 'Criado em' },
   ],
   notes: [
