@@ -17,6 +17,7 @@ const PROPOSAL_SELECT = {
   status: true,
   responsibleId: true,
   validUntil: true,
+  sentAt: true,
   acceptedAt: true,
   expiredAt: true,
   createdAt: true,

@@ -138,6 +138,7 @@ export function toCrmProposalDashboardRow(
   const isOpen = p.status === 'SENT' || p.status === 'VIEWED'
   const first = p.views[0]?.createdAt ?? null
   const last = p.views[p.views.length - 1]?.createdAt ?? null
+  const sentOrCreated = p.sentAt ?? p.createdAt
   const daysToExpire =
     isOpen && p.validUntil ? daysBetween(now, p.validUntil) : null
   let acceptedPct: number | null = null
@@ -164,11 +165,15 @@ export function toCrmProposalDashboardRow(
     viewCount: p.views.length,
     isExpiringSoon: daysToExpire !== null && daysToExpire <= 3,
     daysToExpire,
-    daysToFirstView: first ? daysBetween(p.createdAt, first) : null,
-    daysToAccept: p.acceptedAt ? daysBetween(p.createdAt, p.acceptedAt) : null,
+    daysToSend: p.sentAt ? daysBetween(p.createdAt, p.sentAt) : null,
+    daysToFirstView: first ? daysBetween(sentOrCreated, first) : null,
+    daysToAccept: p.acceptedAt
+      ? daysBetween(sentOrCreated, p.acceptedAt)
+      : null,
     ageDays: daysBetween(p.createdAt, now),
     validUntil: iso(p.validUntil),
     createdAt: p.createdAt.toISOString(),
+    sentAt: iso(p.sentAt),
     firstViewedAt: iso(first),
     lastViewedAt: iso(last),
     acceptedAt: iso(p.acceptedAt),

@@ -516,7 +516,9 @@ export const CrmProposalService = {
       )
     }
 
-    const result = await CrmProposalRepository.setStatus(proposalId, 'SENT')
+    const result = await CrmProposalRepository.setStatus(proposalId, 'SENT', {
+      sentAt: existing.value.sentAt ?? new Date(),
+    })
     if (!result.ok) return result
 
     auditMutation({

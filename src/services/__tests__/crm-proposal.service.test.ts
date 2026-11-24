@@ -208,7 +208,30 @@ describe('CrmProposalService', () => {
 
       const dto = expectOk(await CrmProposalService.send('u1', 'ws1', 'p1'))
       expect(dto.status).toBe('SENT')
-      expect(mockedProposalRepo.setStatus).toHaveBeenCalledWith('p1', 'SENT')
+      expect(mockedProposalRepo.setStatus).toHaveBeenCalledWith('p1', 'SENT', {
+        sentAt: expect.any(Date),
+      })
+    })
+
+    it('should keep the original sentAt when the proposal is sent again', async () => {
+      mockedMembershipRepo.findByUserAndWorkspace.mockResolvedValue(
+        ok(createFakeMembership({ role: 'MEMBER' })),
+      )
+      const firstSent = new Date('2026-10-02T12:00:00.000Z')
+      const existing = fakeProposalWithSections({
+        id: 'p1',
+        status: 'DRAFT',
+        sentAt: firstSent,
+      })
+      mockedProposalRepo.findById.mockResolvedValue(ok(existing))
+      mockedProposalRepo.setStatus.mockResolvedValue(
+        ok({ ...existing, status: 'SENT' }),
+      )
+
+      expectOk(await CrmProposalService.send('u1', 'ws1', 'p1'))
+      expect(mockedProposalRepo.setStatus).toHaveBeenCalledWith('p1', 'SENT', {
+        sentAt: firstSent,
+      })
     })
   })
 

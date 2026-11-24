@@ -191,11 +191,12 @@ export const CrmProposalRepository = {
   async setStatus(
     id: string,
     status: CrmProposal['status'],
+    extra?: { sentAt?: Date },
   ): Promise<Result<CrmProposalWithSections>> {
     try {
       const proposal = await prisma.crmProposal.update({
         where: { id },
-        data: { status },
+        data: { status, ...extra },
         include: { sections: { orderBy: { order: 'asc' } } },
       })
       return ok(proposal)

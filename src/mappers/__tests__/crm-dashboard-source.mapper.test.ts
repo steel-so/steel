@@ -30,6 +30,7 @@ function proposal(over: Partial<CrmDashboardProposal> = {}) {
     status: 'ACCEPTED',
     responsibleId: 'u1',
     validUntil: null,
+    sentAt: d('2026-10-02T12:00:00.000Z'),
     acceptedAt: d('2026-10-05T12:00:00.000Z'),
     expiredAt: null,
     createdAt: d('2026-10-01T12:00:00.000Z'),
@@ -58,8 +59,10 @@ describe('toCrmProposalDashboardRow', () => {
       acceptedPct: 100,
       viewCount: 2,
       isViewed: true,
-      daysToFirstView: 1,
-      daysToAccept: 4,
+      daysToSend: 1,
+      daysToFirstView: 0,
+      daysToAccept: 3,
+      sentAt: '2026-10-02T12:00:00.000Z',
       firstViewedAt: '2026-10-02T12:00:00.000Z',
       lastViewedAt: '2026-10-03T12:00:00.000Z',
     })
@@ -82,6 +85,13 @@ describe('toCrmProposalDashboardRow', () => {
     expect(row.daysToExpire).toBe(2)
     expect(row.isExpiringSoon).toBe(true)
     expect(row.daysToAccept).toBeNull()
+  })
+
+  it('counts from creation when the proposal has no sentAt', () => {
+    const row = toCrmProposalDashboardRow(proposal({ sentAt: null }), NOW)
+    expect(row.sentAt).toBeNull()
+    expect(row.daysToSend).toBeNull()
+    expect(row.daysToAccept).toBe(4)
   })
 
   it('scores rejected and expired proposals as 0', () => {

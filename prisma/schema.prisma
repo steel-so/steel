@@ -3598,6 +3598,9 @@ model CrmProposal {
   /// sem validade — inclusive as propostas legadas, anteriores à validade padrão.
   validUntil     DateTime?         @map("valid_until")
   status         CrmProposalStatus @default(DRAFT)
+  /// Quando a proposta foi enviada ao cliente (primeiro envio). `null` =
+  /// rascunho; nas anteriores a este campo, é uma aproximação do backfill.
+  sentAt         DateTime?         @map("sent_at")
   /// Aceite registrado pelo cliente na página pública.
   acceptedAt     DateTime?         @map("accepted_at")
   acceptedByName String?           @map("accepted_by_name")

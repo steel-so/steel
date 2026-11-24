@@ -38,6 +38,7 @@ export function createFakeCrmProposal(
     responsibleId: createId(),
     validUntil: null,
     status: 'DRAFT',
+    sentAt: null,
     acceptedAt: null,
     acceptedByName: null,
     expiredAt: null,

@@ -32,11 +32,13 @@ export interface CrmProposalDashboardRow {
   isExpiringSoon: boolean
   /** Days until `validUntil` for open proposals (negative = overdue). */
   daysToExpire: number | null
+  daysToSend: number | null
   daysToFirstView: number | null
   daysToAccept: number | null
   ageDays: number
   validUntil: string | null
   createdAt: string
+  sentAt: string | null
   firstViewedAt: string | null
   lastViewedAt: string | null
   acceptedAt: string | null
