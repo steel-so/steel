@@ -63,7 +63,7 @@ import {
 import { WhatsAppReplyKnowledgeService } from './whatsapp-reply-knowledge.service'
 import { WhatsAppSlaService } from './whatsapp-sla.service'
 
-const HISTORY_LIMIT = 20
+const HISTORY_LIMIT = 100
 
 // Injeção direta no prompt (sem embeddings/busca — decisão registrada no
 // plano: poucos documentos por workspace no caso de uso real). Limite de

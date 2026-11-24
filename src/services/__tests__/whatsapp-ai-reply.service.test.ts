@@ -337,6 +337,24 @@ describe('WhatsAppAiReplyService.generateReply()', () => {
     })
   })
 
+  it('should read up to the last 100 messages of the conversation', async () => {
+    arrange()
+    const chat = vi.fn(async () => response('Ok'))
+    mockedAiUsage.prepare.mockResolvedValue(ok(preparedCall(chat)))
+
+    expectOk(
+      await WhatsAppAiReplyService.generateReply({
+        conversationId: CONV,
+        messageId: 'm1',
+      }),
+    )
+
+    expect(mockedMessageRepo.listLatestByConversation).toHaveBeenCalledWith(
+      CONV,
+      100,
+    )
+  })
+
   it('should read the reply against what the company sent first', async () => {
     arrange()
     mockedMessageRepo.listLatestByConversation.mockResolvedValue(
