@@ -116,6 +116,15 @@ export const VIEW_SOURCES = [
   'sd-ticket-costs',
   'sd-ticket-events',
   'sd-kb-articles',
+  // CRM — flattened rows served by `crm/dashboards/sources/<source>`
+  // (names resolved, derived booleans and day counts).
+  'crm-proposals',
+  'crm-contracts',
+  'crm-charges',
+  'crm-activities',
+  'crm-quotas',
+  'crm-health',
+  'crm-campaigns',
 ] as const
 export type ViewSource = (typeof VIEW_SOURCES)[number]
 

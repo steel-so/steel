@@ -12,6 +12,11 @@ import {
   TextFontIcon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import {
+  CRM_SOURCE_FIELDS,
+  CRM_SOURCE_LABELS,
+  CRM_SOURCE_PATH,
+} from '@/app/_components/crm/dashboard/crm-source-fields'
+import {
   SD_SOURCE_FIELDS,
   SD_SOURCE_LABELS,
   SD_SOURCE_PATH,
@@ -195,6 +200,7 @@ export const VIEW_SOURCE_FIELDS: Record<ViewSource, ViewField[]> = {
   ],
   ...WA_SOURCE_FIELDS,
   ...SD_SOURCE_FIELDS,
+  ...CRM_SOURCE_FIELDS,
 }
 
 export const VIEW_SOURCE_LABELS: Record<ViewSource, string> = {
@@ -209,6 +215,7 @@ export const VIEW_SOURCE_LABELS: Record<ViewSource, string> = {
   'whatsapp-broadcasts': 'Transmissões do WhatsApp',
   ...WA_SOURCE_LABELS,
   ...SD_SOURCE_LABELS,
+  ...CRM_SOURCE_LABELS,
 }
 
 /** Labels do chart: view sources + "socials". */
@@ -254,6 +261,13 @@ export const SOURCE_MODULE: Record<
   'sd-ticket-costs': 'SERVICE_DESK',
   'sd-ticket-events': 'SERVICE_DESK',
   'sd-kb-articles': 'SERVICE_DESK',
+  'crm-proposals': 'CRM',
+  'crm-contracts': 'CRM',
+  'crm-charges': 'CRM',
+  'crm-activities': 'CRM',
+  'crm-quotas': 'CRM',
+  'crm-health': 'CRM',
+  'crm-campaigns': 'CRM',
 }
 
 /** Módulo do dashboard pelo segmento de API (`crm`, `whatsapp`, `servicedesk`). */
@@ -297,6 +311,7 @@ const SOURCE_PATH: Record<ViewSource, string> = {
   'whatsapp-broadcasts': 'whatsapp/broadcasts',
   ...WA_SOURCE_PATH,
   ...SD_SOURCE_PATH,
+  ...CRM_SOURCE_PATH,
 }
 
 /**
