@@ -103,6 +103,24 @@ const Person = z.object({
   image: z.string().nullable(),
 })
 
+export const CrmDashboardSourceRowDTO = dto(
+  'CrmDashboardSourceRow',
+  z.record(z.string(), z.unknown()).meta({
+    description:
+      'Linha achatada da fonte, com rótulos em pt-BR e campos derivados (`types/crm-dashboard-source.d.ts`). `crm-proposals`: status, valor, responsável, `isAccepted`, `acceptedPct` (0/100 — a média é a taxa de aceite), `viewCount`, `daysToAccept`. `crm-contracts`: valor, `daysToEnd`, `isExpiringSoon`, `renewedPct`. `crm-charges`: Pix/boleto, `isPaid`, `paidPct`, `daysToPay`. `crm-activities`: ação, entidade, usuário. `crm-quotas`: meta, atingido (negócios ganhos por `wonAt`), `attainmentPct`. `crm-health`: clientes e oportunidades com `riskScore`, `healthScore`, `level`. `crm-campaigns`: envio, entrega, abertura, cliques e conversão por campanha.',
+    example: {
+      id: 'ckp1',
+      name: 'Proposta Acme',
+      status: 'Aceita',
+      responsible: 'Ana',
+      amount: 1500,
+      isAccepted: true,
+      acceptedPct: 100,
+      daysToAccept: 4,
+    },
+  }),
+)
+
 export const CrmDashboardLookupsDTO = dto(
   'CrmDashboardLookups',
   z.object({

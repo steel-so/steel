@@ -8,6 +8,7 @@ import {
   UpdateCrmDashboardSchema,
   UpdateCrmDashboardWidgetSchema,
 } from '@/src/schemas/crm-dashboard.schema'
+import { CRM_DASHBOARD_SOURCES } from '@/src/schemas/crm-dashboard-source.schema'
 import {
   CreateCrmReportSchema,
   UpdateCrmReportSchema,
@@ -18,6 +19,7 @@ import type { ErrorEntry, RouteConfig } from '../../registry'
 import {
   CrmDashboardDTO,
   CrmDashboardLookupsDTO,
+  CrmDashboardSourceRowDTO,
   CrmDashboardTvLinkDTO,
   CrmDashboardWidgetDTO,
   CrmReportDataDTO,
@@ -277,6 +279,36 @@ export const crmReportsRoutes: RouteConfig[] = [
       200: { description: 'Nomes.', schema: CrmDashboardLookupsDTO },
     },
     errors: CRM_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/crm/dashboards/sources/{source}',
+    tags: TAGS,
+    summary: 'Dados de uma fonte dos dashboards',
+    description: describe(
+      'Linhas achatadas que os widgets agregam no navegador (contagem, soma, média, baldes de data, período, comparação): propostas, contratos, cobranças, atividades, metas, saúde e campanhas. Histórico de 400 dias (metas e saúde são o estado atual), com teto de linhas por fonte. Só dados do workspace; não são servidas no modo TV.',
+      crmAccess('dashboards', 'VIEW'),
+    ),
+    params: {
+      source: {
+        description: 'Fonte de dados.',
+        schema: { type: 'string', enum: [...CRM_DASHBOARD_SOURCES] },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Linhas.',
+        schema: z.array(CrmDashboardSourceRowDTO),
+      },
+    },
+    errors: [
+      ...CRM_ERRORS,
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Fonte de dados desconhecida',
+        when: '`source` fora da lista',
+      },
+    ],
   },
   {
     method: 'post',
