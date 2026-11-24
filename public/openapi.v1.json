@@ -10567,6 +10567,28 @@
             "type": "string",
             "format": "date-time"
           },
+          "wonAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stageChangedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customFields": {
             "description": "Valores de campos personalizados achatados, chave `cf_<definitionId>`.",
             "type": "object",
@@ -10590,7 +10612,9 @@
           "updatedById",
           "position",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "wonAt",
+          "stageChangedAt"
         ]
       },
       "CrmPerson": {

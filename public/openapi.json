@@ -38108,7 +38108,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -38338,7 +38338,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -40504,6 +40504,81 @@
         ]
       }
     },
+    "/workspaces/{id}/crm/dashboards/sources/{source}": {
+      "get": {
+        "tags": ["CRM · Relatórios e dashboards"],
+        "summary": "Dados de uma fonte dos dashboards",
+        "operationId": "getWorkspacesByIdCrmDashboardsSourcesBySource",
+        "description": "Linhas achatadas que os widgets agregam no navegador (contagem, soma, média, baldes de data, período, comparação): propostas, contratos, cobranças, atividades, metas, saúde e campanhas. Histórico de 400 dias (metas e saúde são o estado atual), com teto de linhas por fonte. Só dados do workspace; não são servidas no modo TV.\n\nAcesso: sessão + membro do workspace com o módulo **CRM** habilitado e a permissão `dashboards` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "source",
+            "in": "path",
+            "required": true,
+            "description": "Fonte de dados.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "crm-proposals",
+                "crm-contracts",
+                "crm-charges",
+                "crm-activities",
+                "crm-quotas",
+                "crm-health",
+                "crm-campaigns"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Linhas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmDashboardSourceRow"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
     "/workspaces/{id}/crm/dashboards/templates": {
       "post": {
         "tags": ["CRM · Relatórios e dashboards"],
@@ -41151,7 +41226,7 @@
                         "properties": {
                           "chartType": {
                             "type": "string",
-                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate"]
+                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate", "funnel"]
                           },
                           "source": {
                             "default": "companies",
@@ -41188,6 +41263,13 @@
                               "sd-ticket-costs",
                               "sd-ticket-events",
                               "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns",
                               "socials"
                             ]
                           },
@@ -41413,7 +41495,14 @@
                               "sd-tickets",
                               "sd-ticket-costs",
                               "sd-ticket-events",
-                              "sd-kb-articles"
+                              "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns"
                             ]
                           },
                           "fields": {
@@ -47082,7 +47171,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -47165,7 +47254,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -110248,7 +110337,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_4"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -110590,7 +110679,7 @@
                         "properties": {
                           "chartType": {
                             "type": "string",
-                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate"]
+                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate", "funnel"]
                           },
                           "source": {
                             "default": "companies",
@@ -110627,6 +110716,13 @@
                               "sd-ticket-costs",
                               "sd-ticket-events",
                               "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns",
                               "socials"
                             ]
                           },
@@ -110852,7 +110948,14 @@
                               "sd-tickets",
                               "sd-ticket-costs",
                               "sd-ticket-events",
-                              "sd-kb-articles"
+                              "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns"
                             ]
                           },
                           "fields": {
@@ -133995,7 +134098,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_17"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -134071,7 +134174,7 @@
             "$ref": "#/components/responses/404_SD_TICKET_SOURCE_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_10"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -156853,7 +156956,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_27"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_14"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_9"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -157367,7 +157470,7 @@
                         "properties": {
                           "chartType": {
                             "type": "string",
-                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate"]
+                            "enum": ["vertical", "horizontal", "line", "pie", "aggregate", "funnel"]
                           },
                           "source": {
                             "default": "companies",
@@ -157404,6 +157507,13 @@
                               "sd-ticket-costs",
                               "sd-ticket-events",
                               "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns",
                               "socials"
                             ]
                           },
@@ -157629,7 +157739,14 @@
                               "sd-tickets",
                               "sd-ticket-costs",
                               "sd-ticket-events",
-                              "sd-kb-articles"
+                              "sd-kb-articles",
+                              "crm-proposals",
+                              "crm-contracts",
+                              "crm-charges",
+                              "crm-activities",
+                              "crm-quotas",
+                              "crm-health",
+                              "crm-campaigns"
                             ]
                           },
                           "fields": {
@@ -162359,7 +162476,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_AGENT_REPORT_DISABLED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -165141,7 +165258,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_11"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -172177,7 +172294,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_5"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -172261,7 +172378,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_12"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -202449,6 +202566,29 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — `source` fora da lista",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Fonte de dados desconhecida",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_10": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — Corpo inválido ou JSON malformado",
                 "value": {
                   "success": false,
@@ -202468,47 +202608,6 @@
               },
               "VALIDATION_ERROR_2": {
                 "summary": "VALIDATION_ERROR — `templateId` não é um layout do catálogo (`promo-announcement`, `newsletter-update`)",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Dados inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "details": [
-                      {
-                        "code": "too_small",
-                        "path": ["name"],
-                        "message": "Nome deve ter ao menos 2 caracteres"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "422_VALIDATION_ERROR_10": {
-        "description": "Dados inválidos: `VALIDATION_ERROR`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — Query inválida",
-                "value": {
-                  "success": false,
-                  "statusCode": 422,
-                  "message": "Parâmetros inválidos",
-                  "error": {
-                    "code": "VALIDATION_ERROR"
-                  }
-                }
-              },
-              "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Parâmetros inválidos",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -202549,7 +202648,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
+                "summary": "VALIDATION_ERROR — Parâmetros inválidos",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -202590,7 +202689,7 @@
                 }
               },
               "VALIDATION_ERROR_2": {
-                "summary": "VALIDATION_ERROR — `userId` não é membro do workspace",
+                "summary": "VALIDATION_ERROR — Período invertido ou maior que 1 ano",
                 "value": {
                   "success": false,
                   "statusCode": 422,
@@ -202620,13 +202719,31 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — `range` fora de `7d`/`30d`/`90d`",
+                "summary": "VALIDATION_ERROR — Query inválida",
                 "value": {
                   "success": false,
                   "statusCode": 422,
-                  "message": "Janela de tempo inválida",
+                  "message": "Parâmetros inválidos",
                   "error": {
                     "code": "VALIDATION_ERROR"
+                  }
+                }
+              },
+              "VALIDATION_ERROR_2": {
+                "summary": "VALIDATION_ERROR — `userId` não é membro do workspace",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Dados inválidos",
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "details": [
+                      {
+                        "code": "too_small",
+                        "path": ["name"],
+                        "message": "Nome deve ter ao menos 2 caracteres"
+                      }
+                    ]
                   }
                 }
               }
@@ -202643,11 +202760,11 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
-                "summary": "VALIDATION_ERROR — `source` fora da lista",
+                "summary": "VALIDATION_ERROR — `range` fora de `7d`/`30d`/`90d`",
                 "value": {
                   "success": false,
                   "statusCode": 422,
-                  "message": "Fonte de dados desconhecida",
+                  "message": "Janela de tempo inválida",
                   "error": {
                     "code": "VALIDATION_ERROR"
                   }
@@ -227613,6 +227730,21 @@
         },
         "required": ["pipelines", "stages", "users"]
       },
+      "CrmDashboardSourceRow": {
+        "type": "object",
+        "additionalProperties": {},
+        "description": "Linha achatada da fonte, com rótulos em pt-BR e campos derivados (`types/crm-dashboard-source.d.ts`). `crm-proposals`: status, valor, responsável, `isAccepted`, `acceptedPct` (0/100 — a média é a taxa de aceite), `viewCount`, `daysToAccept`. `crm-contracts`: valor, `daysToEnd`, `isExpiringSoon`, `renewedPct`. `crm-charges`: Pix/boleto, `isPaid`, `paidPct`, `daysToPay`. `crm-activities`: ação, entidade, usuário. `crm-quotas`: meta, atingido (negócios ganhos por `wonAt`), `attainmentPct`. `crm-health`: clientes e oportunidades com `riskScore`, `healthScore`, `level`. `crm-campaigns`: envio, entrega, abertura, cliques e conversão por campanha.",
+        "example": {
+          "id": "ckp1",
+          "name": "Proposta Acme",
+          "status": "Aceita",
+          "responsible": "Ana",
+          "amount": 1500,
+          "isAccepted": true,
+          "acceptedPct": 100,
+          "daysToAccept": 4
+        }
+      },
       "CrmDashboardTvBoot": {
         "type": "object",
         "properties": {
@@ -236661,6 +236793,28 @@
             "type": "string",
             "format": "date-time"
           },
+          "wonAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stageChangedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customFields": {
             "description": "Valores de campos personalizados achatados, chave `cf_<definitionId>`.",
             "type": "object",
@@ -236684,7 +236838,9 @@
           "updatedById",
           "position",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "wonAt",
+          "stageChangedAt"
         ]
       },
       "CrmOpportunityHealth": {
