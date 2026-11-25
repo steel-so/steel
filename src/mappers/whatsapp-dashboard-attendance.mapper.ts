@@ -133,6 +133,16 @@ function minutesBetween(from: Date | null, to: Date | null): number | null {
   return delta < 0 ? null : Math.round(delta / MINUTE_MS)
 }
 
+/**
+ * `+55 11 99999-0000` for a Brazilian number; `+<digits>` for another; `null`
+ * when the id is not a phone (a BSUID of a username contact).
+ */
+function formatContactPhone(waId: string): string | null {
+  if (!/^\d{8,15}$/.test(waId)) return null
+  const br = /^55(\d{2})(\d{4,5})(\d{4})$/.exec(waId)
+  return br ? `+55 ${br[1]} ${br[2]}-${br[3]}` : `+${waId}`
+}
+
 const SENTIMENT_POSITIVE_THRESHOLD = 0.2
 const SENTIMENT_NEGATIVE_THRESHOLD = -0.2
 
@@ -172,6 +182,8 @@ function toAttendanceRow(
     isOpen,
     connection: conversation.connection.label,
     provider: WA_PROVIDER_LABELS[conversation.connection.provider],
+    contactName: conversation.contact.name?.trim() || null,
+    contactPhone: formatContactPhone(conversation.contact.waId),
     team: conversation.team?.name ?? null,
     attendant: conversation.assignedUser?.name ?? null,
     isUnassigned: conversation.assignedUserId === null,

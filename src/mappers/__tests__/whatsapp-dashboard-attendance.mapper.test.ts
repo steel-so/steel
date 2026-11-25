@@ -51,6 +51,8 @@ describe('toWaAttendanceRows', () => {
       isOpen: true,
       connection: 'Principal',
       provider: 'Meta',
+      contactName: 'Contato Teste',
+      contactPhone: '+55 11 99999-0000',
       team: null,
       attendant: null,
       isUnassigned: true,

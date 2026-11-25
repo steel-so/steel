@@ -215,6 +215,7 @@ describe('WhatsAppDashboardAttendanceRepository.attendances()', () => {
       team: { name: 'Retenção' },
       aiCampaign: { name: 'Santander' },
       connection: { label: 'Principal', provider: 'META' },
+      contact: { name: null, waId: expect.any(String) },
     })
     expect(rows[3]).toMatchObject({
       assignedUser: null,

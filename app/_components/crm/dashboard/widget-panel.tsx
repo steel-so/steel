@@ -1058,19 +1058,27 @@ function ChartEditor({
           </div>
           <Labeled label='Formato do valor'>
             <Select
-              value={c.valueFormat ?? 'number'}
+              value={c.valueFormat ?? 'auto'}
               onValueChange={(v) =>
-                set({ valueFormat: v === 'duration' ? 'duration' : undefined })
+                set({
+                  valueFormat:
+                    v === 'auto' ? undefined : (v as 'number' | 'duration'),
+                })
               }
             >
               <SelectTrigger className='w-full'>
                 <span>
                   {c.valueFormat === 'duration'
                     ? 'Duração (minutos → h, d)'
-                    : 'Número'}
+                    : c.valueFormat === 'number'
+                      ? 'Número'
+                      : 'Automático'}
                 </span>
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value='auto'>
+                  Automático (campos de tempo viram h, d)
+                </SelectItem>
                 <SelectItem value='number'>Número</SelectItem>
                 <SelectItem value='duration'>
                   Duração (minutos → h, d)

@@ -6,8 +6,9 @@ import { dbError } from './db-error'
 /**
  * Bulk reads for the attendance and team sources of the Comunicação
  * (WhatsApp) dashboards. Prisma only: the window and ceilings come from the
- * service, and the flattening and derivation live in the mapper. No query
- * selects the contact (name, phone, waId) nor any message.
+ * service, and the flattening and derivation live in the mapper. Only the
+ * attendances query selects the contact (name and number); no query selects
+ * the text of a message.
  */
 
 const NAME = { select: { name: true } } as const
@@ -42,6 +43,9 @@ export const WA_DASHBOARD_ATTENDANCE_SELECT = {
   team: NAME,
   aiCampaign: NAME,
   connection: { select: { label: true, provider: true } },
+  // Only the attendances source carries the contact's name and number (the
+  // TV link strips them): the table of who is waiting needs to name them.
+  contact: { select: { name: true, waId: true } },
 } as const satisfies Prisma.WhatsAppConversationSelect
 
 export type WaDashboardAttendance = Prisma.WhatsAppConversationGetPayload<{

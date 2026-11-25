@@ -31,6 +31,7 @@ export function createFakeWaDashboardAttendance(
     team: null,
     aiCampaign: null,
     connection: { label: 'Principal', provider: 'META' },
+    contact: { name: 'Contato Teste', waId: '5511999990000' },
     ...overrides,
   }
 }

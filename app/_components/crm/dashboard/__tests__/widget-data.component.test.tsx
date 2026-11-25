@@ -317,6 +317,17 @@ describe('limits, sorting and compare', () => {
     expect(formatDurationMinutes(28763)).toBe('19d 23h')
     expect(formatAggregate(114.3, { valueFormat: 'duration' })).toBe('1h 54min')
     expect(formatCell('waitingMinutes', 1500)).toBe('1d 1h')
+    expect(formatCell('ageHours', 30)).toBe('1d 6h')
+    expect(formatCell('ageDays', 3)).toBe('3d')
+    expect(formatCell('durationSeconds', 135)).toBe('2min 15s')
+    expect(formatCell('resolutionRemainingMinutes', -65)).toBe('-1h 5min')
+    expect(formatAggregate(90, { yField: 'resolutionHours' })).toBe('3d 18h')
+    expect(
+      formatAggregate(5, { yField: 'openMinutes', aggregation: 'count' }),
+    ).toBe('5')
+    expect(
+      formatAggregate(90, { yField: 'openMinutes', valueFormat: 'number' }),
+    ).toBe('90')
     expect(formatCell('unreadCount', 1500)).toBe('1500')
   })
 

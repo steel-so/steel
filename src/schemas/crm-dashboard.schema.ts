@@ -263,8 +263,9 @@ export const ChartConfigSchema = z.object({
   /** Casas decimais do número exibido (padrão: 0 na contagem, até 1 na média). */
   decimals: z.number().int().min(0).max(4).optional(),
   /**
-   * Como o valor é exibido: `duration` lê o número como minutos e mostra
-   * "45min", "1h 54min", "2d 3h" (prefixo/sufixo não se aplicam).
+   * Como o valor é exibido. Ausente: campos de tempo (minutos, horas, dias)
+   * viram "45min", "1h 54min", "2d 3h" sozinhos. `duration` força duração
+   * (lê o número como minutos); `number` força o número puro.
    */
   valueFormat: z.enum(['number', 'duration']).optional(),
   /** Cor de destaque do número do "aggregate" (ex.: vermelho p/ violados). */

@@ -26,6 +26,8 @@ describe('whatsapp dashboard TV rows', () => {
 
   it('drops the free text an attendant types', () => {
     expect(waTvSafeKeys('whatsapp-attendances').has('closeReason')).toBe(false)
+    expect(waTvSafeKeys('whatsapp-attendances').has('contactName')).toBe(false)
+    expect(waTvSafeKeys('whatsapp-attendances').has('contactPhone')).toBe(false)
     expect(waTvSafeKeys('whatsapp-attendances').has('closeStatus')).toBe(true)
     expect(waTvSafeKeys('whatsapp-conversation-events').has('reason')).toBe(
       false,

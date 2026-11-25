@@ -11,12 +11,13 @@ type Row = Record<string, unknown>
 
 /**
  * Keys that never reach a TV screen even though the dashboards show them:
- * free text an attendant types, which can carry a customer's name.
+ * free text an attendant types, which can carry a customer's name, and the
+ * name and number of the contact of an attendance.
  * (`detail` is listed defensively; the event rows call it `reason`.)
  */
 const TV_EXCLUDED_KEYS: Partial<Record<WaDashboardSource, readonly string[]>> =
   {
-    'whatsapp-attendances': ['closeReason'],
+    'whatsapp-attendances': ['closeReason', 'contactName', 'contactPhone'],
     'whatsapp-conversation-events': ['reason', 'detail'],
   }
 

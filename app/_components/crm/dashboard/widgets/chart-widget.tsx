@@ -15,7 +15,8 @@ import {
   aggregateCompare,
   aggregateTotal,
   formatAggregate,
-  formatDurationMinutes,
+  durationUnitSeconds,
+  formatDurationSeconds,
   type Row,
   refLabelsOf,
   withDerivedFields,
@@ -132,6 +133,7 @@ export function AggregateTile({
   tv: boolean
 }) {
   const formatted = formatAggregate(value, config)
+  const isDuration = durationUnitSeconds(config) !== null
   const isUp = changePct !== null && changePct >= 0
   const caption = tv ? null : config.xAxisName
   return (
@@ -150,9 +152,9 @@ export function AggregateTile({
           ...(tv ? { fontSize: 'min(62cqh, 26cqw)' } : {}),
         }}
       >
-        {config.valueFormat === 'duration' ? null : config.prefix}
+        {isDuration ? null : config.prefix}
         {formatted}
-        {config.valueFormat === 'duration' ? null : config.suffix}
+        {isDuration ? null : config.suffix}
       </span>
       {caption ? (
         <span className='mt-1 text-xs uppercase tracking-wide'>{caption}</span>
@@ -257,9 +259,11 @@ export function ChartWidget({
   }
 
   const isHorizontal = config.chartType === 'horizontal'
+  const durationUnit = durationUnitSeconds(config)
   const durationTick =
-    config.valueFormat === 'duration'
-      ? (value: string | number | Date) => formatDurationMinutes(Number(value))
+    durationUnit !== null
+      ? (value: string | number | Date) =>
+          formatDurationSeconds(Number(value) * durationUnit)
       : undefined
   const categoryLegend = config.xAxisName || undefined
   const valueLegend = config.yAxisName || undefined

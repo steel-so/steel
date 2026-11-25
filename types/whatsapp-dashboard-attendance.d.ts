@@ -4,7 +4,9 @@
  * Labels come in pt-BR (the widget engine groups/filters by text). `*Pct`
  * fields are 0 or 100 (or `null` when they do not apply): their **average**
  * is the rate. Times are in minutes. No row carries the contact's name,
- * phone or any message text, so the sources are safe for a TV.
+ * phone or any message text, so the sources are safe for a TV. The one
+ * exception is `whatsapp-attendances`, whose `contactName` and
+ * `contactPhone` are removed from the rows of a TV link.
  */
 
 /** Positivo, Neutro, Negativo, Sem classificação. */
@@ -24,6 +26,13 @@ export interface WaAttendanceDashboardRow {
   connection: string
   /** Z-API, Meta, Widget. */
   provider: string
+  /**
+   * Name and number of the contact. Personal data: shown to the logged-in
+   * dashboards only, never on a TV link.
+   */
+  contactName: string | null
+  /** `+55 11 99999-0000`; `null` for a contact without a phone. */
+  contactPhone: string | null
   team: string | null
   attendant: string | null
   /** Open or closed without an assignee. */

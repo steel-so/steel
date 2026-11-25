@@ -1,7 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { formatAggregate } from '@/app/_components/crm/dashboard/widget-data'
+import {
+  durationUnitSeconds,
+  formatAggregate,
+} from '@/app/_components/crm/dashboard/widget-data'
 import { cn } from '@/lib/utils'
 import type { ChartConfig } from '@/src/schemas/crm-dashboard.schema'
 
@@ -57,7 +60,7 @@ export function FunnelChart({
   const first = values[0] || 0
   const color = palette[0]
   const fmt = (v: number) =>
-    config.valueFormat === 'duration'
+    durationUnitSeconds(config) !== null
       ? formatAggregate(v, config)
       : `${config.prefix}${formatAggregate(v, config)}${config.suffix}`
   const pct = (a: number, b: number) =>

@@ -75,20 +75,14 @@ export function refLabelsOf(
 }
 
 /** Texto de uma célula, trocando ids conhecidos pelo nome. */
-/** Colunas em minutos que a tabela mostra como duração (h, d). */
-const DURATION_CELL_FIELDS = new Set([
-  'openMinutes',
-  'waitingMinutes',
-  'avgResponseMinutes',
-])
-
 export function formatCell(
   field: string,
   value: unknown,
   labels?: RefLabels,
 ): string {
-  if (DURATION_CELL_FIELDS.has(field) && typeof value === 'number') {
-    return formatDurationMinutes(value)
+  const unit = DURATION_FIELD_SECONDS[field]
+  if (unit !== undefined && typeof value === 'number') {
+    return formatDurationSeconds(value * unit)
   }
   if (typeof value === 'string') {
     const label = labels?.[field]?.get(value)
@@ -556,14 +550,64 @@ export function aggregateCompare(
 }
 
 /**
- * Minutos em texto legível: 45 → "45min", 114 → "1h 54min", 120 → "2h",
- * 1.440 → "1d", 21.208 → "14d 17h". Mostra as duas maiores unidades.
+ * Campos de tempo das fontes e quantos segundos vale cada unidade deles.
+ * Todo widget que mostra um desses campos exibe duração (h, d) sozinho.
  */
-export function formatDurationMinutes(minutes: number): string {
-  const total = Math.max(0, Math.round(minutes))
-  const days = Math.floor(total / 1440)
-  const hours = Math.floor((total % 1440) / 60)
-  const mins = total % 60
+export const DURATION_FIELD_SECONDS: Record<string, number> = {
+  // minutos
+  openMinutes: 60,
+  waitingMinutes: 60,
+  avgResponseMinutes: 60,
+  firstResponseMinutes: 60,
+  resolutionMinutes: 60,
+  durationMinutes: 60,
+  resolutionRemainingMinutes: 60,
+  firstResponseTargetMinutes: 60,
+  resolutionTargetMinutes: 60,
+  minutesToPay: 60,
+  minutesToRespond: 60,
+  // segundos
+  durationSeconds: 1,
+  ringSeconds: 1,
+  // horas
+  resolutionHours: 3600,
+  ageHours: 3600,
+  leadHours: 3600,
+  // dias
+  ageDays: 86_400,
+  durationDays: 86_400,
+}
+
+/**
+ * Segundos por unidade do valor de um widget, ou `null` quando ele é um
+ * número comum: campo de tempo conhecido (a menos que a contagem ou o formato
+ * "Número" peçam outra coisa) ou formato "Duração" explícito (minutos).
+ */
+export function durationUnitSeconds(
+  config: Pick<ChartConfig, 'valueFormat' | 'yField' | 'aggregation'>,
+): number | null {
+  if (config.aggregation === 'count' || config.valueFormat === 'number') {
+    return null
+  }
+  const known = config.yField
+    ? DURATION_FIELD_SECONDS[config.yField]
+    : undefined
+  if (known !== undefined) return known
+  return config.valueFormat === 'duration' ? 60 : null
+}
+
+/**
+ * Segundos em texto legível, com as duas maiores unidades: 45 → "45s",
+ * 135 → "2min 15s", 2.700 → "45min", 6.858 → "1h 54min", 86.400 → "1d",
+ * 1.272.480 → "14d 17h". Valor negativo leva "-" (prazo já estourado).
+ */
+export function formatDurationSeconds(seconds: number): string {
+  const sign = seconds < 0 ? '-' : ''
+  const total = Math.round(Math.abs(seconds))
+  const days = Math.floor(total / 86_400)
+  const hours = Math.floor((total % 86_400) / 3600)
+  const mins = Math.floor((total % 3600) / 60)
+  const secs = total % 60
   const parts: string[] = []
   if (days > 0) {
     parts.push(`${days}d`)
@@ -571,10 +615,22 @@ export function formatDurationMinutes(minutes: number): string {
   } else if (hours > 0) {
     parts.push(`${hours}h`)
     if (mins > 0) parts.push(`${mins}min`)
-  } else {
+  } else if (mins >= 10) {
     parts.push(`${mins}min`)
+  } else if (mins > 0) {
+    parts.push(`${mins}min`)
+    if (secs > 0) parts.push(`${secs}s`)
+  } else if (secs > 0) {
+    parts.push(`${secs}s`)
+  } else {
+    parts.push('0min')
   }
-  return parts.join(' ')
+  return `${sign}${parts.join(' ')}`
+}
+
+/** Minutos em texto legível (ver `formatDurationSeconds`). */
+export function formatDurationMinutes(minutes: number): string {
+  return formatDurationSeconds(minutes * 60)
 }
 
 /**
@@ -583,9 +639,13 @@ export function formatDurationMinutes(minutes: number): string {
  */
 export function formatAggregate(
   value: number,
-  config: Pick<ChartConfig, 'decimals' | 'aggregation' | 'valueFormat'>,
+  config: Pick<
+    ChartConfig,
+    'decimals' | 'aggregation' | 'valueFormat' | 'yField'
+  >,
 ): string {
-  if (config.valueFormat === 'duration') return formatDurationMinutes(value)
+  const unit = durationUnitSeconds(config)
+  if (unit !== null) return formatDurationSeconds(value * unit)
   if (config.decimals !== undefined) {
     return new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: config.decimals,
