@@ -301,17 +301,19 @@ const TEMPOS_WIDGETS: CreateCrmDashboardWidgetDTO[] = [
   viewWidget(
     {
       source: 'whatsapp-attendances',
+      title: 'Quem está esperando uma pessoa agora',
       fields: [
         'attendant',
         'team',
         'status',
-        'openMinutes',
         'waitingMinutes',
+        'openMinutes',
         'avgResponseMinutes',
         'lastInboundAt',
       ],
-      filters: [...OPEN_FILTER],
-      sort: [{ field: 'openMinutes', direction: 'desc' }],
+      filters: [{ field: 'isWaiting', operator: 'equals', value: 'true' }],
+      sort: [{ field: 'waitingMinutes', direction: 'desc' }],
+      limit: 50,
     },
     { x: 0, y: 15, w: 12, h: 6 },
   ),

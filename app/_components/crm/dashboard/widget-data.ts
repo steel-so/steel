@@ -75,11 +75,21 @@ export function refLabelsOf(
 }
 
 /** Texto de uma célula, trocando ids conhecidos pelo nome. */
+/** Colunas em minutos que a tabela mostra como duração (h, d). */
+const DURATION_CELL_FIELDS = new Set([
+  'openMinutes',
+  'waitingMinutes',
+  'avgResponseMinutes',
+])
+
 export function formatCell(
   field: string,
   value: unknown,
   labels?: RefLabels,
 ): string {
+  if (DURATION_CELL_FIELDS.has(field) && typeof value === 'number') {
+    return formatDurationMinutes(value)
+  }
   if (typeof value === 'string') {
     const label = labels?.[field]?.get(value)
     if (label) return label

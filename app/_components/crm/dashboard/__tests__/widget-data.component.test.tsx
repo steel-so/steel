@@ -6,6 +6,7 @@ import {
   applyPeriod,
   dateBucketOf,
   formatAggregate,
+  formatCell,
   formatDurationMinutes,
   periodStart,
   type Row,
@@ -315,6 +316,8 @@ describe('limits, sorting and compare', () => {
     expect(formatDurationMinutes(21208)).toBe('14d 17h')
     expect(formatDurationMinutes(28763)).toBe('19d 23h')
     expect(formatAggregate(114.3, { valueFormat: 'duration' })).toBe('1h 54min')
+    expect(formatCell('waitingMinutes', 1500)).toBe('1d 1h')
+    expect(formatCell('unreadCount', 1500)).toBe('1500')
   })
 
   it('applies period, filters, sort and limit to a table', () => {
