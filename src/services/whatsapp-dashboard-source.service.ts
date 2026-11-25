@@ -53,7 +53,7 @@ const LOADERS: Record<WaDashboardSource, Loader> = {
       limit,
     )
     if (!data.ok) return data
-    return ok(toWaAttendanceRows(data.value))
+    return ok(toWaAttendanceRows(data.value, new Date()))
   },
   'whatsapp-conversation-events': async (workspaceId, since, limit) => {
     const data = await WhatsAppDashboardAttendanceRepository.conversationEvents(

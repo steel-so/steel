@@ -166,7 +166,9 @@ export const WhatsAppDashboardAttendanceRepository = {
     workspaceId: string,
     since: Date,
     limit: number,
-  ): Promise<Result<WaDashboardAttendance[]>> {
+  ): Promise<
+    Result<(WaDashboardAttendance & { avgResponseSeconds: number | null })[]>
+  > {
     try {
       const rows = await prisma.whatsAppConversation.findMany({
         where: {
@@ -187,7 +189,48 @@ export const WhatsAppDashboardAttendanceRepository = {
         ],
         take: limit,
       })
-      return ok(rows)
+      const averages = new Map<string, number>()
+      for (const ids of chunks(
+        rows.map((row) => row.id),
+        IN_CHUNK,
+      )) {
+        const found = await prisma.$queryRaw<
+          { conversation_id: string; avg_seconds: number | null }[]
+        >`
+          WITH ev AS (
+            SELECT conversation_id, created_at, direction,
+              LAG(direction) OVER w AS prev,
+              MIN(created_at) FILTER (WHERE direction = 'OUT') OVER (
+                PARTITION BY conversation_id ORDER BY created_at
+                ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING
+              ) AS next_out
+            FROM whatsapp_messages
+            WHERE conversation_id = ANY(${ids})
+              AND deleted_at IS NULL
+              AND (direction = 'IN'
+                OR (direction = 'OUT' AND sender_user_id IS NOT NULL
+                  AND sent_by_ai = false))
+            WINDOW w AS (PARTITION BY conversation_id ORDER BY created_at)
+          )
+          SELECT conversation_id,
+            AVG(EXTRACT(EPOCH FROM (next_out - created_at)))::float8 AS avg_seconds
+          FROM ev
+          WHERE direction = 'IN'
+            AND (prev IS NULL OR prev = 'OUT')
+            AND next_out IS NOT NULL
+          GROUP BY conversation_id`
+        for (const row of found) {
+          if (row.avg_seconds !== null) {
+            averages.set(row.conversation_id, row.avg_seconds)
+          }
+        }
+      }
+      return ok(
+        rows.map((row) => ({
+          ...row,
+          avgResponseSeconds: averages.get(row.id) ?? null,
+        })),
+      )
     } catch (error) {
       return err(dbError('Failed to load the attendances source', error))
     }

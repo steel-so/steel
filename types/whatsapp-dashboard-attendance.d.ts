@@ -51,6 +51,22 @@ export interface WaAttendanceDashboardRow {
   firstResponseMinutes: number | null
   /** Minutes from the creation to the close; `null` while open. */
   durationMinutes: number | null
+  /**
+   * Minutes since the conversation was created, while it is open (the age
+   * of the open conversation); `null` once closed.
+   */
+  openMinutes: number | null
+  /**
+   * Minutes the contact has been waiting for a person right now: since the
+   * contact's last message, only while `isWaiting`; otherwise `null`.
+   */
+  waitingMinutes: number | null
+  /**
+   * Average minutes between each message of the contact (the first of a
+   * sequence) and the next human answer, over the whole conversation.
+   * `null` when no contact message was answered by a person yet.
+   */
+  avgResponseMinutes: number | null
   /** Deu certo, Não deu; `null` without a close classification. */
   outcome: string | null
   /** Close statuses picked by the attendant (tabulação). */

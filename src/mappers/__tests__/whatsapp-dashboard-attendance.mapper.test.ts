@@ -43,7 +43,7 @@ describe('toWaAttendanceRows', () => {
       lastInboundAt: null,
     })
 
-    const [row] = toWaAttendanceRows([conversation])
+    const [row] = toWaAttendanceRows([conversation], at(45))
 
     expect(row).toEqual({
       id: conversation.id,
@@ -61,6 +61,9 @@ describe('toWaAttendanceRows', () => {
       isWaiting: false,
       firstResponseMinutes: null,
       durationMinutes: null,
+      openMinutes: 45,
+      waitingMinutes: null,
+      avgResponseMinutes: null,
       outcome: null,
       closeStatus: [],
       closeReason: null,
@@ -76,26 +79,29 @@ describe('toWaAttendanceRows', () => {
 
   it('should flatten a closed conversation with its classification', () => {
     const [row] = toWaAttendanceRows([
-      createFakeWaDashboardAttendance({
-        status: 'CLOSED',
-        assignedUserId: 'u1',
-        assignedUser: { name: 'Ana' },
-        team: { name: 'Retenção' },
-        aiCampaign: { name: 'Santander' },
-        connection: { label: 'Vendas', provider: 'ZAPI' },
-        aiHandoff: true,
-        // Unread messages of a closed conversation are not a wait.
-        unreadCount: 3,
-        avgSentimentScore: -0.5,
-        archivedAt: at(200),
-        createdAt: T0,
-        firstInboundAt: at(1),
-        firstResponseAt: at(8),
-        closedAt: at(90),
-        closeReason: 'Venda concluída',
-        closeOutcome: 'SUCCESS',
-        closeStatusLabels: ['Venda realizada'],
-      }),
+      {
+        ...createFakeWaDashboardAttendance({
+          status: 'CLOSED',
+          assignedUserId: 'u1',
+          assignedUser: { name: 'Ana' },
+          team: { name: 'Retenção' },
+          aiCampaign: { name: 'Santander' },
+          connection: { label: 'Vendas', provider: 'ZAPI' },
+          aiHandoff: true,
+          // Unread messages of a closed conversation are not a wait.
+          unreadCount: 3,
+          avgSentimentScore: -0.5,
+          archivedAt: at(200),
+          createdAt: T0,
+          firstInboundAt: at(1),
+          firstResponseAt: at(8),
+          closedAt: at(90),
+          closeReason: 'Venda concluída',
+          closeOutcome: 'SUCCESS',
+          closeStatusLabels: ['Venda realizada'],
+        }),
+        avgResponseSeconds: 240,
+      },
     ])
 
     expect(row).toMatchObject({
@@ -112,6 +118,9 @@ describe('toWaAttendanceRows', () => {
       isWaiting: false,
       firstResponseMinutes: 7,
       durationMinutes: 90,
+      openMinutes: null,
+      waitingMinutes: null,
+      avgResponseMinutes: 4,
       outcome: 'Deu certo',
       closeStatus: ['Venda realizada'],
       closeReason: 'Venda concluída',
@@ -617,6 +626,27 @@ describe('toWaTeamMemberRows', () => {
       openConversations: 0,
       lastAssignedAt: null,
       presenceChangedAt: null,
+    })
+  })
+})
+
+describe('toWaAttendanceRows response times', () => {
+  it('should age an open conversation and time who is waiting', () => {
+    const [row] = toWaAttendanceRows(
+      [
+        createFakeWaDashboardAttendance({
+          status: 'IN_PROGRESS',
+          unreadCount: 2,
+          lastInboundAt: at(30),
+        }),
+      ],
+      at(50),
+    )
+
+    expect(row).toMatchObject({
+      isWaiting: true,
+      openMinutes: 50,
+      waitingMinutes: 20,
     })
   })
 })

@@ -153,12 +153,19 @@ export function waSentimentBandLabel(
 /* ------------------------------- attendances ------------------------------- */
 
 function toAttendanceRow(
-  conversation: WaDashboardAttendance,
+  conversation: WaDashboardAttendance & {
+    avgResponseSeconds?: number | null
+  },
+  now: Date,
 ): WaAttendanceDashboardRow {
   const isOpen = conversation.status !== 'CLOSED'
   const unanswered =
     conversation.firstInboundAt !== null &&
     conversation.firstResponseAt === null
+  const isWaiting =
+    isOpen &&
+    !conversation.aiActive &&
+    (unanswered || conversation.unreadCount > 0)
   return {
     id: conversation.id,
     status: WA_CONVERSATION_STATUS_LABELS[conversation.status],
@@ -172,10 +179,7 @@ function toAttendanceRow(
     aiActive: conversation.aiActive,
     aiHandoff: conversation.aiHandoff,
     unreadCount: conversation.unreadCount,
-    isWaiting:
-      isOpen &&
-      !conversation.aiActive &&
-      (unanswered || conversation.unreadCount > 0),
+    isWaiting,
     firstResponseMinutes: minutesBetween(
       conversation.firstInboundAt,
       conversation.firstResponseAt,
@@ -183,6 +187,14 @@ function toAttendanceRow(
     durationMinutes: isOpen
       ? null
       : minutesBetween(conversation.createdAt, conversation.closedAt),
+    openMinutes: isOpen ? minutesBetween(conversation.createdAt, now) : null,
+    waitingMinutes: isWaiting
+      ? minutesBetween(conversation.lastInboundAt, now)
+      : null,
+    avgResponseMinutes:
+      conversation.avgResponseSeconds == null
+        ? null
+        : Math.round(conversation.avgResponseSeconds / 60),
     outcome: conversation.closeOutcome
       ? WA_CLOSE_OUTCOME_LABELS[conversation.closeOutcome]
       : null,
@@ -200,9 +212,12 @@ function toAttendanceRow(
 
 /** One row per conversation, in the order the repository answered. */
 export function toWaAttendanceRows(
-  conversations: WaDashboardAttendance[],
+  conversations: (WaDashboardAttendance & {
+    avgResponseSeconds?: number | null
+  })[],
+  now: Date = new Date(),
 ): WaAttendanceDashboardRow[] {
-  return conversations.map(toAttendanceRow)
+  return conversations.map((conversation) => toAttendanceRow(conversation, now))
 }
 
 /* ---------------------------------- events --------------------------------- */
