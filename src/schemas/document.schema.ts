@@ -366,10 +366,16 @@ export const CreateDocumentImportSchema = z
     prompt: z.string().trim().max(4000).optional(),
     /** Set by the route after the upload lands in MinIO. */
     fileKey: z.string().min(1).optional(),
+    /** PDF only: replace the pages of this document instead of creating one. */
+    documentId: z.string().min(1).max(64).optional(),
   })
   .refine((v) => v.mode !== 'PROMPT' || Boolean(v.prompt), {
     message: 'Descreva o documento que a IA deve montar',
     path: ['prompt'],
+  })
+  .refine((v) => !v.documentId || v.mode === 'PDF', {
+    message: 'Só um PDF pode atualizar um documento existente',
+    path: ['documentId'],
   })
 export type CreateDocumentImportInput = z.infer<
   typeof CreateDocumentImportSchema

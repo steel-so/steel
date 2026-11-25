@@ -57,6 +57,7 @@ import {
 } from '@/src/lib/document-ai/prompts'
 import { publishDocumentImport } from '@/src/lib/document-ai/realtime'
 import { outlineCall } from '@/src/lib/document-ai/run'
+import type { PermissionAction } from '@/src/lib/permissions'
 import { DocumentsAiJob } from '@/src/lib/queue/jobs'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
@@ -68,6 +69,7 @@ import {
 } from '@/src/lib/storage/s3'
 import { toDocumentImportDTO } from '@/src/mappers/document-import.mapper'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
+import { DocumentRepository } from '@/src/repositories/document.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
 import {
   type CreateDocumentImportInput,
@@ -129,12 +131,26 @@ const READ_FAILED =
   'Não foi possível ler o arquivo enviado. Envie o arquivo de novo.'
 
 /** CRM module + the documents permission of the legacy proposals. */
-function authorize(actorId: string, workspaceId: string) {
+function authorize(
+  actorId: string,
+  workspaceId: string,
+  action: PermissionAction = 'CREATE',
+) {
   return assertModuleMember(actorId, workspaceId, 'CRM', {
     resource: 'documents',
-    action: 'CREATE',
+    action,
   })
 }
+
+/** Page settings the new pages replace: the old furniture would cover them. */
+const REPLACED_PAGE_SETTINGS = {
+  layout: 'paged',
+  header: null,
+  footer: null,
+  pageNumbers: null,
+  watermark: null,
+  showToc: false,
+} as const
 
 /** The model reads up to 60 pages before it writes: wait that long for
  * the first chunk before failing over to another model. */
@@ -455,6 +471,8 @@ async function runPdfPages(
 
   const total = row.pageCount ?? 1
   const urls: string[] = []
+  /** Once the pages are in the document their images must stay. */
+  let stored = false
   let current = row
   try {
     let lastSaved = 0
@@ -495,22 +513,40 @@ async function runPdfPages(
     )
     if (!flushed.ok) throw new Error(flushed.error)
 
-    const completed = await DocumentImportRepository.complete(
-      row.id,
-      {
-        workspaceId: row.workspaceId,
-        kind: row.kind === 'OTHER' ? 'OTHER' : row.kind,
-        title,
-        source: 'PDF_IMPORT',
-        content: flushed.value,
-        theme: assembled.value.theme,
-        settings: { ...DEFAULT_DOCUMENT_SETTINGS, layout: 'paged' },
-        publicToken: randomBytes(18).toString('base64url'),
-        ownerId: row.createdById,
-      },
-      { progress: progressOf('done'), costUsd: 0, model: null },
-    )
+    // With a target document the pages replace its content; without one a
+    // new draft is created.
+    const completed = row.documentId
+      ? await DocumentImportRepository.completeReplace(
+          row.id,
+          {
+            documentId: row.documentId,
+            workspaceId: row.workspaceId,
+            content: flushed.value,
+            settingsPatch: REPLACED_PAGE_SETTINGS,
+            updatedById: row.createdById,
+          },
+          { progress: progressOf('done') },
+        )
+      : await DocumentImportRepository.complete(
+          row.id,
+          {
+            workspaceId: row.workspaceId,
+            kind: row.kind === 'OTHER' ? 'OTHER' : row.kind,
+            title,
+            source: 'PDF_IMPORT',
+            content: flushed.value,
+            theme: assembled.value.theme,
+            settings: { ...DEFAULT_DOCUMENT_SETTINGS, layout: 'paged' },
+            publicToken: randomBytes(18).toString('base64url'),
+            ownerId: row.createdById,
+          },
+          { progress: progressOf('done'), costUsd: 0, model: null },
+        )
     if (!completed.ok) throw new Error(completed.error.message)
+    if (!completed.value) {
+      throw new Error('The document to update no longer exists')
+    }
+    stored = true
 
     await publishDocumentImport(toDocumentImportDTO(completed.value.import))
     await dropSourceFile(row)
@@ -524,6 +560,7 @@ async function runPdfPages(
         documentId: completed.value.document.id,
         mode: row.mode,
         pages: pages.length,
+        replaced: Boolean(row.documentId),
       },
     })
     logger.info('documents.import.ready', {
@@ -542,7 +579,7 @@ async function runPdfPages(
       importId: row.id,
       message: cause instanceof Error ? cause.message : String(cause),
     })
-    await dropImportImages(urls)
+    if (!stored) await dropImportImages(urls)
     return ok(
       await fail(
         current,
@@ -611,8 +648,21 @@ export const DocumentImportService = {
     input: CreateDocumentImportInput,
     file?: DocumentImportFile,
   ): Promise<Result<DocumentImportDTO>> {
-    const membership = await authorize(actorId, workspaceId)
+    // Updating a document needs the edit permission on top of the import.
+    const membership = await authorize(
+      actorId,
+      workspaceId,
+      input.documentId ? 'EDIT' : 'CREATE',
+    )
     if (!membership.ok) return membership
+
+    if (input.documentId) {
+      const target = await DocumentRepository.findMeta(
+        input.documentId,
+        workspaceId,
+      )
+      if (!target.ok) return target
+    }
 
     let checked: CheckedFile | null = null
     if (input.mode !== 'PROMPT') {
@@ -664,6 +714,7 @@ export const DocumentImportService = {
     const created = await DocumentImportRepository.create({
       id,
       workspaceId,
+      documentId: input.documentId ?? null,
       mode: input.mode,
       kind: input.kind,
       fileKey,

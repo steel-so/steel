@@ -42,9 +42,9 @@ export const crmDocumentImportRoutes: RouteConfig[] = [
     summary: 'Importar PDF/DOCX ou gerar documento com IA',
     description: describe(
       '**Multipart** com `file` (PDF ou DOCX até 20 MB e 60 páginas) e os campos `mode` (`PDF`/`DOCX`; deduzido do arquivo se ausente), `kind` e `title`; ou **JSON** `{ "mode": "PROMPT", "prompt": "…", "kind": "PROPOSAL", "title": "…" }`. O tipo do arquivo é conferido pelo conteúdo e o PDF pelas páginas.',
-      'Confere plano, modelo e cota, guarda o arquivo no bucket privado `documents` (`<workspaceId>/imports/<importId>/<arquivo>`) e enfileira a montagem (`documents-ai`). Responde 201 com a importação em `PENDING`; acompanhe por `GET …/imports/{importId}` ou pelo `stream`.',
-      'No worker, o PDF vai inteiro ao modelo quando ele aceita PDF (senão, o texto de cada página); o DOCX vai como texto. A saída é um plano estruturado (seções → blocos do catálogo), validado e montado com os presets do catálogo `document`: linhas "Nome: ____" viram campos, linhas de assinatura viram um bloco de aceite (não há assinatura), preços e tabelas viram tabela de preços e tabela, e imagens viram espaços reservados. O documento nasce em `DRAFT`, com o usuário como dono e `source` `PDF_IMPORT` ou `AI_PROMPT`.',
-      'Usa a IA do CRM do workspace e consome a cota mensal (até 2 chamadas por importação). Limite próprio: o de mensagens de IA por usuário.',
+      'Guarda o arquivo no bucket privado `documents` (`<workspaceId>/imports/<importId>/<arquivo>`) e enfileira a montagem (`documents-ai`). Responde 201 com a importação em `PENDING`; acompanhe por `GET …/imports/{importId}` ou pelo `stream`. DOCX e pedido em texto antes conferem plano, modelo e cota da IA; PDF não.',
+      '**PDF não usa IA:** o worker converte cada página em uma imagem PNG (guardada na biblioteca do workspace) e monta o documento com uma seção por página, sem custo nem cota. O documento nasce em `DRAFT`, com o usuário como dono e `source` `PDF_IMPORT`. Com `documentId`, o conteúdo do documento existente é substituído pelas novas páginas (título, destinatários e versões já enviadas ficam; o rascunho passa a diferir da versão atual) e a importação termina com esse mesmo `documentId`.',
+      'DOCX e pedido em texto usam o modelo de IA do CRM: o DOCX vai como texto e a saída é um plano estruturado (seções → blocos do catálogo), validado e montado com os presets do catálogo `document` (linhas "Nome: ____" viram campos, assinatura vira bloco de aceite, preços viram tabela de preços). Consomem a cota mensal (até 2 chamadas por importação), com o limite próprio de mensagens de IA por usuário. O documento nasce em `DRAFT` com `source` `PDF_IMPORT` (DOCX) ou `AI_PROMPT`.',
       ACCESS,
     ),
     consent: true,
@@ -71,6 +71,11 @@ export const crmDocumentImportRoutes: RouteConfig[] = [
           },
           title: { type: 'string', maxLength: 200 },
           prompt: { type: 'string', maxLength: 4000 },
+          documentId: {
+            type: 'string',
+            description:
+              'Só com `mode: "PDF"`: troca as páginas deste documento pelas do novo PDF em vez de criar outro (exige a permissão de edição de documentos).',
+          },
         },
       },
     },

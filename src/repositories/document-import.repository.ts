@@ -16,6 +16,8 @@ const json = (value: unknown) => value as Prisma.InputJsonValue
 export interface CreateDocumentImportData {
   id?: string
   workspaceId: string
+  /** PDF import that replaces the pages of this document. */
+  documentId?: string | null
   mode: DocumentImportMode
   kind: DocumentKind
   fileKey?: string | null
@@ -180,6 +182,68 @@ export const DocumentImportRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to complete document import', error))
+    }
+  },
+
+  /**
+   * PDF import that updates an existing document: swaps its content for the
+   * new pages (and the page settings the pages replace), then closes the
+   * import. Title, links, owner, recipients and the sent versions stay; the
+   * draft just differs from the current version, as after any edit. `null`
+   * data = the document is gone (deleted while the import ran).
+   */
+  async completeReplace(
+    id: string,
+    target: {
+      documentId: string
+      workspaceId: string
+      content: unknown
+      settingsPatch: Record<string, unknown>
+      updatedById: string
+    },
+    result: { progress: unknown },
+  ): Promise<Result<{ import: DocumentImport; document: Document } | null>> {
+    try {
+      return ok(
+        await prisma.$transaction(async (tx) => {
+          const current = await tx.document.findFirst({
+            where: {
+              id: target.documentId,
+              workspaceId: target.workspaceId,
+              deletedAt: null,
+            },
+            select: { settings: true },
+          })
+          if (!current) return null
+          const settings = {
+            ...(current.settings as Record<string, unknown>),
+            ...target.settingsPatch,
+          }
+          const document = await tx.document.update({
+            where: { id: target.documentId },
+            data: {
+              content: json(target.content),
+              settings: json(settings),
+              updatedById: target.updatedById,
+            },
+          })
+          const updated = await tx.documentImport.update({
+            where: { id },
+            data: {
+              status: 'READY',
+              documentId: target.documentId,
+              progress: json(result.progress),
+              costUsd: 0,
+              model: null,
+              error: null,
+              finishedAt: new Date(),
+            },
+          })
+          return { import: updated, document }
+        }),
+      )
+    } catch (error) {
+      return err(dbError('Failed to replace the document pages', error))
     }
   },
 }

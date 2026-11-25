@@ -23,6 +23,8 @@ export interface StartFileImportInput {
   file: File
   kind: DocumentKindDTO
   title?: string
+  /** PDF only: replace the pages of this document. */
+  documentId?: string
 }
 
 export interface StartPromptImportInput {
@@ -51,6 +53,7 @@ export function documentImportsApi(workspaceId: string) {
       form.append('mode', input.mode)
       form.append('kind', input.kind)
       if (input.title) form.append('title', input.title)
+      if (input.documentId) form.append('documentId', input.documentId)
       return apiFetch<DocumentImportDTO>(
         root,
         { method: 'POST', body: form },

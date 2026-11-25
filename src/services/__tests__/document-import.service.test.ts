@@ -17,6 +17,7 @@ import { CreateDocumentImportSchema } from '@/src/schemas/document.schema'
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/ai-settings.repository')
 vi.mock('@/src/repositories/document-import.repository')
+vi.mock('@/src/repositories/document.repository')
 vi.mock('@/src/services/ai-usage.service')
 vi.mock('@/src/services/feature-flag.service')
 vi.mock('@/src/services/platform-ai-settings.service')
@@ -68,6 +69,7 @@ import { publishDocumentImport } from '@/src/lib/document-ai/realtime'
 import { getDocumentsAiQueue } from '@/src/lib/queue/queues'
 import { deleteObject, getObject, putObject } from '@/src/lib/storage/s3'
 import { AiUsageRepository } from '@/src/repositories/ai-settings.repository'
+import { DocumentRepository } from '@/src/repositories/document.repository'
 import { DocumentImportRepository } from '@/src/repositories/document-import.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { AiUsageService } from '@/src/services/ai-usage.service'
@@ -78,6 +80,7 @@ import { DocumentImportService } from '../document-import.service'
 
 const membership = vi.mocked(MembershipRepository)
 const imports = vi.mocked(DocumentImportRepository)
+const documents = vi.mocked(DocumentRepository)
 const usageRepo = vi.mocked(AiUsageRepository)
 const ai = vi.mocked(AiUsageService)
 const feature = vi.mocked(assertFeature)
@@ -554,6 +557,44 @@ describe('DocumentImportService.create()', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it('should queue a PDF that replaces the pages of a document', async () => {
+    documents.findMeta.mockResolvedValue(ok({ id: 'doc9' } as never))
+
+    const dto = expectOk(
+      await DocumentImportService.create(
+        ACTOR,
+        WS,
+        { ...fileInput('PDF'), documentId: 'doc9' },
+        pdf,
+      ),
+    )
+
+    expect(documents.findMeta).toHaveBeenCalledWith('doc9', WS)
+    expect(imports.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id: dto.id, documentId: 'doc9', mode: 'PDF' }),
+    )
+    expect(ai.prepare).not.toHaveBeenCalled()
+    expect(add).toHaveBeenCalled()
+  })
+
+  it('should refuse to replace a document that is not in the workspace', async () => {
+    documents.findMeta.mockResolvedValue(
+      err({ code: 'DOCUMENT_NOT_FOUND', message: 'x' } as never),
+    )
+
+    expectErr(
+      await DocumentImportService.create(
+        ACTOR,
+        WS,
+        { ...fileInput('PDF'), documentId: 'other' },
+        pdf,
+      ),
+      'DOCUMENT_NOT_FOUND',
+    )
+    expect(upload).not.toHaveBeenCalled()
+    expect(imports.create).not.toHaveBeenCalled()
+  })
+
   it('should import a PDF without the AI plan or quota', async () => {
     feature.mockResolvedValue(err(featureNotEnabled('crm.aiAssistant')))
     ai.prepare.mockResolvedValue(err(aiQuotaExceeded(50, 50)))
@@ -863,6 +904,74 @@ describe('DocumentImportService.run()', () => {
     it('should name the document after the file when there is no title', async () => {
       expectOk(await DocumentImportService.run('imp1'))
       expect(imports.complete.mock.calls[0][1].title).toBe('proposta')
+    })
+
+    describe('replacing a document', () => {
+      beforeEach(() => {
+        imports.findForRun.mockResolvedValue(
+          ok(
+            stored({
+              mode: 'PDF',
+              documentId: 'doc9',
+              fileKey: `${WS}/imports/imp1/nova.pdf`,
+              fileName: 'nova.pdf',
+              pageCount: 2,
+            }),
+          ),
+        )
+        imports.completeReplace.mockResolvedValue(
+          ok({
+            import: stored({ status: 'READY', documentId: 'doc9' }),
+            document: { id: 'doc9' } as never,
+          }),
+        )
+      })
+
+      it('should swap the content of the document and keep it', async () => {
+        const result = expectOk(await DocumentImportService.run('imp1'))
+
+        expect(result).toEqual({ status: 'ready', documentId: 'doc9' })
+        expect(imports.complete).not.toHaveBeenCalled()
+        const [id, target] = imports.completeReplace.mock.calls[0]
+        expect(id).toBe('imp1')
+        expect(target).toEqual(
+          expect.objectContaining({
+            documentId: 'doc9',
+            workspaceId: WS,
+            updatedById: ACTOR,
+            settingsPatch: expect.objectContaining({
+              layout: 'paged',
+              header: null,
+              footer: null,
+              pageNumbers: null,
+              watermark: null,
+            }),
+          }),
+        )
+        const content = JSON.stringify(target.content)
+        expect(content).toContain('Página 1')
+        expect(content).toContain('Página 2')
+        expect(chatStream).not.toHaveBeenCalled()
+        expect(remove).toHaveBeenCalledWith({
+          bucket: 'documents',
+          key: `${WS}/imports/imp1/proposta.pdf`.replace('proposta', 'nova'),
+        })
+      })
+
+      it('should fail and drop the pages when the document is gone', async () => {
+        imports.completeReplace.mockResolvedValue(ok(null))
+        persistImage.mockImplementation(async (input) =>
+          ok({ url: `https://s3/crm-email-images/${input.byteSize}.png` }),
+        )
+
+        expect(expectOk(await DocumentImportService.run('imp1')).status).toBe(
+          'failed',
+        )
+        expect(lastUpdate()?.error).toMatch(/converter as páginas/)
+        expect(remove).toHaveBeenCalledWith(
+          expect.objectContaining({ bucket: 'crm-email-images' }),
+        )
+      })
     })
 
     it('should fail and clean up when a page cannot be rendered', async () => {

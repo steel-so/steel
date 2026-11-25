@@ -98,4 +98,14 @@ describe('document schemas', () => {
     expect(parse({ mode: 'PROMPT', prompt: 'Termo' })).toBe(true)
     expect(parse({ mode: 'PDF' })).toBe(true)
   })
+
+  it('lets only a PDF update an existing document', () => {
+    const parse = (input: object) =>
+      CreateDocumentImportSchema.safeParse(input).success
+    expect(parse({ mode: 'PDF', documentId: 'doc1' })).toBe(true)
+    expect(parse({ mode: 'DOCX', documentId: 'doc1' })).toBe(false)
+    expect(parse({ mode: 'PROMPT', prompt: 'x', documentId: 'doc1' })).toBe(
+      false,
+    )
+  })
 })

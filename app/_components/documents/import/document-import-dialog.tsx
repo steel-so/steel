@@ -80,6 +80,8 @@ export interface DocumentImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialMode?: 'PDF' | 'PROMPT'
+  /** Replace the pages of this document with a new PDF instead of creating. */
+  replaceDocument?: { id: string; title: string }
 }
 
 type Tab = 'file' | 'prompt'
@@ -104,6 +106,8 @@ const INTRO =
   'A IA monta o documento com os blocos do editor: campos para preencher, tabela de preços e botão de aceite. Você revisa tudo antes de enviar.'
 const PDF_PAGES_HINT =
   'Cada página do PDF vira uma imagem no documento, sem IA e sem custo. O texto não fica editável; você pode acrescentar campos e o botão de aceite por cima.'
+const REPLACE_HINT =
+  'As páginas atuais são trocadas pelas do novo PDF, uma imagem por página. Título, destinatários e as versões já enviadas continuam como estão; use "Atualizar versão" para o leitor ver as novas páginas.'
 const RUNNING_HINT =
   'Leva de um a alguns minutos, conforme o tamanho. Você pode fechar esta janela: o documento aparece na lista quando ficar pronto.'
 const FAILED_HINT =
@@ -291,6 +295,7 @@ function FileDrop({
   disabled,
   maxBytes,
   maxPages,
+  pdfOnly = false,
   onPick,
   onClear,
 }: {
@@ -299,6 +304,7 @@ function FileDrop({
   disabled: boolean
   maxBytes: number
   maxPages: number
+  pdfOnly?: boolean
   onPick: (file: File) => void
   onClear: () => void
 }) {
@@ -377,7 +383,7 @@ function FileDrop({
       </span>
       <span className='font-medium text-sm'>Arraste o arquivo para cá</span>
       <span className='text-muted-foreground text-xs'>
-        {`PDF ou DOCX, até ${formatFileSize(maxBytes)} e ${maxPages} páginas`}
+        {`${pdfOnly ? 'PDF' : 'PDF ou DOCX'}, até ${formatFileSize(maxBytes)} e ${maxPages} páginas`}
       </span>
       <Button
         type='button'
@@ -391,7 +397,7 @@ function FileDrop({
       <input
         ref={inputRef}
         type='file'
-        accept={DOCUMENT_IMPORT_ACCEPT}
+        accept={pdfOnly ? '.pdf,application/pdf' : DOCUMENT_IMPORT_ACCEPT}
         className='hidden'
         aria-hidden
         tabIndex={-1}
@@ -412,12 +418,13 @@ export function DocumentImportDialog({
   open,
   onOpenChange,
   initialMode = 'PDF',
+  replaceDocument,
 }: DocumentImportDialogProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const ids = { title: useId(), prompt: useId(), kind: useId() }
   const [tab, setTab] = useState<Tab>(
-    initialMode === 'PROMPT' ? 'prompt' : 'file',
+    initialMode === 'PROMPT' && !replaceDocument ? 'prompt' : 'file',
   )
   const [file, setFile] = useState<File | null>(null)
   const [fileKind, setFileKind] = useState<DocumentKindDTO>('OTHER')
@@ -435,7 +442,7 @@ export function DocumentImportDialog({
 
   useEffect(() => {
     if (open) {
-      setTab(initialMode === 'PROMPT' ? 'prompt' : 'file')
+      setTab(initialMode === 'PROMPT' && !replaceDocument ? 'prompt' : 'file')
       return
     }
     setFile(null)
@@ -446,7 +453,7 @@ export function DocumentImportDialog({
     setImportId(null)
     opened.current = null
     handled.current = null
-  }, [open, initialMode])
+  }, [open, initialMode, replaceDocument])
 
   const openEditor = useCallback(
     (documentId: string) => {
@@ -465,15 +472,23 @@ export function DocumentImportDialog({
     handled.current = dto.id
     void queryClient.invalidateQueries({ queryKey: ['documents'] })
     if (dto.status === 'READY' && dto.documentId) {
-      notify.success('Documento criado. Revise e envie quando estiver pronto.')
+      notify.success(
+        replaceDocument
+          ? 'Documento atualizado com as novas páginas.'
+          : 'Documento criado. Revise e envie quando estiver pronto.',
+      )
       openEditor(dto.documentId)
     }
-  }, [dto, openEditor, queryClient])
+  }, [dto, openEditor, queryClient, replaceDocument])
 
   const ctx = context.data
   const maxBytes = ctx?.maxBytes ?? DOCUMENT_IMPORT_MAX_BYTES
   const maxPages = ctx?.maxPages ?? DOCUMENT_IMPORT_MAX_PAGES
-  const problem = file ? fileProblem(file, maxBytes) : null
+  const problem = !file
+    ? null
+    : replaceDocument && importModeOf(file) !== 'PDF'
+      ? 'Envie um arquivo PDF.'
+      : fileProblem(file, maxBytes)
   const estimateUsd = !ctx?.estimate
     ? null
     : tab === 'prompt'
@@ -524,6 +539,7 @@ export function DocumentImportDialog({
               file: file as File,
               kind: fileKind,
               title: trimmedTitle,
+              ...(replaceDocument && { documentId: replaceDocument.id }),
             },
       )
       setImportId(created.id)
@@ -555,33 +571,43 @@ export function DocumentImportDialog({
         ) : (
           <form onSubmit={submit} className='grid min-w-0 gap-4'>
             <DialogHeader>
-              <DialogTitle>Criar documento com IA</DialogTitle>
-              <DialogDescription>{INTRO}</DialogDescription>
+              <DialogTitle>
+                {replaceDocument
+                  ? 'Atualizar com novo PDF'
+                  : 'Criar documento com IA'}
+              </DialogTitle>
+              <DialogDescription>
+                {replaceDocument
+                  ? `Documento: ${replaceDocument.title}`
+                  : INTRO}
+              </DialogDescription>
             </DialogHeader>
 
-            <Tabs
-              value={tab}
-              onValueChange={(value) => {
-                if (value === 'file' || value === 'prompt') setTab(value)
-              }}
-            >
-              <TabsList className='w-full'>
-                <TabsTrigger
-                  value='file'
-                  data-testid='document-import-tab-file'
-                >
-                  <SteelIcon icon={CloudUploadIcon} />
-                  Importar PDF/DOCX
-                </TabsTrigger>
-                <TabsTrigger
-                  value='prompt'
-                  data-testid='document-import-tab-prompt'
-                >
-                  <SteelIcon icon={AiMagicIcon} />
-                  Gerar com IA
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {replaceDocument ? null : (
+              <Tabs
+                value={tab}
+                onValueChange={(value) => {
+                  if (value === 'file' || value === 'prompt') setTab(value)
+                }}
+              >
+                <TabsList className='w-full'>
+                  <TabsTrigger
+                    value='file'
+                    data-testid='document-import-tab-file'
+                  >
+                    <SteelIcon icon={CloudUploadIcon} />
+                    Importar PDF/DOCX
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value='prompt'
+                    data-testid='document-import-tab-prompt'
+                  >
+                    <SteelIcon icon={AiMagicIcon} />
+                    Gerar com IA
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
 
             {tab === 'file' ? (
               <FileDrop
@@ -590,6 +616,7 @@ export function DocumentImportDialog({
                 disabled={busy}
                 maxBytes={maxBytes}
                 maxPages={maxPages}
+                pdfOnly={Boolean(replaceDocument)}
                 onPick={setFile}
                 onClear={() => setFile(null)}
               />
@@ -611,41 +638,45 @@ export function DocumentImportDialog({
               </div>
             )}
 
-            <div className='grid gap-3 sm:grid-cols-2'>
-              <div className='grid min-w-0 gap-1.5'>
-                <Label htmlFor={ids.kind}>Tipo</Label>
-                <ChoiceSelect
-                  id={ids.kind}
-                  label='Tipo de documento'
-                  value={tab === 'prompt' ? promptKind : fileKind}
-                  options={
-                    tab === 'prompt' ? PROMPT_KIND_OPTIONS : FILE_KIND_OPTIONS
-                  }
-                  disabled={busy}
-                  onChange={(value) => {
-                    const kind = value as DocumentKindDTO
-                    if (tab === 'prompt') setPromptKind(kind)
-                    else setFileKind(kind)
-                  }}
-                />
+            {replaceDocument ? null : (
+              <div className='grid gap-3 sm:grid-cols-2'>
+                <div className='grid min-w-0 gap-1.5'>
+                  <Label htmlFor={ids.kind}>Tipo</Label>
+                  <ChoiceSelect
+                    id={ids.kind}
+                    label='Tipo de documento'
+                    value={tab === 'prompt' ? promptKind : fileKind}
+                    options={
+                      tab === 'prompt' ? PROMPT_KIND_OPTIONS : FILE_KIND_OPTIONS
+                    }
+                    disabled={busy}
+                    onChange={(value) => {
+                      const kind = value as DocumentKindDTO
+                      if (tab === 'prompt') setPromptKind(kind)
+                      else setFileKind(kind)
+                    }}
+                  />
+                </div>
+                <div className='grid min-w-0 gap-1.5'>
+                  <Label htmlFor={ids.title}>Título (opcional)</Label>
+                  <Input
+                    id={ids.title}
+                    value={title}
+                    maxLength={200}
+                    disabled={busy}
+                    placeholder='A IA sugere um'
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </div>
               </div>
-              <div className='grid min-w-0 gap-1.5'>
-                <Label htmlFor={ids.title}>Título (opcional)</Label>
-                <Input
-                  id={ids.title}
-                  value={title}
-                  maxLength={200}
-                  disabled={busy}
-                  placeholder='A IA sugere um'
-                  onChange={(event) => setTitle(event.target.value)}
-                />
-              </div>
-            </div>
+            )}
 
             {context.isError ? (
               <p className='text-destructive text-xs' role='alert'>
                 Não foi possível consultar a IA do workspace. Tente reabrir.
               </p>
+            ) : replaceDocument ? (
+              <p className='text-muted-foreground text-xs'>{REPLACE_HINT}</p>
             ) : pdfFile ? (
               <p className='text-muted-foreground text-xs'>{PDF_PAGES_HINT}</p>
             ) : ctx && !ctx.available ? (
@@ -686,9 +717,11 @@ export function DocumentImportDialog({
                   ? 'Enviando…'
                   : tab === 'prompt'
                     ? 'Gerar documento'
-                    : pdfFile
-                      ? 'Importar PDF'
-                      : 'Importar com IA'}
+                    : replaceDocument
+                      ? 'Atualizar documento'
+                      : pdfFile
+                        ? 'Importar PDF'
+                        : 'Importar com IA'}
               </Button>
             </DialogFooter>
           </form>

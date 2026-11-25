@@ -193,6 +193,8 @@ blocos podem ser acrescentados por cima. Não consome cota nem exige o recurso
 `crm.aiAssistant`. Falha ao renderizar ou guardar apaga as imagens já gravadas.
 DOCX e "Gerar com IA" continuam usando o modelo (abaixo).
 
+**Atualizar com novo PDF:** na página do documento, "Mais ações → Atualizar com novo PDF" (permissão de edição) envia um PDF com `documentId` no mesmo `POST .../imports`. O fluxo é o mesmo da criação, mas o worker troca o `content` do documento (`DocumentImportRepository.completeReplace`, numa transação) e zera cabeçalho, rodapé, numeração, marca d'água e sumário, que cobririam as imagens; título, vínculos do CRM, destinatários, tema e as versões já enviadas ficam. O rascunho passa a diferir da versão atual ("Atualizar versão" publica). Imagens de importações anteriores não são apagadas, porque versões enviadas ainda as usam.
+
 ## IA
 
 - Entrada: DOCX até 20 MB, ou um pedido em texto (PDF não passa pela IA, ver acima).

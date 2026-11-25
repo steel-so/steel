@@ -57,6 +57,7 @@ async function readInput(request: NextRequest): Promise<Result<ImportInput>> {
       mode: text(form.get('mode')) ?? modeOf(file),
       kind: text(form.get('kind')),
       title: text(form.get('title')),
+      documentId: text(form.get('documentId')),
     },
     file: {
       buffer: Buffer.from(await file.arrayBuffer()),

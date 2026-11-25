@@ -4,6 +4,7 @@ import {
   Archive02Icon,
   ArchiveArrowUpIcon,
   BookmarkAdd01Icon,
+  CloudUploadIcon,
   Copy01Icon,
   Delete02Icon,
   MoreHorizontalIcon,
@@ -15,6 +16,7 @@ import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { DocumentAnalyticsPanel } from '@/app/_components/documents/analytics/document-analytics-panel'
 import { DocumentExportButton } from '@/app/_components/documents/export/document-export-button'
+import { DocumentImportDialog } from '@/app/_components/documents/import/document-import-dialog'
 import { useCan } from '@/app/_components/workspace/workspace-permissions'
 import { SteelIcon } from '@/components/icon/icon'
 import {
@@ -88,6 +90,7 @@ function DocumentHeader({
   const duplicate = useDuplicateDocument(document.workspaceId)
   const remove = useDeleteDocument(document.workspaceId)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [replacing, setReplacing] = useState(false)
   const base = `/${slug}/crm/documents`
   const archived = document.status === 'ARCHIVED'
   const updateVersion = Boolean(
@@ -208,6 +211,15 @@ function DocumentHeader({
                   Duplicar
                 </DropdownMenuItem>
               ) : null}
+              {canEdit && !archived ? (
+                <DropdownMenuItem
+                  onClick={() => setReplacing(true)}
+                  data-testid='document-page-replace-pdf'
+                >
+                  <SteelIcon icon={CloudUploadIcon} />
+                  Atualizar com novo PDF
+                </DropdownMenuItem>
+              ) : null}
               {canCreate && !document.isTemplate ? (
                 <DropdownMenuItem onClick={() => void copyAs(true)}>
                   <SteelIcon icon={BookmarkAdd01Icon} />
@@ -261,6 +273,16 @@ function DocumentHeader({
           </strong>{' '}
           para enviá-las.
         </p>
+      ) : null}
+
+      {canEdit ? (
+        <DocumentImportDialog
+          workspaceId={document.workspaceId}
+          workspaceSlug={slug}
+          open={replacing}
+          onOpenChange={setReplacing}
+          replaceDocument={{ id: document.id, title: document.title }}
+        />
       ) : null}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

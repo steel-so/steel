@@ -20,7 +20,14 @@ const notify = vi.hoisted(() => ({
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 vi.mock('@/lib/notify', () => ({ notify }))
 vi.mock('@/app/_components/documents/import/document-import-dialog', () => ({
-  DocumentImportDialog: () => null,
+  DocumentImportDialog: ({
+    open,
+    replaceDocument,
+  }: {
+    open: boolean
+    replaceDocument?: { id: string; title: string }
+  }) =>
+    open ? <div data-testid='replace-dialog'>{replaceDocument?.id}</div> : null,
 }))
 vi.mock('@/app/_components/documents/export/document-export-button', () => ({
   DocumentExportButton: () => <button type='button'>Exportar PDF</button>,
@@ -209,6 +216,16 @@ describe('<DocumentPage />', () => {
     expect(fetchBody(spy, `${BASE}/doc_1`, 'PATCH')).toEqual({
       status: 'ARCHIVED',
     })
+  })
+
+  it('opens the PDF update dialog for this document', async () => {
+    setup()
+    fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Atualizar com novo PDF' }),
+    )
+    const dialog = await screen.findByTestId('replace-dialog')
+    expect(dialog.textContent).toBe('doc_1')
   })
 
   it('saves a copy as a template', async () => {

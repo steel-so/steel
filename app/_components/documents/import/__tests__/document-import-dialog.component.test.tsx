@@ -98,6 +98,7 @@ function setup(options: {
   latest?: DocumentImportDTO
   initialMode?: 'PDF' | 'PROMPT'
   quotaError?: boolean
+  replaceDocument?: { id: string; title: string }
 }) {
   const created = options.created ?? importDto()
   const frames = options.frames ?? [READY]
@@ -119,6 +120,7 @@ function setup(options: {
       open
       onOpenChange={onOpenChange}
       initialMode={options.initialMode}
+      replaceDocument={options.replaceDocument}
     />,
   )
   return { spy, onOpenChange }
@@ -350,6 +352,49 @@ describe('DocumentImportDialog', () => {
 
     await waitFor(() => expect(notify.error).toHaveBeenCalled())
     expect(screen.getByTestId('document-import-submit')).toBeInTheDocument()
+  })
+})
+
+describe('DocumentImportDialog replacing the pages of a document', () => {
+  const replaceDocument = { id: 'doc9', title: 'Proposta ACME' }
+
+  it('should send the PDF with the target document and open the editor', async () => {
+    const { spy } = setup({
+      replaceDocument,
+      created: importDto({ documentId: 'doc9' }),
+      frames: [importDto({ documentId: 'doc9', status: 'READY' })],
+    })
+
+    expect(screen.getByText('Atualizar com novo PDF')).toBeInTheDocument()
+    expect(screen.getByText('Documento: Proposta ACME')).toBeInTheDocument()
+    // No tabs, kind or title: only the file.
+    expect(
+      screen.queryByTestId('document-import-tab-prompt'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Título (opcional)')).not.toBeInTheDocument()
+
+    pickFile(pdfFile())
+    expect(submitButton().textContent).toMatch(/Atualizar documento/)
+    fireEvent.click(submitButton())
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/acme/crm/documents/doc9/edit'),
+    )
+    expect(notify.success).toHaveBeenCalledWith(
+      'Documento atualizado com as novas páginas.',
+    )
+    const post = spy.mock.calls.find(([, init]) => init?.method === 'POST')
+    const form = post?.[1]?.body as FormData
+    expect(form.get('mode')).toBe('PDF')
+    expect(form.get('documentId')).toBe('doc9')
+  })
+
+  it('should refuse a DOCX', async () => {
+    setup({ replaceDocument })
+    pickFile(new File(['PK'], 'contrato.docx', { type: '' }))
+
+    expect(screen.getByText('Envie um arquivo PDF.')).toBeInTheDocument()
+    expect(submitButton().disabled).toBe(true)
   })
 })
 
