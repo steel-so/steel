@@ -6,6 +6,7 @@ import {
   applyPeriod,
   dateBucketOf,
   formatAggregate,
+  formatDurationMinutes,
   periodStart,
   type Row,
   viewRows,
@@ -302,6 +303,18 @@ describe('limits, sorting and compare', () => {
     expect(formatAggregate(12.345, { aggregation: 'avg' })).toBe('12,3')
     expect(formatAggregate(12, { decimals: 2 })).toBe('12,00')
     expect(formatAggregate(2.5, {})).toBe('2,5')
+  })
+
+  it('turns minutes into hours and days', () => {
+    expect(formatDurationMinutes(0)).toBe('0min')
+    expect(formatDurationMinutes(45)).toBe('45min')
+    expect(formatDurationMinutes(60)).toBe('1h')
+    expect(formatDurationMinutes(114.3)).toBe('1h 54min')
+    expect(formatDurationMinutes(1439)).toBe('23h 59min')
+    expect(formatDurationMinutes(1440)).toBe('1d')
+    expect(formatDurationMinutes(21208)).toBe('14d 17h')
+    expect(formatDurationMinutes(28763)).toBe('19d 23h')
+    expect(formatAggregate(114.3, { valueFormat: 'duration' })).toBe('1h 54min')
   })
 
   it('applies period, filters, sort and limit to a table', () => {

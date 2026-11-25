@@ -15,6 +15,7 @@ import {
   aggregateCompare,
   aggregateTotal,
   formatAggregate,
+  formatDurationMinutes,
   type Row,
   refLabelsOf,
   withDerivedFields,
@@ -149,9 +150,9 @@ export function AggregateTile({
           ...(tv ? { fontSize: 'min(62cqh, 26cqw)' } : {}),
         }}
       >
-        {config.prefix}
+        {config.valueFormat === 'duration' ? null : config.prefix}
         {formatted}
-        {config.suffix}
+        {config.valueFormat === 'duration' ? null : config.suffix}
       </span>
       {caption ? (
         <span className='mt-1 text-xs uppercase tracking-wide'>{caption}</span>
@@ -256,6 +257,10 @@ export function ChartWidget({
   }
 
   const isHorizontal = config.chartType === 'horizontal'
+  const durationTick =
+    config.valueFormat === 'duration'
+      ? (value: string | number | Date) => formatDurationMinutes(Number(value))
+      : undefined
   const categoryLegend = config.xAxisName || undefined
   const valueLegend = config.yAxisName || undefined
   /** Nome do eixo que fica embaixo/à esquerda (barra horizontal inverte os dois). */
@@ -420,7 +425,9 @@ export function ChartWidget({
             legend: leftAxisName,
             legendPosition: 'middle',
             legendOffset: axisLeftLegendOffset,
+            format: durationTick,
           }}
+          yFormat={durationTick}
           theme={theme}
           legends={legends}
         />
@@ -450,6 +457,7 @@ export function ChartWidget({
         colors={palette}
         borderRadius={3}
         enableLabel={config.dataLabels}
+        valueFormat={durationTick}
         valueScale={{
           type: 'linear',
           min: config.yMin ?? 'auto',
@@ -461,6 +469,7 @@ export function ChartWidget({
           legend: bottomAxisName,
           legendPosition: 'middle',
           legendOffset: axisBottomLegendOffset,
+          format: isHorizontal ? durationTick : undefined,
         }}
         axisLeft={{
           tickSize: 0,
@@ -468,6 +477,7 @@ export function ChartWidget({
           legend: leftAxisName,
           legendPosition: 'middle',
           legendOffset: axisLeftLegendOffset,
+          format: isHorizontal ? undefined : durationTick,
         }}
         theme={theme}
         legends={legends}

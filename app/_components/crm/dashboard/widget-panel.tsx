@@ -1056,6 +1056,28 @@ function ChartEditor({
               </div>
             </div>
           </div>
+          <Labeled label='Formato do valor'>
+            <Select
+              value={c.valueFormat ?? 'number'}
+              onValueChange={(v) =>
+                set({ valueFormat: v === 'duration' ? 'duration' : undefined })
+              }
+            >
+              <SelectTrigger className='w-full'>
+                <span>
+                  {c.valueFormat === 'duration'
+                    ? 'Duração (minutos → h, d)'
+                    : 'Número'}
+                </span>
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectItem value='number'>Número</SelectItem>
+                <SelectItem value='duration'>
+                  Duração (minutos → h, d)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </Labeled>
           <Labeled label='Comparar com período anterior'>
             <Select
               value={c.compareRange ?? NONE}

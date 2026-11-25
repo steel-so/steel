@@ -57,7 +57,9 @@ export function FunnelChart({
   const first = values[0] || 0
   const color = palette[0]
   const fmt = (v: number) =>
-    `${config.prefix}${formatAggregate(v, config)}${config.suffix}`
+    config.valueFormat === 'duration'
+      ? formatAggregate(v, config)
+      : `${config.prefix}${formatAggregate(v, config)}${config.suffix}`
   const pct = (a: number, b: number) =>
     b > 0 ? `${Math.round((a / b) * 100)}%` : '—'
 

@@ -546,13 +546,36 @@ export function aggregateCompare(
 }
 
 /**
+ * Minutos em texto legível: 45 → "45min", 114 → "1h 54min", 120 → "2h",
+ * 1.440 → "1d", 21.208 → "14d 17h". Mostra as duas maiores unidades.
+ */
+export function formatDurationMinutes(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes))
+  const days = Math.floor(total / 1440)
+  const hours = Math.floor((total % 1440) / 60)
+  const mins = total % 60
+  const parts: string[] = []
+  if (days > 0) {
+    parts.push(`${days}d`)
+    if (hours > 0) parts.push(`${hours}h`)
+  } else if (hours > 0) {
+    parts.push(`${hours}h`)
+    if (mins > 0) parts.push(`${mins}min`)
+  } else {
+    parts.push(`${mins}min`)
+  }
+  return parts.join(' ')
+}
+
+/**
  * Número formatado em pt-BR. Sem `decimals`: médias com até 1 casa, o resto
  * inteiro quando o valor é inteiro.
  */
 export function formatAggregate(
   value: number,
-  config: Pick<ChartConfig, 'decimals' | 'aggregation'>,
+  config: Pick<ChartConfig, 'decimals' | 'aggregation' | 'valueFormat'>,
 ): string {
+  if (config.valueFormat === 'duration') return formatDurationMinutes(value)
   if (config.decimals !== undefined) {
     return new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: config.decimals,

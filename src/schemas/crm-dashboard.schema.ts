@@ -262,6 +262,11 @@ export const ChartConfigSchema = z.object({
   dateBucket: z.enum(DATE_BUCKETS).optional(),
   /** Casas decimais do número exibido (padrão: 0 na contagem, até 1 na média). */
   decimals: z.number().int().min(0).max(4).optional(),
+  /**
+   * Como o valor é exibido: `duration` lê o número como minutos e mostra
+   * "45min", "1h 54min", "2d 3h" (prefixo/sufixo não se aplicam).
+   */
+  valueFormat: z.enum(['number', 'duration']).optional(),
   /** Cor de destaque do número do "aggregate" (ex.: vermelho p/ violados). */
   color: z
     .string()
