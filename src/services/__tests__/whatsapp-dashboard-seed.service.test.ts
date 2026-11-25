@@ -63,7 +63,10 @@ describe('WhatsAppDashboardSeedService.seedDefaults()', () => {
     )
     expectOk(result)
 
-    expect(mockedDashboardRepo.create).toHaveBeenCalledTimes(2)
+    expect(mockedDashboardRepo.create).toHaveBeenCalledTimes(3)
+    expect(mockedDashboardRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Tempos de atendimento' }),
+    )
     expect(mockedDashboardRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: WORKSPACE_ID,
@@ -76,8 +79,8 @@ describe('WhatsAppDashboardSeedService.seedDefaults()', () => {
       expect.objectContaining({ title: 'Campanhas', module: 'COMMUNICATION' }),
     )
 
-    // 8 widgets no dashboard "Atendimento" + 7 em "Campanhas"
-    expect(mockedWidgetRepo.create).toHaveBeenCalledTimes(15)
+    // 8 widgets em "Atendimento" + 7 em "Campanhas" + 8 em "Tempos de atendimento"
+    expect(mockedWidgetRepo.create).toHaveBeenCalledTimes(23)
 
     expect(mockedReportRepo.create).toHaveBeenCalledTimes(2)
     expect(mockedReportRepo.create).toHaveBeenCalledWith(
@@ -119,7 +122,7 @@ describe('WhatsAppDashboardSeedService.seedDefaults()', () => {
       await WhatsAppDashboardSeedService.seedDefaults(WORKSPACE_ID, ACTOR_ID),
     )
 
-    expect(mockedDashboardRepo.create).toHaveBeenCalledTimes(1)
+    expect(mockedDashboardRepo.create).toHaveBeenCalledTimes(2)
     expect(mockedDashboardRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Campanhas' }),
     )
@@ -141,7 +144,7 @@ describe('WhatsAppDashboardSeedService.seedDefaults()', () => {
     )
 
     expectOk(result)
-    expect(mockedWidgetRepo.create).toHaveBeenCalledTimes(15)
+    expect(mockedWidgetRepo.create).toHaveBeenCalledTimes(23)
   })
 
   it('propagates a dashboard creation failure and does not seed reports', async () => {

@@ -24,6 +24,7 @@ import type { CreateCrmReportDTO } from '@/src/schemas/crm-report.schema'
 
 const ATENDIMENTO_TITLE = 'Atendimento'
 const CAMPANHAS_TITLE = 'Campanhas'
+const TEMPOS_TITLE = 'Tempos de atendimento'
 const CONVERSAS_REPORT_NAME = 'Conversas do WhatsApp'
 const TRANSMISSOES_REPORT_NAME = 'Transmissões do WhatsApp'
 
@@ -205,6 +206,118 @@ const CAMPANHAS_WIDGETS: CreateCrmDashboardWidgetDTO[] = [
   ),
 ]
 
+const OPEN_FILTER = [
+  { field: 'isOpen', operator: 'equals', value: 'true' },
+] as const
+
+const TEMPOS_WIDGETS: CreateCrmDashboardWidgetDTO[] = [
+  chartWidget(
+    {
+      chartType: 'aggregate',
+      source: 'whatsapp-attendances',
+      yField: 'avgResponseMinutes',
+      aggregation: 'avg',
+      decimals: 1,
+      suffix: ' min',
+      xAxisName: 'Tempo médio de resposta',
+    },
+    { x: 0, y: 0, w: 3, h: 4 },
+  ),
+  chartWidget(
+    {
+      chartType: 'aggregate',
+      source: 'whatsapp-attendances',
+      yField: 'openMinutes',
+      aggregation: 'avg',
+      filters: [...OPEN_FILTER],
+      decimals: 0,
+      suffix: ' min',
+      xAxisName: 'Tempo médio das conversas abertas',
+    },
+    { x: 3, y: 0, w: 3, h: 4 },
+  ),
+  chartWidget(
+    {
+      chartType: 'aggregate',
+      source: 'whatsapp-attendances',
+      yField: 'waitingMinutes',
+      aggregation: 'max',
+      decimals: 0,
+      suffix: ' min',
+      color: '#dc2626',
+      xAxisName: 'Maior espera agora',
+    },
+    { x: 6, y: 0, w: 3, h: 4 },
+  ),
+  chartWidget(
+    {
+      chartType: 'aggregate',
+      source: 'whatsapp-attendances',
+      yField: 'durationMinutes',
+      aggregation: 'avg',
+      decimals: 0,
+      suffix: ' min',
+      xAxisName: 'Duração média das encerradas',
+    },
+    { x: 9, y: 0, w: 3, h: 4 },
+  ),
+  chartWidget(
+    {
+      chartType: 'horizontal',
+      source: 'whatsapp-attendances',
+      xField: 'attendant',
+      yField: 'avgResponseMinutes',
+      aggregation: 'avg',
+      xAxisName: 'Atendente',
+      yAxisName: 'Tempo médio de resposta (min)',
+    },
+    { x: 0, y: 4, w: 6, h: 6 },
+  ),
+  chartWidget(
+    {
+      chartType: 'horizontal',
+      source: 'whatsapp-attendances',
+      xField: 'attendant',
+      yField: 'openMinutes',
+      aggregation: 'avg',
+      filters: [...OPEN_FILTER],
+      xAxisName: 'Atendente',
+      yAxisName: 'Tempo médio das abertas (min)',
+    },
+    { x: 6, y: 4, w: 6, h: 6 },
+  ),
+  chartWidget(
+    {
+      chartType: 'line',
+      source: 'whatsapp-attendances',
+      xField: 'createdAt',
+      yField: 'avgResponseMinutes',
+      aggregation: 'avg',
+      dateBucket: 'day',
+      xAxisName: 'Dia',
+      yAxisName: 'Tempo médio de resposta (min)',
+    },
+    { x: 0, y: 10, w: 12, h: 5 },
+  ),
+  viewWidget(
+    {
+      source: 'whatsapp-attendances',
+      fields: [
+        'attendant',
+        'team',
+        'status',
+        'openMinutes',
+        'waitingMinutes',
+        'avgResponseMinutes',
+        'lastInboundAt',
+      ],
+      filters: [...OPEN_FILTER],
+      sort: [{ field: 'openMinutes', direction: 'desc' }],
+    },
+    { x: 0, y: 15, w: 12, h: 6 },
+  ),
+]
+
 const CONVERSAS_REPORT: Omit<CreateCrmReportDTO, 'name'> = {
   source: 'whatsapp_conversation',
   columns: [
@@ -332,7 +445,7 @@ async function createReportIfMissing(
 
 export const WhatsAppDashboardSeedService = {
   /**
-   * Cria os dashboards "Atendimento"/"Campanhas" e os relatórios de
+   * Cria os dashboards "Atendimento"/"Campanhas"/"Tempos de atendimento" e os relatórios de
    * conversas/transmissões, pulando o que já existir (por título/nome).
    */
   async seedDefaults(
@@ -354,6 +467,14 @@ export const WhatsAppDashboardSeedService = {
       CAMPANHAS_WIDGETS,
     )
     if (!dashboard2.ok) return dashboard2
+
+    const dashboard3 = await createDashboardIfMissing(
+      workspaceId,
+      actorId,
+      TEMPOS_TITLE,
+      TEMPOS_WIDGETS,
+    )
+    if (!dashboard3.ok) return dashboard3
 
     const report1 = await createReportIfMissing(
       workspaceId,
