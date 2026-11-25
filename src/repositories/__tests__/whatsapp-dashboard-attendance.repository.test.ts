@@ -116,6 +116,31 @@ describe('WhatsAppDashboardAttendanceRepository.attendances()', () => {
       closeOutcome: 'SUCCESS',
       closeStatusLabels: ['Venda realizada'],
     })
+    // Two turns of the contact: answered in 60s and in 120s (the second
+    // message of the second turn and the AI answer do not count).
+    const at = (seconds: number) => new Date(T1.getTime() + seconds * 1000)
+    const message = (
+      seconds: number,
+      direction: 'IN' | 'OUT',
+      extra: { senderUserId?: string; sentByAi?: boolean } = {},
+    ) => ({
+      workspaceId: workspace.id,
+      conversationId: recent.id,
+      direction,
+      type: 'TEXT' as const,
+      createdAt: at(seconds),
+      ...extra,
+    })
+    await prisma.whatsAppMessage.createMany({
+      data: [
+        message(0, 'IN'),
+        message(10, 'OUT', { sentByAi: true }),
+        message(60, 'OUT', { senderUserId: user.id }),
+        message(300, 'IN'),
+        message(330, 'IN'),
+        message(420, 'OUT', { senderUserId: user.id }),
+      ],
+    })
     // Old and closed, but with a message inside the window.
     const reactivated = await seedConversation(workspace.id, connection.id, {
       status: 'CLOSED',
@@ -165,7 +190,10 @@ describe('WhatsAppDashboardAttendanceRepository.attendances()', () => {
       stillOpen.id,
       silent.id,
     ])
+    expect(rows[0].avgResponseSeconds).toBe(90)
+    expect(rows[1].avgResponseSeconds).toBeNull()
     expect(rows[0]).toEqual({
+      avgResponseSeconds: 90,
       id: recent.id,
       status: 'CLOSED',
       assignedUserId: user.id,

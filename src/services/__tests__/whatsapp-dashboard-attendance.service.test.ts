@@ -54,7 +54,12 @@ describe('WhatsAppDashboardSourceService.rows — whatsapp-attendances', () => {
 
   it('should map the conversations over the history window', async () => {
     repo.attendances.mockResolvedValue(
-      ok([createFakeWaDashboardAttendance({ unreadCount: 2 })]),
+      ok([
+        {
+          ...createFakeWaDashboardAttendance({ unreadCount: 2 }),
+          avgResponseSeconds: null,
+        },
+      ]),
     )
 
     const rows = expectOk(
