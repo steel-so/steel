@@ -3,6 +3,11 @@ import { withAxiom } from '@/lib/axiom/server'
 import { badRequest } from '@/src/errors'
 import { getAuthSession } from '@/src/lib/auth-session'
 import { consume, uploadLimiter } from '@/src/lib/rate-limit'
+import {
+  baseContentType,
+  needsAudioTranscode,
+  transcodeToOggOpus,
+} from '@/src/lib/whatsapp/audio-transcode'
 import { persistOutboundMedia } from '@/src/lib/whatsapp/media'
 import { assertModuleMember } from '@/src/services/authz'
 import { handleError, successResponse } from '@/utils/http-response'
@@ -49,10 +54,21 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
     return handleError(badRequest('Arquivo muito grande. Máximo 16 MB'))
   }
 
+  // Browser recordings (audio/webm) are refused by Meta: send Ogg/Opus.
+  let outBody = body
+  // Without `; codecs=...`: the stored key extension and header stay clean.
+  let outType = baseContentType(contentType)
+  if (needsAudioTranscode(contentType)) {
+    const converted = await transcodeToOggOpus(body)
+    if (!converted.ok) return handleError(converted.error)
+    outBody = converted.value
+    outType = 'audio/ogg'
+  }
+
   const stored = await persistOutboundMedia({
     workspaceId: id,
-    body,
-    contentType,
+    body: outBody,
+    contentType: outType,
   })
   if (!stored.ok) return handleError(stored.error)
 
