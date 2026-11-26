@@ -55,7 +55,7 @@ export const POST = withAxiom(async (request: NextRequest, ctx: Params) => {
   }
 
   // Browser recordings (audio/webm) are refused by Meta: send Ogg/Opus.
-  let outBody = body
+  let outBody: Buffer = body
   // Without `; codecs=...`: the stored key extension and header stay clean.
   let outType = baseContentType(contentType)
   if (needsAudioTranscode(contentType)) {
