@@ -29,6 +29,7 @@ vi.mock('@/src/services/whatsapp-conversation-waiting', () => ({
 }))
 vi.mock('@/src/services/whatsapp-notify', () => ({
   notifyWhatsAppUsers: vi.fn(async () => 0),
+  notifyNewWhatsAppConversation: vi.fn(async () => 0),
   whatsAppConversationPath: (id: string) => `/zap?conversation=${id}`,
 }))
 vi.mock('@/src/services/whatsapp-usage.service', () => ({

@@ -479,6 +479,12 @@ const NOTIFICATION_KINDS: Record<string, KindEntry> = {
     icon: 'assign',
     color: 'emerald',
   },
+  WHATSAPP_NEW_CONVERSATION: {
+    module: 'COMMUNICATION',
+    label: 'Nova conversa',
+    icon: 'message',
+    color: 'emerald',
+  },
   WHATSAPP_AI_HANDOFF: {
     module: 'COMMUNICATION',
     label: 'IA transferiu a conversa',
@@ -810,6 +816,8 @@ export const URGENT_NOTIFICATION_KINDS: readonly string[] = [
   'AGENT_APPROVAL_REQUESTED',
   'SD_TICKET_ASSIGNED',
   'WHATSAPP_CONVERSATION_ASSIGNED',
+  'WHATSAPP_NEW_CONVERSATION',
+  'WHATSAPP_AI_HANDOFF',
   'AI_ACTION_EXPIRING',
   'WHATSAPP_SLA_BREACHED',
 ]

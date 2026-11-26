@@ -59,9 +59,11 @@ import { WhatsAppButtonActionService } from './whatsapp-button-action.service'
 import { WhatsAppChatbotRuntimeService } from './whatsapp-chatbot-runtime.service'
 import { WhatsAppContactBlockService } from './whatsapp-contact-block.service'
 import { reopenWhatsAppConversation } from './whatsapp-conversation.service'
+import { whatsAppTeamMemberIds } from './whatsapp-conversation-scope.service'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppFlowResponseService } from './whatsapp-flow-response.service'
 import {
+  notifyNewWhatsAppConversation,
   notifyWhatsAppUsers,
   whatsAppConversationPath,
 } from './whatsapp-notify'
@@ -299,6 +301,8 @@ export const WhatsAppWebhookService = {
     let aiActive: boolean
     /** This message opened the conversation (new, or a closed one reopened). */
     let opening = false
+    /** A brand-new conversation (not a reopened one) — notified once. */
+    let brandNewConversation: WhatsAppConversation | null = null
     /** Owner fields of the conversation, for the SLA cycle bookkeeping. */
     let slaOwner: {
       teamId: string | null
@@ -416,6 +420,7 @@ export const WhatsAppWebhookService = {
         aiActive = aiConfigActive
         opening = true
         slaOwner = created.value
+        brandNewConversation = created.value
         waiting = { conversation: created.value, reason: 'new' }
         // Inbound is counted toward the monthly limit but never blocked.
         if (!serviceDesk) {
@@ -442,6 +447,20 @@ export const WhatsAppWebhookService = {
       buttonPayload: input.buttonPayload,
     })
     if (!message.ok) return message
+    if (brandNewConversation && !serviceDesk) {
+      const opened: WhatsAppConversation = brandNewConversation
+      void (async () => {
+        await notifyNewWhatsAppConversation({
+          workspaceId,
+          conversationId: opened.id,
+          teamMemberIds: opened.teamId
+            ? await whatsAppTeamMemberIds(workspaceId, opened.teamId)
+            : [],
+          contactLabel: contact.value.name ?? contact.value.waId,
+          preview: input.text,
+        })
+      })()
+    }
     void indexSearchDocument('zap-conversation', workspaceId, conversationId)
     void indexSearchDocument('zap-contact', workspaceId, contact.value.id)
     // AI campaign funnel: the first answer after the template counts as a

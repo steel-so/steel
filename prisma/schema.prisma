@@ -5796,6 +5796,8 @@ enum NotificationKind {
   /// Alerta do monitoramento abriu/reabriu chamado no plantão.
   SD_MONITOR_ALERT
   WHATSAPP_CONVERSATION_ASSIGNED
+  /// A customer opened a new conversation on a Comunicação line.
+  WHATSAPP_NEW_CONVERSATION
   WHATSAPP_AI_HANDOFF
   /// Conversa há N minutos sem atendente (lembrete aos supervisores, ADR 0047).
   WHATSAPP_CONVERSATION_UNATTENDED

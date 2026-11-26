@@ -555,6 +555,7 @@ export const NotificationListDTO = dto(
           'SD_KB_COMMENT',
           'SD_MONITOR_ALERT',
           'WHATSAPP_CONVERSATION_ASSIGNED',
+          'WHATSAPP_NEW_CONVERSATION',
           'WHATSAPP_AI_HANDOFF',
           'WHATSAPP_CONNECTION_LOST',
           'WHATSAPP_BROADCAST_FINISHED',

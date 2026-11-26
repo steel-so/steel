@@ -11,7 +11,7 @@ Configurações → Notificações → **Avisos por WhatsApp**:
 1. Informa o número com DDD e pede o código.
 2. Recebe 6 dígitos no WhatsApp (válidos por 10 minutos, 5 tentativas) e confirma.
 3. Escolhe, por tipo, o que quer receber. Sem escolha salva, só os **urgentes**
-   chegam (SLA violado, aprovações, atribuições, ação da IA expirando).
+   chegam (SLA violado, aprovações, atribuições, **nova conversa**, **IA transferiu para um humano**, ação da IA expirando).
 
 O número só vale depois do código: sem isso, qualquer pessoa poderia apontar o
 workspace para o telefone de outra.
@@ -27,6 +27,15 @@ workspace para o telefone de outra.
 - Quem pediu para sair (`sair`, LGPD) deixa de receber.
 - O envio conta no limite mensal e nos custos da conexão (origem `OTHER`).
 - Falha no WhatsApp nunca afeta o aviso do app.
+
+## Nova conversa e transferência da IA
+
+- **Nova conversa** (`WHATSAPP_NEW_CONVERSATION`): quando um cliente abre uma
+  conversa em uma conexão da Comunicação. Vai para os membros da equipe para a
+  qual a conversa foi roteada ou, sem equipe, para os OWNER/ADMIN (no máximo 20).
+  Um aviso por conversa. Conversas do ServiceDesk não geram.
+- **IA transferiu** (`WHATSAPP_AI_HANDOFF`): vai para o atendente da conversa, a
+  equipe ou os admins — o mesmo destinatário do aviso no app.
 
 ## Onde está
 
