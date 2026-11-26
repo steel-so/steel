@@ -5,7 +5,8 @@
  * forget the marker — the customer is told a person is coming and nobody is
  * notified. A reply that announces the transfer counts as one.
  *
- * It also catches a promise to send media, which the AI cannot do.
+ * It also catches a promise to send media or to do something the AI cannot
+ * (schedule, book, check), and a promise that ends in "um momento".
  *
  * Deliberately narrow: it needs a transfer verb followed by "para <someone>"
  * in the same sentence, and ignores number/line porting ("transferir o número
@@ -22,10 +23,23 @@ const ANNOUNCES_TRANSFER =
 const PROMISES_MEDIA =
   /\b(?:vou|já vou|irei|estou|já estou|já|vamos)\s+(?:te\s+)?(?:mand\w*|envi\w*|pegar|tirar|anexar)\b[^.!?\n]{0,40}?\b(?:prints?|imagens?|fotos?|v[ií]deos?|capturas?|screenshots?)\b/i
 
+/**
+ * The AI cannot schedule, book, check or call anyone. "Vou agendar uma
+ * demonstração", "vou verificar com o time", "vou chamar o comercial": the
+ * promise is empty unless a person takes the conversation.
+ */
+const PROMISES_ACTION =
+  /\b(?:vou|irei|já vou|vamos)\s+(?:te\s+)?(?:agendar|marcar|reservar|providenciar|solicitar|acionar|chamar|confirmar|verificar|checar|consultar|buscar|conectar|colocar)\b/i
+
+/** "Um momento." closing a promise: someone is supposed to act next. */
+const STALLS =
+  /\b(?:vou|irei|já vou|vamos|estou)\b[^\n]*?\b(?:um momento|um instante|só um segundo|só um segundinho|aguarde)\W*$/i
+
 const PORTING = /n[uú]mero|linha|portabilidade|chip/i
 
 export function replyAnnouncesHandoff(reply: string): boolean {
   if (PROMISES_MEDIA.test(reply)) return true
+  if (PROMISES_ACTION.test(reply) || STALLS.test(reply.trim())) return true
   const match = ANNOUNCES_TRANSFER.exec(reply)
   return match !== null && !PORTING.test(match[0])
 }
