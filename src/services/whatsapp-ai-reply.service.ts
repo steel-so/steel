@@ -79,7 +79,7 @@ const KNOWLEDGE_BASE_CHAR_BUDGET = 20_000
 // verdade: o dado não cabe no prompt estático (é por contato, não por
 // workspace) e precisa ser buscado sob demanda.
 export const WHATSAPP_AI_HANDOFF_MARKER = '[[TRANSFERIR_ATENDENTE]]'
-const HANDOFF_SYSTEM_INSTRUCTION = `\n\nSe o cliente pedir para falar com uma pessoa/atendente, ou se você não conseguir ajudar com o que ele precisa, inclua o marcador exato ${WHATSAPP_AI_HANDOFF_MARKER} em algum ponto da sua resposta — o sistema o remove automaticamente antes de enviar a mensagem. Isso vale sempre que as instruções acima mandarem transferir, encaminhar ou passar a conversa para alguém (um atendente, uma equipe ou uma pessoa pelo nome): só dizer que vai transferir NÃO transfere, o marcador é o que faz a conversa chegar a uma pessoa.`
+const HANDOFF_SYSTEM_INSTRUCTION = `\n\nSe o cliente pedir para falar com uma pessoa/atendente, ou se você não conseguir ajudar com o que ele precisa, inclua o marcador exato ${WHATSAPP_AI_HANDOFF_MARKER} em algum ponto da sua resposta — o sistema o remove automaticamente antes de enviar a mensagem. Isso vale sempre que as instruções acima mandarem transferir, encaminhar ou passar a conversa para alguém (um atendente, uma equipe ou uma pessoa pelo nome): só dizer que vai transferir NÃO transfere, o marcador é o que faz a conversa chegar a uma pessoa. Siga as instruções acima ao pé da letra: quando mandarem transferir sem responder nada, responda SOMENTE com o marcador, sem nenhuma outra frase — não prometa enviar, buscar ou encaminhar nada, o sistema já avisa o cliente.`
 /**
  * The history holds what the company already sent (campaigns, templates,
  * cadences, documents) as the assistant's earlier messages. Short or vague
