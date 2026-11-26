@@ -190,7 +190,12 @@ export const NotificationWhatsappService = {
       return err(badRequest('O código expirou. Peça um novo.'))
     }
     if (setting.whatsappCodeAttempts >= WHATSAPP_CODE_MAX_ATTEMPTS) {
-      return err(rateLimited('Muitas tentativas. Peça um novo código.'))
+      return err(
+        rateLimited(
+          WHATSAPP_CODE_TTL_MS / 1000,
+          'Muitas tentativas. Peça um novo código.',
+        ),
+      )
     }
 
     const matches = verificationCodeMatches(

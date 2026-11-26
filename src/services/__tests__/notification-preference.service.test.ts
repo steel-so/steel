@@ -169,6 +169,12 @@ function deliveryRow(browserEnabled: boolean) {
     userId: 'u1',
     workspaceId: 'ws1',
     browserEnabled,
+    whatsappEnabled: false,
+    whatsappNumber: null,
+    whatsappVerifiedAt: null,
+    whatsappCodeHash: null,
+    whatsappCodeExpiresAt: null,
+    whatsappCodeAttempts: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
