@@ -32,6 +32,7 @@ import type {
   NotificationSnoozeResultDTO,
 } from '@/types/notification'
 import { assertMember } from './authz'
+import { NotificationWhatsappService } from './notification-whatsapp.service'
 
 const LIST_LIMIT = 50
 
@@ -312,6 +313,17 @@ export const NotificationService = {
       title: input.title,
       body: input.body,
       href: input.href ?? null,
+    })
+
+    // Optional WhatsApp copy of the notice (queued; never fails the notice).
+    await NotificationWhatsappService.enqueue({
+      workspaceId: input.workspaceId,
+      userIds,
+      kind: input.kind,
+      title: input.title,
+      body: input.body,
+      href: input.href ?? null,
+      dedupeKey: input.dedupeKey,
     })
 
     return created

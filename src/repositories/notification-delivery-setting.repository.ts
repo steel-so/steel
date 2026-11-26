@@ -1,4 +1,4 @@
-import type { NotificationDeliverySetting } from '@prisma/client'
+import type { NotificationDeliverySetting, Prisma } from '@prisma/client'
 import { prisma } from '@/src/lib/prisma'
 import { err, ok, type Result } from '@/src/lib/result'
 import { dbError } from './db-error'
@@ -22,17 +22,53 @@ export const NotificationDeliverySettingRepository = {
   async upsert(
     workspaceId: string,
     userId: string,
-    data: { browserEnabled: boolean },
+    data: Prisma.NotificationDeliverySettingUncheckedUpdateInput,
   ): Promise<Result<NotificationDeliverySetting>> {
     try {
       const row = await prisma.notificationDeliverySetting.upsert({
         where: { userId_workspaceId: { userId, workspaceId } },
-        create: { userId, workspaceId, ...data },
+        create: {
+          ...(data as Prisma.NotificationDeliverySettingUncheckedCreateInput),
+          userId,
+          workspaceId,
+        },
         update: data,
       })
       return ok(row)
     } catch (error) {
       return err(dbError('Failed to save notification delivery setting', error))
+    }
+  },
+
+  /**
+   * Users (among `userIds`) with the WhatsApp channel on: enabled and the
+   * number confirmed by code.
+   */
+  async listWhatsappTargets(
+    workspaceId: string,
+    userIds: string[],
+  ): Promise<Result<{ userId: string; number: string }[]>> {
+    if (userIds.length === 0) return ok([])
+    try {
+      const rows = await prisma.notificationDeliverySetting.findMany({
+        where: {
+          workspaceId,
+          userId: { in: userIds },
+          whatsappEnabled: true,
+          whatsappVerifiedAt: { not: null },
+          whatsappNumber: { not: null },
+        },
+        select: { userId: true, whatsappNumber: true },
+      })
+      return ok(
+        rows.flatMap((row) =>
+          row.whatsappNumber
+            ? [{ userId: row.userId, number: row.whatsappNumber }]
+            : [],
+        ),
+      )
+    } catch (error) {
+      return err(dbError('Failed to list WhatsApp notification targets', error))
     }
   },
 }

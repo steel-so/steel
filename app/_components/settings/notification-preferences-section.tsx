@@ -18,6 +18,7 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/src/hooks/use-notification-preferences'
+import { useNotificationWhatsapp } from '@/src/hooks/use-notification-whatsapp'
 import type { UpdateNotificationPreferencesDTO } from '@/src/schemas/notification-preference.schema'
 import type { NotificationPreferenceDTO } from '@/types/notification'
 
@@ -67,6 +68,8 @@ export function NotificationPreferencesSection({
 }) {
   const { data, isLoading, isError } = useNotificationPreferences(workspaceId)
   const update = useUpdateNotificationPreferences(workspaceId)
+  const whatsapp = useNotificationWhatsapp(workspaceId)
+  const whatsappOn = whatsapp.data?.enabled ?? false
   const groups = useMemo(() => groupByModule(data ?? []), [data])
 
   function save(preferences: PreferenceInput[]) {
@@ -137,15 +140,30 @@ export function NotificationPreferencesSection({
                       />
                       <span className='truncate'>{item.label}</span>
                     </label>
-                    <Switch
-                      id={id}
-                      checked={item.inApp}
-                      disabled={update.isPending}
-                      aria-label={`${item.inApp ? 'Silenciar' : 'Ativar'} ${item.label}`}
-                      onCheckedChange={(checked) =>
-                        save([{ kind: item.kind, inApp: checked }])
-                      }
-                    />
+                    <div className='flex items-center gap-4'>
+                      {whatsappOn ? (
+                        <span className='flex items-center gap-2 text-muted-foreground text-xs'>
+                          WhatsApp
+                          <Switch
+                            checked={item.whatsapp}
+                            disabled={update.isPending}
+                            aria-label={`${item.whatsapp ? 'Parar de enviar' : 'Enviar'} ${item.label} por WhatsApp`}
+                            onCheckedChange={(checked) =>
+                              save([{ kind: item.kind, whatsapp: checked }])
+                            }
+                          />
+                        </span>
+                      ) : null}
+                      <Switch
+                        id={id}
+                        checked={item.inApp}
+                        disabled={update.isPending}
+                        aria-label={`${item.inApp ? 'Silenciar' : 'Ativar'} ${item.label}`}
+                        onCheckedChange={(checked) =>
+                          save([{ kind: item.kind, inApp: checked }])
+                        }
+                      />
+                    </div>
                   </div>
                 )
               })}

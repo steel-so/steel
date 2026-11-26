@@ -816,6 +816,8 @@ export type SteelAgentsJobPayload = {
  */
 export const NotificationsJob = {
   AiActionExpiryTick: 'ai-action-expiry-tick',
+  /** Sends one inbox notice to the WhatsApp of the users who opted in. */
+  WhatsappDeliver: 'whatsapp-deliver',
 } as const
 
 export type NotificationsJob =
@@ -823,6 +825,15 @@ export type NotificationsJob =
 
 export type NotificationsJobPayload = {
   [NotificationsJob.AiActionExpiryTick]: Record<string, never>
+  /** Numbers are looked up at send time: no phone ever sits in Redis. */
+  [NotificationsJob.WhatsappDeliver]: {
+    workspaceId: string
+    userIds: string[]
+    kind: string
+    title: string
+    body: string
+    href: string | null
+  }
 }
 
 /**

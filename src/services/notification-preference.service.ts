@@ -1,6 +1,7 @@
 import type { NotificationKind } from '@prisma/client'
 import { auditMutation } from '@/lib/axiom/audit'
 import { configurableNotificationKinds } from '@/src/lib/notification-kind'
+import { whatsappEnabledForKind } from '@/src/lib/notifications/whatsapp-channel'
 import { ok, type Result } from '@/src/lib/result'
 import { NotificationDeliverySettingRepository } from '@/src/repositories/notification-delivery-setting.repository'
 import { NotificationPreferenceRepository } from '@/src/repositories/notification-preference.repository'
@@ -34,7 +35,7 @@ export const NotificationPreferenceService = {
     )
     if (!rows.ok) return rows
 
-    const saved = new Map(rows.value.map((row) => [row.kind, row.inApp]))
+    const saved = new Map(rows.value.map((row) => [row.kind, row]))
     return ok(
       configurableNotificationKinds().map((info) => ({
         kind: info.kind as NotificationKindDTO,
@@ -43,7 +44,11 @@ export const NotificationPreferenceService = {
         label: info.label,
         icon: info.icon,
         color: info.color,
-        inApp: saved.get(info.kind as NotificationKind) ?? true,
+        inApp: saved.get(info.kind as NotificationKind)?.inApp ?? true,
+        whatsapp: whatsappEnabledForKind(
+          info.kind,
+          saved.get(info.kind as NotificationKind)?.whatsapp,
+        ),
       })),
     )
   },
@@ -56,11 +61,18 @@ export const NotificationPreferenceService = {
     const membership = await assertMember(actorId, workspaceId)
     if (!membership.ok) return membership
 
-    // Last write wins when the same kind is sent twice.
-    const byKind = new Map(dto.preferences.map((p) => [p.kind, p.inApp]))
-    const items = Array.from(byKind, ([kind, inApp]) => ({
+    // Last write wins per field when the same kind is sent twice.
+    const byKind = new Map<string, { inApp?: boolean; whatsapp?: boolean }>()
+    for (const p of dto.preferences) {
+      byKind.set(p.kind, {
+        ...byKind.get(p.kind),
+        ...(p.inApp === undefined ? {} : { inApp: p.inApp }),
+        ...(p.whatsapp === undefined ? {} : { whatsapp: p.whatsapp }),
+      })
+    }
+    const items = Array.from(byKind, ([kind, value]) => ({
       kind: kind as NotificationKind,
-      inApp,
+      ...value,
     }))
 
     const saved = await NotificationPreferenceRepository.upsertMany(
@@ -86,8 +98,12 @@ export const NotificationPreferenceService = {
       actorId,
       meta: {
         workspaceId,
-        muted: items.filter((i) => !i.inApp).map((i) => i.kind),
-        unmuted: items.filter((i) => i.inApp).map((i) => i.kind),
+        muted: items.filter((i) => i.inApp === false).map((i) => i.kind),
+        unmuted: items.filter((i) => i.inApp === true).map((i) => i.kind),
+        whatsappOn: items.filter((i) => i.whatsapp === true).map((i) => i.kind),
+        whatsappOff: items
+          .filter((i) => i.whatsapp === false)
+          .map((i) => i.kind),
       },
     })
 

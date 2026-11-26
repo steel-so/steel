@@ -1,0 +1,42 @@
+# Avisos da plataforma por WhatsApp
+
+Cada usuário pode receber no próprio WhatsApp uma cópia dos avisos da caixa de
+entrada, enviada pela **conexão da Comunicação do workspace** (a primeira
+conectada, da mais antiga para a mais nova).
+
+## Como o usuário ativa
+
+Configurações → Notificações → **Avisos por WhatsApp**:
+
+1. Informa o número com DDD e pede o código.
+2. Recebe 6 dígitos no WhatsApp (válidos por 10 minutos, 5 tentativas) e confirma.
+3. Escolhe, por tipo, o que quer receber. Sem escolha salva, só os **urgentes**
+   chegam (SLA violado, aprovações, atribuições, ação da IA expirando).
+
+O número só vale depois do código: sem isso, qualquer pessoa poderia apontar o
+workspace para o telefone de outra.
+
+## Regras
+
+- Só tipos configuráveis (CRM, Comunicação, Plataforma). O ServiceDesk tem
+  preferências e canais próprios e não passa por aqui.
+- Silenciar o tipo na caixa de entrada também corta o WhatsApp.
+- **Meta (API oficial):** texto livre só até 24 h depois da última mensagem do
+  usuário ao número da conexão; fora disso o aviso é pulado (log
+  `notifications.whatsapp.skipped`). **Z-API** não tem janela.
+- Quem pediu para sair (`sair`, LGPD) deixa de receber.
+- O envio conta no limite mensal e nos custos da conexão (origem `OTHER`).
+- Falha no WhatsApp nunca afeta o aviso do app.
+
+## Onde está
+
+`NotificationService.notifyUsers` → `NotificationWhatsappService.enqueue` →
+fila `notifications` (job `whatsapp-deliver`, sem telefone no Redis) →
+`NotificationWhatsappService.deliver`. Regras puras em
+`src/lib/notifications/whatsapp-channel.ts`.
+
+## Pendências conhecidas
+
+- Template aprovado da Meta para fora da janela de 24 h.
+- Escolha da conexão pelo administrador (hoje automática).
+- Limite por usuário/hora e ServiceDesk (etapa 2).

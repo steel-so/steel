@@ -28,6 +28,7 @@ function row(kind: string, inApp: boolean): NotificationPreference {
     workspaceId: 'ws1',
     kind: kind as NotificationPreference['kind'],
     inApp,
+    whatsapp: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -59,6 +60,7 @@ describe('NotificationPreferenceService.list', () => {
       icon: 'assign',
       color: 'violet',
       inApp: true,
+      whatsapp: false,
     })
   })
 
@@ -122,6 +124,8 @@ describe('NotificationPreferenceService.update', () => {
         workspaceId: 'ws1',
         muted: ['CRM_TASK_DUE'],
         unmuted: ['MEMBER_JOINED'],
+        whatsappOn: [],
+        whatsappOff: [],
       },
     })
     expect(items.find((i) => i.kind === 'CRM_TASK_DUE')?.inApp).toBe(false)

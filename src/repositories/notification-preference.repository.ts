@@ -24,7 +24,7 @@ export const NotificationPreferenceRepository = {
   async upsertMany(
     workspaceId: string,
     userId: string,
-    items: { kind: NotificationKind; inApp: boolean }[],
+    items: { kind: NotificationKind; inApp?: boolean; whatsapp?: boolean }[],
   ): Promise<Result<number>> {
     try {
       const saved = await prisma.$transaction(
@@ -41,9 +41,16 @@ export const NotificationPreferenceRepository = {
               userId,
               workspaceId,
               kind: item.kind,
-              inApp: item.inApp,
+              inApp: item.inApp ?? true,
+              whatsapp: item.whatsapp ?? null,
             },
-            update: { inApp: item.inApp },
+            // Only the fields the caller sent change.
+            update: {
+              ...(item.inApp === undefined ? {} : { inApp: item.inApp }),
+              ...(item.whatsapp === undefined
+                ? {}
+                : { whatsapp: item.whatsapp }),
+            },
           }),
         ),
       )
@@ -68,6 +75,24 @@ export const NotificationPreferenceRepository = {
       return ok(rows.map((row) => row.userId))
     } catch (error) {
       return err(dbError('Failed to list muted notification users', error))
+    }
+  },
+
+  /** The saved WhatsApp choice of `kind` per user (absent/null = default). */
+  async listWhatsappChoices(
+    workspaceId: string,
+    kind: NotificationKind,
+    userIds: string[],
+  ): Promise<Result<Map<string, boolean | null>>> {
+    if (userIds.length === 0) return ok(new Map())
+    try {
+      const rows = await prisma.notificationPreference.findMany({
+        where: { workspaceId, kind, userId: { in: userIds } },
+        select: { userId: true, whatsapp: true },
+      })
+      return ok(new Map(rows.map((row) => [row.userId, row.whatsapp])))
+    } catch (error) {
+      return err(dbError('Failed to list WhatsApp notification choices', error))
     }
   },
 }

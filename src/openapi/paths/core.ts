@@ -23,8 +23,11 @@ import {
   SnoozeNotificationsSchema,
 } from '@/src/schemas/notification.schema'
 import {
+  ConfirmNotificationWhatsappCodeSchema,
+  RequestNotificationWhatsappCodeSchema,
   UpdateNotificationDeliverySchema,
   UpdateNotificationPreferencesSchema,
+  UpdateNotificationWhatsappSchema,
 } from '@/src/schemas/notification-preference.schema'
 import { UpdateNotificationSettingSchema } from '@/src/schemas/notification-settings.schema'
 import {
@@ -86,6 +89,7 @@ import {
   NotificationRealtimeEventDTO,
   NotificationSettingDTO,
   NotificationSnoozeResultDTO,
+  NotificationWhatsappDTO,
   ProfileDTO,
   ProjectDTO,
   ProjectMemberDTO,
@@ -1191,6 +1195,71 @@ const workspaces: RouteConfig[] = [
         description: 'Canais atualizados.',
         schema: NotificationDeliveryDTO,
       },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/notifications/preferences/whatsapp',
+    tags: ['Configurações do workspace'],
+    summary: 'Canal de WhatsApp dos avisos',
+    description:
+      'Estado do canal de WhatsApp do próprio usuário: se há conexão da Comunicação, o provedor, o número (sempre mascarado) e se está confirmado e ligado.',
+    responses: {
+      200: { description: 'Estado do canal.', schema: NotificationWhatsappDTO },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'put',
+    path: '/workspaces/{id}/notifications/preferences/whatsapp',
+    tags: ['Configurações do workspace'],
+    summary: 'Ligar ou desligar o WhatsApp dos avisos',
+    description:
+      'Liga ou pausa o canal já confirmado, sem perder o número. Antes da confirmação por código responde 400.',
+    body: UpdateNotificationWhatsappSchema,
+    responses: {
+      200: {
+        description: 'Estado atualizado.',
+        schema: NotificationWhatsappDTO,
+      },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/notifications/preferences/whatsapp',
+    tags: ['Configurações do workspace'],
+    summary: 'Remover o número de WhatsApp dos avisos',
+    description: 'Esquece o número e qualquer código pendente.',
+    responses: {
+      200: { description: 'Canal removido.', schema: NotificationWhatsappDTO },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/notifications/preferences/whatsapp/code',
+    tags: ['Configurações do workspace'],
+    summary: 'Enviar o código de confirmação por WhatsApp',
+    description:
+      'Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, o usuário precisa ter escrito para o número da conexão nas últimas 24 h. Limitado a 5 pedidos a cada 15 minutos.',
+    body: RequestNotificationWhatsappCodeSchema,
+    responses: {
+      200: { description: 'Código enviado.', schema: NotificationWhatsappDTO },
+    },
+    errors: WORKSPACE_MEMBER_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/notifications/preferences/whatsapp/confirm',
+    tags: ['Configurações do workspace'],
+    summary: 'Confirmar o código e ativar o WhatsApp',
+    description:
+      'Confere o código; acertando, o canal fica ligado. Após 5 erros o código é invalidado e é preciso pedir outro.',
+    body: ConfirmNotificationWhatsappCodeSchema,
+    responses: {
+      200: { description: 'Canal ativo.', schema: NotificationWhatsappDTO },
     },
     errors: WORKSPACE_MEMBER_ERRORS,
   },

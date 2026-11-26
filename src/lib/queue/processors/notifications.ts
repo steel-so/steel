@@ -2,7 +2,8 @@ import type { Job } from 'bullmq'
 import { logFields } from '@/lib/axiom/log-fields'
 import { logger } from '@/lib/axiom/logger'
 import { InboxAiPendingService } from '@/src/services/inbox-ai-pending.service'
-import { NotificationsJob } from '../jobs'
+import { NotificationWhatsappService } from '@/src/services/notification-whatsapp.service'
+import { NotificationsJob, type NotificationsJobPayload } from '../jobs'
 
 /**
  * Queue `notifications`: `ai-action-expiry-tick` (every minute) warns the
@@ -26,6 +27,16 @@ export async function processNotifications(job: Job): Promise<unknown> {
         ),
       )
       return { sent: result.value }
+    }
+    case NotificationsJob.WhatsappDeliver: {
+      const sent = await NotificationWhatsappService.deliver(
+        job.data as NotificationsJobPayload[typeof NotificationsJob.WhatsappDeliver],
+      )
+      logger.info(
+        'queue.notifications.whatsapp_delivered',
+        logFields({ component: 'Worker' }, { jobId: job.id, ...sent }),
+      )
+      return sent
     }
     default:
       throw new Error(

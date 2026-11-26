@@ -5902,6 +5902,8 @@ model NotificationPreference {
   workspaceId String           @map("workspace_id")
   kind        NotificationKind
   inApp       Boolean          @default(true) @map("in_app")
+  /// WhatsApp delivery of this kind; null = the default (urgent kinds only).
+  whatsapp    Boolean?
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
 
@@ -5921,6 +5923,16 @@ model NotificationDeliverySetting {
   workspaceId    String   @map("workspace_id")
   /// Desktop notifications for urgent kinds while the tab is hidden.
   browserEnabled Boolean  @default(false) @map("browser_enabled")
+  /// Platform notices on WhatsApp, sent by the workspace's own Comunicação
+  /// connection. Only active once `whatsappVerifiedAt` is set (code check).
+  whatsappEnabled        Boolean   @default(false) @map("whatsapp_enabled")
+  /// Digits only, with country code (e.g. 5511999990000).
+  whatsappNumber         String?   @map("whatsapp_number")
+  whatsappVerifiedAt     DateTime? @map("whatsapp_verified_at")
+  /// HMAC of the pending 6-digit code; never the code itself.
+  whatsappCodeHash       String?   @map("whatsapp_code_hash")
+  whatsappCodeExpiresAt  DateTime? @map("whatsapp_code_expires_at")
+  whatsappCodeAttempts   Int       @default(0) @map("whatsapp_code_attempts")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

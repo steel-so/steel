@@ -678,6 +678,32 @@ export const NotificationDeliveryDTO = dto(
   }),
 )
 
+export const NotificationWhatsappDTO = dto(
+  'NotificationWhatsapp',
+  z.object({
+    available: z.boolean().meta({
+      description: 'Há uma conexão da Comunicação conectada no workspace.',
+    }),
+    provider: z.enum(['META', 'ZAPI', 'WIDGET']).nullable().meta({
+      description:
+        'Provedor da conexão usada. Na Meta o texto livre só vai até 24 h depois da última mensagem do usuário.',
+    }),
+    enabled: z
+      .boolean()
+      .meta({ description: 'Número confirmado e canal ligado.' }),
+    verified: z
+      .boolean()
+      .meta({ description: 'O número foi confirmado pelo código.' }),
+    numberMasked: z
+      .string()
+      .nullable()
+      .meta({ description: 'Número mascarado (+55 11 •••••-0000).' }),
+    codePending: z
+      .boolean()
+      .meta({ description: 'Há um código enviado que ainda não expirou.' }),
+  }),
+)
+
 export const NotificationSnoozeResultDTO = dto(
   'NotificationSnoozeResult',
   z.object({
@@ -883,6 +909,10 @@ export const NotificationPreferenceListDTO = dto(
       label: z.string().meta({ example: 'Lead atribuído' }),
       icon: z.string().meta({ example: 'assign' }),
       color: z.string().meta({ example: 'violet' }),
+      whatsapp: z.boolean().meta({
+        description:
+          'Cópia do aviso no WhatsApp do usuário. Sem escolha salva, só os tipos urgentes vêm ligados. Só vale com o canal de WhatsApp ativo.',
+      }),
       inApp: z
         .boolean()
         .meta({ description: 'Entrega na caixa de entrada (padrão: ligada).' }),

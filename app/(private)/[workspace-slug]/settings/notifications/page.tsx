@@ -9,6 +9,7 @@ import HeaderInternalNavigation from '@/app/_components/header/header-internal-n
 import { NotificationBrowserSettingCard } from '@/app/_components/notifications/notification-browser-toggle'
 import { AiDigestSettingsCard } from '@/app/_components/settings/ai-digest-settings-card'
 import { NotificationPreferencesSection } from '@/app/_components/settings/notification-preferences-section'
+import { NotificationWhatsappCard } from '@/app/_components/settings/notification-whatsapp-card'
 import { SteelIcon } from '@/components/icon/icon'
 import { H3 } from '@/components/typography/heading/h3'
 import { Muted } from '@/components/typography/text/muted'
@@ -61,6 +62,7 @@ export default async function SettingsNotificationsPage({
         <NotificationBrowserSettingCard
           workspaceId={membership.value.workspaceId}
         />
+        <NotificationWhatsappCard workspaceId={membership.value.workspaceId} />
         <AiDigestSettingsCard workspaceId={membership.value.workspaceId} />
         <NotificationPreferencesSection
           workspaceId={membership.value.workspaceId}

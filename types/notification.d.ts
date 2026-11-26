@@ -173,12 +173,30 @@ export interface NotificationPreferenceDTO {
   color: string
   /** In-app delivery on (default) or muted. */
   inApp: boolean
+  /** Copy on the user's WhatsApp (default: urgent kinds only). */
+  whatsapp: boolean
 }
 
 /** Delivery channels of the inbox for the user in the workspace. */
 export interface NotificationDeliveryDTO {
   /** Desktop notifications for urgent kinds while the tab is hidden. */
   browserEnabled: boolean
+}
+
+/** The user's WhatsApp channel for platform notices. */
+export interface NotificationWhatsappDTO {
+  /** A Comunicação line is connected in the workspace. */
+  available: boolean
+  /** Provider of that line (META has the 24 h window). */
+  provider: 'META' | 'ZAPI' | 'WIDGET' | null
+  /** Verified and switched on. */
+  enabled: boolean
+  /** The number was confirmed by code. */
+  verified: boolean
+  /** `+55 11 •••••-0000`; never the full number. */
+  numberMasked: string | null
+  /** A code was sent and has not expired yet. */
+  codePending: boolean
 }
 
 /**

@@ -10,6 +10,9 @@ vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/notification.repository')
 vi.mock('@/src/repositories/notification-preference.repository')
 vi.mock('@/src/repositories/user-preference.repository')
+vi.mock('../notification-whatsapp.service', () => ({
+  NotificationWhatsappService: { enqueue: vi.fn() },
+}))
 vi.mock('@/src/lib/notifications/realtime', () => ({
   publishNotificationEvent: vi.fn().mockResolvedValue(undefined),
 }))

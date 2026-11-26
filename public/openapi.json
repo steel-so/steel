@@ -95111,9 +95111,12 @@
                         },
                         "inApp": {
                           "type": "boolean"
+                        },
+                        "whatsapp": {
+                          "type": "boolean"
                         }
                       },
-                      "required": ["kind", "inApp"]
+                      "required": ["kind"]
                     }
                   }
                 },
@@ -95256,6 +95259,318 @@
                       "properties": {
                         "data": {
                           "$ref": "#/components/schemas/NotificationDelivery"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/notifications/preferences/whatsapp": {
+      "get": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Canal de WhatsApp dos avisos",
+        "operationId": "getWorkspacesByIdNotificationsPreferencesWhatsapp",
+        "description": "Estado do canal de WhatsApp do próprio usuário: se há conexão da Comunicação, o provedor, o número (sempre mascarado) e se está confirmado e ligado.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado do canal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationWhatsapp"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Ligar ou desligar o WhatsApp dos avisos",
+        "operationId": "putWorkspacesByIdNotificationsPreferencesWhatsapp",
+        "description": "Liga ou pausa o canal já confirmado, sem perder o número. Antes da confirmação por código responde 400.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["enabled"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationWhatsapp"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Remover o número de WhatsApp dos avisos",
+        "operationId": "deleteWorkspacesByIdNotificationsPreferencesWhatsapp",
+        "description": "Esquece o número e qualquer código pendente.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canal removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationWhatsapp"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/notifications/preferences/whatsapp/code": {
+      "post": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Enviar o código de confirmação por WhatsApp",
+        "operationId": "postWorkspacesByIdNotificationsPreferencesWhatsappCode",
+        "description": "Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, o usuário precisa ter escrito para o número da conexão nas últimas 24 h. Limitado a 5 pedidos a cada 15 minutos.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 24,
+                    "pattern": "^[\\d\\s()+-]+$"
+                  }
+                },
+                "required": ["number"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Código enviado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationWhatsapp"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/notifications/preferences/whatsapp/confirm": {
+      "post": {
+        "tags": ["Configurações do workspace"],
+        "summary": "Confirmar o código e ativar o WhatsApp",
+        "operationId": "postWorkspacesByIdNotificationsPreferencesWhatsappConfirm",
+        "description": "Confere o código; acertando, o canal fica ligado. Após 5 erros o código é invalidado e é preciso pedir outro.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": ["code"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Canal ativo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/NotificationWhatsapp"
                         }
                       }
                     }
@@ -249371,12 +249686,16 @@
               "type": "string",
               "example": "violet"
             },
+            "whatsapp": {
+              "type": "boolean",
+              "description": "Cópia do aviso no WhatsApp do usuário. Sem escolha salva, só os tipos urgentes vêm ligados. Só vale com o canal de WhatsApp ativo."
+            },
             "inApp": {
               "type": "boolean",
               "description": "Entrega na caixa de entrada (padrão: ligada)."
             }
           },
-          "required": ["kind", "module", "moduleLabel", "label", "icon", "color", "inApp"]
+          "required": ["kind", "module", "moduleLabel", "label", "icon", "color", "whatsapp", "inApp"]
         }
       },
       "NotificationRealtimeEvent": {
@@ -249449,6 +249768,51 @@
           }
         },
         "required": ["updated", "snoozedUntil"]
+      },
+      "NotificationWhatsapp": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Há uma conexão da Comunicação conectada no workspace."
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["META", "ZAPI", "WIDGET"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provedor da conexão usada. Na Meta o texto livre só vai até 24 h depois da última mensagem do usuário."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Número confirmado e canal ligado."
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "O número foi confirmado pelo código."
+          },
+          "numberMasked": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Número mascarado (+55 11 •••••-0000)."
+          },
+          "codePending": {
+            "type": "boolean",
+            "description": "Há um código enviado que ainda não expirou."
+          }
+        },
+        "required": ["available", "provider", "enabled", "verified", "numberMasked", "codePending"]
       },
       "NumberValidationAvailability": {
         "type": "object",
