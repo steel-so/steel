@@ -16,6 +16,7 @@ import {
 import { useState } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Button } from '@/components/ui/button'
+import { LinkifiedText } from './linkified-text'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -318,7 +319,9 @@ export function MessageBubble({
                 </p>
               )}
               {showTextBelowMedia && (
-                <p className='whitespace-pre-wrap break-words'>{message.text}</p>
+                <p className='whitespace-pre-wrap break-words'>
+                  <LinkifiedText text={message.text ?? ''} />
+                </p>
               )}
               <div
                 className={cn(

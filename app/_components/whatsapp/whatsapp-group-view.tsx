@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { LinkifiedText } from '@/components/ui/chat/linkified-text'
 import { MessageScroller } from '@/components/ui/chat/message-scroller'
 import {
   Dialog,
@@ -170,9 +171,13 @@ function GroupMessageBubble({
           )}
         >
           <p className='whitespace-pre-wrap break-words'>
-            {message.text
-              ? formatIncomingGroupText(message.text, participants)
-              : message.text}
+            {message.text ? (
+              <LinkifiedText
+                text={formatIncomingGroupText(message.text, participants)}
+              />
+            ) : (
+              message.text
+            )}
           </p>
           <div
             className={cn(
