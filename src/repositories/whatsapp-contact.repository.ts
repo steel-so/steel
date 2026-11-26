@@ -353,6 +353,41 @@ export const WhatsAppContactRepository = {
     }
   },
 
+  /**
+   * Hard-deletes the contacts (among `ids`) that the check found without
+   * WhatsApp, with their conversations, messages and list rows (cascade) —
+   * a number that has no WhatsApp is useless to the workspace. Returns the
+   * ids of the contacts and of their conversations (to clean the search
+   * index).
+   */
+  async deleteWithoutWhatsapp(
+    workspaceId: string,
+    ids: string[],
+  ): Promise<Result<{ contactIds: string[]; conversationIds: string[] }>> {
+    if (ids.length === 0) return ok({ contactIds: [], conversationIds: [] })
+    try {
+      const contacts = await prisma.whatsAppContact.findMany({
+        where: { workspaceId, id: { in: ids }, hasWhatsapp: false },
+        select: { id: true, conversations: { select: { id: true } } },
+      })
+      const contactIds = contacts.map((row) => row.id)
+      if (contactIds.length === 0) {
+        return ok({ contactIds: [], conversationIds: [] })
+      }
+      await prisma.whatsAppContact.deleteMany({
+        where: { workspaceId, id: { in: contactIds } },
+      })
+      return ok({
+        contactIds,
+        conversationIds: contacts.flatMap((row) =>
+          row.conversations.map((conversation) => conversation.id),
+        ),
+      })
+    } catch (error) {
+      return err(dbError('Failed to delete contacts without whatsapp', error))
+    }
+  },
+
   async delete(id: string): Promise<Result<void>> {
     try {
       await prisma.whatsAppContact.delete({ where: { id } })

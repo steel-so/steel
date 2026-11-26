@@ -4,6 +4,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, whatsappValidationUnavailable } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/src/lib/search/index-hooks', () => ({
+  removeSearchDocument: vi.fn(),
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
@@ -92,6 +95,9 @@ function run(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  contactRepo.deleteWithoutWhatsapp.mockResolvedValue(
+    ok({ contactIds: [], conversationIds: [] }),
+  )
   membershipRepo.findByUserAndWorkspace.mockResolvedValue(
     ok(createFakeMembership({ role: 'MEMBER' })),
   )

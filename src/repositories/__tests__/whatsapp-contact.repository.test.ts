@@ -537,3 +537,61 @@ describe('WhatsAppContactRepository BSUID identity', () => {
     expect(changed?.bsuid).toBe('BR.222')
   })
 })
+
+describe('WhatsAppContactRepository.deleteWithoutWhatsapp()', () => {
+  it('deletes only the contacts checked as having no WhatsApp', async () => {
+    const workspace = await seedWorkspace()
+    const without = expectOk(
+      await WhatsAppContactRepository.create({
+        workspaceId: workspace.id,
+        waId: '5511911110001',
+      }),
+    )
+    const withWhatsapp = expectOk(
+      await WhatsAppContactRepository.create({
+        workspaceId: workspace.id,
+        waId: '5511911110002',
+      }),
+    )
+    const unchecked = expectOk(
+      await WhatsAppContactRepository.create({
+        workspaceId: workspace.id,
+        waId: '5511911110003',
+      }),
+    )
+    await prisma.whatsAppContact.update({
+      where: { id: without.id },
+      data: { hasWhatsapp: false },
+    })
+    await prisma.whatsAppContact.update({
+      where: { id: withWhatsapp.id },
+      data: { hasWhatsapp: true },
+    })
+
+    const result = expectOk(
+      await WhatsAppContactRepository.deleteWithoutWhatsapp(workspace.id, [
+        without.id,
+        withWhatsapp.id,
+        unchecked.id,
+      ]),
+    )
+
+    expect(result.contactIds).toEqual([without.id])
+    const left = await prisma.whatsAppContact.findMany({
+      where: { workspaceId: workspace.id },
+      select: { id: true },
+    })
+    expect(left.map((row) => row.id).sort()).toEqual(
+      [withWhatsapp.id, unchecked.id].sort(),
+    )
+  })
+
+  it('does nothing for an empty list', async () => {
+    const workspace = await seedWorkspace()
+    expect(
+      expectOk(
+        await WhatsAppContactRepository.deleteWithoutWhatsapp(workspace.id, []),
+      ),
+    ).toEqual({ contactIds: [], conversationIds: [] })
+  })
+})

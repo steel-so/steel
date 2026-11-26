@@ -14,6 +14,7 @@ import {
 import { WhatsappBroadcastJob } from '@/src/lib/queue/jobs'
 import { getWhatsappBroadcastQueue } from '@/src/lib/queue/queues'
 import { err, ok, type Result } from '@/src/lib/result'
+import { removeSearchDocument } from '@/src/lib/search/index-hooks'
 import {
   maskPhone,
   NUMBER_CHECK_DEFAULT_TTL_DAYS,
@@ -413,6 +414,7 @@ async function runValidation(
   }
 
   let answered = 0
+  let deletedContacts = 0
   let lineLost = false
   let chunksStarted = 0
   const batch = await checkZapiPhonesBatch(
@@ -451,6 +453,37 @@ async function runValidation(
             validationId: run.id,
             reason: saved.error.code,
           })
+        }
+        // No WhatsApp: the contact is useless, drop it (with its
+        // conversations) instead of keeping a flag.
+        if (saved.ok) {
+          const removed = await WhatsAppContactRepository.deleteWithoutWhatsapp(
+            run.workspaceId,
+            checks.filter((check) => !check.hasWhatsapp).map((c) => c.id),
+          )
+          if (removed.ok) {
+            deletedContacts += removed.value.contactIds.length
+            if (removed.value.contactIds.length > 0) {
+              void removeSearchDocument(
+                'zap-contact',
+                run.workspaceId,
+                removed.value.contactIds,
+              )
+            }
+            if (removed.value.conversationIds.length > 0) {
+              void removeSearchDocument(
+                'zap-conversation',
+                run.workspaceId,
+                removed.value.conversationIds,
+              )
+            }
+          } else {
+            logger.warn('whatsapp.validation.delete_failed', {
+              component: 'WhatsAppContactValidationService',
+              validationId: run.id,
+              reason: removed.error.code,
+            })
+          }
         }
         const storedCount = saved.ok ? checks.length : 0
         answered += storedCount
@@ -516,6 +549,7 @@ async function runValidation(
       total: run.contactIds.length,
       withWhatsapp: totals?.withWhatsapp,
       withoutWhatsapp: totals?.withoutWhatsapp,
+      deletedContacts,
       failed: totals?.failed,
       cached,
     },

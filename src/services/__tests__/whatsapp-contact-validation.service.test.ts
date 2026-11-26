@@ -5,6 +5,9 @@ import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import { databaseError, whatsappValidationUnavailable } from '@/src/errors'
 import { err, ok } from '@/src/lib/result'
 
+vi.mock('@/src/lib/search/index-hooks', () => ({
+  removeSearchDocument: vi.fn(),
+}))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-broadcast.repository')
@@ -105,6 +108,9 @@ beforeEach(() => {
   batch.mockReset()
   batch.mockResolvedValue({ results: [], failed: [], invalid: [] })
   runRepo.findActive.mockResolvedValue(ok(null))
+  contactRepo.deleteWithoutWhatsapp.mockResolvedValue(
+    ok({ contactIds: [], conversationIds: [] }),
+  )
   runRepo.create.mockImplementation(async (data) =>
     ok(run({ contactIds: data.contactIds, total: data.contactIds.length })),
   )
@@ -586,6 +592,10 @@ describe('execute()', () => {
       cached: 0,
     })
     expect(runRepo.finish).toHaveBeenCalledWith('run1', 'DONE', null)
+    // Only the contact without WhatsApp is removed.
+    expect(contactRepo.deleteWithoutWhatsapp).toHaveBeenCalledWith('ws1', [
+      'c2',
+    ])
   })
 
   it('re-checks everyone when forced', async () => {
