@@ -695,6 +695,10 @@ export const NotificationWhatsappDTO = dto(
     verified: z
       .boolean()
       .meta({ description: 'O número foi confirmado pelo código.' }),
+    noticeTemplate: z.string().nullable().meta({
+      description:
+        'Status do modelo de aviso na conexão Meta (usado fora das 24 h): APPROVED, PENDING, REJECTED, PAUSED, DISABLED ou MISSING (ainda não enviado). Nulo fora da Meta.',
+    }),
     numberMasked: z
       .string()
       .nullable()

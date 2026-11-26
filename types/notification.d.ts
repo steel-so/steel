@@ -194,6 +194,11 @@ export interface NotificationWhatsappDTO {
   enabled: boolean
   /** The number was confirmed by code. */
   verified: boolean
+  /**
+   * Status of the notice template on a Meta line (used outside the 24 h
+   * window); `MISSING` = not submitted yet, `null` = not a Meta line.
+   */
+  noticeTemplate: string | null
   /** `+55 11 •••••-0000`; never the full number. */
   numberMasked: string | null
   /** A code was sent and has not expired yet. */

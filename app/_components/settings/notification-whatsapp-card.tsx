@@ -19,6 +19,17 @@ import {
   useNotificationWhatsappActions,
 } from '@/src/hooks/use-notification-whatsapp'
 
+/** What the user should expect from a Meta line outside the 24 h window. */
+function metaTemplateHint(status: string | null): string {
+  if (status === 'APPROVED') {
+    return 'Fora das 24 h da sua última mensagem, os avisos seguem por um modelo aprovado pela Meta.'
+  }
+  if (status === 'REJECTED' || status === 'PAUSED' || status === 'DISABLED') {
+    return 'O modelo de aviso foi recusado ou pausado na Meta: só chegam avisos dentro de 24 h da sua última mensagem para o número da conexão. Peça a um administrador para revisar os templates.'
+  }
+  return 'O modelo de aviso será enviado à Meta para aprovação ao pedir o código (costuma levar alguns minutos). Até lá, só chegam avisos dentro de 24 h da sua última mensagem para o número da conexão.'
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Erro ao salvar'
 }
@@ -166,12 +177,7 @@ export function NotificationWhatsappCard({
               ) : null}
             </div>
             {data.provider === 'META' ? (
-              <Muted>
-                A conexão usa a API oficial da Meta: envie antes uma mensagem
-                (ex.: “oi”) do seu WhatsApp para o número da conexão. Os avisos
-                chegam enquanto a conversa estiver aberta (até 24 h depois da
-                sua última mensagem).
-              </Muted>
+              <Muted>{metaTemplateHint(data.noticeTemplate)}</Muted>
             ) : null}
           </div>
         ) : null}

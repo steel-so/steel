@@ -22,8 +22,11 @@ workspace para o telefone de outra.
   preferências e canais próprios e não passa por aqui.
 - Silenciar o tipo na caixa de entrada também corta o WhatsApp.
 - **Meta (API oficial):** texto livre só até 24 h depois da última mensagem do
-  usuário ao número da conexão; fora disso o aviso é pulado (log
-  `notifications.whatsapp.skipped`). **Z-API** não tem janela.
+  usuário ao número da conexão. Fora disso o aviso (e o código de confirmação)
+  vai pelo template fixo `steel_aviso` (UTILITY, pt_BR; variáveis: título,
+  mensagem, link), que o app cria e envia à Meta sozinho na primeira vez que
+  precisa dele. Enquanto estiver `PENDING`/recusado o aviso é pulado (log
+  `notifications.whatsapp.skipped`, motivo `template_*`). **Z-API** não tem janela.
 - Quem pediu para sair (`sair`, LGPD) deixa de receber.
 - O envio conta no limite mensal e nos custos da conexão (origem `OTHER`).
 - Falha no WhatsApp nunca afeta o aviso do app.
@@ -46,6 +49,6 @@ fila `notifications` (job `whatsapp-deliver`, sem telefone no Redis) →
 
 ## Pendências conhecidas
 
-- Template aprovado da Meta para fora da janela de 24 h.
+- Template personalizável por workspace (hoje é fixo).
 - Escolha da conexão pelo administrador (hoje automática).
 - Limite por usuário/hora e ServiceDesk (etapa 2).

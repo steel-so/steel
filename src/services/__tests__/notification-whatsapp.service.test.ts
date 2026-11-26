@@ -13,8 +13,15 @@ vi.mock('@/src/repositories/notification-delivery-setting.repository')
 vi.mock('@/src/repositories/notification-preference.repository')
 vi.mock('@/src/repositories/whatsapp-connection.repository')
 vi.mock('@/src/repositories/sd-requester-whatsapp.repository')
+vi.mock('@/src/repositories/whatsapp-template.repository')
+vi.mock('@/src/lib/whatsapp/meta-templates', () => ({
+  createMetaTemplate: vi.fn(),
+}))
+vi.mock('@/src/lib/crypto', () => ({
+  decryptConnectionSecret: vi.fn(async () => 'token'),
+}))
 vi.mock('@/src/lib/whatsapp/send', () => ({
-  WhatsAppSend: { text: vi.fn() },
+  WhatsAppSend: { text: vi.fn(), template: vi.fn() },
 }))
 vi.mock('../whatsapp-opt-out', () => ({ checkWhatsAppOptOut: vi.fn() }))
 vi.mock('@/src/lib/rate-limit', () => ({
@@ -28,17 +35,26 @@ vi.mock('@/src/lib/queue/queues', () => ({
 
 import { hashVerificationCode } from '@/src/lib/notifications/whatsapp-channel'
 import { consume } from '@/src/lib/rate-limit'
+import { createMetaTemplate } from '@/src/lib/whatsapp/meta-templates'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { NotificationDeliverySettingRepository as Delivery } from '@/src/repositories/notification-delivery-setting.repository'
 import { NotificationPreferenceRepository as Prefs } from '@/src/repositories/notification-preference.repository'
 import { SdRequesterWhatsappRepository as Requester } from '@/src/repositories/sd-requester-whatsapp.repository'
 import { WhatsAppConnectionRepository as Connections } from '@/src/repositories/whatsapp-connection.repository'
+import { WhatsAppTemplateRepository as Templates } from '@/src/repositories/whatsapp-template.repository'
 import { NotificationWhatsappService as Service } from '../notification-whatsapp.service'
 import { checkWhatsAppOptOut } from '../whatsapp-opt-out'
 
 const connection = (provider: 'ZAPI' | 'META') =>
-  ({ id: 'c1', provider, status: 'CONNECTED' }) as never
+  ({
+    id: 'c1',
+    workspaceId: 'ws1',
+    provider,
+    status: 'CONNECTED',
+    metaWabaId: 'waba1',
+    encryptedMetaAccessToken: 'enc',
+  }) as never
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -52,6 +68,12 @@ beforeEach(() => {
   vi.mocked(Delivery.upsert).mockResolvedValue(ok({} as never))
   vi.mocked(Delivery.find).mockResolvedValue(ok(null))
   vi.mocked(WhatsAppSend.text).mockResolvedValue(ok({}) as never)
+  vi.mocked(WhatsAppSend.template).mockResolvedValue(ok({}) as never)
+  vi.mocked(Templates.findByConnectionAndName).mockResolvedValue(ok(null))
+  vi.mocked(Templates.upsertSynced).mockResolvedValue(ok({} as never))
+  vi.mocked(createMetaTemplate).mockResolvedValue({
+    status: 'PENDING',
+  } as never)
   vi.mocked(checkWhatsAppOptOut).mockResolvedValue('allowed')
 })
 
@@ -79,15 +101,50 @@ describe('requestCode', () => {
     expectErr(await Service.requestCode('u1', 'ws1', '11999990000'))
   })
 
-  it('on Meta, asks the user to write first when the window is closed', async () => {
-    vi.mocked(Connections.listByWorkspace).mockResolvedValue(
-      ok([connection('META')]),
-    )
-    vi.mocked(Requester.contactState).mockResolvedValue(
-      ok({ optedOut: false, lastInboundAt: null }),
-    )
-    expectErr(await Service.requestCode('u1', 'ws1', '11999990000'))
-    expect(WhatsAppSend.text).not.toHaveBeenCalled()
+  describe('on a Meta line with the window closed', () => {
+    beforeEach(() => {
+      vi.mocked(Connections.listByWorkspace).mockResolvedValue(
+        ok([connection('META')]),
+      )
+      vi.mocked(Requester.contactState).mockResolvedValue(
+        ok({ optedOut: false, lastInboundAt: null }),
+      )
+    })
+
+    it('submits the notice template to Meta and asks to retry', async () => {
+      expectErr(await Service.requestCode('u1', 'ws1', '11999990000'))
+      expect(createMetaTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'steel_aviso', category: 'UTILITY' }),
+      )
+      expect(Templates.upsertSynced).toHaveBeenCalled()
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+      expect(WhatsAppSend.template).not.toHaveBeenCalled()
+    })
+
+    it('waits while the template is pending, without creating another', async () => {
+      vi.mocked(Templates.findByConnectionAndName).mockResolvedValue(
+        ok({ status: 'PENDING' } as never),
+      )
+      expectErr(await Service.requestCode('u1', 'ws1', '11999990000'))
+      expect(createMetaTemplate).not.toHaveBeenCalled()
+    })
+
+    it('sends the code through the approved template', async () => {
+      vi.mocked(Templates.findByConnectionAndName).mockResolvedValue(
+        ok({ status: 'APPROVED' } as never),
+      )
+      expectOk(await Service.requestCode('u1', 'ws1', '11999990000'))
+      const call = vi.mocked(WhatsAppSend.template).mock.calls[0]
+      expect(call?.[1]).toMatchObject({
+        to: '5511999990000',
+        templateName: 'steel_aviso',
+        language: 'pt_BR',
+      })
+      expect(JSON.stringify(call?.[1].components)).toContain(
+        'Código de verificação',
+      )
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+    })
   })
 })
 
@@ -208,17 +265,51 @@ describe('deliver', () => {
     expect(WhatsAppSend.text).not.toHaveBeenCalled()
   })
 
-  it('skips on Meta when the 24 h window is closed', async () => {
+  describe('on a Meta line outside the 24 h window', () => {
+    beforeEach(() => {
+      vi.mocked(Connections.listByWorkspace).mockResolvedValue(
+        ok([connection('META')]),
+      )
+      vi.mocked(Requester.contactState).mockResolvedValue(
+        ok({
+          optedOut: false,
+          lastInboundAt: new Date(Date.now() - 48 * 3600e3),
+        }),
+      )
+    })
+
+    it('uses the approved template', async () => {
+      vi.mocked(Templates.findByConnectionAndName).mockResolvedValue(
+        ok({ status: 'APPROVED' } as never),
+      )
+      expect((await Service.deliver(payload)).sent).toBe(1)
+      expect(WhatsAppSend.template).toHaveBeenCalledTimes(1)
+      expect(WhatsAppSend.text).not.toHaveBeenCalled()
+    })
+
+    it('skips (and submits the template) when there is none yet', async () => {
+      expect((await Service.deliver(payload)).skipped).toBe(1)
+      expect(createMetaTemplate).toHaveBeenCalledTimes(1)
+      expect(WhatsAppSend.template).not.toHaveBeenCalled()
+    })
+
+    it('skips while the template is rejected', async () => {
+      vi.mocked(Templates.findByConnectionAndName).mockResolvedValue(
+        ok({ status: 'REJECTED' } as never),
+      )
+      expect((await Service.deliver(payload)).skipped).toBe(1)
+    })
+  })
+
+  it('sends free text on Meta inside the window', async () => {
     vi.mocked(Connections.listByWorkspace).mockResolvedValue(
       ok([connection('META')]),
     )
     vi.mocked(Requester.contactState).mockResolvedValue(
-      ok({
-        optedOut: false,
-        lastInboundAt: new Date(Date.now() - 48 * 3600e3),
-      }),
+      ok({ optedOut: false, lastInboundAt: new Date() }),
     )
-    expect((await Service.deliver(payload)).skipped).toBe(1)
+    expect((await Service.deliver(payload)).sent).toBe(1)
+    expect(WhatsAppSend.text).toHaveBeenCalledTimes(1)
   })
 
   it('counts a failed send', async () => {

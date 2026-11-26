@@ -1243,7 +1243,7 @@ const workspaces: RouteConfig[] = [
     tags: ['Configurações do workspace'],
     summary: 'Enviar o código de confirmação por WhatsApp',
     description:
-      'Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, o usuário precisa ter escrito para o número da conexão nas últimas 24 h. Limitado a 5 pedidos a cada 15 minutos.',
+      'Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, fora das 24 h da última mensagem do usuário o código vai por um modelo fixo (`steel_aviso`), criado e enviado à Meta na primeira vez; enquanto não for aprovado a resposta é 400. Limitado a 5 pedidos a cada 15 minutos.',
     body: RequestNotificationWhatsappCodeSchema,
     responses: {
       200: { description: 'Código enviado.', schema: NotificationWhatsappDTO },

@@ -6,11 +6,15 @@ vi.mock('@/lib/env/server', () => ({
 }))
 
 import {
+  decideNoticeRoute,
   formatWhatsAppNotice,
   generateVerificationCode,
   hashVerificationCode,
   maskNotificationNumber,
   normalizeNotificationNumber,
+  noticeLink,
+  noticeTemplateComponents,
+  noticeTemplateParams,
   verificationCodeMatches,
   WHATSAPP_NOTICE_MAX_LENGTH,
   whatsappEnabledForKind,
@@ -95,5 +99,66 @@ describe('formatWhatsAppNotice', () => {
     expect(text.length).toBeLessThanOrEqual(WHATSAPP_NOTICE_MAX_LENGTH)
     expect(text.startsWith('*Título*')).toBe(true)
     expect(text.endsWith('https://app.example.com/acme/crm')).toBe(true)
+  })
+})
+
+describe('notice template', () => {
+  it('has three body variables and never starts or ends with one', () => {
+    const [body] = noticeTemplateComponents() as { text: string }[]
+    expect(body.text).toContain('{{1}}')
+    expect(body.text).toContain('{{3}}')
+    expect(body.text.startsWith('{{')).toBe(false)
+    expect(body.text.endsWith('}}')).toBe(false)
+  })
+
+  it('fills title, message and link without newlines', () => {
+    const [component] = noticeTemplateParams({
+      title: 'Nova\nconversa',
+      body: 'Ana:   oi',
+      href: '/acme/zap?conversa=c1',
+    }) as { parameters: { text: string }[] }[]
+    expect(component.parameters.map((p) => p.text)).toEqual([
+      'Nova conversa',
+      'Ana: oi',
+      'https://app.example.com/acme/zap?conversa=c1',
+    ])
+  })
+
+  it('links to the app root when the notice has no path', () => {
+    expect(noticeLink(null)).toBe('https://app.example.com')
+  })
+})
+
+describe('decideNoticeRoute', () => {
+  const base = { windowOpen: false, templateStatus: null as string | null }
+  it('sends text on Z-API and inside the Meta window', () => {
+    expect(decideNoticeRoute({ ...base, provider: 'ZAPI' })).toEqual({
+      route: 'text',
+    })
+    expect(
+      decideNoticeRoute({ ...base, provider: 'META', windowOpen: true }),
+    ).toEqual({ route: 'text' })
+  })
+  it('uses the approved template outside the window', () => {
+    expect(
+      decideNoticeRoute({
+        ...base,
+        provider: 'META',
+        templateStatus: 'APPROVED',
+      }),
+    ).toEqual({ route: 'template' })
+  })
+  it('skips with the reason when the template is not usable', () => {
+    const reason = (templateStatus: string | null) =>
+      decideNoticeRoute({ ...base, provider: 'META', templateStatus })
+    expect(reason(null)).toEqual({ route: 'skip', reason: 'template_missing' })
+    expect(reason('PENDING')).toEqual({
+      route: 'skip',
+      reason: 'template_pending',
+    })
+    expect(reason('REJECTED')).toEqual({
+      route: 'skip',
+      reason: 'template_unavailable',
+    })
   })
 })

@@ -95461,7 +95461,7 @@
         "tags": ["Configurações do workspace"],
         "summary": "Enviar o código de confirmação por WhatsApp",
         "operationId": "postWorkspacesByIdNotificationsPreferencesWhatsappCode",
-        "description": "Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, o usuário precisa ter escrito para o número da conexão nas últimas 24 h. Limitado a 5 pedidos a cada 15 minutos.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Guarda o número como pendente e envia um código de 6 dígitos (vale 10 minutos) pela conexão da Comunicação do workspace. Na conexão da Meta, fora das 24 h da última mensagem do usuário o código vai por um modelo fixo (`steel_aviso`), criado e enviado à Meta na primeira vez; enquanto não for aprovado a resposta é 400. Limitado a 5 pedidos a cada 15 minutos.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -249798,6 +249798,17 @@
             "type": "boolean",
             "description": "O número foi confirmado pelo código."
           },
+          "noticeTemplate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Status do modelo de aviso na conexão Meta (usado fora das 24 h): APPROVED, PENDING, REJECTED, PAUSED, DISABLED ou MISSING (ainda não enviado). Nulo fora da Meta."
+          },
           "numberMasked": {
             "anyOf": [
               {
@@ -249814,7 +249825,15 @@
             "description": "Há um código enviado que ainda não expirou."
           }
         },
-        "required": ["available", "provider", "enabled", "verified", "numberMasked", "codePending"]
+        "required": [
+          "available",
+          "provider",
+          "enabled",
+          "verified",
+          "noticeTemplate",
+          "numberMasked",
+          "codePending"
+        ]
       },
       "NumberValidationAvailability": {
         "type": "object",

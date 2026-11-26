@@ -7,13 +7,19 @@ import {
   rateLimited,
   validationError,
 } from '@/src/errors/app-error'
+import { decryptConnectionSecret } from '@/src/lib/crypto'
 import { isConfigurableNotificationKind } from '@/src/lib/notification-kind'
 import {
+  decideNoticeRoute,
   formatWhatsAppNotice,
   generateVerificationCode,
   hashVerificationCode,
   maskNotificationNumber,
+  NOTICE_TEMPLATE,
+  type NoticeSkipReason,
   normalizeNotificationNumber,
+  noticeTemplateComponents,
+  noticeTemplateParams,
   verificationCodeMatches,
   verificationMessage,
   WHATSAPP_CODE_MAX_ATTEMPTS,
@@ -25,11 +31,13 @@ import { getNotificationsQueue } from '@/src/lib/queue/queues'
 import { consume, otpLimiter } from '@/src/lib/rate-limit'
 import { err, ok, type Result } from '@/src/lib/result'
 import { sdWhatsappWindow } from '@/src/lib/servicedesk/whatsapp'
+import { createMetaTemplate } from '@/src/lib/whatsapp/meta-templates'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { NotificationDeliverySettingRepository } from '@/src/repositories/notification-delivery-setting.repository'
 import { NotificationPreferenceRepository } from '@/src/repositories/notification-preference.repository'
 import { SdRequesterWhatsappRepository } from '@/src/repositories/sd-requester-whatsapp.repository'
 import { WhatsAppConnectionRepository } from '@/src/repositories/whatsapp-connection.repository'
+import { WhatsAppTemplateRepository } from '@/src/repositories/whatsapp-template.repository'
 import type { NotificationWhatsappDTO } from '@/types/notification'
 import { assertMember } from './authz'
 import { checkWhatsAppOptOut } from './whatsapp-opt-out'
@@ -41,8 +49,10 @@ import { checkWhatsAppOptOut } from './whatsapp-opt-out'
  * stranger's phone.
  *
  * Meta lines (official API) accept free text only within 24 h of the
- * contact's last message; outside it the notice is skipped (logged), the
- * in-app notice is never affected. Z-API has no window.
+ * contact's last message; outside it the fixed `steel_aviso` template (made
+ * and submitted by the app) carries the notice. Without an approved
+ * template the notice is skipped (logged); the in-app notice is never
+ * affected. Z-API has no window.
  */
 
 /** First connected Comunicação line of the workspace, oldest first. */
@@ -54,25 +64,143 @@ async function pickConnection(
   return list.value.find((c) => c.status === 'CONNECTED') ?? null
 }
 
-/** Window rule shared by the code and the notices; `null` = can send. */
-async function windowBlock(
+/** Is the 24 h window open for the number? Z-API has none (always open). */
+async function windowOpen(
   workspaceId: string,
   connection: WhatsAppConnection,
   number: string,
-): Promise<string | null> {
-  if (connection.provider !== 'META') return null
+): Promise<boolean | null> {
+  if (connection.provider !== 'META') return true
   const state = await SdRequesterWhatsappRepository.contactState(
     workspaceId,
     connection.id,
     number,
   )
-  if (!state.ok) return 'lookup_failed'
-  const window = sdWhatsappWindow('META', state.value.lastInboundAt)
-  return window.open ? null : 'window_closed'
+  if (!state.ok) return null
+  return sdWhatsappWindow('META', state.value.lastInboundAt).open
 }
 
-const WINDOW_HELP =
-  'A conexão é da API oficial da Meta: antes de receber o código, envie uma mensagem (ex.: "oi") do seu WhatsApp para o número da conexão e tente de novo.'
+/** Status of the notice template on the connection; `null` = not created. */
+async function noticeTemplateStatus(
+  connection: WhatsAppConnection,
+): Promise<string | null> {
+  if (connection.provider !== 'META') return null
+  const row = await WhatsAppTemplateRepository.findByConnectionAndName(
+    connection.id,
+    NOTICE_TEMPLATE.name,
+    NOTICE_TEMPLATE.language,
+  )
+  return row.ok && row.value ? row.value.status : null
+}
+
+/**
+ * Submits the fixed notice template to Meta for the connection (once; Meta
+ * approves it in minutes and the template webhook updates the row).
+ */
+async function ensureNoticeTemplate(
+  connection: WhatsAppConnection,
+): Promise<boolean> {
+  if (!connection.metaWabaId || !connection.encryptedMetaAccessToken) {
+    return false
+  }
+  try {
+    const created = await createMetaTemplate({
+      wabaId: connection.metaWabaId,
+      accessToken: await decryptConnectionSecret(
+        connection.encryptedMetaAccessToken,
+      ),
+      name: NOTICE_TEMPLATE.name,
+      language: NOTICE_TEMPLATE.language,
+      category: NOTICE_TEMPLATE.category,
+      components: noticeTemplateComponents(),
+    })
+    const saved = await WhatsAppTemplateRepository.upsertSynced({
+      workspaceId: connection.workspaceId,
+      connectionId: connection.id,
+      name: NOTICE_TEMPLATE.name,
+      language: NOTICE_TEMPLATE.language,
+      category: NOTICE_TEMPLATE.category,
+      status: created.status === 'APPROVED' ? 'APPROVED' : 'PENDING',
+      components: noticeTemplateComponents() as never,
+    })
+    return saved.ok
+  } catch (error) {
+    logger.warn(
+      'notifications.whatsapp.template_create_failed',
+      logFields(
+        {
+          component: 'NotificationWhatsapp',
+          workspaceId: connection.workspaceId,
+        },
+        { reason: error instanceof Error ? error.message : String(error) },
+      ),
+    )
+    return false
+  }
+}
+
+const SKIP_MESSAGE: Record<NoticeSkipReason | 'window_unknown', string> = {
+  template_missing:
+    'Preparamos o modelo de aviso e o enviamos à Meta para aprovação (costuma levar alguns minutos). Tente de novo em instantes.',
+  template_pending:
+    'O modelo de aviso ainda está em aprovação pela Meta (costuma levar alguns minutos). Tente de novo em instantes.',
+  template_unavailable:
+    'O modelo de aviso foi recusado ou está pausado na Meta. Peça a um administrador para revisar os templates da conexão.',
+  window_unknown:
+    'Não foi possível verificar a conversa com a conexão. Tente de novo.',
+}
+
+type SendOutcome =
+  | { sent: true }
+  | { sent: false; reason: NoticeSkipReason | 'window_unknown' | 'failed' }
+
+/**
+ * Sends one notice (or the verification code) by the right route: text in
+ * the window / Z-API, the approved template outside it. A missing template
+ * is submitted to Meta on the way.
+ */
+async function sendNotice(
+  connection: WhatsAppConnection,
+  number: string,
+  notice: { title: string; body: string; href?: string | null; text?: string },
+): Promise<SendOutcome> {
+  const open = await windowOpen(connection.workspaceId, connection, number)
+  if (open === null) return { sent: false, reason: 'window_unknown' }
+  const route = decideNoticeRoute({
+    provider: connection.provider,
+    windowOpen: open,
+    templateStatus: open ? null : await noticeTemplateStatus(connection),
+  })
+  if (route.route === 'skip') {
+    if (route.reason === 'template_missing') {
+      await ensureNoticeTemplate(connection)
+    }
+    return { sent: false, reason: route.reason }
+  }
+  const sent =
+    route.route === 'template'
+      ? await WhatsAppSend.template(
+          connection,
+          {
+            to: number,
+            templateName: NOTICE_TEMPLATE.name,
+            language: NOTICE_TEMPLATE.language,
+            components: noticeTemplateParams(notice),
+          },
+          {
+            cost: {
+              source: 'OTHER',
+              templateCategory: NOTICE_TEMPLATE.category,
+            },
+          },
+        )
+      : await WhatsAppSend.text(
+          connection,
+          { to: number, text: notice.text ?? formatWhatsAppNotice(notice) },
+          { cost: { source: 'OTHER' } },
+        )
+  return sent.ok ? { sent: true } : { sent: false, reason: 'failed' }
+}
 
 export const NotificationWhatsappService = {
   async status(
@@ -93,6 +221,10 @@ export const NotificationWhatsappService = {
       provider: connection?.provider ?? null,
       enabled: verified && (row.value?.whatsappEnabled ?? false),
       verified,
+      noticeTemplate:
+        connection?.provider === 'META'
+          ? ((await noticeTemplateStatus(connection)) ?? 'MISSING')
+          : null,
       numberMasked: row.value?.whatsappNumber
         ? maskNotificationNumber(row.value.whatsappNumber)
         : null,
@@ -127,10 +259,6 @@ export const NotificationWhatsappService = {
         ),
       )
     }
-    if (await windowBlock(workspaceId, connection, number)) {
-      return err(badRequest(WINDOW_HELP))
-    }
-
     const code = generateVerificationCode()
     const saved = await NotificationDeliverySettingRepository.upsert(
       workspaceId,
@@ -146,17 +274,18 @@ export const NotificationWhatsappService = {
     )
     if (!saved.ok) return saved
 
-    const sent = await WhatsAppSend.text(connection, {
-      to: number,
+    const sent = await sendNotice(connection, number, {
+      title: 'Código de verificação',
+      body: `Seu código é ${code}. Vale por 10 minutos.`,
       text: verificationMessage(code),
     })
-    if (!sent.ok) {
+    if (!sent.sent) {
+      if (sent.reason !== 'failed') {
+        return err(badRequest(SKIP_MESSAGE[sent.reason]))
+      }
       logger.warn(
         'notifications.whatsapp.code_send_failed',
-        logFields(
-          { component: 'NotificationWhatsapp', workspaceId },
-          { reason: sent.error.code },
-        ),
+        logFields({ component: 'NotificationWhatsapp', workspaceId }),
       )
       return err(
         badRequest(
@@ -375,7 +504,6 @@ export const NotificationWhatsappService = {
       result.skipped = payload.userIds.length
       return result
     }
-    const text = formatWhatsAppNotice(payload)
     for (const target of targets.value) {
       const log = { workspaceId: payload.workspaceId, kind: payload.kind }
       // The user opted out ("sair") or the lookup failed: fail closed.
@@ -386,32 +514,18 @@ export const NotificationWhatsappService = {
         result.skipped += 1
         continue
       }
-      const blocked = await windowBlock(
-        payload.workspaceId,
-        connection,
-        target.number,
-      )
-      if (blocked) {
+      const sent = await sendNotice(connection, target.number, payload)
+      if (sent.sent) {
+        result.sent += 1
+      } else if (sent.reason === 'failed') {
+        logger.warn('notifications.whatsapp.failed', log)
+        result.failed += 1
+      } else {
         logger.info('notifications.whatsapp.skipped', {
           ...log,
-          reason: blocked,
+          reason: sent.reason,
         })
         result.skipped += 1
-        continue
-      }
-      const sent = await WhatsAppSend.text(
-        connection,
-        { to: target.number, text },
-        { cost: { source: 'OTHER' } },
-      )
-      if (sent.ok) {
-        result.sent += 1
-      } else {
-        logger.warn('notifications.whatsapp.failed', {
-          ...log,
-          reason: sent.error.code,
-        })
-        result.failed += 1
       }
     }
     return result
