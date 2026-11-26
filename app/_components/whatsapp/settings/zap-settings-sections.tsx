@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import { WhatsappBlockedContactsSettings } from '../contact-block/whatsapp-blocked-contacts-settings'
 import { WhatsappSettingsAi } from './whatsapp-settings-ai'
 import { WhatsappSettingsAiKnowledge } from './whatsapp-settings-ai-knowledge'
+import { WhatsappSettingsAiMedia } from './whatsapp-settings-ai-media'
 import { WhatsappSettingsArchive } from './whatsapp-settings-archive'
 import { WhatsappSettingsBoleto } from './whatsapp-settings-boleto'
 import { WhatsappSettingsBusinessHours } from './whatsapp-settings-business-hours'
@@ -129,6 +130,7 @@ export const ZAP_SETTINGS_SECTIONS: ZapSettingsSection[] = [
         <WhatsappSettingsAi workspaceId={id} />
         <WhatsappSettingsCopilot workspaceId={id} />
         <WhatsappSettingsAiKnowledge workspaceId={id} />
+        <WhatsappSettingsAiMedia workspaceId={id} />
       </div>
     ),
   },

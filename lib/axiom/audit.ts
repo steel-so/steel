@@ -60,6 +60,7 @@ export type AuditEntity =
   | 'whatsapp_ad_spend'
   | 'notification'
   | 'whatsapp_ai_knowledge_document'
+  | 'whatsapp_ai_media'
   | 'whatsapp_group'
   | 'whatsapp_group_message'
   | 'whatsapp_agent_presence'

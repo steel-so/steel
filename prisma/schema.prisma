@@ -539,6 +539,7 @@ model Workspace {
   whatsappGroups               WhatsAppGroup[]
   whatsappGroupMessages        WhatsAppGroupMessage[]
   whatsappAiKnowledgeDocuments WhatsAppAiKnowledgeDocument[]
+  whatsappAiMedia              WhatsAppAiMedia[]
 
   crmCompanies              CrmCompany[]
   crmPeople                 CrmPerson[]
@@ -2461,6 +2462,34 @@ enum WhatsAppAiKnowledgeDocumentStatus {
   PROCESSING
   READY
   FAILED
+}
+
+/// Imagem ou vídeo que o usuário sobe para a IA enviar no atendimento. O
+/// usuário diz quando enviar (`whenToSend`); a IA recebe a lista no prompt e
+/// uma ferramenta para mandar o arquivo junto da resposta.
+model WhatsAppAiMedia {
+  id          String                      @id @default(cuid())
+  workspaceId String                      @map("workspace_id")
+  /// Identificador estável usado pela ferramenta da IA (snake_case do nome).
+  key         String
+  name        String
+  /// Instrução em texto livre: em que situação a IA deve enviar o arquivo.
+  whenToSend  String                      @map("when_to_send")
+  mediaUrl    String                      @map("media_url")
+  mediaType   WhatsAppBroadcastMediaType  @map("media_type")
+  mimeType    String                      @map("mime_type")
+  fileName    String                      @map("file_name")
+  sizeBytes   Int                         @map("size_bytes")
+  active      Boolean                     @default(true)
+  createdById String                      @map("created_by_id")
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+  @@index([workspaceId])
+  @@map("whatsapp_ai_media")
 }
 
 /// Base de conhecimento da IA do WhatsApp. O arquivo original fica no MinIO

@@ -1001,7 +1001,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -1192,7 +1192,7 @@
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_4"
+            "$ref": "#/components/responses/409_CONFLICT_5"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -2088,7 +2088,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_2"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_11"
+            "$ref": "#/components/responses/409_CONFLICT_12"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -5248,7 +5248,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -7575,7 +7575,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
           },
           "422": {
             "$ref": "#/components/responses/422_CRM_FORM_NOT_PUBLISHED"
@@ -7692,7 +7692,7 @@
             "$ref": "#/components/responses/403_MODULE_DISABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_CRM_FORM_NOT_PUBLISHED"
@@ -11197,7 +11197,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED_5"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -14285,7 +14285,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_10"
+            "$ref": "#/components/responses/409_CONFLICT_11"
           }
         },
         "security": [
@@ -27364,7 +27364,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED_AI_MEMORY_DISABLED"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_3"
+            "$ref": "#/components/responses/409_CONFLICT_4"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -28965,7 +28965,7 @@
             "$ref": "#/components/responses/404_CONNECTION_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_55"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_56"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -29593,7 +29593,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_APOLLO_NOT_CONNECTED"
@@ -34502,7 +34502,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -34571,7 +34571,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37248,7 +37248,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_59"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_60"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -37400,7 +37400,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -38558,7 +38558,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_47"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_48"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -42097,7 +42097,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_37"
@@ -42175,7 +42175,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -42713,7 +42713,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_7"
+            "$ref": "#/components/responses/409_CONFLICT_8"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_DOCUMENT_IMPORT_UNSUPPORTED"
@@ -45188,7 +45188,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -45380,7 +45380,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_58"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_59"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -45596,7 +45596,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_58"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_2"
@@ -46514,7 +46514,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_45"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_46"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -52245,7 +52245,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -52314,7 +52314,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -52658,7 +52658,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_42"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -52897,7 +52897,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -52966,7 +52966,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_36"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -53236,7 +53236,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -53305,7 +53305,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_37"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -53977,7 +53977,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -64126,7 +64126,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -64195,7 +64195,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -65537,7 +65537,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -65615,7 +65615,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_55"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -65681,7 +65681,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_39"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_53"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -67286,7 +67286,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_56"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_57"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -68172,7 +68172,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -68250,7 +68250,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_33"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_PIPELINE_STAGE_IN_USE"
@@ -71142,7 +71142,7 @@
             "$ref": "#/components/responses/404_CRM_PROPOSAL_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_9"
+            "$ref": "#/components/responses/409_CONFLICT_10"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_40"
@@ -71637,7 +71637,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -71706,7 +71706,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_9"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_31"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_32"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -77428,7 +77428,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_FEATURE_NOT_ENABLED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_49"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
           },
           "409": {
             "$ref": "#/components/responses/409_SITE_LIMIT_REACHED"
@@ -85599,7 +85599,7 @@
             "$ref": "#/components/responses/404_SITE_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_8"
+            "$ref": "#/components/responses/409_CONFLICT_9"
           },
           "422": {
             "$ref": "#/components/responses/422_SITE_DOCUMENT_INVALID"
@@ -87393,7 +87393,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -87456,7 +87456,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88220,7 +88220,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_2"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_50"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_51"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -88802,7 +88802,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -88871,7 +88871,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_34"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_35"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -94025,7 +94025,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_53"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_54"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -96915,7 +96915,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_WORKSPACE_SUSPENDED_WORKSPACE_IP_NOT_ALLOWED"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_54"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_55"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -102346,7 +102346,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_8"
@@ -102570,7 +102570,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_CAB_BOARD_NOT_FOUND"
@@ -102632,7 +102632,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CAB_BOARD_NOT_FOUND"
@@ -104517,7 +104517,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_4"
@@ -104701,7 +104701,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CONFIG_NOT_FOUND_SD_CHANGE_WINDOW_NOT_FOUND"
@@ -104763,7 +104763,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
           },
           "404": {
             "$ref": "#/components/responses/404_SD_CHANGE_WINDOW_NOT_FOUND"
@@ -108249,7 +108249,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_6"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_52"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_53"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -111841,7 +111841,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_38"
@@ -111912,7 +111912,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_27"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_28"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -126715,7 +126715,7 @@
             "$ref": "#/components/responses/404_SD_CONTACT_NOT_FOUND"
           },
           "422": {
-            "$ref": "#/components/responses/422_VALIDATION_ERROR_51"
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_52"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -126855,7 +126855,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_19"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_38"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_39"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -129841,7 +129841,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -129910,7 +129910,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_SD_NOT_AGENT_8"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_29"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_30"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -146091,7 +146091,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -146225,7 +146225,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -146995,7 +146995,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -147229,7 +147229,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND"
@@ -147691,7 +147691,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_AI_KNOWLEDGE_DOCUMENT_UNSUPPORTED_TYPE"
@@ -147761,6 +147761,280 @@
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/ai-config/media": {
+      "get": {
+        "tags": ["Comunicação · IA"],
+        "summary": "Listar imagens e vídeos da IA",
+        "operationId": "getWorkspacesByIdWhatsappAiConfigMedia",
+        "description": "Arquivos que a IA pode enviar na conversa, cada um com a regra de quando enviar. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/WhatsAppAiMedia"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["Comunicação · IA"],
+        "summary": "Adicionar imagem ou vídeo para a IA enviar",
+        "operationId": "postWorkspacesByIdWhatsappAiConfigMedia",
+        "description": "Upload `multipart/form-data`: `file` (JPG/PNG até 5 MB ou MP4/3GPP até 16 MB), `name` (até 60 caracteres, vira o identificador da ferramenta) e `whenToSend` (regra de quando enviar, até 500). A IA recebe a lista no prompt e uma ferramenta `enviar_midia`; o arquivo vai junto da resposta e fica registrado na conversa como mensagem da IA. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nExige o consentimento LGPD do usuário (Termos de Uso e Política de Privacidade aceitos); sem ele responde `403 FORBIDDEN`.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Imagem (JPG/PNG) ou vídeo (MP4) para a IA enviar."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Arquivo adicionado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppAiMedia"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+          },
+          "409": {
+            "$ref": "#/components/responses/409_CONFLICT_3"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR_51"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/workspaces/{id}/whatsapp/ai-config/media/{mediaId}": {
+      "patch": {
+        "tags": ["Comunicação · IA"],
+        "summary": "Editar a regra ou ativar/desativar um arquivo da IA",
+        "operationId": "patchWorkspacesByIdWhatsappAiConfigMediaByMediaId",
+        "description": "Atualiza `whenToSend` e/ou `active`. Arquivo inativo deixa de ser oferecido à IA, sem ser removido. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "description": "Id do arquivo da IA.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "whenToSend": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Arquivo atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppAiMedia"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
+          },
+          "422": {
+            "$ref": "#/components/responses/422_VALIDATION_ERROR"
+          },
+          "429": {
+            "$ref": "#/components/responses/429_RATE_LIMITED"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": ["Comunicação · IA"],
+        "summary": "Remover imagem ou vídeo da IA",
+        "operationId": "deleteWorkspacesByIdWhatsappAiConfigMediaByMediaId",
+        "description": "A IA deixa de poder enviar o arquivo. Auditado. Módulo **Comunicação** habilitado; restrito a OWNER/ADMIN do workspace.\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkspaceId"
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "description": "Id do arquivo da IA.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo removido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WhatsAppDeletedId"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401_UNAUTHORIZED"
+          },
+          "403": {
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
+          },
+          "404": {
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_23"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148215,7 +148489,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_30"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_40"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_41"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148387,7 +148661,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -148669,7 +148943,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
@@ -148798,7 +149072,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_13"
           },
           "404": {
             "$ref": "#/components/responses/404_WHATSAPP_BROADCAST_NOT_FOUND"
@@ -151819,7 +152093,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "409": {
             "$ref": "#/components/responses/409_CRM_CUSTOM_FIELD_CONFLICT_2"
@@ -151914,7 +152188,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_CUSTOM_FIELD_NOT_FOUND"
@@ -151983,7 +152257,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "404": {
             "$ref": "#/components/responses/404_CRM_CUSTOM_FIELD_NOT_FOUND"
@@ -157071,7 +157345,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_43"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_44"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -157521,7 +157795,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -157600,10 +157874,10 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_26"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -157680,7 +157954,7 @@
             "$ref": "#/components/responses/401_UNAUTHORIZED"
           },
           "403": {
-            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14"
+            "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_12"
           },
           "404": {
             "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_CRM_TV_LINK_NOT_FOUND_2"
@@ -158645,7 +158919,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_34"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_36"
@@ -158723,7 +158997,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_33"
           },
           "404": {
-            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_24"
+            "$ref": "#/components/responses/404_RESOURCE_NOT_FOUND_25"
           },
           "429": {
             "$ref": "#/components/responses/429_RATE_LIMITED"
@@ -161147,7 +161421,7 @@
             "$ref": "#/components/responses/404_WHATSAPP_AI_CAMPAIGN_NOT_FOUND_WHATSAPP_BROADCAST_NOT_FOUND"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_5"
+            "$ref": "#/components/responses/409_CONFLICT_6"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR_WHATSAPP_VALIDATION_UNAVAILABLE"
@@ -165300,7 +165574,7 @@
             "$ref": "#/components/responses/403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_4"
           },
           "409": {
-            "$ref": "#/components/responses/409_CONFLICT_6"
+            "$ref": "#/components/responses/409_CONFLICT_7"
           },
           "422": {
             "$ref": "#/components/responses/422_VALIDATION_ERROR"
@@ -175369,7 +175643,18 @@
             },
             "examples": {
               "FORBIDDEN": {
-                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `VIEW`",
+                "summary": "FORBIDDEN — Consentimento LGPD pendente",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Consentimento obrigatório",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "FORBIDDEN_2": {
+                "summary": "FORBIDDEN — Não é membro ou não é OWNER/ADMIN",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -175414,6 +175699,51 @@
             },
             "examples": {
               "FORBIDDEN": {
+                "summary": "FORBIDDEN — Não é membro do workspace ou o perfil não concede `broadcasts` × `VIEW`",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Permissão insuficiente",
+                  "error": {
+                    "code": "FORBIDDEN"
+                  }
+                }
+              },
+              "WORKSPACE_SUSPENDED": {
+                "summary": "WORKSPACE_SUSPENDED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
+                  "error": {
+                    "code": "WORKSPACE_SUSPENDED"
+                  }
+                }
+              },
+              "MODULE_DISABLED": {
+                "summary": "MODULE_DISABLED",
+                "value": {
+                  "success": false,
+                  "statusCode": 403,
+                  "message": "Módulo não habilitado para esta workspace",
+                  "error": {
+                    "code": "MODULE_DISABLED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14": {
+        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "FORBIDDEN": {
                 "summary": "FORBIDDEN — Consentimento LGPD pendente",
                 "value": {
                   "success": false,
@@ -175448,62 +175778,6 @@
               },
               "MODULE_DISABLED": {
                 "summary": "MODULE_DISABLED — Módulo ServiceDesk desabilitado",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Módulo não habilitado para esta workspace",
-                  "error": {
-                    "code": "MODULE_DISABLED"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "403_FORBIDDEN_MODULE_DISABLED_WORKSPACE_SUSPENDED_14": {
-        "description": "Acesso negado: `FORBIDDEN`, `MODULE_DISABLED`, `WORKSPACE_SUSPENDED`",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorResponse"
-            },
-            "examples": {
-              "FORBIDDEN": {
-                "summary": "FORBIDDEN — Consentimento LGPD pendente",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Consentimento obrigatório",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "FORBIDDEN_2": {
-                "summary": "FORBIDDEN — Não é membro ou não é OWNER/ADMIN",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Permissão insuficiente",
-                  "error": {
-                    "code": "FORBIDDEN"
-                  }
-                }
-              },
-              "WORKSPACE_SUSPENDED": {
-                "summary": "WORKSPACE_SUSPENDED",
-                "value": {
-                  "success": false,
-                  "statusCode": 403,
-                  "message": "Este workspace está suspenso. Fale com o suporte da Stratus Telecom.",
-                  "error": {
-                    "code": "WORKSPACE_SUSPENDED"
-                  }
-                }
-              },
-              "MODULE_DISABLED": {
-                "summary": "MODULE_DISABLED",
                 "value": {
                   "success": false,
                   "statusCode": 403,
@@ -189024,6 +189298,29 @@
             },
             "examples": {
               "RESOURCE_NOT_FOUND": {
+                "summary": "RESOURCE_NOT_FOUND — Arquivo não existe",
+                "value": {
+                  "success": false,
+                  "statusCode": 404,
+                  "message": "Recurso não encontrado",
+                  "error": {
+                    "code": "RESOURCE_NOT_FOUND"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "404_RESOURCE_NOT_FOUND_24": {
+        "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "RESOURCE_NOT_FOUND": {
                 "summary": "RESOURCE_NOT_FOUND — Conexão inexistente",
                 "value": {
                   "success": false,
@@ -189038,7 +189335,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_24": {
+      "404_RESOURCE_NOT_FOUND_25": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189072,7 +189369,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_25": {
+      "404_RESOURCE_NOT_FOUND_26": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189095,7 +189392,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_26": {
+      "404_RESOURCE_NOT_FOUND_27": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189129,7 +189426,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_27": {
+      "404_RESOURCE_NOT_FOUND_28": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189163,7 +189460,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_28": {
+      "404_RESOURCE_NOT_FOUND_29": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189186,7 +189483,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_29": {
+      "404_RESOURCE_NOT_FOUND_30": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189209,7 +189506,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_30": {
+      "404_RESOURCE_NOT_FOUND_31": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189232,7 +189529,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_31": {
+      "404_RESOURCE_NOT_FOUND_32": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189255,7 +189552,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_32": {
+      "404_RESOURCE_NOT_FOUND_33": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189278,7 +189575,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_33": {
+      "404_RESOURCE_NOT_FOUND_34": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189312,7 +189609,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_34": {
+      "404_RESOURCE_NOT_FOUND_35": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189335,7 +189632,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_35": {
+      "404_RESOURCE_NOT_FOUND_36": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189358,7 +189655,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_36": {
+      "404_RESOURCE_NOT_FOUND_37": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189381,7 +189678,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_37": {
+      "404_RESOURCE_NOT_FOUND_38": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189404,7 +189701,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_38": {
+      "404_RESOURCE_NOT_FOUND_39": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189427,7 +189724,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_39": {
+      "404_RESOURCE_NOT_FOUND_40": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189450,7 +189747,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_40": {
+      "404_RESOURCE_NOT_FOUND_41": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189473,7 +189770,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_41": {
+      "404_RESOURCE_NOT_FOUND_42": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189496,7 +189793,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_42": {
+      "404_RESOURCE_NOT_FOUND_43": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189519,7 +189816,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_43": {
+      "404_RESOURCE_NOT_FOUND_44": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189542,7 +189839,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_44": {
+      "404_RESOURCE_NOT_FOUND_45": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189565,7 +189862,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_45": {
+      "404_RESOURCE_NOT_FOUND_46": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189588,7 +189885,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_46": {
+      "404_RESOURCE_NOT_FOUND_47": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189611,7 +189908,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_47": {
+      "404_RESOURCE_NOT_FOUND_48": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189634,7 +189931,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_48": {
+      "404_RESOURCE_NOT_FOUND_49": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189657,7 +189954,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_49": {
+      "404_RESOURCE_NOT_FOUND_50": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189680,7 +189977,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_50": {
+      "404_RESOURCE_NOT_FOUND_51": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189703,7 +190000,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_51": {
+      "404_RESOURCE_NOT_FOUND_52": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189726,7 +190023,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_52": {
+      "404_RESOURCE_NOT_FOUND_53": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189749,7 +190046,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_53": {
+      "404_RESOURCE_NOT_FOUND_54": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189772,7 +190069,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_54": {
+      "404_RESOURCE_NOT_FOUND_55": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189817,7 +190114,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_55": {
+      "404_RESOURCE_NOT_FOUND_56": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189851,7 +190148,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_56": {
+      "404_RESOURCE_NOT_FOUND_57": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189874,7 +190171,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_57": {
+      "404_RESOURCE_NOT_FOUND_58": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189897,7 +190194,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_58": {
+      "404_RESOURCE_NOT_FOUND_59": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -189920,7 +190217,7 @@
           }
         }
       },
-      "404_RESOURCE_NOT_FOUND_59": {
+      "404_RESOURCE_NOT_FOUND_60": {
         "description": "Não encontrado: `RESOURCE_NOT_FOUND`",
         "content": {
           "application/json": {
@@ -196727,7 +197024,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Já existe um fato quase idêntico",
+                "summary": "CONFLICT — Já existe um arquivo com esse nome",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196749,7 +197046,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Já há backup em andamento",
+                "summary": "CONFLICT — Já existe um fato quase idêntico",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196771,7 +197068,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Já há uma validação em andamento, a seleção está vazia ou passa de 20.000 contatos",
+                "summary": "CONFLICT — Já há backup em andamento",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196793,7 +197090,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — O escopo (padrão ou equipe) já tem uma política",
+                "summary": "CONFLICT — Já há uma validação em andamento, a seleção está vazia ou passa de 20.000 contatos",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196815,7 +197112,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — O usuário já tem 3 importações na fila ou em andamento",
+                "summary": "CONFLICT — O escopo (padrão ou equipe) já tem uma política",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196837,7 +197134,7 @@
             },
             "examples": {
               "CONFLICT": {
-                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "summary": "CONFLICT — O usuário já tem 3 importações na fila ou em andamento",
                 "value": {
                   "success": false,
                   "statusCode": 409,
@@ -196851,6 +197148,28 @@
         }
       },
       "409_CONFLICT_9": {
+        "description": "Conflito com o estado atual: `CONFLICT`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "CONFLICT": {
+                "summary": "CONFLICT — Outra publicação do mesmo site em andamento",
+                "value": {
+                  "success": false,
+                  "statusCode": 409,
+                  "error": {
+                    "code": "CONFLICT"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "409_CONFLICT_10": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -196873,7 +197192,7 @@
           }
         }
       },
-      "409_CONFLICT_10": {
+      "409_CONFLICT_11": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -196896,7 +197215,7 @@
           }
         }
       },
-      "409_CONFLICT_11": {
+      "409_CONFLICT_12": {
         "description": "Conflito com o estado atual: `CONFLICT`",
         "content": {
           "application/json": {
@@ -204463,6 +204782,29 @@
             },
             "examples": {
               "VALIDATION_ERROR": {
+                "summary": "VALIDATION_ERROR — Tipo de arquivo fora da lista ou acima do limite",
+                "value": {
+                  "success": false,
+                  "statusCode": 422,
+                  "message": "Formato não aceito. Use imagem JPG ou PNG, ou vídeo MP4.",
+                  "error": {
+                    "code": "VALIDATION_ERROR"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "422_VALIDATION_ERROR_52": {
+        "description": "Dados inválidos: `VALIDATION_ERROR`",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "examples": {
+              "VALIDATION_ERROR": {
                 "summary": "VALIDATION_ERROR — `contactId` ausente",
                 "value": {
                   "success": false,
@@ -204477,7 +204819,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_52": {
+      "422_VALIDATION_ERROR_53": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -204507,7 +204849,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_53": {
+      "422_VALIDATION_ERROR_54": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -204530,7 +204872,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_54": {
+      "422_VALIDATION_ERROR_55": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -204553,7 +204895,7 @@
           }
         }
       },
-      "422_VALIDATION_ERROR_55": {
+      "422_VALIDATION_ERROR_56": {
         "description": "Dados inválidos: `VALIDATION_ERROR`",
         "content": {
           "application/json": {
@@ -283093,6 +283435,75 @@
           "status",
           "errorMessage",
           "createdById",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WhatsAppAiMedia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string",
+            "example": "print_do_painel",
+            "description": "Identificador que a IA usa para escolher o arquivo (snake_case do nome)."
+          },
+          "name": {
+            "type": "string",
+            "example": "Print do painel"
+          },
+          "whenToSend": {
+            "type": "string",
+            "description": "Regra em texto livre: quando a IA deve enviar o arquivo."
+          },
+          "mediaUrl": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string",
+            "enum": ["IMAGE", "VIDEO"]
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspaceId",
+          "key",
+          "name",
+          "whenToSend",
+          "mediaUrl",
+          "mediaType",
+          "mimeType",
+          "fileName",
+          "sizeBytes",
+          "active",
           "createdAt",
           "updatedAt"
         ]

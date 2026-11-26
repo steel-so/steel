@@ -1,11 +1,13 @@
 import { z } from 'zod'
 import { SaveWhatsAppAiConfigSchema } from '@/src/schemas/whatsapp-ai-config.schema'
+import { UpdateWhatsAppAiMediaSchema } from '@/src/schemas/whatsapp-ai-media.schema'
 import { fileUpload } from '../../common'
 import type { RouteConfig } from '../../registry'
 import {
   DeletedIdDTO,
   WhatsAppAiConfigDTO,
   WhatsAppAiKnowledgeDocumentDTO,
+  WhatsAppAiMediaDTO,
 } from '../../schemas/whatsapp'
 import { PRIVILEGED, PRIVILEGED_ERRORS } from './shared'
 
@@ -96,5 +98,71 @@ export const aiRoutes: RouteConfig[] = [
       200: { description: 'Documento excluído.', schema: DeletedIdDTO },
     },
     errors: [...PRIVILEGED_ERRORS, 'WHATSAPP_AI_KNOWLEDGE_DOCUMENT_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/workspaces/{id}/whatsapp/ai-config/media',
+    tags: [TAG],
+    summary: 'Listar imagens e vídeos da IA',
+    description: `Arquivos que a IA pode enviar na conversa, cada um com a regra de quando enviar. ${PRIVILEGED}`,
+    responses: {
+      200: { description: 'Arquivos.', schema: z.array(WhatsAppAiMediaDTO) },
+    },
+    errors: PRIVILEGED_ERRORS,
+  },
+  {
+    method: 'post',
+    path: '/workspaces/{id}/whatsapp/ai-config/media',
+    tags: [TAG],
+    summary: 'Adicionar imagem ou vídeo para a IA enviar',
+    description: `Upload \`multipart/form-data\`: \`file\` (JPG/PNG até 5 MB ou MP4/3GPP até 16 MB), \`name\` (até 60 caracteres, vira o identificador da ferramenta) e \`whenToSend\` (regra de quando enviar, até 500). A IA recebe a lista no prompt e uma ferramenta \`enviar_midia\`; o arquivo vai junto da resposta e fica registrado na conversa como mensagem da IA. Auditado. ${PRIVILEGED}`,
+    consent: true,
+    body: fileUpload(
+      'file',
+      'Imagem (JPG/PNG) ou vídeo (MP4) para a IA enviar.',
+    ),
+    responses: {
+      201: { description: 'Arquivo adicionado.', schema: WhatsAppAiMediaDTO },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      {
+        code: 'VALIDATION_ERROR',
+        message: 'Formato não aceito. Use imagem JPG ou PNG, ou vídeo MP4.',
+        when: 'Tipo de arquivo fora da lista ou acima do limite',
+      },
+      { code: 'CONFLICT', when: 'Já existe um arquivo com esse nome' },
+    ],
+  },
+  {
+    method: 'patch',
+    path: '/workspaces/{id}/whatsapp/ai-config/media/{mediaId}',
+    tags: [TAG],
+    summary: 'Editar a regra ou ativar/desativar um arquivo da IA',
+    description: `Atualiza \`whenToSend\` e/ou \`active\`. Arquivo inativo deixa de ser oferecido à IA, sem ser removido. Auditado. ${PRIVILEGED}`,
+    params: { mediaId: 'Id do arquivo da IA.' },
+    body: UpdateWhatsAppAiMediaSchema,
+    responses: {
+      200: { description: 'Arquivo atualizado.', schema: WhatsAppAiMediaDTO },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      { code: 'RESOURCE_NOT_FOUND', when: 'Arquivo não existe' },
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/workspaces/{id}/whatsapp/ai-config/media/{mediaId}',
+    tags: [TAG],
+    summary: 'Remover imagem ou vídeo da IA',
+    description: `A IA deixa de poder enviar o arquivo. Auditado. ${PRIVILEGED}`,
+    params: { mediaId: 'Id do arquivo da IA.' },
+    responses: {
+      200: { description: 'Arquivo removido.', schema: DeletedIdDTO },
+    },
+    errors: [
+      ...PRIVILEGED_ERRORS,
+      { code: 'RESOURCE_NOT_FOUND', when: 'Arquivo não existe' },
+    ],
   },
 ]

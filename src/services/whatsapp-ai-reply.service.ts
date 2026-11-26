@@ -24,6 +24,13 @@ import {
 } from '@/src/lib/whatsapp/ai-campaign-actions'
 import { replyAnnouncesHandoff } from '@/src/lib/whatsapp/ai-handoff'
 import {
+  AI_MEDIA_TOOL_NAME,
+  type AiMediaItem,
+  buildAiMediaSection,
+  buildAiMediaTool,
+  parseAiMediaCall,
+} from '@/src/lib/whatsapp/ai-media'
+import {
   loadZapAiTools,
   ZAP_TOOL_ROUNDS,
   ZAP_TOOLS_SYSTEM_SECTION,
@@ -39,6 +46,7 @@ import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.m
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
 import { WhatsAppAiConfigRepository } from '@/src/repositories/whatsapp-ai-config.repository'
 import { WhatsAppAiKnowledgeDocumentRepository } from '@/src/repositories/whatsapp-ai-knowledge-document.repository'
+import { WhatsAppAiMediaRepository } from '@/src/repositories/whatsapp-ai-media.repository'
 import { WhatsAppBroadcastRepository } from '@/src/repositories/whatsapp-broadcast.repository'
 import { WhatsAppContactRepository } from '@/src/repositories/whatsapp-contact.repository'
 import { WhatsAppConversationRepository } from '@/src/repositories/whatsapp-conversation.repository'
@@ -383,6 +391,59 @@ async function handOffUnavailableAi(input: {
   }
 }
 
+/**
+ * Sends the library files the AI picked, right after its text, and records
+ * each one as an outgoing message of the conversation. A failed file is
+ * logged and skipped: the text reply already went out.
+ */
+async function sendAiMedia(input: {
+  workspaceId: string
+  conversationId: string
+  connection: Parameters<typeof WhatsAppSend.media>[0]
+  to: string
+  media: {
+    mediaUrl: string
+    mediaType: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT'
+    key: string
+  }[]
+}): Promise<void> {
+  for (const media of input.media) {
+    const type = media.mediaType === 'VIDEO' ? 'video' : 'image'
+    const sent = await WhatsAppSend.media(
+      input.connection,
+      { to: input.to, mediaUrl: media.mediaUrl, type },
+      { cost: { source: 'AI_REPLY', conversationId: input.conversationId } },
+    )
+    if (!sent.ok) {
+      logger.warn('queue.whatsapp_ai_reply.media_send_failed', {
+        component: 'WhatsappAiReply',
+        workspaceId: input.workspaceId,
+        conversationId: input.conversationId,
+        key: media.key,
+        reason: sent.error.code,
+      })
+      continue
+    }
+    const saved = await WhatsAppMessageRepository.create({
+      workspaceId: input.workspaceId,
+      conversationId: input.conversationId,
+      direction: 'OUT',
+      type: media.mediaType === 'VIDEO' ? 'VIDEO' : 'IMAGE',
+      mediaUrl: media.mediaUrl,
+      providerMessageId: sent.value.providerMessageId,
+      status: 'SENT',
+      sentByAi: true,
+    })
+    if (saved.ok) {
+      await publishWhatsAppEvent(input.workspaceId, {
+        type: 'message.created',
+        conversationId: input.conversationId,
+        message: toWhatsAppMessageDTO(saved.value),
+      })
+    }
+  }
+}
+
 export const WhatsAppAiReplyService = {
   /**
    * Resposta automática da IA a uma mensagem recebida. Fluxo de sistema
@@ -521,6 +582,20 @@ export const WhatsAppAiReplyService = {
       (await buildKnowledgeBaseSection(workspaceId)) +
       buildReplyKnowledgeSection(sharedKnowledge, 'customer')
     const zapTools = await loadZapAiTools(workspaceId)
+    // Images/videos the workspace uploaded for the AI to send (campaign
+    // threads included: the rule of each file says when).
+    const mediaRows = await WhatsAppAiMediaRepository.listByWorkspace(
+      workspaceId,
+      { onlyActive: true },
+    )
+    const mediaLibrary = mediaRows.ok ? mediaRows.value : []
+    const mediaItems: AiMediaItem[] = mediaLibrary.map((row) => ({
+      key: row.key,
+      name: row.name,
+      whenToSend: row.whenToSend,
+      mediaType: row.mediaType === 'VIDEO' ? 'VIDEO' : 'IMAGE',
+    }))
+    const mediaToSend: typeof mediaLibrary = []
     // A5: mandatory-step procedures (null = nothing to offer this turn).
     const procedureStart = await AiProcedureRuntime.beginTurn({
       workspaceId,
@@ -546,6 +621,7 @@ export const WhatsAppAiReplyService = {
       config.systemPrompt +
       (zapTools ? ZAP_TOOLS_SYSTEM_SECTION : '') +
       HANDOFF_SYSTEM_INSTRUCTION +
+      buildAiMediaSection(mediaItems) +
       CONVERSATION_CONTEXT_INSTRUCTION +
       (call.guardrails
         ? autoReplyLimitsInstruction(call.guardrails.limits)
@@ -567,6 +643,7 @@ export const WhatsAppAiReplyService = {
     const campaignActions = campaignContext?.actions ?? []
     const baseTools = [
       CHECK_APPOINTMENT_TOOL,
+      ...(mediaItems.length > 0 ? [buildAiMediaTool(mediaItems)] : []),
       ...buildAiCampaignActionTools(campaignActions),
       ...(zapTools?.specs ?? []),
     ]
@@ -603,6 +680,23 @@ export const WhatsAppAiReplyService = {
           let content: string
           if (procedureContent) {
             content = procedureContent
+          } else if (toolCall.name === AI_MEDIA_TOOL_NAME) {
+            const picked = parseAiMediaCall(mediaItems, toolCall)
+            const row = picked
+              ? mediaLibrary.find((media) => media.key === picked.key)
+              : undefined
+            if (row && !mediaToSend.some((media) => media.id === row.id)) {
+              mediaToSend.push(row)
+            }
+            content = JSON.stringify(
+              row
+                ? {
+                    ok: true,
+                    mensagem:
+                      'O arquivo será enviado junto com a sua resposta. Responda ao cliente agora com uma frase curta.',
+                  }
+                : { error: 'Arquivo desconhecido' },
+            )
           } else if (zapTools?.names.has(toolCall.name)) {
             content = await zapTools.run({
               toolCall,
@@ -854,6 +948,17 @@ export const WhatsAppAiReplyService = {
       conversationId,
       message: toWhatsAppMessageDTO(message.value),
     })
+
+    // Files the AI chose to send (a guardrail hit drops the whole draft).
+    if (!guardrail) {
+      await sendAiMedia({
+        workspaceId,
+        conversationId,
+        connection: conversation.connection,
+        to: contact.value.waId,
+        media: mediaToSend,
+      })
+    }
 
     const fresh = await WhatsAppConversationRepository.findById(
       conversationId,

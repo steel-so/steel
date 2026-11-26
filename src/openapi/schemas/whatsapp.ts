@@ -706,6 +706,31 @@ export const WhatsAppAiKnowledgeDocumentDTO = dto(
   }),
 )
 
+export const WhatsAppAiMediaDTO = dto(
+  'WhatsAppAiMedia',
+  z.object({
+    id: z.string(),
+    workspaceId: z.string(),
+    key: z.string().meta({
+      example: 'print_do_painel',
+      description:
+        'Identificador que a IA usa para escolher o arquivo (snake_case do nome).',
+    }),
+    name: z.string().meta({ example: 'Print do painel' }),
+    whenToSend: z.string().meta({
+      description: 'Regra em texto livre: quando a IA deve enviar o arquivo.',
+    }),
+    mediaUrl: z.string(),
+    mediaType: z.enum(['IMAGE', 'VIDEO']),
+    mimeType: z.string().meta({ example: 'image/png' }),
+    fileName: z.string(),
+    sizeBytes: z.number().int(),
+    active: z.boolean(),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
+  }),
+)
+
 /* ----------------------------- configurações ----------------------------- */
 
 export const WhatsAppSettingsDTO = dto(
