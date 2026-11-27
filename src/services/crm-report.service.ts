@@ -150,6 +150,7 @@ async function campaignRecipientRows(
   if (!recipients.ok) return recipients
   const rows = recipients.value.map((recipient) => ({
     ...recipient,
+    contactWaId: withBrazilianNinthDigit(recipient.contactWaId),
     teamName: recipient.teamName ?? 'Sem equipe',
     replied: recipient.repliedAt ? 'Sim' : 'Não',
   }))

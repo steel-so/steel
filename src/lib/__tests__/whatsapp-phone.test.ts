@@ -11,4 +11,9 @@ describe('whatsapp phone helpers', () => {
     expect(formatWaId('5513991374570')).toBe('+5513991374570')
     expect(formatWaId('BR.13491208655302741918')).toBe('sem telefone')
   })
+
+  it('should restore the Brazilian ninth digit only for display', () => {
+    expect(formatWaId('554899976392')).toBe('+5548999976392')
+    expect(formatWaId('551133334444')).toBe('+551133334444')
+  })
 })

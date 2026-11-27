@@ -3,6 +3,7 @@ import type {
   WhatsAppMessageType,
 } from '@prisma/client'
 import { toCsv } from '@/src/lib/crm-export'
+import { withBrazilianNinthDigit } from '@/src/lib/phone-br'
 import { formatWaId } from '@/src/lib/whatsapp/phone'
 
 /** Formats a conversation can be downloaded in. */
@@ -115,7 +116,8 @@ export function buildWhatsAppConversationExport(
   input: WhatsAppConversationExportInput,
   format: Exclude<WhatsAppConversationExportFormat, 'pdf'>,
 ): WhatsAppConversationExportFile & { body: string } {
-  const contactLabel = input.contactName ?? input.contactWaId
+  const contactLabel =
+    input.contactName ?? withBrazilianNinthDigit(input.contactWaId)
   const fileName = `conversa-${fileSlug(input)}.${format}`
 
   if (format === 'csv') {
