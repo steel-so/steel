@@ -46,7 +46,28 @@ conversa reaberta some do período até ser encerrada de novo; tempo médio alto
 com muita conversa reaberta (conta desde a criação); atendente que saiu do
 workspace aparece como "Atendente removido".
 
-## 4. Erros comuns
+## 4. Visão por dia e equipe
+
+Na aba **Atendentes** há o seletor **Por atendente | Por dia e equipe**. A visão
+por dia agrupa por dia de São Paulo e pela equipe da conversa ("Sem equipe"
+quando não tem), com encerradas, sucesso, insucesso, sem tabulação e
+mensagens; o CSV usa o mesmo botão **Exportar CSV** (`view=daily&format=csv`).
+Para conferir no banco (mensagens do dia 02/11 de uma equipe):
+
+```bash
+docker exec -it steel-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "SELECT count(*) FROM whatsapp_messages m
+   JOIN whatsapp_conversations c ON c.id = m.conversation_id
+   WHERE c.workspace_id = '\''<workspaceId>'\'' AND c.team_id = '\''<teamId>'\''
+     AND c.deleted_at IS NULL AND m.deleted_at IS NULL AND m.reaction_emoji IS NULL
+     AND m.created_at >= '\''2026-11-02 03:00'\'' AND m.created_at < '\''2026-11-03 03:00'\'';"'
+```
+
+Casos que parecem erro mas não são: mensagens num dia sem encerradas (o dia da
+mensagem e o do encerramento são independentes); conversa que mudou de equipe
+aparece toda na equipe atual; reações e mensagens apagadas não contam.
+
+## 5. Erros comuns
 
 - `O relatório de atendentes não está disponível neste workspace` (404): o
   passo 1 não foi feito para esse workspace.

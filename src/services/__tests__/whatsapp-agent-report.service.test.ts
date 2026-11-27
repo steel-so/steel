@@ -22,6 +22,8 @@ vi.mock('@/src/repositories/whatsapp-agent-report.repository', () => ({
     closedByAgent: vi.fn(),
     openByAgent: vi.fn(),
     statusesByAgent: vi.fn(),
+    closedByDayAndTeam: vi.fn(),
+    messagesByDayAndTeam: vi.fn(),
   },
 }))
 vi.mock('@/src/services/whatsapp-conversation-scope.service', () => ({
@@ -122,6 +124,104 @@ beforeEach(() => {
       },
     ]),
   )
+})
+
+describe('dailyReport', () => {
+  beforeEach(() => {
+    repo.closedByDayAndTeam.mockResolvedValue(
+      ok([
+        {
+          day: '2026-11-05',
+          teamId: 't1',
+          teamName: 'Cobrança',
+          closed: 2,
+          success: 1,
+          failure: 1,
+          untabulated: 0,
+        },
+      ]),
+    )
+    repo.messagesByDayAndTeam.mockResolvedValue(
+      ok([
+        { day: '2026-11-05', teamId: 't1', teamName: 'Cobrança', messages: 7 },
+      ]),
+    )
+  })
+
+  it('merges closings and messages of the São Paulo window', async () => {
+    const report = expectOk(await Service.dailyReport(ACTOR, WS, {}, NOW))
+    expect(report).toMatchObject({
+      fromDay: '2026-10-31',
+      toDay: '2026-11-06',
+      visibility: 'ALL',
+    })
+    expect(report.rows).toEqual([
+      {
+        day: '2026-11-05',
+        teamId: 't1',
+        teamName: 'Cobrança',
+        closed: 2,
+        success: 1,
+        failure: 1,
+        untabulated: 0,
+        messages: 7,
+      },
+    ])
+    const range = repo.closedByDayAndTeam.mock.calls[0][0]
+    expect(range.start.toISOString()).toBe('2026-10-31T03:00:00.000Z')
+    expect(repo.messagesByDayAndTeam).toHaveBeenCalledWith(range)
+  })
+
+  it('answers 404 while the report is off', async () => {
+    repo.getSettings.mockResolvedValueOnce(
+      ok(createFakeWhatsAppAgentReportSettings({ enabled: false })),
+    )
+    expectErr(
+      await Service.dailyReport(ACTOR, WS, {}, NOW),
+      'WHATSAPP_AGENT_REPORT_DISABLED',
+    )
+    expect(repo.closedByDayAndTeam).not.toHaveBeenCalled()
+  })
+
+  it('restricts a team leader to their agents and teams', async () => {
+    actAs('leader', 'MEMBER')
+    expectOk(await Service.dailyReport('leader', WS, {}, NOW))
+    const { restriction } = repo.closedByDayAndTeam.mock.calls[0][0]
+    expect(restriction?.unassignedTeamIds).toEqual(['t1'])
+    expect(repo.messagesByDayAndTeam).toHaveBeenCalledWith(
+      expect.objectContaining({ restriction }),
+    )
+  })
+
+  it('passes the filters and propagates failures', async () => {
+    expectOk(
+      await Service.dailyReport(
+        ACTOR,
+        WS,
+        { teamId: 't1', connectionId: 'c1' },
+        NOW,
+      ),
+    )
+    expect(repo.closedByDayAndTeam).toHaveBeenCalledWith(
+      expect.objectContaining({ teamId: 't1', connectionId: 'c1' }),
+    )
+    repo.messagesByDayAndTeam.mockResolvedValueOnce(err(databaseError('x')))
+    expectErr(await Service.dailyReport(ACTOR, WS, {}, NOW), 'DATABASE_ERROR')
+  })
+
+  it('exports the CSV and audits it', async () => {
+    const out = expectOk(await Service.dailyReportCsv(ACTOR, WS, {}, NOW))
+    expect(out.fileName).toBe(
+      'relatorio-por-dia-e-equipe-2026-10-31-a-2026-11-06.csv',
+    )
+    expect(out.csv).toContain('05/11/2026;Cobrança;2;1;1;0;7')
+    expect(auditMutation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'whatsapp_agent_report',
+        meta: expect.objectContaining({ view: 'daily' }),
+      }),
+    )
+  })
 })
 
 describe('report', () => {

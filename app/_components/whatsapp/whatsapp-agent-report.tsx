@@ -26,7 +26,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  useWhatsAppAgentDailyReport,
   useWhatsAppAgentReport,
+  whatsAppAgentDailyReportCsvUrl,
   whatsAppAgentReportCsvUrl,
 } from '@/src/hooks/use-whatsapp-agent-report'
 import { useWhatsAppConnections } from '@/src/hooks/use-whatsapp-connections'
@@ -36,9 +38,11 @@ import {
   AGENT_REPORT_PRESET_LABELS,
   type AgentReportPreset,
   agentReportPresetRange,
+  formatReportDay,
 } from '@/src/lib/whatsapp/agent-report'
 import { formatSlaSpan } from '@/src/lib/whatsapp/sla-format'
 import type {
+  WhatsAppAgentDailyReportDTO,
   WhatsAppAgentReportDTO,
   WhatsAppAgentReportMetricsDTO,
   WhatsAppAgentReportStatusCountDTO,
@@ -61,8 +65,13 @@ function formatDuration(seconds: number | null): string {
   return seconds === null ? '—' : formatSlaSpan(seconds * 1000)
 }
 
-function formatDay(day: string): string {
-  return `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`
+const formatDay = formatReportDay
+
+type ReportView = 'agents' | 'daily'
+
+const VIEW_LABELS: Record<ReportView, string> = {
+  agents: 'Por atendente',
+  daily: 'Por dia e equipe',
 }
 
 function Metric({
@@ -233,6 +242,73 @@ function StatusSummary({
   )
 }
 
+function DailyTable({ report }: { report: WhatsAppAgentDailyReportDTO }) {
+  if (report.rows.length === 0) {
+    return (
+      <p className='rounded-md border border-dashed p-6 text-center text-muted-foreground text-sm'>
+        Nenhuma conversa encerrada nem mensagem no período para os filtros
+        escolhidos.
+      </p>
+    )
+  }
+  return (
+    <div className='space-y-2'>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Dia</TableHead>
+            <TableHead>Equipe</TableHead>
+            <TableHead className='text-right'>Encerradas</TableHead>
+            <TableHead className='text-right'>Sucesso</TableHead>
+            <TableHead className='text-right'>Insucesso</TableHead>
+            <TableHead className='text-right'>Sem tabulação</TableHead>
+            <TableHead className='text-right'>Mensagens</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {report.rows.map((row) => (
+            <TableRow key={`${row.day}-${row.teamId ?? 'none'}`}>
+              <TableCell>{formatDay(row.day)}</TableCell>
+              <TableCell className='max-w-72 truncate'>
+                {row.teamName}
+              </TableCell>
+              <TableCell className='text-right'>{row.closed}</TableCell>
+              <TableCell className='text-right'>{row.success}</TableCell>
+              <TableCell className='text-right'>{row.failure}</TableCell>
+              <TableCell className='text-right'>{row.untabulated}</TableCell>
+              <TableCell className='text-right'>{row.messages}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell className='font-medium' colSpan={2}>
+              Total
+            </TableCell>
+            <TableCell className='text-right'>{report.totals.closed}</TableCell>
+            <TableCell className='text-right'>
+              {report.totals.success}
+            </TableCell>
+            <TableCell className='text-right'>
+              {report.totals.failure}
+            </TableCell>
+            <TableCell className='text-right'>
+              {report.totals.untabulated}
+            </TableCell>
+            <TableCell className='text-right'>
+              {report.totals.messages}
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>
+      <p className='text-muted-foreground text-xs'>
+        Encerradas: conversas encerradas no dia. Mensagens: enviadas e recebidas
+        no dia nas conversas da equipe (sem apagadas e reações).
+      </p>
+    </div>
+  )
+}
+
 function ReportBody({ report }: { report: WhatsAppAgentReportDTO }) {
   if (report.rows.length === 0) {
     return (
@@ -264,6 +340,7 @@ export function WhatsappAgentReport({ workspaceId }: { workspaceId: string }) {
   )
   const [teamId, setTeamId] = useState(ALL)
   const [connectionId, setConnectionId] = useState(ALL)
+  const [view, setView] = useState<ReportView>('agents')
   const teams = useWhatsAppTeams(workspaceId).data ?? []
   const connections = useWhatsAppConnections(workspaceId).data ?? []
 
@@ -276,7 +353,20 @@ export function WhatsappAgentReport({ workspaceId }: { workspaceId: string }) {
     data: report,
     isLoading,
     error,
-  } = useWhatsAppAgentReport(workspaceId, params)
+  } = useWhatsAppAgentReport(workspaceId, params, view === 'agents')
+  const daily = useWhatsAppAgentDailyReport(
+    workspaceId,
+    params,
+    view === 'daily',
+  )
+  const current =
+    view === 'agents'
+      ? { report, isLoading, error }
+      : {
+          report: daily.data,
+          isLoading: daily.isLoading,
+          error: daily.error,
+        }
 
   function choosePreset(next: AgentReportPreset) {
     setPreset(next)
@@ -297,20 +387,43 @@ export function WhatsappAgentReport({ workspaceId }: { workspaceId: string }) {
           <p className='text-muted-foreground text-xs'>
             Conversas encerradas no período (horário de Brasília), contadas para
             o atendente responsável no encerramento.{' '}
-            {report ? VISIBILITY_HINT[report.visibility] : ''}
+            {current.report ? VISIBILITY_HINT[current.report.visibility] : ''}
           </p>
         </div>
         <Button
           size='sm'
           variant='outline'
           render={
-            <a href={whatsAppAgentReportCsvUrl(workspaceId, params)} download />
+            <a
+              href={
+                view === 'daily'
+                  ? whatsAppAgentDailyReportCsvUrl(workspaceId, params)
+                  : whatsAppAgentReportCsvUrl(workspaceId, params)
+              }
+              download
+            />
           }
         >
           <SteelIcon icon={Download01Icon} strokeWidth={2} />
           Exportar CSV
         </Button>
       </div>
+
+      <fieldset className='m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0'>
+        <legend className='sr-only'>Visão</legend>
+        {(Object.keys(VIEW_LABELS) as ReportView[]).map((key) => (
+          <Button
+            key={key}
+            type='button'
+            size='sm'
+            variant={view === key ? 'default' : 'outline'}
+            aria-pressed={view === key}
+            onClick={() => setView(key)}
+          >
+            {VIEW_LABELS[key]}
+          </Button>
+        ))}
+      </fieldset>
 
       <div className='flex flex-wrap items-end gap-3'>
         <fieldset className='m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0'>
@@ -410,23 +523,26 @@ export function WhatsappAgentReport({ workspaceId }: { workspaceId: string }) {
         ) : null}
       </div>
 
-      {report ? (
+      {current.report ? (
         <p className='text-muted-foreground text-xs'>
-          Período: {formatDay(report.fromDay)} a {formatDay(report.toDay)}.
+          Período: {formatDay(current.report.fromDay)} a{' '}
+          {formatDay(current.report.toDay)}.
         </p>
       ) : null}
 
-      {isLoading ? (
+      {current.isLoading ? (
         <div className='space-y-3' aria-busy>
           <Skeleton className='h-20 w-full rounded-xl' />
           <Skeleton className='h-48 w-full rounded-xl' />
         </div>
-      ) : report ? (
+      ) : view === 'agents' && report ? (
         <ReportBody report={report} />
+      ) : view === 'daily' && daily.data ? (
+        <DailyTable report={daily.data} />
       ) : (
         <p className='text-destructive text-sm'>
-          {error instanceof Error
-            ? error.message
+          {current.error instanceof Error
+            ? current.error.message
             : 'Não foi possível carregar o relatório de atendentes.'}
         </p>
       )}

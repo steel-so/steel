@@ -84,3 +84,34 @@ status, texto que pareça fórmula recebe aspa simples na frente.
   `(workspace_id, closed_at)`. Medir antes de criar.
 - Reabrir uma conversa limpa `closedAt`/`closeOutcome`: ela some do relatório do
   período em que foi encerrada e volta quando for encerrada de novo.
+
+## Adendo (27/11/2026): visão por dia e equipe
+
+Pedido da Fidelizza+: ver, por dia e por equipe, quantas conversas foram
+encerradas e quanto se conversou. As decisões acima continuam valendo; esta
+seção só acrescenta uma segunda visão ao mesmo relatório.
+
+- **Mesma rota, `view=daily`:** `GET .../whatsapp/reports/agents?view=daily`
+  (JSON) e `&format=csv`. Mesmo gate (relatório ligado, senão 404), mesmas
+  permissões (OWNER/ADMIN tudo, líder as equipes que lidera, atendente só o
+  próprio) e mesmos filtros `from`/`to`/`teamId`/`connectionId`.
+- **Agrupamento:** dia em America/Sao_Paulo × `conversation.teamId`; sem equipe
+  vira "Sem equipe". O nome da equipe é o atual (equipe apagada: "Equipe
+  removida").
+- **Colunas:** encerradas (`closedAt` no dia), sucesso, insucesso
+  (`closeOutcome`), sem tabulação (`closeOutcome` nulo) e mensagens.
+- **Mensagens — escolha:** conta linhas de `whatsapp_messages` (entrada e saída)
+  pelo `createdAt` no dia, nas conversas daquela equipe (conversa não apagada,
+  dentro da restrição de visibilidade). Mensagens apagadas e reações ficam de
+  fora. Importante: o dia da mensagem independe do dia do encerramento, então
+  um dia pode ter mensagens e zero encerradas (e vice-versa); a equipe é a
+  atual da conversa, não a da época da mensagem.
+- **Agregação:** duas consultas SQL no repositório
+  (`closedByDayAndTeam`, `messagesByDayAndTeam`, `GROUP BY` dia/equipe); a
+  junção das duas é só montagem de linhas em `buildDailyTeamReport`.
+- **CSV:** `;`, UTF-8 com BOM, CRLF, dia em `dd/MM/yyyy`, linha de total;
+  arquivo `relatorio-por-dia-e-equipe-<de>-a-<ate>.csv`.
+- **Custo:** a consulta de mensagens percorre as mensagens do período
+  (índice `(conversation_id, created_at)` não ajuda sem a conversa); com
+  períodos longos em workspaces grandes, medir antes de criar índice
+  `(workspace_id, created_at)`.

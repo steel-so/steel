@@ -384,4 +384,129 @@ describe('WhatsAppAgentReportRepository', () => {
       ])
     })
   })
+
+  describe('closedByDayAndTeam / messagesByDayAndTeam', () => {
+    it('groups by São Paulo day and team, counting the outcomes', async () => {
+      const seed = await setup()
+      const team = await prisma.whatsAppTeam.create({
+        data: { workspaceId: seed.workspace.id, name: 'Cobrança' },
+      })
+      // 02:30 UTC on the 3rd is still the 2nd in São Paulo.
+      await seedConversation(seed, {
+        teamId: team.id,
+        closedAt: new Date('2026-11-03T02:30:00.000Z'),
+        closeOutcome: 'SUCCESS',
+      })
+      await seedConversation(seed, {
+        teamId: team.id,
+        closedAt: new Date('2026-11-03T13:00:00.000Z'),
+        closeOutcome: 'FAILURE',
+      })
+      await seedConversation(seed, {
+        closedAt: new Date('2026-11-03T13:00:00.000Z'),
+      })
+      await seedConversation(seed, {
+        closedAt: new Date('2026-11-03T13:00:00.000Z'),
+        deletedAt: new Date(),
+      })
+      const rows = expectOk(
+        await Repo.closedByDayAndTeam({
+          workspaceId: seed.workspace.id,
+          start: START,
+          endExclusive: END,
+        }),
+      )
+      const key = (day: string, teamId: string | null) =>
+        rows.find((row) => row.day === day && row.teamId === teamId)
+      expect(key('2026-11-02', team.id)).toMatchObject({
+        teamName: 'Cobrança',
+        closed: 1,
+        success: 1,
+      })
+      expect(key('2026-11-03', team.id)).toMatchObject({
+        closed: 1,
+        failure: 1,
+      })
+      expect(key('2026-11-03', null)).toMatchObject({
+        teamName: null,
+        closed: 1,
+        untabulated: 1,
+      })
+      expect(rows).toHaveLength(3)
+    })
+
+    it('counts messages by creation day per team, skipping deleted ones and reactions', async () => {
+      const seed = await setup()
+      const team = await prisma.whatsAppTeam.create({
+        data: { workspaceId: seed.workspace.id, name: 'Vendas' },
+      })
+      const withTeam = await seedConversation(seed, { teamId: team.id })
+      const noTeam = await seedConversation(seed, {})
+      const message = (
+        conversationId: string,
+        createdAt: string,
+        extra: Record<string, unknown> = {},
+      ) =>
+        prisma.whatsAppMessage.create({
+          data: {
+            workspaceId: seed.workspace.id,
+            conversationId,
+            direction: 'IN',
+            type: 'TEXT',
+            text: 'oi',
+            createdAt: new Date(createdAt),
+            ...extra,
+          },
+        })
+      await message(withTeam.id, '2026-11-03T02:30:00.000Z') // 02/11 in SP
+      await message(withTeam.id, '2026-11-03T15:00:00.000Z')
+      await message(withTeam.id, '2026-11-03T16:00:00.000Z', {
+        direction: 'OUT',
+      })
+      await message(withTeam.id, '2026-11-03T17:00:00.000Z', {
+        deletedAt: new Date(),
+      })
+      await message(withTeam.id, '2026-11-03T18:00:00.000Z', {
+        reactionEmoji: '👍',
+      })
+      await message(noTeam.id, '2026-11-03T15:00:00.000Z')
+      await message(noTeam.id, '2026-11-20T15:00:00.000Z') // out of range
+
+      const rows = expectOk(
+        await Repo.messagesByDayAndTeam({
+          workspaceId: seed.workspace.id,
+          start: START,
+          endExclusive: END,
+        }),
+      )
+      const count = (day: string, teamId: string | null) =>
+        rows.find((row) => row.day === day && row.teamId === teamId)?.messages
+      expect(count('2026-11-02', team.id)).toBe(1)
+      expect(count('2026-11-03', team.id)).toBe(2)
+      expect(count('2026-11-03', null)).toBe(1)
+      expect(rows).toHaveLength(3)
+    })
+
+    it('applies the team and restriction filters like the other aggregates', async () => {
+      const seed = await setup()
+      const team = await prisma.whatsAppTeam.create({
+        data: { workspaceId: seed.workspace.id, name: 'Vendas' },
+      })
+      await seedConversation(seed, {
+        teamId: team.id,
+        assignedUserId: seed.ana.id,
+      })
+      await seedConversation(seed, { assignedUserId: seed.bruno.id })
+      const rows = expectOk(
+        await Repo.closedByDayAndTeam({
+          workspaceId: seed.workspace.id,
+          start: START,
+          endExclusive: END,
+          restriction: { agentIds: [seed.ana.id], unassignedTeamIds: [] },
+        }),
+      )
+      expect(rows).toHaveLength(1)
+      expect(rows[0].teamId).toBe(team.id)
+    })
+  })
 })

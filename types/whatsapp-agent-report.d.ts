@@ -59,3 +59,32 @@ export interface WhatsAppAgentReportDTO {
   /** Per-label summary of every row, most used first. */
   statuses: WhatsAppAgentReportStatusCountDTO[]
 }
+
+/** One day (São Paulo) of one team in the daily report. */
+export interface WhatsAppAgentDailyRowDTO {
+  /** `YYYY-MM-DD` in America/Sao_Paulo. */
+  day: string
+  /** `null` = conversations without a team ("Sem equipe"). */
+  teamId: string | null
+  teamName: string
+  /** Conversations closed (`closedAt`) on the day. */
+  closed: number
+  success: number
+  failure: number
+  /** Closed without any close status. */
+  untabulated: number
+  /** Messages (`createdAt` on the day) of the team's conversations. */
+  messages: number
+}
+
+export interface WhatsAppAgentDailyReportDTO {
+  fromDay: string
+  toDay: string
+  timeZone: string
+  teamId: string | null
+  connectionId: string | null
+  visibility: WhatsAppAgentReportVisibility
+  /** Oldest day first; teams by name, "Sem equipe" last. */
+  rows: WhatsAppAgentDailyRowDTO[]
+  totals: Omit<WhatsAppAgentDailyRowDTO, 'day' | 'teamId' | 'teamName'>
+}

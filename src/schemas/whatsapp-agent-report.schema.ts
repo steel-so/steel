@@ -35,6 +35,10 @@ export const WhatsAppAgentReportQuerySchema = z.object({
   connectionId: z.string().min(1).optional().meta({
     description: 'Só conversas desta conexão.',
   }),
+  view: z.enum(['agents', 'daily']).optional().meta({
+    description:
+      '`agents` (padrão): desempenho por atendente; `daily`: por dia e equipe (encerradas, sucesso, insucesso, sem tabulação e mensagens).',
+  }),
   format: z.enum(['json', 'csv']).optional().meta({
     description: '`csv` baixa a planilha (fora do envelope JSON).',
   }),

@@ -5,6 +5,8 @@ import type {
   AgentClosedAggregate,
   AgentOpenAggregate,
   AgentStatusAggregate,
+  DailyClosedAggregate,
+  DailyMessagesAggregate,
 } from '@/src/lib/whatsapp/agent-report'
 import { dbError } from './db-error'
 
@@ -194,6 +196,96 @@ export const WhatsAppAgentReportRepository = {
       )
     } catch (error) {
       return err(dbError('Failed to aggregate close status labels', error))
+    }
+  },
+
+  /**
+   * Conversations closed in the range, per São Paulo day (`closedAt`) and
+   * team. The team name is the current one (null for no team / removed team).
+   */
+  async closedByDayAndTeam(
+    filter: AgentReportFilter,
+  ): Promise<Result<DailyClosedAggregate[]>> {
+    try {
+      const rows = await prisma.$queryRaw<
+        {
+          day: string
+          team_id: string | null
+          team_name: string | null
+          closed: bigint
+          success: bigint
+          failure: bigint
+          untabulated: bigint
+        }[]
+      >`
+        SELECT to_char(c.closed_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
+               c.team_id AS team_id,
+               t.name AS team_name,
+               COUNT(*) AS closed,
+               COUNT(*) FILTER (WHERE c.close_outcome = 'SUCCESS') AS success,
+               COUNT(*) FILTER (WHERE c.close_outcome = 'FAILURE') AS failure,
+               COUNT(*) FILTER (WHERE c.close_outcome IS NULL) AS untabulated
+        FROM whatsapp_conversations c
+        LEFT JOIN whatsapp_teams t ON t.id = c.team_id AND t.workspace_id = c.workspace_id
+        WHERE ${conversationScope(filter)} AND ${closedInRange(filter)}
+        GROUP BY 1, c.team_id, t.name`
+      return ok(
+        rows.map((row) => ({
+          day: row.day,
+          teamId: row.team_id,
+          teamName: row.team_name,
+          closed: Number(row.closed),
+          success: Number(row.success),
+          failure: Number(row.failure),
+          untabulated: Number(row.untabulated),
+        })),
+      )
+    } catch (error) {
+      return err(
+        dbError('Failed to aggregate closed conversations by day', error),
+      )
+    }
+  },
+
+  /**
+   * Messages created in the range (`created_at`, São Paulo day), per team of
+   * the conversation they belong to. Counts both directions; skips deleted
+   * messages and reactions (a reaction is not a message of the chat).
+   */
+  async messagesByDayAndTeam(
+    filter: AgentReportFilter,
+  ): Promise<Result<DailyMessagesAggregate[]>> {
+    try {
+      const rows = await prisma.$queryRaw<
+        {
+          day: string
+          team_id: string | null
+          team_name: string | null
+          messages: bigint
+        }[]
+      >`
+        SELECT to_char(m.created_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
+               c.team_id AS team_id,
+               t.name AS team_name,
+               COUNT(*) AS messages
+        FROM whatsapp_messages m
+        JOIN whatsapp_conversations c ON c.id = m.conversation_id
+        LEFT JOIN whatsapp_teams t ON t.id = c.team_id AND t.workspace_id = c.workspace_id
+        WHERE ${conversationScope(filter)}
+          AND m.workspace_id = ${filter.workspaceId}
+          AND m.deleted_at IS NULL AND m.reaction_emoji IS NULL
+          AND m.created_at >= ${filter.start} AND m.created_at < ${filter.endExclusive}
+        GROUP BY 1, c.team_id, t.name`
+      return ok(
+        rows.map((row) => ({
+          day: row.day,
+          teamId: row.team_id,
+          teamName: row.team_name,
+          messages: Number(row.messages),
+        })),
+      )
+    } catch (error) {
+      return err(dbError('Failed to aggregate messages by day', error))
     }
   },
 }

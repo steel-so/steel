@@ -5,9 +5,12 @@ import { recordAdminAction } from '@/src/lib/admin-audit'
 import { err, ok, type Result } from '@/src/lib/result'
 import {
   AGENT_REPORT_TIME_ZONE,
+  agentDailyReportCsvFileName,
+  agentDailyReportToCsv,
   agentReportCsvFileName,
   agentReportToCsv,
   buildAgentReport,
+  buildDailyTeamReport,
   resolveAgentReportPeriod,
 } from '@/src/lib/whatsapp/agent-report'
 import { toWhatsAppAgentReportSettingsDTO } from '@/src/mappers/whatsapp-agent-report.mapper'
@@ -22,6 +25,7 @@ import type {
   WhatsAppAgentReportQuery,
 } from '@/src/schemas/whatsapp-agent-report.schema'
 import type {
+  WhatsAppAgentDailyReportDTO,
   WhatsAppAgentReportDTO,
   WhatsAppAgentReportSettingsDTO,
   WhatsAppAgentReportVisibility,
@@ -160,6 +164,102 @@ export const WhatsAppAgentReportService = {
       connectionId: query.connectionId ?? null,
       visibility: visibility.value.kind,
       ...body,
+    })
+  },
+
+  /**
+   * Daily view: per São Paulo day and team, closed conversations (`closedAt`
+   * on the day), success/failure/untabulated and the messages created on the
+   * day in the team's conversations (`whatsapp_messages.created_at`, both
+   * directions). Same gate, permissions and filters as `report`.
+   */
+  async dailyReport(
+    actorId: string,
+    workspaceId: string,
+    query: WhatsAppAgentReportQuery,
+    now: Date = new Date(),
+  ): Promise<Result<WhatsAppAgentDailyReportDTO>> {
+    const membership = await assertModuleMember(
+      actorId,
+      workspaceId,
+      'COMMUNICATION',
+      { resource: 'conversations', action: 'VIEW' },
+    )
+    if (!membership.ok) return membership
+
+    const enabled = await isReportEnabled(workspaceId)
+    if (!enabled.ok) return enabled
+    if (!enabled.value) return err(whatsappAgentReportDisabled())
+
+    const period = resolveAgentReportPeriod(query, now)
+    if (!period.ok) return period
+
+    const visibility = await resolveVisibility(
+      actorId,
+      workspaceId,
+      membership.value,
+    )
+    if (!visibility.ok) return visibility
+
+    const range = {
+      workspaceId,
+      teamId: query.teamId,
+      connectionId: query.connectionId,
+      restriction: visibility.value.restriction,
+      start: period.value.start,
+      endExclusive: period.value.endExclusive,
+    }
+    const [closed, messages] = await Promise.all([
+      WhatsAppAgentReportRepository.closedByDayAndTeam(range),
+      WhatsAppAgentReportRepository.messagesByDayAndTeam(range),
+    ])
+    if (!closed.ok) return closed
+    if (!messages.ok) return messages
+
+    return ok({
+      fromDay: period.value.fromDay,
+      toDay: period.value.toDay,
+      timeZone: AGENT_REPORT_TIME_ZONE,
+      teamId: query.teamId ?? null,
+      connectionId: query.connectionId ?? null,
+      visibility: visibility.value.kind,
+      ...buildDailyTeamReport({
+        closed: closed.value,
+        messages: messages.value,
+      }),
+    })
+  },
+
+  /** The daily view as CSV (audited like the agents CSV). */
+  async dailyReportCsv(
+    actorId: string,
+    workspaceId: string,
+    query: WhatsAppAgentReportQuery,
+    now: Date = new Date(),
+  ): Promise<Result<{ csv: string; fileName: string }>> {
+    const report = await WhatsAppAgentReportService.dailyReport(
+      actorId,
+      workspaceId,
+      query,
+      now,
+    )
+    if (!report.ok) return report
+    auditMutation({
+      entity: 'whatsapp_agent_report',
+      action: 'export',
+      actorId,
+      targetId: workspaceId,
+      meta: {
+        workspaceId,
+        view: 'daily',
+        fromDay: report.value.fromDay,
+        toDay: report.value.toDay,
+        visibility: report.value.visibility,
+      },
+    })
+    return ok({
+      csv: agentDailyReportToCsv(report.value),
+      fileName: agentDailyReportCsvFileName(report.value),
     })
   },
 

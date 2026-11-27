@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { expectErr, expectOk } from '@/src/__tests__/helpers/result.helpers'
 import {
   type AgentClosedAggregate,
+  agentDailyReportCsvFileName,
+  agentDailyReportToCsv,
   agentReportCsvFileName,
   agentReportPresetRange,
   agentReportToCsv,
   averageSeconds,
   buildAgentReport,
+  buildDailyTeamReport,
   mergeStatusCounts,
   resolveAgentReportPeriod,
   saoPauloDay,
@@ -388,5 +391,150 @@ describe('agentReportToCsv', () => {
     expect(
       agentReportCsvFileName({ fromDay: '2026-11-01', toDay: '2026-11-07' }),
     ).toBe('relatorio-atendentes-2026-11-01-a-2026-11-07.csv')
+  })
+})
+
+describe('buildDailyTeamReport', () => {
+  const body = buildDailyTeamReport({
+    closed: [
+      {
+        day: '2026-11-03',
+        teamId: null,
+        teamName: null,
+        closed: 1,
+        success: 0,
+        failure: 0,
+        untabulated: 1,
+      },
+      {
+        day: '2026-11-03',
+        teamId: 't2',
+        teamName: 'Vendas',
+        closed: 3,
+        success: 2,
+        failure: 1,
+        untabulated: 0,
+      },
+      {
+        day: '2026-11-02',
+        teamId: 't1',
+        teamName: 'Cobrança',
+        closed: 2,
+        success: 1,
+        failure: 0,
+        untabulated: 1,
+      },
+    ],
+    messages: [
+      { day: '2026-11-03', teamId: 't2', teamName: 'Vendas', messages: 40 },
+      { day: '2026-11-04', teamId: null, teamName: null, messages: 5 },
+      { day: '2026-11-02', teamId: 't1', teamName: 'Cobrança', messages: 12 },
+    ],
+  })
+
+  it('merges closings and messages per day and team, oldest day first', () => {
+    expect(body.rows.map((row) => [row.day, row.teamName])).toEqual([
+      ['2026-11-02', 'Cobrança'],
+      ['2026-11-03', 'Vendas'],
+      ['2026-11-03', 'Sem equipe'],
+      ['2026-11-04', 'Sem equipe'],
+    ])
+    expect(body.rows[1]).toMatchObject({
+      closed: 3,
+      success: 2,
+      failure: 1,
+      untabulated: 0,
+      messages: 40,
+    })
+  })
+
+  it('keeps a day that only has messages', () => {
+    expect(body.rows[3]).toMatchObject({ closed: 0, messages: 5 })
+  })
+
+  it('sums the totals', () => {
+    expect(body.totals).toEqual({
+      closed: 6,
+      success: 3,
+      failure: 1,
+      untabulated: 2,
+      messages: 57,
+    })
+  })
+
+  it('labels a removed team', () => {
+    const removed = buildDailyTeamReport({
+      closed: [],
+      messages: [
+        { day: '2026-11-02', teamId: 'gone', teamName: null, messages: 1 },
+      ],
+    })
+    expect(removed.rows[0].teamName).toBe('Equipe removida')
+  })
+
+  it('is empty without data', () => {
+    expect(buildDailyTeamReport({ closed: [], messages: [] })).toEqual({
+      rows: [],
+      totals: {
+        closed: 0,
+        success: 0,
+        failure: 0,
+        untabulated: 0,
+        messages: 0,
+      },
+    })
+  })
+})
+
+describe('agentDailyReportToCsv', () => {
+  const report = {
+    fromDay: '2026-11-02',
+    toDay: '2026-11-03',
+    timeZone: 'America/Sao_Paulo',
+    teamId: null,
+    connectionId: null,
+    visibility: 'ALL' as const,
+    ...buildDailyTeamReport({
+      closed: [
+        {
+          day: '2026-11-02',
+          teamId: 't1',
+          teamName: '=Vendas; "A"',
+          closed: 2,
+          success: 1,
+          failure: 1,
+          untabulated: 0,
+        },
+      ],
+      messages: [
+        {
+          day: '2026-11-02',
+          teamId: 't1',
+          teamName: '=Vendas; "A"',
+          messages: 9,
+        },
+      ],
+    }),
+  }
+  const csv = agentDailyReportToCsv(report)
+  const lines = csv.slice(1).split('\r\n')
+
+  it('has BOM, ";" separator and CRLF', () => {
+    expect(csv.startsWith('\uFEFF')).toBe(true)
+    expect(lines[0]).toBe(
+      'Dia;Equipe;Encerradas;Sucesso;Insucesso;Sem tabulação;Mensagens',
+    )
+    expect(csv.endsWith('\r\n')).toBe(true)
+  })
+
+  it('writes dd/MM/yyyy days, neutralized team names and a total', () => {
+    expect(lines[1]).toBe('02/11/2026;"\'=Vendas; ""A""";2;1;1;0;9')
+    expect(lines[2]).toBe('Total;;2;1;1;0;9')
+  })
+
+  it('names the file after the period', () => {
+    expect(agentDailyReportCsvFileName(report)).toBe(
+      'relatorio-por-dia-e-equipe-2026-11-02-a-2026-11-03.csv',
+    )
   })
 })

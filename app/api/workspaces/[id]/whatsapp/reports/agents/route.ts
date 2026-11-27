@@ -15,7 +15,8 @@ type Params = { params: Promise<{ id: string }> }
 /**
  * Agent performance report (ADR 0062) of the period: `from`/`to` are
  * `YYYY-MM-DD` days in America/Sao_Paulo, default the last 7 days.
- * `?format=csv` downloads the spreadsheet. 404 while the platform admin has
+ * `?format=csv` downloads the spreadsheet; `?view=daily` switches to the
+ * per day and team view (JSON or CSV). 404 while the platform admin has
  * not enabled the report for the workspace.
  */
 export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
@@ -37,8 +38,12 @@ export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
     )
   }
 
+  const daily = parsed.data.view === 'daily'
+
   if (parsed.data.format === 'csv') {
-    const csv = await WhatsAppAgentReportService.reportCsv(
+    const csv = await (daily
+      ? WhatsAppAgentReportService.dailyReportCsv
+      : WhatsAppAgentReportService.reportCsv)(
       auth.value.user.id,
       id,
       parsed.data,
@@ -53,11 +58,9 @@ export const GET = withAxiom(async (request: NextRequest, ctx: Params) => {
     })
   }
 
-  const result = await WhatsAppAgentReportService.report(
-    auth.value.user.id,
-    id,
-    parsed.data,
-  )
+  const result = await (daily
+    ? WhatsAppAgentReportService.dailyReport
+    : WhatsAppAgentReportService.report)(auth.value.user.id, id, parsed.data)
   if (!result.ok) return handleError(result.error)
   return successResponse(result.value)
 })

@@ -2,6 +2,8 @@ import { validationError } from '@/src/errors/app-error'
 import { err, ok, type Result } from '@/src/lib/result'
 import { WHATSAPP_AGENT_REPORT_MAX_DAYS } from '@/src/schemas/whatsapp-agent-report.schema'
 import type {
+  WhatsAppAgentDailyReportDTO,
+  WhatsAppAgentDailyRowDTO,
   WhatsAppAgentReportDTO,
   WhatsAppAgentReportMetricsDTO,
   WhatsAppAgentReportOutcome,
@@ -18,6 +20,8 @@ import type {
 export const AGENT_REPORT_TIME_ZONE = 'America/Sao_Paulo'
 export const UNASSIGNED_AGENT_LABEL = 'Sem atendente'
 export const REMOVED_AGENT_LABEL = 'Atendente removido'
+export const NO_TEAM_LABEL = 'Sem equipe'
+export const REMOVED_TEAM_LABEL = 'Equipe removida'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 /** America/Sao_Paulo has no daylight saving time since 2019. */
@@ -349,6 +353,136 @@ export function agentReportToCsv(report: WhatsAppAgentReportDTO): string {
     header.map(csvText).join(';'),
     ...report.rows.map((row) => line(row.agentName, row)),
     line('Total', report.totals),
+  ]
+  return `${CSV_BOM}${lines.join(CSV_EOL)}${CSV_EOL}`
+}
+
+// ─── Daily report by team ───────────────────────────────────────────────────
+
+/** Conversations closed on one São Paulo day, per team, from the repository. */
+export interface DailyClosedAggregate {
+  day: string
+  teamId: string | null
+  /** Current team name; `null` when there is no team or it was removed. */
+  teamName: string | null
+  closed: number
+  success: number
+  failure: number
+  untabulated: number
+}
+
+/** Messages created on one São Paulo day in the conversations of a team. */
+export interface DailyMessagesAggregate {
+  day: string
+  teamId: string | null
+  teamName: string | null
+  messages: number
+}
+
+type DailyTotals = WhatsAppAgentDailyReportDTO['totals']
+
+/**
+ * Joins the closed-conversation and message aggregates by (day, team). A day
+ * with only messages (or only closings) still gets a row. Oldest day first,
+ * teams by name with "Sem equipe" last.
+ */
+export function buildDailyTeamReport(input: {
+  closed: DailyClosedAggregate[]
+  messages: DailyMessagesAggregate[]
+}): { rows: WhatsAppAgentDailyRowDTO[]; totals: DailyTotals } {
+  const byKey = new Map<string, WhatsAppAgentDailyRowDTO>()
+  const rowOf = (
+    day: string,
+    teamId: string | null,
+    teamName: string | null,
+  ): WhatsAppAgentDailyRowDTO => {
+    const key = `${day}|${teamId ?? ''}`
+    let row = byKey.get(key)
+    if (!row) {
+      row = {
+        day,
+        teamId,
+        teamName:
+          teamId === null ? NO_TEAM_LABEL : (teamName ?? REMOVED_TEAM_LABEL),
+        closed: 0,
+        success: 0,
+        failure: 0,
+        untabulated: 0,
+        messages: 0,
+      }
+      byKey.set(key, row)
+    }
+    return row
+  }
+  for (const item of input.closed) {
+    const row = rowOf(item.day, item.teamId, item.teamName)
+    row.closed += item.closed
+    row.success += item.success
+    row.failure += item.failure
+    row.untabulated += item.untabulated
+  }
+  for (const item of input.messages) {
+    rowOf(item.day, item.teamId, item.teamName).messages += item.messages
+  }
+  const rows = [...byKey.values()].sort((a, b) => {
+    if (a.day !== b.day) return a.day < b.day ? -1 : 1
+    if ((a.teamId === null) !== (b.teamId === null)) {
+      return a.teamId === null ? 1 : -1
+    }
+    return a.teamName.localeCompare(b.teamName, 'pt-BR')
+  })
+  const totals = rows.reduce<DailyTotals>(
+    (sum, row) => ({
+      closed: sum.closed + row.closed,
+      success: sum.success + row.success,
+      failure: sum.failure + row.failure,
+      untabulated: sum.untabulated + row.untabulated,
+      messages: sum.messages + row.messages,
+    }),
+    { closed: 0, success: 0, failure: 0, untabulated: 0, messages: 0 },
+  )
+  return { rows, totals }
+}
+
+export function agentDailyReportCsvFileName(
+  report: Pick<WhatsAppAgentDailyReportDTO, 'fromDay' | 'toDay'>,
+): string {
+  return `relatorio-por-dia-e-equipe-${report.fromDay}-a-${report.toDay}.csv`
+}
+
+export function formatReportDay(day: string): string {
+  return `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`
+}
+
+/** Same format as `agentReportToCsv`: `;`, BOM, CRLF, formula-safe text. */
+export function agentDailyReportToCsv(
+  report: WhatsAppAgentDailyReportDTO,
+): string {
+  const header = [
+    'Dia',
+    'Equipe',
+    'Encerradas',
+    'Sucesso',
+    'Insucesso',
+    'Sem tabulação',
+    'Mensagens',
+  ]
+  const line = (day: string, team: string, row: DailyTotals) =>
+    [
+      csvText(day),
+      csvText(team),
+      row.closed,
+      row.success,
+      row.failure,
+      row.untabulated,
+      row.messages,
+    ].join(';')
+  const lines = [
+    header.map(csvText).join(';'),
+    ...report.rows.map((row) =>
+      line(formatReportDay(row.day), row.teamName, row),
+    ),
+    line('Total', '', report.totals),
   ]
   return `${CSV_BOM}${lines.join(CSV_EOL)}${CSV_EOL}`
 }

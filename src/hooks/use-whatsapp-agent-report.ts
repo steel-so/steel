@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UpdateWhatsAppAgentReportSettingsDTO } from '@/src/schemas/whatsapp-agent-report.schema'
 import type {
+  WhatsAppAgentDailyReportDTO,
   WhatsAppAgentReportDTO,
   WhatsAppAgentReportSettingsDTO,
 } from '@/types/whatsapp-agent-report'
@@ -51,6 +52,33 @@ export function useWhatsAppAgentReport(
         `${base(workspaceId)}?${reportQuery(params)}`,
         undefined,
         'Erro ao buscar o relatório de atendentes',
+      ),
+    enabled: enabled && Boolean(workspaceId),
+    staleTime: 60 * 1000,
+  })
+}
+
+/** CSV download URL of the daily (day and team) view. */
+export function whatsAppAgentDailyReportCsvUrl(
+  workspaceId: string,
+  params: WhatsAppAgentReportParams,
+): string {
+  const query = reportQuery(params)
+  return `${base(workspaceId)}?${query ? `${query}&` : ''}view=daily&format=csv`
+}
+
+export function useWhatsAppAgentDailyReport(
+  workspaceId: string,
+  params: WhatsAppAgentReportParams,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['whatsapp-agent-daily-report', workspaceId, params] as const,
+    queryFn: () =>
+      apiFetch<WhatsAppAgentDailyReportDTO>(
+        `${base(workspaceId)}?${reportQuery(params)}&view=daily`,
+        undefined,
+        'Erro ao buscar o relatório por dia e equipe',
       ),
     enabled: enabled && Boolean(workspaceId),
     staleTime: 60 * 1000,
