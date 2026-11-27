@@ -447,4 +447,58 @@ describe('WhatsAppMessageRepository', () => {
       )
     })
   })
+
+  describe('firstInboundAtByConversation()', () => {
+    it('should return the earliest non-deleted inbound message per conversation', async () => {
+      const { workspace, conversation } = await seedConversation()
+      const base = {
+        workspaceId: workspace.id,
+        conversationId: conversation.id,
+        type: 'TEXT' as const,
+        text: 'oi',
+      }
+      await prisma.whatsAppMessage.createMany({
+        data: [
+          {
+            ...base,
+            direction: 'OUT',
+            createdAt: new Date('2026-11-01T09:00:00.000Z'),
+          },
+          {
+            ...base,
+            direction: 'IN',
+            createdAt: new Date('2026-11-01T08:00:00.000Z'),
+            deletedAt: new Date(),
+          },
+          {
+            ...base,
+            direction: 'IN',
+            createdAt: new Date('2026-11-01T10:00:00.000Z'),
+          },
+          {
+            ...base,
+            direction: 'IN',
+            createdAt: new Date('2026-11-01T11:00:00.000Z'),
+          },
+        ],
+      })
+      const result = expectOk(
+        await WhatsAppMessageRepository.firstInboundAtByConversation(
+          workspace.id,
+          [conversation.id, 'missing'],
+        ),
+      )
+      expect(result.get(conversation.id)?.toISOString()).toBe(
+        '2026-11-01T10:00:00.000Z',
+      )
+      expect(result.has('missing')).toBe(false)
+    })
+
+    it('should skip the query for no ids', async () => {
+      const result = expectOk(
+        await WhatsAppMessageRepository.firstInboundAtByConversation('ws', []),
+      )
+      expect(result.size).toBe(0)
+    })
+  })
 })

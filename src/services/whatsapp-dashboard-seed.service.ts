@@ -324,6 +324,7 @@ const CONVERSAS_REPORT: Omit<CreateCrmReportDTO, 'name'> = {
   columns: [
     'contactName',
     'contactWaId',
+    'contactAt',
     'status',
     'assignedUserId',
     'aiActive',

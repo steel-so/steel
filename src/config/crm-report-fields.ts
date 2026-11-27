@@ -68,6 +68,7 @@ export const CRM_REPORT_FIELDS: Record<CrmReportSource, CrmReportFieldDef[]> = {
   whatsapp_conversation: [
     { key: 'contactName', label: 'Contato', type: 'text' },
     { key: 'contactWaId', label: 'Telefone', type: 'text' },
+    { key: 'contactAt', label: 'Data do contato', type: 'text' },
     { key: 'status', label: 'Status', type: 'text' },
     { key: 'assignedUserName', label: 'Atendente', type: 'text' },
     { key: 'assignedUserId', label: 'ID do atendente', type: 'text' },

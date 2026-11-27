@@ -10,6 +10,9 @@ vi.mock('@/lib/axiom/audit', () => ({ auditMutation: vi.fn() }))
 vi.mock('@/src/repositories/membership.repository')
 vi.mock('@/src/repositories/crm-custom-field.repository')
 vi.mock('@/src/repositories/crm-report.repository')
+vi.mock('@/src/repositories/whatsapp-message.repository', () => ({
+  WhatsAppMessageRepository: { firstInboundAtByConversation: vi.fn() },
+}))
 vi.mock('@/src/services/crm-company.service')
 vi.mock('@/src/services/crm-opportunity.service')
 vi.mock('@/src/services/crm-person.service')
@@ -27,6 +30,7 @@ import {
 } from '@/src/repositories/crm-custom-field.repository'
 import { CrmReportRepository } from '@/src/repositories/crm-report.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
+import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import { WorkspaceModuleAccessRepository } from '@/src/repositories/workspace-module-access.repository'
 import { CrmCompanyService } from '@/src/services/crm-company.service'
 import { CrmLeadService } from '@/src/services/crm-lead.service'
@@ -45,6 +49,9 @@ const mockedCompanyService = vi.mocked(CrmCompanyService)
 const mockedOpportunityService = vi.mocked(CrmOpportunityService)
 const mockedModuleAccess = vi.mocked(WorkspaceModuleAccessRepository)
 const mockedAudit = vi.mocked(auditMutation)
+const mockedFirstInbound = vi.mocked(
+  WhatsAppMessageRepository.firstInboundAtByConversation,
+)
 
 type ListMock = { mockResolvedValue(v: unknown): unknown }
 
@@ -58,6 +65,7 @@ const report = (overrides?: Parameters<typeof createFakeCrmReport>[0]) =>
   createFakeCrmReport({ id: 'r1', workspaceId: 'ws1', ...overrides })
 
 beforeEach(() => {
+  mockedFirstInbound.mockResolvedValue(ok(new Map()))
   mockedModuleAccess.isEnabled.mockResolvedValue(ok(true))
   vi.mocked(
     CrmCustomFieldDefinitionRepository.listByWorkspace,
@@ -610,6 +618,81 @@ describe('CrmReportService — authz, persistence and data sources', () => {
           'whatsapp_conversation.cf:ID do cliente': '',
         },
       ])
+    })
+
+    it('should add the first contact date and the phone with the ninth digit', async () => {
+      asRole('VIEWER')
+      mockedReportRepo.findById.mockResolvedValue(
+        ok(
+          report({
+            source: 'whatsapp_conversation',
+            columns: ['contactWaId', 'contactAt'],
+            query: null,
+          }),
+        ),
+      )
+      mockedMembershipRepo.listWithUserByWorkspace.mockResolvedValue(ok([]))
+      // 02:30 UTC on 28/11 is 23:30 on 27/11 in São Paulo.
+      mockedFirstInbound.mockResolvedValue(
+        ok(new Map([['c1', new Date('2026-11-28T02:30:00.000Z')]])),
+      )
+      vi.mocked(WhatsAppConversationService.list).mockResolvedValue(
+        ok([
+          {
+            id: 'c1',
+            contactId: 'k1',
+            contactWaId: '554899976392',
+            createdAt: '2026-11-20T12:00:00.000Z',
+            assignedUserId: null,
+            team: null,
+          },
+          {
+            id: 'c2',
+            contactId: 'k2',
+            contactWaId: 'BR.123',
+            createdAt: '2026-11-20T15:05:00.000Z',
+            assignedUserId: null,
+            team: null,
+          },
+        ] as never),
+      )
+
+      const data = expectOk(await CrmReportService.runData('u1', 'ws1', 'r1'))
+      expect(data.rows).toEqual([
+        {
+          'whatsapp_conversation.contactWaId': '5548999976392',
+          'whatsapp_conversation.contactAt': '27/11/2026 23:30',
+        },
+        {
+          // No inbound message: falls back to the conversation creation.
+          'whatsapp_conversation.contactWaId': 'BR.123',
+          'whatsapp_conversation.contactAt': '20/11/2026 12:05',
+        },
+      ])
+    })
+
+    it('should propagate a failure reading the first inbound messages', async () => {
+      asRole('VIEWER')
+      mockedReportRepo.findById.mockResolvedValue(
+        ok(
+          report({
+            source: 'whatsapp_conversation',
+            columns: ['contactAt'],
+            query: null,
+          }),
+        ),
+      )
+      mockedMembershipRepo.listWithUserByWorkspace.mockResolvedValue(ok([]))
+      mockedFirstInbound.mockResolvedValueOnce(err(databaseError('x')))
+      vi.mocked(WhatsAppConversationService.list).mockResolvedValue(
+        ok([
+          { id: 'c1', contactId: 'k1', assignedUserId: null, team: null },
+        ] as never),
+      )
+      expectErr(
+        await CrmReportService.runData('u1', 'ws1', 'r1'),
+        'DATABASE_ERROR',
+      )
     })
 
     it('should contribute no rows for a stored dataset whose source no longer exists', async () => {

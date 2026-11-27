@@ -50,6 +50,37 @@ export const WhatsAppMessageRepository = {
     }
   },
 
+  /**
+   * Time of the first inbound (contact) message of each conversation, for
+   * the conversations that have one. Deleted messages do not count.
+   */
+  async firstInboundAtByConversation(
+    workspaceId: string,
+    conversationIds: string[],
+  ): Promise<Result<Map<string, Date>>> {
+    if (conversationIds.length === 0) return ok(new Map())
+    try {
+      const rows = await prisma.whatsAppMessage.groupBy({
+        by: ['conversationId'],
+        where: {
+          workspaceId,
+          conversationId: { in: conversationIds },
+          direction: 'IN',
+          deletedAt: null,
+        },
+        _min: { createdAt: true },
+      })
+      const firstAt = new Map<string, Date>()
+      for (const row of rows) {
+        if (row._min.createdAt)
+          firstAt.set(row.conversationId, row._min.createdAt)
+      }
+      return ok(firstAt)
+    } catch (error) {
+      return err(dbError('Failed to read first inbound messages', error))
+    }
+  },
+
   /** Últimas `limit` mensagens da conversa, da mais nova para a mais antiga
    * (contexto da resposta automática da IA). */
   async listLatestByConversation(

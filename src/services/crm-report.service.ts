@@ -4,7 +4,9 @@ import { CUSTOM_REPORT_FIELD_PREFIX } from '@/src/config/crm-report-fields'
 import type { CrmReportRow } from '@/src/lib/crm-report-runner'
 import { runCrmReportQuery } from '@/src/lib/crm-report-runner'
 import { formatCustomFieldValue } from '@/src/lib/custom-field-value'
+import { withBrazilianNinthDigit } from '@/src/lib/phone-br'
 import { err, ok, type Result } from '@/src/lib/result'
+import { formatDateTime } from '@/src/lib/whatsapp/conversation-export'
 import { toCrmReportDTO } from '@/src/mappers/crm-report.mapper'
 import {
   CrmCustomFieldDefinitionRepository,
@@ -13,6 +15,7 @@ import {
 import { CrmReportRepository } from '@/src/repositories/crm-report.repository'
 import { MembershipRepository } from '@/src/repositories/membership.repository'
 import { WhatsAppAiCampaignRepository } from '@/src/repositories/whatsapp-ai-campaign.repository'
+import { WhatsAppMessageRepository } from '@/src/repositories/whatsapp-message.repository'
 import type {
   CreateCrmReportDTO,
   CrmReportData,
@@ -75,13 +78,22 @@ async function withContactFieldColumns<T extends { contactId: string }>(
  * export) must show the agent's name, the team's name and the contact's custom
  * fields, so each row gets `assignedUserName`, `teamName` and the `cf:` columns.
  * An agent who left the workspace keeps a label instead of a raw id.
+ *
+ * Two display-only columns: `contactWaId` (the phone) gets the Brazilian
+ * ninth digit when Meta sent the number without it, and `contactAt` is the
+ * first contact: the first inbound message (`dd/MM/yyyy HH:mm`, São Paulo),
+ * or the conversation's creation when the contact never wrote. The stored
+ * `waId` is never changed.
  */
 async function withConversationColumns(
   workspaceId: string,
   conversations: Result<
     {
+      id: string
       assignedUserId: string | null
       contactId: string
+      contactWaId?: string
+      createdAt?: string
       team: { name: string } | null
     }[]
   >,
@@ -93,13 +105,29 @@ async function withConversationColumns(
   const names = new Map(
     members.value.map((member) => [member.userId, member.user.name]),
   )
-  const named = conversations.value.map((conversation) => ({
-    ...conversation,
-    assignedUserName: conversation.assignedUserId
-      ? (names.get(conversation.assignedUserId) ?? 'Ex-membro')
-      : 'Sem atendente',
-    teamName: conversation.team?.name ?? 'Sem equipe',
-  }))
+  const firstInbound =
+    await WhatsAppMessageRepository.firstInboundAtByConversation(
+      workspaceId,
+      conversations.value.map((conversation) => conversation.id),
+    )
+  if (!firstInbound.ok) return firstInbound
+  const named = conversations.value.map((conversation) => {
+    const contactAt =
+      firstInbound.value.get(conversation.id) ??
+      (conversation.createdAt ? new Date(conversation.createdAt) : null)
+    return {
+      ...conversation,
+      contactWaId:
+        conversation.contactWaId === undefined
+          ? undefined
+          : withBrazilianNinthDigit(conversation.contactWaId),
+      contactAt: contactAt ? formatDateTime(contactAt) : '',
+      assignedUserName: conversation.assignedUserId
+        ? (names.get(conversation.assignedUserId) ?? 'Ex-membro')
+        : 'Sem atendente',
+      teamName: conversation.team?.name ?? 'Sem equipe',
+    }
+  })
   const withFields = await withContactFieldColumns(workspaceId, named)
   return withFields.ok
     ? ok(withFields.value as unknown as CrmReportRow[])
