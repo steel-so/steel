@@ -74,3 +74,40 @@ export const WhatsAppAgentReportDTO = dto(
     statuses: z.array(StatusCount),
   }),
 )
+
+const DailyMetrics = {
+  closed: z.number().int().meta({ description: 'Encerradas no dia.' }),
+  success: z.number().int(),
+  failure: z.number().int(),
+  untabulated: z.number().int().meta({
+    description: 'Encerradas sem status de fechamento.',
+  }),
+  messages: z.number().int().meta({
+    description:
+      'Mensagens enviadas e recebidas no dia nas conversas da equipe (sem apagadas e reações).',
+  }),
+}
+
+/** `?view=daily`: per São Paulo day and team. */
+export const WhatsAppAgentDailyReportDTO = dto(
+  'WhatsAppAgentDailyReport',
+  z.object({
+    fromDay: z.string().meta({ example: '2026-11-01' }),
+    toDay: z.string().meta({ example: '2026-11-07' }),
+    timeZone: z.string().meta({ example: 'America/Sao_Paulo' }),
+    teamId: z.string().nullable(),
+    connectionId: z.string().nullable(),
+    visibility: z.enum(['ALL', 'TEAMS', 'SELF']),
+    rows: z.array(
+      z.object({
+        day: z.string().meta({ example: '2026-11-05' }),
+        teamId: z.string().nullable().meta({
+          description: '`null` = "Sem equipe".',
+        }),
+        teamName: z.string(),
+        ...DailyMetrics,
+      }),
+    ),
+    totals: z.object(DailyMetrics),
+  }),
+)

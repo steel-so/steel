@@ -16046,6 +16046,20 @@
                         }
                       },
                       "required": ["kind", "instruction"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "SEND_TEMPLATE"
+                        },
+                        "templateId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "templateId"]
                     }
                   ]
                 }

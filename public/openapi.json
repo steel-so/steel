@@ -162024,6 +162024,20 @@
                                       }
                                     },
                                     "required": ["kind", "instruction"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SEND_TEMPLATE"
+                                      },
+                                      "templateId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "templateId"]
                                   }
                                 ]
                               }
@@ -162297,6 +162311,20 @@
                                           }
                                         },
                                         "required": ["kind", "instruction"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "SEND_TEMPLATE"
+                                          },
+                                          "templateId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "templateId"]
                                       }
                                     ]
                                   }
@@ -162991,7 +163019,7 @@
         "tags": ["Comunicação · Dashboards e relatórios"],
         "summary": "Relatório de desempenho dos atendentes",
         "operationId": "getWorkspacesByIdWhatsappReportsAgents",
-        "description": "Tabulação por atendente nas conversas encerradas no período (`closedAt`), pelo atendente responsável no encerramento: encerradas, sucesso, insucesso, taxa de sucesso (sobre as tabuladas), encerradas sem tabulação, tempo médio de atendimento (criação até o encerramento), conversas em aberto agora e contagem por status de fechamento. `from`/`to` são datas `YYYY-MM-DD` em America/Sao_Paulo, inclusivas (padrão: últimos 7 dias; máximo 1 ano). `format=csv` baixa a planilha (`;`, UTF-8 com BOM; fora do envelope JSON). OWNER/ADMIN veem todos os atendentes, líderes de equipe os das equipes que lideram e os demais só a si mesmos. Recurso opt-in: só existe nos workspaces em que o admin da plataforma o ligou. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
+        "description": "Tabulação por atendente nas conversas encerradas no período (`closedAt`), pelo atendente responsável no encerramento: encerradas, sucesso, insucesso, taxa de sucesso (sobre as tabuladas), encerradas sem tabulação, tempo médio de atendimento (criação até o encerramento), conversas em aberto agora e contagem por status de fechamento. `from`/`to` são datas `YYYY-MM-DD` em America/Sao_Paulo, inclusivas (padrão: últimos 7 dias; máximo 1 ano). `format=csv` baixa a planilha (`;`, UTF-8 com BOM; fora do envelope JSON). OWNER/ADMIN veem todos os atendentes, líderes de equipe os das equipes que lideram e os demais só a si mesmos. Com `view=daily` devolve a visão por dia (São Paulo) e equipe (`teamId` da conversa; `null` = Sem equipe): encerradas no dia, sucesso, insucesso, sem tabulação e mensagens do dia nas conversas da equipe (JSON ou CSV); nesse caso o corpo é `WhatsAppAgentDailyReport`. Recurso opt-in: só existe nos workspaces em que o admin da plataforma o ligou. Módulo **Comunicação** habilitado e permissão `conversations` × `VIEW` no perfil (OWNER/ADMIN sempre passam).\n\nRate limit por usuário; ao estourar responde `429 RATE_LIMITED` com o header `Retry-After`.",
         "parameters": [
           {
             "$ref": "#/components/parameters/WorkspaceId"
@@ -163039,6 +163067,16 @@
             }
           },
           {
+            "name": "view",
+            "in": "query",
+            "required": false,
+            "description": "`agents` (padrão): desempenho por atendente; `daily`: por dia e equipe (encerradas, sucesso, insucesso, sem tabulação e mensagens).",
+            "schema": {
+              "type": "string",
+              "enum": ["agents", "daily"]
+            }
+          },
+          {
             "name": "format",
             "in": "query",
             "required": false,
@@ -163051,7 +163089,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Relatório.",
+            "description": "Relatório (por atendente; com `view=daily`, `WhatsAppAgentDailyReport`, por dia e equipe).",
             "content": {
               "application/json": {
                 "schema": {
@@ -163063,7 +163101,14 @@
                       "type": "object",
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/WhatsAppAgentReport"
+                          "anyOf": [
+                            {
+                              "$ref": "#/components/schemas/WhatsAppAgentReport"
+                            },
+                            {
+                              "$ref": "#/components/schemas/WhatsAppAgentDailyReport"
+                            }
+                          ]
                         }
                       }
                     }
@@ -166578,6 +166623,20 @@
                                       }
                                     },
                                     "required": ["kind", "instruction"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SEND_TEMPLATE"
+                                      },
+                                      "templateId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "templateId"]
                                   }
                                 ]
                               }
@@ -166912,6 +166971,20 @@
                                       }
                                     },
                                     "required": ["kind", "instruction"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "SEND_TEMPLATE"
+                                      },
+                                      "templateId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["kind", "templateId"]
                                   }
                                 ]
                               }
@@ -282029,6 +282102,155 @@
         },
         "required": ["id", "sourceId", "label", "periodStart", "periodEnd", "amount", "note", "createdAt"]
       },
+      "WhatsAppAgentDailyReport": {
+        "type": "object",
+        "properties": {
+          "fromDay": {
+            "type": "string",
+            "example": "2026-11-01"
+          },
+          "toDay": {
+            "type": "string",
+            "example": "2026-11-07"
+          },
+          "timeZone": {
+            "type": "string",
+            "example": "America/Sao_Paulo"
+          },
+          "teamId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connectionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["ALL", "TEAMS", "SELF"]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "example": "2026-11-05"
+                },
+                "teamId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "`null` = \"Sem equipe\"."
+                },
+                "teamName": {
+                  "type": "string"
+                },
+                "closed": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Encerradas no dia."
+                },
+                "success": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "failure": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "untabulated": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Encerradas sem status de fechamento."
+                },
+                "messages": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "Mensagens enviadas e recebidas no dia nas conversas da equipe (sem apagadas e reações)."
+                }
+              },
+              "required": [
+                "day",
+                "teamId",
+                "teamName",
+                "closed",
+                "success",
+                "failure",
+                "untabulated",
+                "messages"
+              ]
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "closed": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Encerradas no dia."
+              },
+              "success": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "failure": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "untabulated": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Encerradas sem status de fechamento."
+              },
+              "messages": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "description": "Mensagens enviadas e recebidas no dia nas conversas da equipe (sem apagadas e reações)."
+              }
+            },
+            "required": ["closed", "success", "failure", "untabulated", "messages"]
+          }
+        },
+        "required": [
+          "fromDay",
+          "toDay",
+          "timeZone",
+          "teamId",
+          "connectionId",
+          "visibility",
+          "rows",
+          "totals"
+        ]
+      },
       "WhatsAppAgentReport": {
         "type": "object",
         "properties": {
@@ -284658,6 +284880,20 @@
                         }
                       },
                       "required": ["kind", "instruction"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "SEND_TEMPLATE"
+                        },
+                        "templateId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "templateId"]
                     }
                   ]
                 }
