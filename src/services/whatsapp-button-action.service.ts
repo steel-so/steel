@@ -18,10 +18,15 @@ import {
   postButtonWebhook,
 } from '@/src/lib/whatsapp/button-webhook'
 import { parseStoredButtons } from '@/src/lib/whatsapp/buttons'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import { queueEntry } from '@/src/lib/whatsapp/queue-entry'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
-import { templateButtons } from '@/src/lib/whatsapp/template-send'
+import {
+  applyTemplateSendExtras,
+  templateButtons,
+  templateSentText,
+} from '@/src/lib/whatsapp/template-send'
 import { toWhatsAppConversationDTO } from '@/src/mappers/whatsapp-conversation.mapper'
 import { toWhatsAppMessageDTO } from '@/src/mappers/whatsapp-message.mapper'
 import { UserRepository } from '@/src/repositories/user.repository'
@@ -40,6 +45,7 @@ import type { WhatsAppButtonDTO } from '@/types/whatsapp-button'
 import { assertMember } from './authz'
 import { CrmWorkflowService } from './crm-workflow.service'
 import { WhatsAppAiReplyService } from './whatsapp-ai-reply.service'
+import { sendTemplateTargetProblem } from './whatsapp-button-send-template'
 import { emitWhatsAppConversationWaiting } from './whatsapp-conversation-waiting'
 import { WhatsAppDistributionService } from './whatsapp-distribution.service'
 import {
@@ -167,6 +173,81 @@ async function runReply(
     text,
     providerMessageId: sent.value.providerMessageId,
     status: 'SENT',
+  })
+  if (!message.ok) return message
+  await WhatsAppConversationRepository.update(conversationId, {
+    lastMessageAt: new Date(),
+  })
+  await publishWhatsAppEvent(workspaceId, {
+    type: 'message.created',
+    conversationId,
+    message: toWhatsAppMessageDTO(message.value),
+  })
+  return ok(undefined)
+}
+
+/**
+ * Sends another approved template of the connection (no variables). Same
+ * guards as a bulk send: the number/template quality gate and, inside
+ * `WhatsAppSend.template`, the contact block, the plan limit and the monthly
+ * spend cap of the number. There is no acting user (the click is the
+ * trigger), so it follows `runReply` instead of the agent send path: the
+ * message has no sender and does not close an SLA clock.
+ */
+async function runSendTemplate(
+  ctx: ActionContext,
+  templateId: string,
+): Promise<Result<void>> {
+  const { workspaceId, conversationId } = ctx.job
+  const found = await WhatsAppTemplateRepository.findById(
+    templateId,
+    workspaceId,
+  )
+  if (!found.ok) return found
+  const problem = sendTemplateTargetProblem(
+    found.value,
+    ctx.conversation.connectionId,
+  )
+  if (problem || !found.value) {
+    return err(badRequest(problem ?? 'O template do botão não existe mais'))
+  }
+  const template = found.value
+
+  const allowed = await assertCampaignSendAllowed(
+    ctx.conversation.connection,
+    template,
+    'BUTTON',
+  )
+  if (!allowed.ok) return allowed
+
+  const extras = applyTemplateSendExtras(template, undefined)
+  const sent = await WhatsAppSend.template(
+    ctx.conversation.connection,
+    {
+      to: ctx.contact.waId,
+      templateName: template.name,
+      language: template.language,
+      components: extras.components,
+    },
+    {
+      cost: {
+        source: 'BUTTON',
+        conversationId,
+        templateCategory: template.category,
+      },
+    },
+  )
+  if (!sent.ok) return sent
+
+  const message = await WhatsAppMessageRepository.create({
+    workspaceId,
+    conversationId,
+    direction: 'OUT',
+    type: 'TEMPLATE',
+    text: templateSentText(template, template.name, undefined),
+    providerMessageId: sent.value.providerMessageId,
+    status: 'SENT',
+    ...(extras.buttons.length > 0 ? { buttons: extras.buttons } : {}),
   })
   if (!message.ok) return message
   await WhatsAppConversationRepository.update(conversationId, {
@@ -380,6 +461,8 @@ async function runAction(
       return ok(undefined)
     case 'AI_INSTRUCTION':
       return runAiInstruction(ctx, action.instruction)
+    case 'SEND_TEMPLATE':
+      return runSendTemplate(ctx, action.templateId)
   }
 }
 

@@ -103,6 +103,8 @@ function TemplateButtonsForm({
           value={buttons}
           onChange={setButtons}
           lockStructure
+          connectionId={template.connectionId}
+          excludeTemplateId={template.id}
         />
       </div>
       <SheetFooter className='flex-row justify-end border-t'>

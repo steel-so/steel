@@ -151,3 +151,26 @@ export function templateSentText(
     return value ? value : match
   })
 }
+
+/**
+ * Whether the template has `{{n}}` placeholders (header, body or a URL
+ * button). A click action cannot fill them, so such a template cannot be the
+ * target of a "send another template" action.
+ */
+export function templateHasVariables(
+  template: Pick<WhatsAppTemplate, 'components'>,
+): boolean {
+  const components = Array.isArray(template.components)
+    ? (template.components as {
+        text?: string
+        buttons?: { url?: string }[]
+      }[])
+    : []
+  const hasVariable = (text: string | undefined) =>
+    typeof text === 'string' && /\{\{[^}]+\}\}/.test(text)
+  return components.some(
+    (component) =>
+      hasVariable(component?.text) ||
+      (component?.buttons ?? []).some((button) => hasVariable(button?.url)),
+  )
+}

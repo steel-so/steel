@@ -49,6 +49,7 @@ import type {
 import type { WhatsAppQuickReplyDTO } from '@/types/whatsapp-quick-reply'
 import { assertModuleMember } from './authz'
 import { WhatsAppBusinessHoursService } from './whatsapp-business-hours.service'
+import { WhatsAppButtonSendTemplateGuard } from './whatsapp-button-send-template'
 import { loadConversationForViewer } from './whatsapp-conversation-scope.service'
 
 const TOKEN_PATTERN = /\{(\w+)\}/g
@@ -252,6 +253,14 @@ export const WhatsAppQuickReplyService = {
     )
     if (!membership.ok) return membership
 
+    const targets = await WhatsAppButtonSendTemplateGuard.assert({
+      workspaceId,
+      connectionId: null,
+      ownerTemplateId: null,
+      buttons: dto.buttons ?? [],
+    })
+    if (!targets.ok) return targets
+
     const result = await WhatsAppQuickReplyRepository.create({
       workspaceId,
       shortcut: dto.shortcut,
@@ -303,6 +312,13 @@ export const WhatsAppQuickReplyService = {
     if (!existing.value) return err(whatsappQuickReplyNotFound())
 
     const { buttons, ...fields } = dto
+    const targets = await WhatsAppButtonSendTemplateGuard.assert({
+      workspaceId,
+      connectionId: null,
+      ownerTemplateId: null,
+      buttons: buttons ?? [],
+    })
+    if (!targets.ok) return targets
     const result = await WhatsAppQuickReplyRepository.update(id, {
       ...fields,
       // An empty list clears the buttons, like `null`.

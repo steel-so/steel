@@ -988,6 +988,7 @@ export type QualityBlockSender =
   | 'BROADCAST'
   | 'NEWSLETTER'
   | 'CRM_CAMPAIGN'
+  | 'BUTTON'
 
 const QUALITY_BLOCK_WORDING: Record<
   QualityBlockSender,
@@ -1021,6 +1022,12 @@ const QUALITY_BLOCK_WORDING: Record<
     singular: 'a campanha fica bloqueada',
     resume: 'continue a campanha',
     ofSender: 'da campanha',
+  },
+  BUTTON: {
+    plural: 'o template configurado no botão deixa de ser enviado',
+    singular: 'o template configurado no botão deixa de ser enviado',
+    resume: 'tente novamente',
+    ofSender: 'do botão',
   },
 }
 

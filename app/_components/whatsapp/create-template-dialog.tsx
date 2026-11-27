@@ -564,6 +564,7 @@ export function CreateTemplateDialog({
               workspaceId={workspaceId}
               value={buttons}
               onChange={setButtons}
+              connectionId={connectionId}
             />
           </div>
 

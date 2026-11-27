@@ -33,7 +33,15 @@ vi.mock('@/src/repositories/whatsapp-message.repository')
 vi.mock('@/src/repositories/whatsapp-contact.repository')
 vi.mock('@/src/repositories/whatsapp-button-action.repository')
 vi.mock('@/src/repositories/user.repository')
-vi.mock('@/src/lib/whatsapp/send', () => ({ WhatsAppSend: { text: vi.fn() } }))
+vi.mock('@/src/lib/whatsapp/send', () => ({
+  WhatsAppSend: { text: vi.fn(), template: vi.fn() },
+}))
+vi.mock('@/src/lib/whatsapp/campaign-quality-gate', () => ({
+  assertCampaignSendAllowed: vi.fn(async () => ({
+    ok: true,
+    value: undefined,
+  })),
+}))
 vi.mock('@/src/lib/whatsapp/realtime', () => ({
   publishWhatsAppEvent: vi.fn(async () => undefined),
 }))
@@ -63,6 +71,7 @@ vi.mock('@/src/lib/queue/queues', () => ({
 import { auditMutation } from '@/lib/axiom/audit'
 import { logger } from '@/lib/axiom/logger'
 import { postButtonWebhook } from '@/src/lib/whatsapp/button-webhook'
+import { assertCampaignSendAllowed } from '@/src/lib/whatsapp/campaign-quality-gate'
 import { publishWhatsAppEvent } from '@/src/lib/whatsapp/realtime'
 import { WhatsAppSend } from '@/src/lib/whatsapp/send'
 import { UserRepository } from '@/src/repositories/user.repository'
@@ -672,6 +681,134 @@ describe('runActions', () => {
     expect(
       expectOk(await WhatsAppButtonActionService.runActions(job)),
     ).toMatchObject({ results: [{ ok: false }] })
+  })
+
+  describe('SEND_TEMPLATE', () => {
+    const target = createFakeWhatsAppTemplate({
+      id: 'tpl2',
+      workspaceId: 'ws1',
+      connectionId: 'conn1',
+      name: 'segunda_via',
+      language: 'pt_BR',
+      category: 'UTILITY',
+      components: [{ type: 'BODY', text: 'Segue a segunda via.' }],
+    })
+
+    function arrangeSend(found = target) {
+      arrange([{ kind: 'SEND_TEMPLATE', templateId: 'tpl2' }])
+      templateRepo.findById.mockImplementation(async (id) =>
+        ok(
+          id === 'tpl2'
+            ? found
+            : templateWith([{ kind: 'SEND_TEMPLATE', templateId: 'tpl2' }]),
+        ),
+      )
+    }
+
+    it('sends the template and stores it as an outbound template message', async () => {
+      arrangeSend()
+      send.template.mockResolvedValue(ok({ providerMessageId: 'p2' }))
+      messageRepo.create.mockResolvedValue(
+        ok(createFakeWhatsAppMessage({ id: 'out2', conversationId: 'c1' })),
+      )
+
+      const outcome = expectOk(
+        await WhatsAppButtonActionService.runActions(job),
+      )
+
+      expect(outcome).toEqual({
+        status: 'ran',
+        results: [{ kind: 'SEND_TEMPLATE', ok: true }],
+      })
+      expect(assertCampaignSendAllowed).toHaveBeenCalledWith(
+        connection,
+        target,
+        'BUTTON',
+      )
+      expect(send.template).toHaveBeenCalledWith(
+        connection,
+        expect.objectContaining({
+          to: '5511999',
+          templateName: 'segunda_via',
+          language: 'pt_BR',
+        }),
+        {
+          cost: expect.objectContaining({
+            source: 'BUTTON',
+            templateCategory: 'UTILITY',
+          }),
+        },
+      )
+      expect(messageRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          direction: 'OUT',
+          type: 'TEMPLATE',
+          text: 'Segue a segunda via.',
+          providerMessageId: 'p2',
+        }),
+      )
+      expect(publishWhatsAppEvent).toHaveBeenCalledWith(
+        'ws1',
+        expect.objectContaining({ type: 'message.created' }),
+      )
+    })
+
+    it.each([
+      ['missing', null],
+      ['not approved', { ...target, status: 'PAUSED' as const }],
+      ['of another connection', { ...target, connectionId: 'conn2' }],
+      [
+        'with variables',
+        { ...target, components: [{ type: 'BODY', text: 'Oi {{1}}' }] },
+      ],
+    ])('fails without sending a %s template', async (_name, found) => {
+      arrangeSend(found as never)
+      expect(
+        expectOk(await WhatsAppButtonActionService.runActions(job)),
+      ).toMatchObject({ results: [{ kind: 'SEND_TEMPLATE', ok: false }] })
+      expect(send.template).not.toHaveBeenCalled()
+    })
+
+    it('does not send while the quality gate blocks it', async () => {
+      arrangeSend()
+      vi.mocked(assertCampaignSendAllowed).mockResolvedValueOnce(
+        err(whatsappProviderError('qualidade')),
+      )
+      expect(
+        expectOk(await WhatsAppButtonActionService.runActions(job)),
+      ).toMatchObject({ results: [{ ok: false }] })
+      expect(send.template).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed send (spend cap, block or provider) and stores nothing', async () => {
+      arrangeSend()
+      send.template.mockResolvedValue(err(whatsappProviderError('teto')))
+      expect(
+        expectOk(await WhatsAppButtonActionService.runActions(job)),
+      ).toMatchObject({ results: [{ ok: false, detail: 'teto' }] })
+      expect(messageRepo.create).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed message write', async () => {
+      arrangeSend()
+      send.template.mockResolvedValue(ok({ providerMessageId: 'p2' }))
+      messageRepo.create.mockResolvedValue(err(databaseError()))
+      expect(
+        expectOk(await WhatsAppButtonActionService.runActions(job)),
+      ).toMatchObject({ results: [{ ok: false }] })
+    })
+
+    it('reports a failed template read', async () => {
+      arrange([{ kind: 'SEND_TEMPLATE', templateId: 'tpl2' }])
+      templateRepo.findById
+        .mockResolvedValueOnce(
+          ok(templateWith([{ kind: 'SEND_TEMPLATE', templateId: 'tpl2' }])),
+        )
+        .mockResolvedValueOnce(err(databaseError()))
+      expect(
+        expectOk(await WhatsAppButtonActionService.runActions(job)),
+      ).toMatchObject({ results: [{ ok: false }] })
+    })
   })
 
   it('reads quick reply buttons for q payloads', async () => {

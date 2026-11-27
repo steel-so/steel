@@ -252,6 +252,63 @@ describe('updateButtons()', () => {
     )
   })
 
+  it('refuses a SEND_TEMPLATE that would loop back to this template', async () => {
+    const loopy = [
+      {
+        ...next[0],
+        actions: [{ kind: 'SEND_TEMPLATE' as const, templateId: 'tpl2' }],
+      },
+      next[1],
+    ]
+    const other = createFakeWhatsAppTemplate({
+      id: 'tpl2',
+      workspaceId: 'ws1',
+      connectionId: stored.connectionId,
+      buttons: [
+        {
+          id: 'b1',
+          type: 'REPLY',
+          label: 'Voltar',
+          actions: [{ kind: 'SEND_TEMPLATE', templateId: 'tpl1' }],
+        },
+      ],
+    })
+    templateRepo.findById.mockImplementation(async (id) =>
+      ok(id === 'tpl1' ? stored : other),
+    )
+    expectErr(
+      await WhatsAppTemplateService.updateButtons('u1', 'ws1', 'tpl1', {
+        buttons: loopy,
+      }),
+      'VALIDATION_ERROR',
+    )
+    expect(templateRepo.update).not.toHaveBeenCalled()
+  })
+
+  it('saves a SEND_TEMPLATE to an approved template of the same connection', async () => {
+    const target = createFakeWhatsAppTemplate({
+      id: 'tpl2',
+      workspaceId: 'ws1',
+      connectionId: stored.connectionId,
+    })
+    templateRepo.findById.mockImplementation(async (id) =>
+      ok(id === 'tpl1' ? stored : target),
+    )
+    const buttons = [
+      {
+        ...next[0],
+        actions: [{ kind: 'SEND_TEMPLATE' as const, templateId: 'tpl2' }],
+      },
+      next[1],
+    ]
+    expectOk(
+      await WhatsAppTemplateService.updateButtons('u1', 'ws1', 'tpl1', {
+        buttons,
+      }),
+    )
+    expect(templateRepo.update).toHaveBeenCalledWith('tpl1', { buttons })
+  })
+
   it.each([
     ['fewer buttons', [next[0]]],
     ['another label', [{ ...next[0], label: 'Não' }, next[1]]],

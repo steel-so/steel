@@ -35,6 +35,7 @@ import type { CreateWhatsAppTemplateInput } from '@/src/schemas/whatsapp-templat
 import type { WhatsAppButtonDTO } from '@/types/whatsapp-button'
 import type { WhatsAppTemplateDTO } from '@/types/whatsapp-template'
 import { assertModuleMember } from './authz'
+import { WhatsAppButtonSendTemplateGuard } from './whatsapp-button-send-template'
 import { notifyWhatsAppUsers, whatsAppAdminIds } from './whatsapp-notify'
 
 type TemplateStatus = WhatsAppTemplate['status']
@@ -472,6 +473,14 @@ export const WhatsAppTemplateService = {
     )
     if (!credentials.ok) return credentials
 
+    const targets = await WhatsAppButtonSendTemplateGuard.assert({
+      workspaceId,
+      connectionId: input.connectionId,
+      ownerTemplateId: null,
+      buttons: input.buttons ?? [],
+    })
+    if (!targets.ok) return targets
+
     const handle = await uploadHeaderSample(
       workspaceId,
       credentials.value.accessToken,
@@ -563,6 +572,14 @@ export const WhatsAppTemplateService = {
         ),
       )
     }
+
+    const targets = await WhatsAppButtonSendTemplateGuard.assert({
+      workspaceId,
+      connectionId: template.value.connectionId,
+      ownerTemplateId: templateId,
+      buttons: input.buttons,
+    })
+    if (!targets.ok) return targets
 
     const updated = await WhatsAppTemplateRepository.update(templateId, {
       buttons: input.buttons as Prisma.InputJsonValue,

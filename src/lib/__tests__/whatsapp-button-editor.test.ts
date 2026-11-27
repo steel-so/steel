@@ -146,6 +146,7 @@ describe('validateButtons', () => {
     ],
     [{ kind: 'HTTP_WEBHOOK', url: 'https://' }, 'informe uma URL https válida'],
     [{ kind: 'AI_INSTRUCTION', instruction: '' }, 'escreva a instrução'],
+    [{ kind: 'SEND_TEMPLATE', templateId: '' }, 'escolha o template'],
   ] as Array<[WhatsAppButtonAction, string]>)(
     'explains an incomplete %o',
     (action, problem) => {

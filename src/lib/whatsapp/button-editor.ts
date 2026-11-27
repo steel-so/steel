@@ -60,6 +60,11 @@ export const BUTTON_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Instrução para a IA',
     description: 'A IA do WhatsApp responde seguindo a sua instrução',
   },
+  {
+    kind: 'SEND_TEMPLATE',
+    label: 'Enviar outro template',
+    description: 'Envia um template aprovado da mesma conexão ao contato',
+  },
 ]
 
 export function buttonActionLabel(kind: WhatsAppButtonActionKind): string {
@@ -87,6 +92,8 @@ export function emptyButtonAction(
       return { kind, url: '' }
     case 'AI_INSTRUCTION':
       return { kind, instruction: '' }
+    case 'SEND_TEMPLATE':
+      return { kind, templateId: '' }
   }
 }
 
@@ -192,6 +199,8 @@ function actionProblem(action: WhatsAppButtonAction): string | null {
         : 'informe uma URL https válida'
     case 'AI_INSTRUCTION':
       return action.instruction.trim() ? null : 'escreva a instrução'
+    case 'SEND_TEMPLATE':
+      return action.templateId ? null : 'escolha o template'
   }
 }
 

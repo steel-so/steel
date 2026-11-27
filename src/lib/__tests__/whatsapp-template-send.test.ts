@@ -3,6 +3,7 @@ import { createFakeWhatsAppTemplate } from '@/src/__tests__/factories/whatsapp-t
 import {
   applyTemplateSendExtras,
   templateButtons,
+  templateHasVariables,
   templateHeaderMedia,
   templateSentText,
 } from '../whatsapp/template-send'
@@ -199,5 +200,38 @@ describe('templateSentText', () => {
 
   it('falls back to the template name without a stored body', () => {
     expect(templateSentText(null, 'boas_vindas', [])).toBe('boas_vindas')
+  })
+})
+
+describe('templateHasVariables', () => {
+  it('is false for a plain template', () => {
+    expect(
+      templateHasVariables({ components: [{ type: 'BODY', text: 'Olá!' }] }),
+    ).toBe(false)
+    expect(templateHasVariables({ components: null as never })).toBe(false)
+  })
+
+  it('finds placeholders in the body, the header and a URL button', () => {
+    expect(
+      templateHasVariables({
+        components: [{ type: 'BODY', text: 'Oi {{1}}' }],
+      }),
+    ).toBe(true)
+    expect(
+      templateHasVariables({
+        components: [{ type: 'HEADER', text: 'Pedido {{1}}' }],
+      }),
+    ).toBe(true)
+    expect(
+      templateHasVariables({
+        components: [
+          { type: 'BODY', text: 'Olá' },
+          {
+            type: 'BUTTONS',
+            buttons: [{ type: 'URL', url: 'https://x.dev/{{1}}' }],
+          },
+        ],
+      }),
+    ).toBe(true)
   })
 })

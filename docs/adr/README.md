@@ -90,3 +90,4 @@ decidido** e **quais as consequências** (inclusive as ruins).
 | 0070 | [Bloqueio das campanhas de IA por qualidade vermelha do número ou template](./0070-bloqueio-de-campanhas-de-ia-por-qualidade-do-numero.md) | Aceita | 2026-11-18 |
 | 0071 | [Leitura de links de inspiração e escolha do modelo na geração de sites](./0071-leitura-de-links-de-inspiracao-e-escolha-do-modelo-na-geracao-de-sites.md) | Aceita | 2026-11-18 |
 | 0072 | [Geração de sites fiel às referências: captura, blueprints e refino por renderização](./0072-geracao-de-sites-fiel-as-referencias.md) | Aceita | 2026-11-19 |
+| 0073 | [Ação de botão "Enviar outro template"](./0073-botao-que-envia-outro-template.md) | Aceita | 2026-11-27 |

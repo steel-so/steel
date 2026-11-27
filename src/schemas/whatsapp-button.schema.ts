@@ -15,6 +15,7 @@ export const WHATSAPP_BUTTON_ACTION_KINDS = [
   'CRM_WORKFLOW',
   'HTTP_WEBHOOK',
   'AI_INSTRUCTION',
+  'SEND_TEMPLATE',
 ] as const
 export type WhatsAppButtonActionKind =
   (typeof WHATSAPP_BUTTON_ACTION_KINDS)[number]
@@ -53,6 +54,13 @@ export const WhatsAppButtonActionSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('AI_INSTRUCTION'),
     instruction: z.string().trim().min(1).max(2000),
+  }),
+  /** Sends another approved template of the same connection (no variables)
+   * to the contact. Saving rejects a template that points back to itself,
+   * directly or through other templates. */
+  z.object({
+    kind: z.literal('SEND_TEMPLATE'),
+    templateId: z.string().min(1),
   }),
 ])
 export type WhatsAppButtonAction = z.infer<typeof WhatsAppButtonActionSchema>

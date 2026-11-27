@@ -10,6 +10,7 @@ import {
   TouchInteraction01Icon,
 } from '@hugeicons-pro/core-stroke-rounded'
 import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext } from 'react'
 import { SteelIcon } from '@/components/icon/icon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,7 @@ import { cn } from '@/lib/utils'
 import { apiFetch } from '@/src/hooks/_fetch'
 import { useCrmWorkflows } from '@/src/hooks/use-crm-workflow'
 import { useWhatsAppAssignableMembers } from '@/src/hooks/use-whatsapp-conversations'
+import { useWhatsAppTemplates } from '@/src/hooks/use-whatsapp-templates'
 import {
   BUTTON_ACTION_OPTIONS,
   buttonActionLabel,
@@ -45,6 +47,7 @@ import {
   WHATSAPP_BUTTON_LABEL_MAX,
   WHATSAPP_BUTTONS_MAX,
 } from '@/src/lib/whatsapp/button-editor'
+import { templateHasVariables } from '@/src/lib/whatsapp/template-send'
 import type {
   WhatsAppButtonAction,
   WhatsAppButtonDTO,
@@ -68,11 +71,23 @@ function useTeamsForPicker(workspaceId: string) {
   })
 }
 
+/** Where the buttons live, for the "send another template" picker. */
+interface TemplateScope {
+  /** Only templates of this connection (when known). */
+  connectionId?: string
+  /** The template being edited: it cannot send itself. */
+  excludeTemplateId?: string
+}
+
+const TemplateScopeContext = createContext<TemplateScope>({})
+
 export function WhatsappButtonsEditor({
   workspaceId,
   value,
   onChange,
   lockStructure = false,
+  connectionId,
+  excludeTemplateId,
 }: {
   workspaceId: string
   value: WhatsAppButtonDTO[]
@@ -80,7 +95,7 @@ export function WhatsappButtonsEditor({
   /** Approved template: labels, types and links are fixed by Meta — only the
    * click actions can change. */
   lockStructure?: boolean
-}) {
+} & TemplateScope) {
   const canAdd = !lockStructure && value.length < WHATSAPP_BUTTONS_MAX
 
   function update(index: number, button: WhatsAppButtonDTO) {
@@ -88,72 +103,76 @@ export function WhatsappButtonsEditor({
   }
 
   return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between gap-2'>
-        <div className='flex items-center gap-2'>
-          <Label>Botões</Label>
-          <span className='text-muted-foreground text-xs tabular-nums'>
-            {value.length}/{WHATSAPP_BUTTONS_MAX}
-          </span>
+    <TemplateScopeContext.Provider value={{ connectionId, excludeTemplateId }}>
+      <div className='space-y-2'>
+        <div className='flex items-center justify-between gap-2'>
+          <div className='flex items-center gap-2'>
+            <Label>Botões</Label>
+            <span className='text-muted-foreground text-xs tabular-nums'>
+              {value.length}/{WHATSAPP_BUTTONS_MAX}
+            </span>
+          </div>
+          {canAdd ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button type='button' variant='outline' size='xs'>
+                    <SteelIcon icon={PlusSignIcon} size={14} />
+                    Adicionar botão
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align='end' className='w-64'>
+                <DropdownMenuItem
+                  onClick={() =>
+                    onChange([...value, newButton('REPLY', value)])
+                  }
+                >
+                  <SteelIcon icon={TouchInteraction01Icon} size={16} />
+                  <div className='flex flex-col'>
+                    <span>Resposta</span>
+                    <span className='text-muted-foreground text-xs'>
+                      Dispara ações quando o contato clica
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onChange([...value, newButton('URL', value)])}
+                >
+                  <SteelIcon icon={Link01Icon} size={16} />
+                  <div className='flex flex-col'>
+                    <span>Link</span>
+                    <span className='text-muted-foreground text-xs'>
+                      Abre um endereço no navegador
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
-        {canAdd ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button type='button' variant='outline' size='xs'>
-                  <SteelIcon icon={PlusSignIcon} size={14} />
-                  Adicionar botão
-                </Button>
-              }
-            />
-            <DropdownMenuContent align='end' className='w-64'>
-              <DropdownMenuItem
-                onClick={() => onChange([...value, newButton('REPLY', value)])}
-              >
-                <SteelIcon icon={TouchInteraction01Icon} size={16} />
-                <div className='flex flex-col'>
-                  <span>Resposta</span>
-                  <span className='text-muted-foreground text-xs'>
-                    Dispara ações quando o contato clica
-                  </span>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onChange([...value, newButton('URL', value)])}
-              >
-                <SteelIcon icon={Link01Icon} size={16} />
-                <div className='flex flex-col'>
-                  <span>Link</span>
-                  <span className='text-muted-foreground text-xs'>
-                    Abre um endereço no navegador
-                  </span>
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+        {value.length === 0 ? (
+          <p className='rounded-lg border border-dashed px-3 py-4 text-center text-muted-foreground text-xs'>
+            {lockStructure
+              ? 'Este template não tem botões de resposta.'
+              : `Sem botões. Adicione até ${WHATSAPP_BUTTONS_MAX}: resposta (com ações ao clicar) ou link.`}
+          </p>
         ) : null}
+
+        {value.map((button, index) => (
+          <ButtonCard
+            key={button.id}
+            workspaceId={workspaceId}
+            index={index}
+            button={button}
+            lockStructure={lockStructure}
+            onChange={(next) => update(index, next)}
+            onRemove={() => onChange(value.filter((_, i) => i !== index))}
+          />
+        ))}
       </div>
-
-      {value.length === 0 ? (
-        <p className='rounded-lg border border-dashed px-3 py-4 text-center text-muted-foreground text-xs'>
-          {lockStructure
-            ? 'Este template não tem botões de resposta.'
-            : `Sem botões. Adicione até ${WHATSAPP_BUTTONS_MAX}: resposta (com ações ao clicar) ou link.`}
-        </p>
-      ) : null}
-
-      {value.map((button, index) => (
-        <ButtonCard
-          key={button.id}
-          workspaceId={workspaceId}
-          index={index}
-          button={button}
-          lockStructure={lockStructure}
-          onChange={(next) => update(index, next)}
-          onRemove={() => onChange(value.filter((_, i) => i !== index))}
-        />
-      ))}
-    </div>
+    </TemplateScopeContext.Provider>
   )
 }
 
@@ -503,6 +522,14 @@ function ActionFields({
           ) : null}
         </div>
       )
+    case 'SEND_TEMPLATE':
+      return (
+        <TemplatePicker
+          workspaceId={workspaceId}
+          value={action.templateId}
+          onChange={(templateId) => onChange({ ...action, templateId })}
+        />
+      )
     case 'HTTP_WEBHOOK':
       return (
         <div className='space-y-2'>
@@ -645,6 +672,56 @@ function TeamPicker({
       options={teams.data.map((team) => ({ value: team.id, label: team.name }))}
       onChange={onChange}
     />
+  )
+}
+
+function TemplatePicker({
+  workspaceId,
+  value,
+  onChange,
+}: {
+  workspaceId: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  const { connectionId, excludeTemplateId } = useContext(TemplateScopeContext)
+  const templates = useWhatsAppTemplates(workspaceId)
+  if (templates.isLoading) {
+    return <PickerEmpty>Carregando templates…</PickerEmpty>
+  }
+  // Approved, same connection, no {{n}} (a click cannot fill them) and never
+  // the template that carries the button.
+  const list = (templates.data ?? []).filter(
+    (template) =>
+      template.status === 'APPROVED' &&
+      template.id !== excludeTemplateId &&
+      (!connectionId || template.connectionId === connectionId) &&
+      !templateHasVariables(template),
+  )
+  if (list.length === 0) {
+    return (
+      <PickerEmpty>
+        Nenhum template aprovado e sem variáveis nesta conexão.
+      </PickerEmpty>
+    )
+  }
+  return (
+    <div className='space-y-1'>
+      <PickerSelect
+        label='Template'
+        value={value}
+        placeholder='Escolha o template'
+        options={list.map((template) => ({
+          value: template.id,
+          label: template.name,
+        }))}
+        onChange={onChange}
+      />
+      <p className='text-muted-foreground text-xs'>
+        Só templates aprovados, sem variáveis e da mesma conexão. Um template
+        não pode levar de volta a ele mesmo.
+      </p>
+    </div>
   )
 }
 
