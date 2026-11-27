@@ -157,9 +157,9 @@ export function templateSentText(
  * button). A click action cannot fill them, so such a template cannot be the
  * target of a "send another template" action.
  */
-export function templateHasVariables(
-  template: Pick<WhatsAppTemplate, 'components'>,
-): boolean {
+export function templateHasVariables(template: {
+  components: unknown
+}): boolean {
   const components = Array.isArray(template.components)
     ? (template.components as {
         text?: string

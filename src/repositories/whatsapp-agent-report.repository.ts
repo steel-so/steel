@@ -218,7 +218,7 @@ export const WhatsAppAgentReportRepository = {
           untabulated: bigint
         }[]
       >`
-        SELECT to_char(c.closed_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
+        SELECT to_char((c.closed_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
                c.team_id AS team_id,
                t.name AS team_name,
                COUNT(*) AS closed,
@@ -264,7 +264,7 @@ export const WhatsAppAgentReportRepository = {
           messages: bigint
         }[]
       >`
-        SELECT to_char(m.created_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
+        SELECT to_char((m.created_at AT TIME ZONE 'UTC') AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS day,
                c.team_id AS team_id,
                t.name AS team_name,
                COUNT(*) AS messages
